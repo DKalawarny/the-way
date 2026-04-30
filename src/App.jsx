@@ -3138,8 +3138,6 @@ export default function App() {
         <MePanel
           session={session}
           profile={profile}
-          notes={notes}
-          conversations={conversations}
           onClose={() => setStage('feed')}
           onOpenBoard={() => { setStage('feed'); setBoardOpen(true); }}
           onOpenHistory={() => { setStage('feed'); setHistoryOpen(true); }}
@@ -3254,7 +3252,6 @@ export default function App() {
           profile={profile}
           churchId={viewingChurchId}
           onBack={() => setStage(initialAnonChurchId ? 'church-entry' : 'church')}
-          onOpenConversation={(convId) => { setActiveCareConv({ id: convId, viewerRole: 'requester' }); setStage('care-conversation'); }}
         />
       )}
       {stage === 'care-conversation' && session && activeCareConv && (
@@ -3278,7 +3275,6 @@ export default function App() {
       {stage === 'care-admin' && session && pastorChurchId && (
         <CareTeamAdmin
           session={session}
-          profile={profile}
           churchId={pastorChurchId}
           onBack={() => setStage('pastor-dashboard')}
         />
@@ -3286,7 +3282,6 @@ export default function App() {
       {stage === 'sermon-composer' && session && pastorChurchId && (
         <SermonComposer
           session={session}
-          profile={profile}
           churchId={pastorChurchId}
           onBack={() => setStage('pastor-dashboard')}
         />

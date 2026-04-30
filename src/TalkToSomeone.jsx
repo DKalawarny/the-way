@@ -74,8 +74,9 @@ function PersonRow({ person, picked, onPick }) {
   );
 }
 
-export default function TalkToSomeone({ session, profile, churchId, churchName, onBack }) {
+export default function TalkToSomeone({ session, profile, churchId, onBack }) {
   const [careTeam, setCareTeam] = useState([]);
+  const [churchName, setChurchName] = useState(null);
   const [loading, setLoading] = useState(true);
   const [routingMode, setRoutingMode] = useState('anyone');  // 'anyone' | 'person'
   const [selectedPerson, setSelectedPerson] = useState(null);
@@ -87,16 +88,23 @@ export default function TalkToSomeone({ session, profile, churchId, churchName, 
   useEffect(() => {
     if (!churchId) return;
     setLoading(true);
-    supabase
-      .from('care_team_members')
-      .select('*, profile:profiles!user_id(id, display_name, avatar_config)')
-      .eq('church_id', churchId)
-      .eq('is_active', true)
-      .order('created_at', { ascending: true })
-      .then(({ data }) => {
-        setCareTeam(data ?? []);
-        setLoading(false);
-      });
+    Promise.all([
+      supabase
+        .from('care_team_members')
+        .select('*, profile:profiles!user_id(id, display_name, avatar_config)')
+        .eq('church_id', churchId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true }),
+      supabase
+        .from('churches')
+        .select('name')
+        .eq('id', churchId)
+        .maybeSingle(),
+    ]).then(([{ data: members }, { data: church }]) => {
+      setCareTeam(members ?? []);
+      setChurchName(church?.name ?? null);
+      setLoading(false);
+    });
   }, [churchId]);
 
   function pickAnyone() {
