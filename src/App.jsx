@@ -105,7 +105,7 @@ function TypingDots() {
   );
 }
 
-function Landing({ onBegin, onSignIn, session, profile, onEditProfile }) {
+function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorIntent }) {
   return (
     <div style={{ minHeight: '100vh', background: '#1A110A', display: 'flex', flexDirection: 'column', fontFamily: T.sans }}>
 
@@ -221,6 +221,31 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile }) {
           ))}
         </div>
       </section>
+
+      {/* For pastors */}
+      {onPastorIntent && !profile?.is_pastor && (
+        <section style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '72px 24px 80px', textAlign: 'center', position: 'relative' }}>
+          <div style={{ maxWidth: 560, margin: '0 auto' }}>
+            <div style={{ fontSize: 11, letterSpacing: 6, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 20 }}>
+              For pastors & church leaders
+            </div>
+            <h2 style={{ fontFamily: T.display, fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 600, color: T.cream, lineHeight: 1.1, margin: '0 0 16px', letterSpacing: '-0.022em' }}>
+              Bring your church<br />into the conversation.
+            </h2>
+            <p style={{ fontFamily: T.serif, fontSize: 16, color: 'rgba(253,248,240,0.55)', lineHeight: 1.7, margin: '0 0 32px' }}>
+              A quiet, honest space your congregation can use between Sundays — for questions, prayer, and going deeper. We verify every church by hand.
+            </p>
+            <button
+              onClick={onPastorIntent}
+              style={{ background: 'transparent', color: T.gold, border: `1px solid ${T.gold}`, borderRadius: 999, padding: '13px 30px', fontSize: 14, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.02em' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(196,129,58,0.12)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              ✦ Apply to bring your church
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Bottom CTA */}
       <section style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '96px 24px 100px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
@@ -2731,6 +2756,7 @@ export default function App() {
   const [profile, setProfile] = useState(null);
   const [authStage, setAuthStage] = useState('idle'); // idle | auth | profile-setup | profile-view
   const [profileEditOrigin, setProfileEditOrigin] = useState('idle'); // where edit profile was opened from
+  const [pendingPastorApply, setPendingPastorApply] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -2951,8 +2977,16 @@ export default function App() {
         <ProfileSetup
           user={session.user}
           existing={profile}
-          onSave={(p) => { setProfile(p); setAuthStage('idle'); setStage(profileEditOrigin === 'me' ? 'me' : 'feed'); }}
-          onCancel={() => { if (profileEditOrigin === 'me') { setAuthStage('idle'); setStage('me'); } else { setAuthStage(profile ? 'profile-view' : 'idle'); } }}
+          onSave={(p) => {
+            setProfile(p);
+            setAuthStage('idle');
+            if (pendingPastorApply) { setPendingPastorApply(false); setStage('pastor-apply'); }
+            else setStage(profileEditOrigin === 'me' ? 'me' : 'feed');
+          }}
+          onCancel={() => {
+            if (pendingPastorApply && profile) { setPendingPastorApply(false); setAuthStage('idle'); setStage('pastor-apply'); return; }
+            if (profileEditOrigin === 'me') { setAuthStage('idle'); setStage('me'); } else { setAuthStage(profile ? 'profile-view' : 'idle'); }
+          }}
         />
       </>
     );
@@ -3007,6 +3041,10 @@ export default function App() {
           session={session}
           profile={profile}
           onEditProfile={() => setAuthStage('profile-view')}
+          onPastorIntent={() => {
+            if (session && profile) { setStage('pastor-apply'); }
+            else { setPendingPastorApply(true); setAuthStage('auth'); }
+          }}
         />
       )}
       {stage === 'church-hub' && session && (
@@ -3133,7 +3171,10 @@ export default function App() {
           profile={profile}
           onBack={() => setStage(session ? 'feed' : 'landing')}
           onOpenChurch={(id) => { setViewingChurchId(id); setStage('church'); }}
-          onApply={session ? () => setStage('pastor-apply') : undefined}
+          onApply={() => {
+            if (session && profile) { setStage('pastor-apply'); }
+            else { setPendingPastorApply(true); setAuthStage('auth'); }
+          }}
         />
       )}
       {stage === 'church' && viewingChurchId && (

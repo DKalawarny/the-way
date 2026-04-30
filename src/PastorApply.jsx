@@ -70,6 +70,7 @@ export default function PastorApply({ session, profile, onClose }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [submitted, setSubmitted] = useState(false);
+  const [reapplying, setReapplying] = useState(false);
 
   const [form, setForm] = useState({
     full_name: profile?.display_name ?? '',
@@ -86,6 +87,25 @@ export default function PastorApply({ session, profile, onClose }) {
     reason: '',
   });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  function startReapply() {
+    if (!existing) return;
+    setForm({
+      full_name: existing.full_name ?? profile?.display_name ?? '',
+      pastor_role: existing.pastor_role ?? '',
+      church_name: existing.church_name ?? '',
+      denomination: existing.denomination ?? '',
+      city: existing.city ?? profile?.city ?? '',
+      country: existing.country ?? profile?.country ?? '',
+      registration_country: existing.registration_country ?? 'CA',
+      registration_number: existing.registration_number ?? '',
+      no_registration: !!existing.no_registration,
+      denominational_reference: existing.denominational_reference ?? '',
+      website: existing.website ?? '',
+      reason: existing.reason ?? '',
+    });
+    setReapplying(true);
+  }
 
   const regCountry = REG_COUNTRIES.find((c) => c.code === form.registration_country) ?? REG_COUNTRIES[0];
 
@@ -116,27 +136,36 @@ export default function PastorApply({ session, profile, onClose }) {
     setSaving(true);
     setError(null);
 
-    const { error: err } = await supabase
-      .from('pastor_applications')
-      .insert({
-        user_id: session.user.id,
-        full_name: form.full_name.trim(),
-        pastor_role: form.pastor_role || null,
-        church_name: form.church_name.trim(),
-        denomination: form.denomination || null,
-        city: form.city.trim() || null,
-        country: form.country.trim() || null,
-        registration_country: form.no_registration ? null : form.registration_country,
-        registration_number: form.no_registration ? null : form.registration_number.trim(),
-        no_registration: form.no_registration,
-        denominational_reference: form.no_registration ? form.denominational_reference.trim() : null,
-        website: form.website.trim() || null,
-        reason: form.reason.trim() || null,
-      });
+    const payload = {
+      user_id: session.user.id,
+      full_name: form.full_name.trim(),
+      pastor_role: form.pastor_role || null,
+      church_name: form.church_name.trim(),
+      denomination: form.denomination || null,
+      city: form.city.trim() || null,
+      country: form.country.trim() || null,
+      registration_country: form.no_registration ? null : form.registration_country,
+      registration_number: form.no_registration ? null : form.registration_number.trim(),
+      no_registration: form.no_registration,
+      denominational_reference: form.no_registration ? form.denominational_reference.trim() : null,
+      website: form.website.trim() || null,
+      reason: form.reason.trim() || null,
+    };
+
+    const { error: err } = reapplying && existing?.id
+      ? await supabase
+          .from('pastor_applications')
+          .update({ ...payload, status: 'pending', notes: null, reviewed_at: null })
+          .eq('id', existing.id)
+      : await supabase
+          .from('pastor_applications')
+          .insert(payload);
 
     setSaving(false);
     if (err) return setError(err.message);
     setSubmitted(true);
+    setReapplying(false);
+    if (existing) setExisting({ ...existing, ...payload, status: 'pending', notes: null });
   }
 
   if (loading) {
@@ -149,7 +178,8 @@ export default function PastorApply({ session, profile, onClose }) {
 
   const showSuccess  = submitted || (existing && existing.status === 'pending');
   const showApproved = existing && existing.status === 'approved';
-  const showRejected = existing && existing.status === 'rejected';
+  const showRejected = existing && existing.status === 'rejected' && !reapplying;
+  const showForm     = (!showSuccess && !showApproved && !showRejected) || reapplying;
 
   return (
     <div style={{ minHeight: '100vh', background: T.cream, padding: '40px 20px 80px', overflowY: 'auto' }}>
@@ -173,7 +203,7 @@ export default function PastorApply({ session, profile, onClose }) {
             <div style={{ fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
               ✦ Approved
             </div>
-            <div style={{ fontFamily: T.serif, fontSize: 18, color: T.ink, marginBottom: 6 }}>
+            <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', marginBottom: 6 }}>
               Welcome, pastor.
             </div>
             <div style={{ color: T.inkSoft, fontSize: 14, lineHeight: 1.6 }}>
@@ -183,13 +213,35 @@ export default function PastorApply({ session, profile, onClose }) {
         )}
 
         {showRejected && (
-          <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: 22, marginBottom: 20 }}>
-            <div style={{ fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 8 }}>
-              Application not approved
+          <div style={{ background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: 14, padding: 22, marginBottom: 20 }}>
+            <div style={{ fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
+              Needs another look
             </div>
-            <div style={{ color: T.inkSoft, fontSize: 14, lineHeight: 1.6 }}>
-              {existing.notes || 'Thanks for applying. If you think this was a mistake, write to us at hello@theway.app.'}
+            <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', marginBottom: 10 }}>
+              We couldn't verify this — yet.
             </div>
+            {existing.notes && (
+              <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
+                <div style={{ fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 600, marginBottom: 4 }}>
+                  What we found
+                </div>
+                <div style={{ fontFamily: T.serif, fontSize: 14.5, color: T.ink, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                  {existing.notes}
+                </div>
+              </div>
+            )}
+            <div style={{ color: T.inkSoft, fontSize: 14, lineHeight: 1.6, marginBottom: 16 }}>
+              Update your details and we'll review again. If something feels off, write directly: <a href="mailto:dkalawarny@hotmail.com" style={{ color: T.goldDark, textDecoration: 'underline' }}>dkalawarny@hotmail.com</a>.
+            </div>
+            <button
+              onClick={startReapply}
+              style={{
+                background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+                padding: '12px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              Update and resubmit
+            </button>
           </div>
         )}
 
@@ -198,7 +250,7 @@ export default function PastorApply({ session, profile, onClose }) {
             <div style={{ fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
               ⏱ Application received
             </div>
-            <div style={{ fontFamily: T.serif, fontSize: 17, color: T.ink, marginBottom: 6 }}>
+            <div style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: T.ink, letterSpacing: '-0.012em', marginBottom: 6 }}>
               Thank you.
             </div>
             <div style={{ color: T.inkSoft, fontSize: 14, lineHeight: 1.6 }}>
@@ -207,7 +259,7 @@ export default function PastorApply({ session, profile, onClose }) {
           </div>
         )}
 
-        {!showSuccess && !showApproved && !showRejected && (
+        {showForm && (
           <form onSubmit={handleSubmit} style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 16, padding: 24 }}>
             <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 14 }}>
               About you
