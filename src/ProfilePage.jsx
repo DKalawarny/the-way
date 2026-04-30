@@ -4,6 +4,7 @@ import { PERSON_TYPES } from './constants.js';
 import { trialStatus } from './trial.js';
 import { supabase } from './supabase.js';
 import AvatarPicker, { avatarUrl } from './AvatarPicker.jsx';
+import ShareSheet from './ShareSheet.jsx';
 
 const TRADITION_COLORS = {
   'Catholic': '#8B1A1A',
@@ -25,7 +26,7 @@ const TRADITION_COLORS = {
 export function Avatar({ name, avatarConfig, size = 48, style = {} }) {
   const url = avatarConfig
     ? avatarUrl(avatarConfig)
-    : avatarUrl({ style: 'avataaars', seed: name || 'friend', bgColor: 'fdf8f0' });
+    : avatarUrl({ style: 'lorelei', seed: name || 'friend', bgColor: 'fdf8f0' });
   return (
     <img
       src={url}
@@ -74,13 +75,14 @@ const REACTIONS = [
   { kind: 'thinking', emoji: '💭' },
 ];
 
-export default function ProfilePage({ profile, session, onEdit, onSignOut, onClose, onProfileUpdate }) {
+export default function ProfilePage({ profile, session, onEdit, onSignOut, onClose, onProfileUpdate, onSetPersonType }) {
   const trial = trialStatus(profile);
   const person = PERSON_TYPES.find((p) => p.id === profile?.person_type);
   const traditionColor = TRADITION_COLORS[profile?.tradition] ?? T.goldDark;
 
   const [signingOut, setSigningOut] = useState(false);
   const [pickingAvatar, setPickingAvatar] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [posts, setPosts] = useState([]);
   const [following, setFollowing] = useState([]);
   const [stats, setStats] = useState({ posts: 0, following: 0, followers: 0 });
@@ -202,7 +204,7 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
                 </button>
               </div>
 
-              <div style={{ fontFamily: T.serif, fontSize: 24, fontWeight: 600, color: T.ink, marginBottom: 4 }}>
+              <div style={{ fontFamily: T.display, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 4 }}>
                 {profile?.display_name ?? 'Friend'}
               </div>
 
@@ -237,7 +239,7 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
                     padding: '14px 8px',
                     borderRight: i < 2 ? `1px solid ${T.line}` : 'none',
                   }}>
-                    <div style={{ fontFamily: T.serif, fontSize: 20, fontWeight: 600, color: T.ink }}>{s.value}</div>
+                    <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>{s.value}</div>
                     <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 2 }}>{s.label}</div>
                   </div>
                 ))}
@@ -262,6 +264,21 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
                   Edit profile
                 </button>
                 <button
+                  onClick={() => setShareOpen(true)}
+                  title="Share profile"
+                  style={{
+                    background: 'transparent',
+                    color: T.inkSoft,
+                    border: `1px solid ${T.line}`,
+                    borderRadius: 999,
+                    padding: '11px 16px',
+                    fontSize: 14,
+                    cursor: 'pointer',
+                  }}
+                >
+                  ↗ Share
+                </button>
+                <button
                   onClick={handleSignOut}
                   disabled={signingOut}
                   style={{
@@ -269,7 +286,7 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
                     color: T.inkMuted,
                     border: `1px solid ${T.line}`,
                     borderRadius: 999,
-                    padding: '11px 20px',
+                    padding: '11px 16px',
                     fontSize: 14,
                     cursor: 'pointer',
                   }}
@@ -364,7 +381,7 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
 
           {posts.length === 0 && (
             <div style={{ background: T.white, borderRadius: 14, border: `1px solid ${T.line}`, padding: '32px 20px', textAlign: 'center' }}>
-              <div style={{ fontFamily: T.serif, fontSize: 17, color: T.ink, marginBottom: 8 }}>Nothing shared yet.</div>
+              <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: 8 }}>Nothing shared yet.</div>
               <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.6 }}>
                 Save a note from chat and tap "Share publicly" to post it.
               </div>
@@ -398,6 +415,15 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
 
         </div>
       </div>
+
+      {shareOpen && (
+        <ShareSheet
+          body={`Find me on The Way${profile?.display_name ? ` — I'm ${profile.display_name}` : ''}.`}
+          intro="Real questions about faith, doubt, and the Bible — for believers, doubters, and everyone in between."
+          title="Share your profile"
+          onClose={() => setShareOpen(false)}
+        />
+      )}
     </>
   );
 }

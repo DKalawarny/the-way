@@ -93,12 +93,13 @@ export default function HomeFound({ tradition, name, onContinue }) {
 
         <h1
           style={{
-            fontFamily: T.serif,
-            fontSize: 'clamp(32px, 5vw, 52px)',
+            fontFamily: T.display,
+            fontSize: 'clamp(34px, 5vw, 54px)',
             fontWeight: 600,
             color: T.ink,
             margin: '0 0 16px',
-            lineHeight: 1.15,
+            lineHeight: 1.08,
+            letterSpacing: '-0.025em',
             animation: 'scale-in 0.5s 0.35s ease both',
           }}
         >

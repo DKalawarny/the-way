@@ -6,36 +6,141 @@ export const PERSON_TYPES = [
     description: "I've never really read it. I just want to know what's in there.",
   },
   {
+    id: 'seeking',
+    emoji: '🕯️',
+    label: 'Used to Believe',
+    description: "I grew up in faith or used to believe. Something changed — and I'm trying to figure out where I stand now.",
+    hasIntake: true,
+  },
+  {
     id: 'skeptic',
     emoji: '🤔',
     label: 'Skeptic',
     description: "I have doubts and hard questions. Don't dodge them.",
+    hasIntake: true,
   },
   {
     id: 'heard-things',
     emoji: '👁️',
     label: "I've Heard Things",
-    description: 'Nephilim, giants, watchers, lost books — what is all this?',
+    description: 'The stranger corners of scripture — giants, lost books, hidden texts. What is actually there?',
   },
   {
     id: 'new-faith',
     emoji: '✨',
     label: 'New to Faith',
     description: "I'm early in the journey. I want to understand, not be preached at.",
+    hasIntake: true,
   },
   {
     id: 'deeper',
     emoji: '📖',
     label: 'Going Deeper',
-    description: 'I know the basics. Take me into the texts themselves.',
+    description: 'I know the stories. Now I want the history, the language, the layers underneath.',
   },
   {
     id: 'group',
     emoji: '👥',
     label: 'Group Study',
-    description: "We're reading together. Help us discuss, not lecture us.",
+    description: "We're reading together. Help us think, question, and go deeper as a group.",
+  },
+  {
+    id: 'inter-faith',
+    emoji: '🌍',
+    label: 'Other Faiths',
+    description: 'Help me understand other faiths and talk about Jesus with confidence and love.',
+  },
+  {
+    id: 'guided',
+    emoji: '🧭',
+    label: 'Walk Me Through',
+    description: 'Take me through the Bible step by step. Plain language, real examples, no jargon.',
   },
 ];
+
+export const INTAKE_QUESTIONS = {
+  seeking: [
+    {
+      id: 'belief',
+      q: 'Where are you right now, honestly?',
+      options: [
+        "I don't believe in God",
+        "I'm not sure what I believe",
+        'I believe in something — not sure what',
+        'I believe in God but not sure about Christianity',
+        'I used to believe and I\'m trying to find my way back',
+      ],
+    },
+    {
+      id: 'barrier',
+      q: 'What makes faith hardest for you?',
+      options: [
+        'Too much suffering in the world',
+        'Bad experiences with religion or church',
+        'It just seems scientifically unlikely',
+        'Hypocrisy I\'ve seen in believers',
+        'I\'ve never felt anything spiritual',
+        'Something personal I haven\'t named yet',
+      ],
+    },
+    {
+      id: 'brought',
+      q: 'What brought you here today?',
+      options: [
+        'Curiosity — no specific reason',
+        'Something hard happened in my life',
+        'Someone I trust suggested it',
+        'I\'ve been thinking about this for a while',
+        'I\'m not sure, honestly',
+      ],
+    },
+  ],
+  skeptic: [
+    {
+      id: 'skeptic_type',
+      q: 'What kind of skeptic are you?',
+      options: [
+        'Intellectual — the evidence just isn\'t there for me',
+        'Moral — I have problems with things the Bible says',
+        'Personal — religion hurt me or people I love',
+        'Scientific — it conflicts with what I know to be true',
+        'All of the above, honestly',
+      ],
+    },
+    {
+      id: 'openness',
+      q: 'How open are you to being wrong?',
+      options: [
+        'Genuinely open — I want to follow the evidence',
+        'Somewhat open — I have my doubts about my doubts',
+        'Not very — but I\'m willing to engage honestly',
+        'I mostly want my questions taken seriously',
+      ],
+    },
+  ],
+  'new-faith': [
+    {
+      id: 'stage',
+      q: 'Where are you in the journey?',
+      options: [
+        'Just started — days or weeks in',
+        'A few months in, still finding my footing',
+        'I believe but I don\'t really understand the Bible yet',
+        'I grew up in faith, stepped away, and I\'m returning',
+      ],
+    },
+    {
+      id: 'need',
+      q: 'What would help you most right now?',
+      options: [
+        'Understanding what the Bible actually says',
+        'Making sense of the confusing or hard parts',
+        'Knowing how to pray and what it\'s supposed to feel like',
+        'Finding out if my doubts are okay to have',
+      ],
+    },
+  ],
+};
 
 export const STARTERS = {
   curious: [
@@ -79,6 +184,27 @@ export const STARTERS = {
     'What are good open-ended questions for Genesis 1–3?',
     'How do we handle disagreement within the group?',
     'What is lectio divina and how do we practice it?',
+  ],
+  seeking: [
+    "I want to believe, but I'm not sure how.",
+    "Does faith require turning off your brain?",
+    "What would it actually mean to follow Jesus?",
+    "Is doubt something faith can survive?",
+    "Why do people who have faith seem so certain?",
+  ],
+  'inter-faith': [
+    'What does Islam teach about Jesus — and where does the Bible respond?',
+    'Why do Jews not accept Jesus as the Messiah, and what does the Old Testament say?',
+    'How do I respond when someone says the Bible has been corrupted?',
+    'What Old Testament prophecies point directly to Jesus?',
+    "What does the Quran say about Jesus that Muslims might not expect?",
+  ],
+  guided: [
+    'Start me at the very beginning — Genesis 1.',
+    'What is the Bible actually about, big picture?',
+    'Walk me through the story of Jesus from start to finish.',
+    'Take me through the Easter story in plain English.',
+    'I want to understand the Psalms — where do I start?',
   ],
 };
 
@@ -124,6 +250,27 @@ export const DEEPER_STARTERS = {
     'How do we create space for honest doubt in a group setting?',
     'What does healthy accountability look like in a study group?',
     'How do we handle when someone in the group holds a very different view?',
+  ],
+  seeking: [
+    "What does the Bible say about people who struggle to believe?",
+    "How do people cross from intellectual interest to actual faith?",
+    "What is prayer — and is it worth trying before you're sure God exists?",
+    "What did Jesus say to the person who said 'I believe; help my unbelief'?",
+    "What would honest next steps look like for someone where I am right now?",
+  ],
+  'inter-faith': [
+    "How does the Quran's denial of the crucifixion (Surah 4:157) compare with historical and manuscript evidence?",
+    "How does Isaiah 53 read in its original Hebrew — and why do Jewish and Christian interpretations divide?",
+    "What are the strongest Islamic objections to the Trinity, and how does Christian theology respond?",
+    "How does the concept of the Word (Logos) in John 1 relate to the Islamic view of the Quran as the uncreated Word of God?",
+    "What does the Talmud say about Jesus, and what can a Christian make of it?",
+  ],
+  guided: [
+    "Walk me through Romans — what is Paul actually arguing, chapter by chapter?",
+    "Take me through the four Gospels — how do they differ and why does it matter?",
+    "Walk me through the Exodus story and what it meant to the people living it.",
+    "Take me through Revelation — what kind of writing is it and how do I actually read it?",
+    "Walk me through the prophets — who were they, when did they live, and what were they doing?",
   ],
 };
 

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#C4813A" stop-opacity="0.18"/>
+      <stop offset="60%" stop-color="#C4813A" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#C4813A" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="#2C1810"/>
+  <ellipse cx="600" cy="315" rx="520" ry="240" fill="url(#glow)"/>
+
+  <g transform="translate(600 220)">
+    <path d="M 0,-95
+             C 8,-32 32,-8 95,0
+             C 32,8 8,32 0,95
+             C -8,32 -32,8 -95,0
+             C -32,-8 -8,-32 0,-95 Z"
+          fill="#C4813A"/>
+    <path d="M 0,-50
+             C 5,-18 18,-5 50,0
+             C 18,5 5,18 0,50
+             C -5,18 -18,5 -50,0
+             C -18,-5 -5,-18 0,-50 Z"
+          fill="#FDF8F0" opacity="0.92"/>
+  </g>
+
+  <text x="600" y="430"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="124" font-weight="700"
+        text-anchor="middle" fill="#FDF8F0" letter-spacing="-2">
+    The Way
+  </text>
+
+  <text x="600" y="500"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-style="italic" font-size="26"
+        text-anchor="middle" fill="#D9C9A8" letter-spacing="3">
+    Big questions, ancient text, modern conversation.
+  </text>
+
+  <text x="600" y="585"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="18" letter-spacing="6"
+        text-transform="uppercase"
+        text-anchor="middle" fill="#9A6328">
+    THEWAY.APP
+  </text>
+</svg>

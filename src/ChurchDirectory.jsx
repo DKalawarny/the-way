@@ -1,0 +1,153 @@
+import { useEffect, useMemo, useState } from 'react';
+import { supabase } from './supabase.js';
+import { T } from './theme.js';
+
+export default function ChurchDirectory({ session, profile, onBack, onOpenChurch, onApply }) {
+  const [churches, setChurches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [memberCounts, setMemberCounts] = useState({});
+
+  useEffect(() => {
+    setLoading(true);
+    supabase
+      .from('churches')
+      .select('id, name, denomination, city, country, pastor_id, pinned_post, verification_status')
+      .eq('is_public', true)
+      .eq('verification_status', 'verified')
+      .order('created_at', { ascending: false })
+      .then(async ({ data }) => {
+        const list = data ?? [];
+        setChurches(list);
+        if (list.length) {
+          const ids = list.map((c) => c.id);
+          const { data: members } = await supabase
+            .from('profiles')
+            .select('church_id')
+            .in('church_id', ids);
+          const counts = {};
+          for (const m of members ?? []) counts[m.church_id] = (counts[m.church_id] ?? 0) + 1;
+          setMemberCounts(counts);
+        }
+        setLoading(false);
+      });
+  }, []);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return churches;
+    return churches.filter((c) =>
+      [c.name, c.denomination, c.city, c.country].filter(Boolean).join(' ').toLowerCase().includes(q)
+    );
+  }, [churches, query]);
+
+  return (
+    <div style={{ minHeight: '100vh', background: T.cream, paddingBottom: 60 }}>
+      <header style={{
+        padding: '0 16px', height: 56, background: T.white,
+        borderBottom: `1px solid ${T.line}`,
+        display: 'flex', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10,
+      }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: '6px 4px' }}>
+          ← Back
+        </button>
+        <div style={{ marginLeft: 12, fontFamily: T.display, fontSize: 20, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>
+          Churches
+        </div>
+        {onApply && (
+          <button onClick={onApply} style={{
+            marginLeft: 'auto', background: T.parchment, border: `1px solid ${T.line}`,
+            borderRadius: 999, padding: '6px 14px', fontSize: 13, color: T.goldDark, fontWeight: 600, cursor: 'pointer',
+          }}>
+            ✦ I'm a pastor
+          </button>
+        )}
+      </header>
+
+      <div style={{ maxWidth: 640, margin: '0 auto', padding: '20px 16px' }}>
+        <div style={{ marginBottom: 14 }}>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by name, city, or denomination…"
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              border: `1px solid ${T.line}`, borderRadius: 12,
+              padding: '11px 16px', fontSize: 14, background: T.white,
+              color: T.ink, outline: 'none', fontFamily: 'inherit',
+            }}
+          />
+        </div>
+
+        {loading && (
+          <div style={{ textAlign: 'center', color: T.inkMuted, padding: 40, fontFamily: T.serif }}>Loading…</div>
+        )}
+
+        {!loading && filtered.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+            <div style={{ fontSize: 36, marginBottom: 10 }}>⛪</div>
+            <div style={{ fontFamily: T.serif, fontSize: 20, color: T.ink, marginBottom: 8 }}>
+              {query ? 'No churches match.' : 'No churches yet.'}
+            </div>
+            <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.6, maxWidth: 360, margin: '0 auto' }}>
+              {query ? 'Try a different search.' : 'Be the first — if you\u2019re a pastor, apply to bring your church to The Way.'}
+            </div>
+            {!query && onApply && (
+              <button onClick={onApply} style={{
+                marginTop: 18, background: T.ink, color: T.cream, border: 'none',
+                borderRadius: 999, padding: '11px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              }}>
+                ✦ Apply as a pastor
+              </button>
+            )}
+          </div>
+        )}
+
+        {filtered.map((c) => {
+          const count = memberCounts[c.id] ?? 0;
+          const isMine = profile?.church_id === c.id;
+          return (
+            <button
+              key={c.id}
+              onClick={() => onOpenChurch?.(c.id)}
+              style={{
+                width: '100%', textAlign: 'left',
+                background: T.white, border: `1px solid ${isMine ? T.gold : T.line}`,
+                borderRadius: 14, padding: '14px 16px', marginBottom: 10,
+                display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer',
+              }}
+            >
+              <div style={{
+                width: 46, height: 46, borderRadius: '50%',
+                background: T.parchment, border: `1px solid ${T.line}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 22, flexShrink: 0,
+              }}>⛪</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                  <div style={{ fontWeight: 600, fontSize: 15, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {c.name}
+                  </div>
+                  {isMine && (
+                    <span style={{ fontSize: 10, fontWeight: 700, color: T.goldDark, background: 'rgba(196,129,58,0.12)', padding: '2px 7px', borderRadius: 999, letterSpacing: 0.4, textTransform: 'uppercase' }}>
+                      Yours
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 12, color: T.inkMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {[c.denomination, [c.city, c.country].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}
+                </div>
+                {count > 0 && (
+                  <div style={{ fontSize: 12, color: T.goldDark, marginTop: 3 }}>
+                    {count} member{count !== 1 ? 's' : ''}
+                  </div>
+                )}
+              </div>
+              <div style={{ color: T.inkMuted, fontSize: 18, flexShrink: 0 }}>›</div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

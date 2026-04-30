@@ -202,9 +202,11 @@ const eyebrow = {
 };
 
 const title = {
-  fontFamily: T.serif,
-  fontSize: 28,
+  fontFamily: T.display,
+  fontSize: 30,
   fontWeight: 600,
   color: T.ink,
+  letterSpacing: '-0.02em',
+  lineHeight: 1.1,
   margin: '0 0 22px',
 };

@@ -2,23 +2,23 @@ import { useState } from 'react';
 import { T } from './theme.js';
 
 export const AVATAR_STYLES = [
-  { id: 'avataaars',   label: 'Illustrated',  preview: 'Jordan' },
-  { id: 'adventurer',  label: 'Adventurer',   preview: 'River' },
-  { id: 'lorelei',     label: 'Portrait',     preview: 'Sage' },
-  { id: 'big-ears',    label: 'Minimal',      preview: 'Cedar' },
-  { id: 'pixel-art',   label: 'Pixel',        preview: 'Oak' },
-  { id: 'fun-emoji',   label: 'Emoji',        preview: 'Sky' },
+  { id: 'lorelei',            label: 'Portrait',    preview: 'Ruth' },
+  { id: 'notionists-neutral', label: 'Line',        preview: 'Samuel' },
+  { id: 'personas',           label: 'Friendly',    preview: 'Hannah' },
+  { id: 'micah',              label: 'Modern',      preview: 'Caleb' },
+  { id: 'open-peeps',         label: 'Hand-drawn',  preview: 'Naomi' },
+  { id: 'big-ears-neutral',   label: 'Soft',        preview: 'Levi' },
 ];
 
 export const AVATAR_COLORS = [
   { id: 'fdf8f0', label: 'Parchment' },
-  { id: 'dbeafe', label: 'Sky' },
-  { id: 'd1fae5', label: 'Sage' },
-  { id: 'fce7f3', label: 'Rose' },
+  { id: 'f5e6d3', label: 'Linen' },
   { id: 'fef3c7', label: 'Amber' },
-  { id: 'ede9fe', label: 'Lavender' },
-  { id: 'f3f4f6', label: 'Stone' },
   { id: 'ffedd5', label: 'Peach' },
+  { id: 'f4dac4', label: 'Clay' },
+  { id: 'e8e6cd', label: 'Olive' },
+  { id: 'd1fae5', label: 'Sage' },
+  { id: 'e5e0d8', label: 'Stone' },
 ];
 
 const SEEDS = [
@@ -27,12 +27,12 @@ const SEEDS = [
   'Tobias','Lydia','Samuel','Deborah','Ezra','Hannah','Joel','Rachel',
 ];
 
-export function avatarUrl({ style = 'avataaars', seed = 'friend', bgColor = 'fdf8f0' } = {}) {
+export function avatarUrl({ style = 'lorelei', seed = 'friend', bgColor = 'fdf8f0' } = {}) {
   return `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=${bgColor}&radius=50`;
 }
 
 export default function AvatarPicker({ current, onSave, onCancel }) {
-  const [style, setStyle] = useState(current?.style ?? 'avataaars');
+  const [style, setStyle] = useState(current?.style ?? 'lorelei');
   const [seed, setSeed] = useState(current?.seed ?? 'Grace');
   const [bgColor, setBgColor] = useState(current?.bgColor ?? 'fdf8f0');
   const [seedPage, setSeedPage] = useState(0);

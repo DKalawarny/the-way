@@ -71,6 +71,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
     exploring_since: existing?.exploring_since ?? '',
     what_brought: existing?.what_brought ?? '',
     looking_for: existing?.looking_for ?? [],
+    tts_voice: existing?.tts_voice ?? 'onyx',
   });
 
   const [prevTradition] = useState(existing?.tradition ?? 'Still Discovering');
@@ -97,6 +98,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
     const payload = {
       id: user.id,
       ...form,
+      ...(existing?.avatar_config ? { avatar_config: existing.avatar_config } : {}),
       ...(isNewHome ? { home_found_at: new Date().toISOString() } : {}),
       updated_at: new Date().toISOString(),
     };
@@ -140,7 +142,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
           <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 10 }}>
             {existing ? 'Edit your profile' : 'Set up your profile'}
           </div>
-          <h2 style={{ fontFamily: T.serif, fontSize: 32, fontWeight: 600, color: T.ink, margin: '0 0 8px' }}>
+          <h2 style={{ fontFamily: T.display, fontSize: 34, fontWeight: 600, color: T.ink, margin: '0 0 8px', letterSpacing: '-0.022em', lineHeight: 1.08 }}>
             {existing ? 'Your profile' : 'Tell us a little about you'}
           </h2>
           <p style={{ color: T.inkSoft, fontSize: 15, lineHeight: 1.6, margin: '0 0 32px' }}>
@@ -237,6 +239,41 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
                     {opt.label}
                   </label>
                 ))}
+              </div>
+            </Field>
+
+            <Field label="Read-back voice" hint="The voice used when you tap Listen on any AI response">
+              <div style={{ display: 'flex', gap: 10 }}>
+                {[
+                  { id: 'onyx', label: 'James', gender: 'Male', desc: 'Deep, rich, and unhurried — like a wise elder reading scripture' },
+                  { id: 'shimmer', label: 'Grace', gender: 'Female', desc: 'Warm, expressive, and clear — like a trusted friend' },
+                ].map((v) => {
+                  const active = form.tts_voice === v.id;
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => set('tts_voice', v.id)}
+                      style={{
+                        flex: 1,
+                        padding: '12px 14px',
+                        borderRadius: 12,
+                        border: `1.5px solid ${active ? T.gold : T.line}`,
+                        background: active ? 'rgba(196,129,58,0.08)' : T.white,
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <div style={{ fontSize: 11, color: T.inkMuted, marginBottom: 3 }}>{v.gender}</div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: T.ink, marginBottom: 4 }}>{v.label}</div>
+                      <div style={{ fontSize: 11, color: T.inkMuted, lineHeight: 1.4 }}>{v.desc}</div>
+                      {active && (
+                        <div style={{ marginTop: 6, fontSize: 11, color: T.goldDark, fontWeight: 600 }}>✓ selected</div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </Field>
 
