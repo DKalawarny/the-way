@@ -3245,8 +3245,7 @@ export default function App() {
       {stage === 'walks' && session && (
         <Walks
           session={session}
-          profile={profile}
-          onBack={() => setStage('me')}
+          onClose={() => setStage('me')}
         />
       )}
       {stage === 'talk-to-someone' && session && viewingChurchId && (
@@ -3272,9 +3271,8 @@ export default function App() {
         <CareTeamInbox
           session={session}
           profile={profile}
-          careTeamRecord={careTeamRecord}
+          churchId={careTeamRecord.church_id}
           onBack={() => setStage('me')}
-          onOpenConversation={(convId, role) => { setActiveCareConv({ id: convId, viewerRole: role || 'care_member' }); setStage('care-conversation'); }}
         />
       )}
       {stage === 'care-admin' && session && pastorChurchId && (
@@ -3299,9 +3297,9 @@ export default function App() {
           profile={profile}
           churchId={pastorChurchId}
           onBack={() => setStage('me')}
-          onOpenSermons={() => setStage('sermon-composer')}
+          onOpenComposer={() => setStage('sermon-composer')}
           onOpenCareAdmin={() => setStage('care-admin')}
-          onOpenChurch={() => { setViewingChurchId(pastorChurchId); setStage('church'); }}
+          onOpenChurchPage={() => { setViewingChurchId(pastorChurchId); setStage('church'); }}
         />
       )}
       {stage === 'onboarding' && (
