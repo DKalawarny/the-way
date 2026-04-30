@@ -1,6 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { T, globalCss } from './theme.js';
 import { PERSON_TYPES, STARTERS, DEEPER_STARTERS, PREMIUM_FEATURES, ADS } from './constants.js';
+
+function ScreenLoader() {
+  return (
+    <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 28, height: 28, border: `2px solid ${T.line}`, borderTopColor: T.gold, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
 
 function getStarters(personType, conversations) {
   const totalMessages = conversations.reduce((sum, c) => sum + c.messages.length, 0);
@@ -17,34 +26,35 @@ import { supabase } from './supabase.js';
 import Auth from './Auth.jsx';
 import ProfileSetup from './Profile.jsx';
 import ProfilePage, { Avatar } from './ProfilePage.jsx';
-import Community from './Community.jsx';
 import Home from './Home.jsx';
-import ChurchHub from './ChurchHub.jsx';
-import Prayer from './Prayer.jsx';
-import GroupSpace from './GroupSpace.jsx';
-import GroupSetup from './GroupSetup.jsx';
-import SeekingIntake from './SeekingIntake.jsx';
-import Journeys from './Journeys.jsx';
-import SharedView from './SharedView.jsx';
-import StudySession from './StudySession.jsx';
-import MePanel from './MePanel.jsx';
-import UserProfile from './UserProfile.jsx';
 import GuestQuestion from './GuestQuestion.jsx';
-import PeopleSearch from './PeopleSearch.jsx';
-import BibleReader from './BibleReader.jsx';
-import InviteFriends from './InviteFriends.jsx';
-import PastorApply from './PastorApply.jsx';
-import ChurchPage from './ChurchPage.jsx';
-import ChurchDirectory from './ChurchDirectory.jsx';
-import Walks from './Walks.jsx';
-import TalkToSomeone from './TalkToSomeone.jsx';
-import CareTeamInbox from './CareTeamInbox.jsx';
-import CareTeamAdmin from './CareTeamAdmin.jsx';
-import SermonComposer from './SermonComposer.jsx';
-import PastorDashboard from './PastorDashboard.jsx';
-import AnonymousWelcome from './AnonymousWelcome.jsx';
-import ChurchEntry from './ChurchEntry.jsx';
-import CareConversation from './CareConversation.jsx';
+
+const Community         = lazy(() => import('./Community.jsx'));
+const ChurchHub         = lazy(() => import('./ChurchHub.jsx'));
+const Prayer            = lazy(() => import('./Prayer.jsx'));
+const GroupSpace        = lazy(() => import('./GroupSpace.jsx'));
+const GroupSetup        = lazy(() => import('./GroupSetup.jsx'));
+const SeekingIntake     = lazy(() => import('./SeekingIntake.jsx'));
+const Journeys          = lazy(() => import('./Journeys.jsx'));
+const SharedView        = lazy(() => import('./SharedView.jsx'));
+const StudySession      = lazy(() => import('./StudySession.jsx'));
+const MePanel           = lazy(() => import('./MePanel.jsx'));
+const UserProfile       = lazy(() => import('./UserProfile.jsx'));
+const PeopleSearch      = lazy(() => import('./PeopleSearch.jsx'));
+const BibleReader       = lazy(() => import('./BibleReader.jsx'));
+const InviteFriends     = lazy(() => import('./InviteFriends.jsx'));
+const PastorApply       = lazy(() => import('./PastorApply.jsx'));
+const ChurchPage        = lazy(() => import('./ChurchPage.jsx'));
+const ChurchDirectory   = lazy(() => import('./ChurchDirectory.jsx'));
+const Walks             = lazy(() => import('./Walks.jsx'));
+const TalkToSomeone     = lazy(() => import('./TalkToSomeone.jsx'));
+const CareTeamInbox     = lazy(() => import('./CareTeamInbox.jsx'));
+const CareTeamAdmin     = lazy(() => import('./CareTeamAdmin.jsx'));
+const SermonComposer    = lazy(() => import('./SermonComposer.jsx'));
+const PastorDashboard   = lazy(() => import('./PastorDashboard.jsx'));
+const AnonymousWelcome  = lazy(() => import('./AnonymousWelcome.jsx'));
+const ChurchEntry       = lazy(() => import('./ChurchEntry.jsx'));
+const CareConversation  = lazy(() => import('./CareConversation.jsx'));
 import { PERSON_TYPES as ALL_PERSON_TYPES } from './constants.js';
 import { trialStatus } from './trial.js';
 import { JOURNEYS, getJourneyProgress, advanceJourneyProgress } from './journeys.js';
@@ -3013,7 +3023,9 @@ export default function App() {
     return (
       <>
         <style>{globalCss}</style>
-        <SharedView shareId={shareId} onBegin={() => { window.history.replaceState({}, '', '/'); window.location.reload(); }} />
+        <Suspense fallback={<ScreenLoader />}>
+          <SharedView shareId={shareId} onBegin={() => { window.history.replaceState({}, '', '/'); window.location.reload(); }} />
+        </Suspense>
       </>
     );
   }
@@ -3022,7 +3034,9 @@ export default function App() {
     return (
       <>
         <style>{globalCss}</style>
-        <StudySession sessionId={studySessionId} onBegin={() => { window.history.replaceState({}, '', '/'); window.location.reload(); }} />
+        <Suspense fallback={<ScreenLoader />}>
+          <StudySession sessionId={studySessionId} onBegin={() => { window.history.replaceState({}, '', '/'); window.location.reload(); }} />
+        </Suspense>
       </>
     );
   }
@@ -3033,6 +3047,7 @@ export default function App() {
       <style>{globalCss}</style>
 
       {/* ── Main stage ─────────────────────────────────────────────── */}
+      <Suspense fallback={<ScreenLoader />}>
       <div style={{ paddingRight: isDocked ? chatPanelWidth : 0, transition: isResizingRef.current ? 'none' : 'padding-right 0.28s ease' }}>
       {stage === 'landing' && (
         <Landing
@@ -3435,6 +3450,7 @@ export default function App() {
           onViewProfile={(uid) => { setPeopleSearchOpen(false); setViewingUserId(uid); }}
         />
       )}
+      </Suspense>
       <BottomNav
         stage={stage}
         authStage={authStage}
