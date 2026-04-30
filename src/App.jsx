@@ -2472,6 +2472,21 @@ export default function App() {
     return () => listener.subscription.unsubscribe();
   }, [initialChurchId, initialAnonChurchId]);
 
+  // Realtime: when a pastor application is approved/rejected, refresh roles immediately
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    const channel = supabase
+      .channel(`pastor-app-${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'pastor_applications', filter: `user_id=eq.${userId}` },
+        () => { loadProfile(userId); },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [session?.user?.id]);
+
   async function loadProfile(userId) {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
     setProfile(data ?? null);
