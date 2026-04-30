@@ -55,7 +55,6 @@ const PastorDashboard   = lazy(() => import('./PastorDashboard.jsx'));
 const AnonymousWelcome  = lazy(() => import('./AnonymousWelcome.jsx'));
 const ChurchEntry       = lazy(() => import('./ChurchEntry.jsx'));
 const CareConversation  = lazy(() => import('./CareConversation.jsx'));
-import { PERSON_TYPES as ALL_PERSON_TYPES } from './constants.js';
 import { trialStatus } from './trial.js';
 import { JOURNEYS, getJourneyProgress, advanceJourneyProgress } from './journeys.js';
 
@@ -2851,7 +2850,7 @@ export default function App() {
 
   function newConversation(pType) {
     const pt = pType ?? personType ?? profile?.person_type ?? 'curious';
-    const personDef = ALL_PERSON_TYPES.find((p) => p.id === pt);
+    const personDef = PERSON_TYPES.find((p) => p.id === pt);
     if (!session) {
       setPersonType(pt);
       setAuthStage('auth');
@@ -2871,7 +2870,7 @@ export default function App() {
 
   function startNewConversation(pType, context = null) {
     const pt = pType ?? personType;
-    const personDef = ALL_PERSON_TYPES.find((p) => p.id === pt);
+    const personDef = PERSON_TYPES.find((p) => p.id === pt);
     if (!session) {
       setPersonType(pt);
       setAuthStage('auth');
