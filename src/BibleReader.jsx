@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { T } from './theme.js';
 import { useSpeechRecognition } from './useSpeechRecognition.js';
 import { useTextToSpeech } from './useTextToSpeech.js';
+import { authedFetch } from './supabase.js';
 
 // Bible API is proxied through /api/bible to keep the key server-side
 
@@ -418,7 +419,7 @@ function parseVerses(html) {
 
 async function fetchChapter(bibleId, bookId, chapterNum) {
   const chapterId = `${bookId}.${chapterNum}`;
-  const res = await fetch(`/api/bible/${bibleId}/chapters/${chapterId}`);
+  const res = await authedFetch(`/api/bible/${bibleId}/chapters/${chapterId}`);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error ?? `API error ${res.status}`);
@@ -666,7 +667,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     const results = await Promise.all(
       VERSIONS.map(async (ver) => {
         try {
-          const res  = await fetch(`/api/bible/${ver.id}/verses/${verseId}`);
+          const res  = await authedFetch(`/api/bible/${ver.id}/verses/${verseId}`);
           const json = await res.json();
           const text = (json.data?.content ?? '').trim();
           return { abbr: ver.abbr, text: text || null };
@@ -717,7 +718,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
     setChatMsgs((prev) => [...prev, userMsg]);
     setChatBusy(true);
     try {
-      const res = await fetch('/api/chat', {
+      const res = await authedFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ system: getSystemPrompt(), messages: [...chatMsgs, userMsg], personType: profile?.person_type ?? 'curious' }),

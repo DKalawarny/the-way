@@ -56,7 +56,116 @@ function cacheKey(personType, question) {
 }
 
 app.use(cors());
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '256kb' }));
+
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON = process.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// ── Auth: verify Supabase JWT via /auth/v1/user, cache 5 min in memory ──────
+const tokenCache = new Map(); // token -> { userId, expires }
+const TOKEN_TTL_MS = 5 * 60 * 1000;
+
+async function verifyToken(token) {
+  const cached = tokenCache.get(token);
+  if (cached && cached.expires > Date.now()) return cached.userId;
+  if (!SUPABASE_URL || !SUPABASE_ANON) return null;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${token}` },
+    });
+    if (!r.ok) return null;
+    const u = await r.json();
+    if (!u?.id) return null;
+    tokenCache.set(token, { userId: u.id, expires: Date.now() + TOKEN_TTL_MS });
+    return u.id;
+  } catch {
+    return null;
+  }
+}
+
+async function attachUser(req) {
+  const auth = req.get('authorization') ?? '';
+  const m = auth.match(/^Bearer\s+(.+)$/i);
+  const token = m?.[1];
+  if (!token) return null;
+  return await verifyToken(token);
+}
+
+async function requireAuth(req, res, next) {
+  const userId = await attachUser(req);
+  if (!userId) return res.status(401).json({ error: 'auth required' });
+  req.userId = userId;
+  next();
+}
+
+async function optionalAuth(req, _res, next) {
+  req.userId = await attachUser(req);
+  next();
+}
+
+// ── Rate limit: token bucket per key (userId for authed, IP for anon) ───────
+const buckets = new Map(); // key -> { tokens, last }
+function rateLimit({ key, capacity, refillPerSec }) {
+  const now = Date.now();
+  const b = buckets.get(key) ?? { tokens: capacity, last: now };
+  const elapsed = (now - b.last) / 1000;
+  b.tokens = Math.min(capacity, b.tokens + elapsed * refillPerSec);
+  b.last = now;
+  if (b.tokens < 1) {
+    buckets.set(key, b);
+    return false;
+  }
+  b.tokens -= 1;
+  buckets.set(key, b);
+  return true;
+}
+// Periodically purge cold buckets so the map doesn't grow unbounded.
+setInterval(() => {
+  const cutoff = Date.now() - 30 * 60 * 1000;
+  for (const [k, v] of buckets) if (v.last < cutoff) buckets.delete(k);
+  for (const [k, v] of tokenCache) if (v.expires < Date.now()) tokenCache.delete(k);
+}, 5 * 60 * 1000).unref?.();
+
+function clientIp(req) {
+  return (req.get('x-forwarded-for')?.split(',')[0].trim()) || req.socket.remoteAddress || 'unknown';
+}
+
+function limitAuthed({ capacity, refillPerSec }) {
+  return (req, res, next) => {
+    if (!rateLimit({ key: `u:${req.userId}`, capacity, refillPerSec })) {
+      return res.status(429).json({ error: 'slow down — try again in a moment' });
+    }
+    next();
+  };
+}
+function limitAnon({ capacity, refillPerSec }) {
+  return (req, res, next) => {
+    if (!rateLimit({ key: `ip:${clientIp(req)}`, capacity, refillPerSec })) {
+      return res.status(429).json({ error: 'slow down — try again in a moment' });
+    }
+    next();
+  };
+}
+// For endpoints that allow anon callers but reward authentication with a
+// looser bucket. Authed users get authedCfg; everyone else falls back to
+// IP-based anonCfg.
+function limitEither(authedCfg, anonCfg) {
+  return (req, res, next) => {
+    const cfg = req.userId ? authedCfg : anonCfg;
+    const key = req.userId ? `u:${req.userId}` : `ip:${clientIp(req)}`;
+    if (!rateLimit({ key, ...cfg })) {
+      return res.status(429).json({ error: 'slow down — try again in a moment' });
+    }
+    next();
+  };
+}
+
+// Generic error responder — never leak SDK internals to the client.
+function safeError(res, err, ctx) {
+  console.error(`[the way] ${ctx} error:`, err);
+  if (!res.headersSent) res.status(500).json({ error: 'something went wrong' });
+}
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, cacheEntries: Object.keys(cache).length });
@@ -73,12 +182,13 @@ Present and alive, never monotone. Let the emotion in the words come through nat
 };
 
 // ── Text-to-Speech (OpenAI TTS API) ──────────────────────────────────────────
-app.post('/api/tts', async (req, res) => {
+app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 60 }), async (req, res) => {
   const OPENAI_KEY = process.env.OPENAI_API_KEY;
   if (!OPENAI_KEY) return res.status(503).json({ error: 'TTS not configured' });
 
   const { text, voice = 'onyx' } = req.body;
-  if (!text) return res.status(400).json({ error: 'text required' });
+  if (!text || typeof text !== 'string') return res.status(400).json({ error: 'text required' });
+  if (text.length > 8000) return res.status(413).json({ error: 'text too long' });
 
   // Clean markdown / dividers before sending to TTS
   const cleaned = text
@@ -122,10 +232,11 @@ app.post('/api/tts', async (req, res) => {
 
     res.setHeader('Content-Type', 'audio/mpeg');
     res.setHeader('Cache-Control', 'no-store');
-    // Pipe the MP3 stream directly to the client
     const reader = oaiRes.body.getReader();
+    let aborted = false;
+    req.on('close', () => { aborted = true; reader.cancel().catch(() => {}); });
     const pump = async () => {
-      while (true) {
+      while (!aborted) {
         const { done, value } = await reader.read();
         if (done) { res.end(); break; }
         res.write(value);
@@ -133,13 +244,12 @@ app.post('/api/tts', async (req, res) => {
     };
     pump().catch((e) => { console.error('[the way] TTS pipe error:', e); res.end(); });
   } catch (e) {
-    console.error('[the way] TTS fetch error:', e);
-    res.status(500).json({ error: e?.message ?? 'tts error' });
+    safeError(res, e, 'tts');
   }
 });
 
 // ── Bible proxy (keeps API key server-side, avoids CORS) ──────────────────────
-app.get('/api/bible/:bibleId/chapters/:chapterId', async (req, res) => {
+app.get('/api/bible/:bibleId/chapters/:chapterId', requireAuth, limitAuthed({ capacity: 60, refillPerSec: 60 / 60 }), async (req, res) => {
   const { bibleId, chapterId } = req.params;
   const BIBLE_API_KEY = process.env.VITE_BIBLE_API_KEY;
   if (!BIBLE_API_KEY) return res.status(500).json({ error: 'Missing VITE_BIBLE_API_KEY on server' });
@@ -159,18 +269,18 @@ app.get('/api/bible/:bibleId/chapters/:chapterId', async (req, res) => {
       { headers: { 'api-key': BIBLE_API_KEY } }
     );
     if (!upstream.ok) {
-      const text = await upstream.text();
-      return res.status(upstream.status).json({ error: text });
+      console.error('[the way] bible chapter upstream', upstream.status);
+      return res.status(upstream.status >= 500 ? 502 : upstream.status).json({ error: 'bible upstream error' });
     }
     const json = await upstream.json();
     res.json(json);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    safeError(res, e, 'bible chapter');
   }
 });
 
 // ── Bible verse proxy (for version comparison) ───────────────────────────────
-app.get('/api/bible/:bibleId/verses/:verseId', async (req, res) => {
+app.get('/api/bible/:bibleId/verses/:verseId', requireAuth, limitAuthed({ capacity: 60, refillPerSec: 60 / 60 }), async (req, res) => {
   const { bibleId, verseId } = req.params;
   const BIBLE_API_KEY = process.env.VITE_BIBLE_API_KEY;
   if (!BIBLE_API_KEY) return res.status(500).json({ error: 'Missing VITE_BIBLE_API_KEY on server' });
@@ -190,8 +300,8 @@ app.get('/api/bible/:bibleId/verses/:verseId', async (req, res) => {
       { headers: { 'api-key': BIBLE_API_KEY } }
     );
     if (!upstream.ok) {
-      const text = await upstream.text();
-      return res.status(upstream.status).json({ error: text });
+      console.error('[the way] bible verse upstream', upstream.status);
+      return res.status(upstream.status >= 500 ? 502 : upstream.status).json({ error: 'bible upstream error' });
     }
     const json = await upstream.json();
     // Strip HTML tags server-side so the client always gets clean plain text
@@ -203,15 +313,25 @@ app.get('/api/bible/:bibleId/verses/:verseId', async (req, res) => {
     }
     res.json(json);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    safeError(res, e, 'bible verse');
   }
 });
 
-app.post('/api/chat', async (req, res) => {
+app.post('/api/chat', optionalAuth, limitEither(
+  { capacity: 12, refillPerSec: 12 / 60 },     // authed: 12/min sustained
+  { capacity: 4,  refillPerSec: 4 / 600 },     // anon (GuestQuestion): 4 per 10 min
+), async (req, res) => {
   const { system, messages, personType, seekingContext } = req.body ?? {};
 
-  if (!system || !Array.isArray(messages) || messages.length === 0) {
+  if (!system || typeof system !== 'string' || !Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'system and messages are required' });
+  }
+  if (system.length > 12000) return res.status(413).json({ error: 'system too long' });
+  if (messages.some((m) => typeof m?.content !== 'string' || m.content.length > 8000)) {
+    return res.status(413).json({ error: 'message too long' });
+  }
+  if (seekingContext && (typeof seekingContext !== 'string' || seekingContext.length > 4000)) {
+    return res.status(413).json({ error: 'seekingContext too long' });
   }
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -259,11 +379,12 @@ app.post('/api/chat', async (req, res) => {
       system: effectiveSystem,
       messages: trimmed,
     });
+    req.on('close', () => stream.controller?.abort?.());
 
     stream.on('text', (delta) => send('text', { delta }));
     stream.on('error', (err) => {
       console.error('[the way] stream error:', err);
-      send('error', { message: err?.message ?? 'stream error' });
+      send('error', { message: 'stream error' });
     });
 
     const final = await stream.finalMessage();
@@ -282,9 +403,9 @@ app.post('/api/chat', async (req, res) => {
   } catch (err) {
     console.error('[the way] api error:', err);
     if (!res.headersSent) {
-      res.status(500).json({ error: err?.message ?? 'unknown error' });
+      res.status(500).json({ error: 'something went wrong' });
     } else {
-      send('error', { message: err?.message ?? 'unknown error' });
+      send('error', { message: 'something went wrong' });
       res.end();
     }
   }
@@ -307,11 +428,14 @@ Output ONLY valid JSON. Schema:
 
 No prose outside the JSON. No markdown fences. Begin output with { and end with }.`;
 
-app.post('/api/sermon/generate', async (req, res) => {
+app.post('/api/sermon/generate', requireAuth, limitAuthed({ capacity: 4, refillPerSec: 4 / 300 }), async (req, res) => {
   const { title, scripture_ref, summary } = req.body ?? {};
-  if (!summary || !summary.trim()) {
+  if (!summary || typeof summary !== 'string' || !summary.trim()) {
     return res.status(400).json({ error: 'summary required' });
   }
+  if (summary.length > 16000) return res.status(413).json({ error: 'summary too long' });
+  if (title && (typeof title !== 'string' || title.length > 300)) return res.status(413).json({ error: 'title too long' });
+  if (scripture_ref && (typeof scripture_ref !== 'string' || scripture_ref.length > 200)) return res.status(413).json({ error: 'scripture_ref too long' });
   try {
     const resp = await client.messages.create({
       model: 'claude-sonnet-4-6',
@@ -339,8 +463,7 @@ app.post('/api/sermon/generate', async (req, res) => {
     }
     res.json({ content: parsed.items ?? [] });
   } catch (err) {
-    console.error('[the way] sermon/generate error:', err);
-    res.status(500).json({ error: err?.message ?? 'generation failed' });
+    safeError(res, err, 'sermon/generate');
   }
 });
 
@@ -376,10 +499,32 @@ async function classifyTheme(question) {
   }
 }
 
-app.post('/api/anon/ask', async (req, res) => {
+app.post('/api/anon/ask', limitAnon({ capacity: 6, refillPerSec: 6 / 300 }), async (req, res) => {
   const { church_id, session_token, question, history } = req.body ?? {};
-  if (!question || !question.trim()) {
+  if (!question || typeof question !== 'string' || !question.trim()) {
     return res.status(400).json({ error: 'question required' });
+  }
+  if (question.length > 2000) return res.status(413).json({ error: 'question too long' });
+  if (church_id && typeof church_id !== 'string') return res.status(400).json({ error: 'invalid church_id' });
+  if (history && !Array.isArray(history)) return res.status(400).json({ error: 'invalid history' });
+
+  // Verify church_id corresponds to a real, verified, public church before
+  // we'll attribute an anonymous question to it. Otherwise an attacker could
+  // attribute arbitrary questions to any church UUID by bypassing the UI.
+  let verifiedChurchId = null;
+  if (church_id && SUPABASE_URL && SUPABASE_ANON) {
+    try {
+      const r = await fetch(
+        `${SUPABASE_URL}/rest/v1/churches?id=eq.${encodeURIComponent(church_id)}&select=id&verification_status=eq.verified&is_public=eq.true`,
+        { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` } }
+      );
+      if (r.ok) {
+        const rows = await r.json();
+        if (rows[0]?.id) verifiedChurchId = rows[0].id;
+      }
+    } catch (e) {
+      console.error('[the way] anon church verify failed:', e?.message);
+    }
   }
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -408,8 +553,9 @@ app.post('/api/anon/ask', async (req, res) => {
       system: ANON_SYSTEM,
       messages,
     });
+    req.on('close', () => stream.controller?.abort?.());
     stream.on('text', (delta) => send('text', { delta }));
-    stream.on('error', (err) => send('error', { message: err?.message ?? 'stream error' }));
+    stream.on('error', (err) => { console.error('[the way] anon stream error:', err); send('error', { message: 'stream error' }); });
 
     const final = await stream.finalMessage();
     const fullText = final.content
@@ -417,7 +563,8 @@ app.post('/api/anon/ask', async (req, res) => {
       .map((b) => b.text)
       .join('');
 
-    // Fire-and-forget: classify + store
+    // Fire-and-forget: classify + store. Only attribute to a church we
+    // verified against the DB above; otherwise stash with church_id=null.
     if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
       classifyTheme(question).then(async (theme_tag) => {
         try {
@@ -430,7 +577,7 @@ app.post('/api/anon/ask', async (req, res) => {
               Prefer: 'return=minimal',
             },
             body: JSON.stringify({
-              church_id: church_id ?? null,
+              church_id: verifiedChurchId,
               session_token: String(session_token ?? '').slice(0, 64),
               question: question.slice(0, 4000),
               ai_response: fullText.slice(0, 8000),
@@ -448,18 +595,15 @@ app.post('/api/anon/ask', async (req, res) => {
   } catch (err) {
     console.error('[the way] anon/ask error:', err);
     if (!res.headersSent) {
-      res.status(500).json({ error: err?.message ?? 'unknown error' });
+      res.status(500).json({ error: 'something went wrong' });
     } else {
-      send('error', { message: err?.message ?? 'unknown error' });
+      send('error', { message: 'something went wrong' });
       res.end();
     }
   }
 });
 
 // ── SEO: pre-rendered share pages + sitemap ──────────────────────────────────
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON = process.env.VITE_SUPABASE_ANON_KEY;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 function escapeHtml(s) {
   return String(s ?? '')

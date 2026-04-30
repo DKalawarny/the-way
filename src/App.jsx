@@ -22,7 +22,7 @@ function getStarters(personType, conversations) {
 import { getSystemPrompt } from './prompts.js';
 import { useSpeechRecognition } from './useSpeechRecognition.js';
 import { useTextToSpeech } from './useTextToSpeech.js';
-import { supabase } from './supabase.js';
+import { supabase, authedFetch } from './supabase.js';
 import Auth from './Auth.jsx';
 import ProfileSetup from './Profile.jsx';
 import ProfilePage, { Avatar } from './ProfilePage.jsx';
@@ -1143,7 +1143,7 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
   useEffect(() => {
     async function generateHeading() {
       try {
-        const res = await fetch('/api/chat', {
+        const res = await authedFetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1667,7 +1667,7 @@ function Chat({
     if (msgs.length < 2) return;
     const lastPair = msgs.slice(-2);
     try {
-      const res = await fetch('/api/chat', {
+      const res = await authedFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1715,7 +1715,7 @@ function Chat({
     let assistantContent = '';
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await authedFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ system, messages: next, personType, seekingContext }),

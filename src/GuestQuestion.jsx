@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { T } from './theme.js';
+import { authedFetch } from './supabase.js';
 
 const EXAMPLE_QUESTIONS = [
   "Why does God allow so much suffering?",
@@ -78,7 +79,7 @@ export default function GuestQuestion({ onSignUp }) {
     setBusy(true);
 
     try {
-      const res = await fetch('/api/chat', {
+      const res = await authedFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

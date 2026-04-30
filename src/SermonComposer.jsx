@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from './supabase.js';
+import { supabase, authedFetch } from './supabase.js';
 import { T } from './theme.js';
 
 const KIND_LABEL = {
@@ -127,7 +127,7 @@ export default function SermonComposer({ session, churchId, onBack }) {
     setGenerating(true);
     setError(null);
     try {
-      const r = await fetch('/api/sermon/generate', {
+      const r = await authedFetch('/api/sermon/generate', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ title, scripture_ref: scriptureRef, summary }),

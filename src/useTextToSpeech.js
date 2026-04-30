@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { authedFetch } from './supabase.js';
 
 /**
  * High-quality TTS via /api/tts (OpenAI tts-1).
@@ -120,7 +121,7 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
     abortRef.current = new AbortController();
 
     try {
-      const res = await fetch('/api/tts', {
+      const res = await authedFetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, voice }),
