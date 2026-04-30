@@ -117,17 +117,23 @@ create table if not exists public.prayer_responses (
 alter table public.prayers enable row level security;
 alter table public.prayer_responses enable row level security;
 
-create policy "Authenticated users can read public prayers"
+create policy "Authenticated users read public or own prayers"
   on public.prayers for select
-  using (auth.role() = 'authenticated');
+  using (
+    auth.role() = 'authenticated'
+    and (is_public = true or author_id = auth.uid())
+  );
 
 create policy "Users can insert their own prayers"
   on public.prayers for insert
   with check (auth.uid() = author_id);
 
-create policy "Users can update prayer count"
+-- Non-author updates are restricted to the prayer_count column via GRANT;
+-- see the bottom of this file for the column-level grant.
+create policy "Authenticated users bump prayer_count"
   on public.prayers for update
-  using (auth.role() = 'authenticated');
+  using (auth.role() = 'authenticated')
+  with check (auth.role() = 'authenticated');
 
 create policy "Users can read prayer responses"
   on public.prayer_responses for select
@@ -152,9 +158,9 @@ create policy "Anyone can read shared conversations"
   on public.shared_conversations for select
   using (true);
 
-create policy "Anyone can create a share"
+create policy "Authenticated users can create a share"
   on public.shared_conversations for insert
-  with check (true);
+  with check (auth.role() = 'authenticated');
 
 -- Church / study groups
 create table if not exists public.church_groups (
@@ -229,8 +235,10 @@ create policy "Users can leave groups"
 
 create policy "Group members can read focus"
   on public.weekly_focus for select using (auth.role() = 'authenticated');
-create policy "Pastors can post weekly focus"
-  on public.weekly_focus for insert with check (auth.role() = 'authenticated');
+create policy "Pastor of group posts weekly focus"
+  on public.weekly_focus for insert with check (
+    auth.uid() = (select pastor_id from public.church_groups where id = group_id)
+  );
 
 create policy "Group members can read posts"
   on public.group_posts for select using (auth.role() = 'authenticated');
@@ -767,6 +775,17 @@ create index if not exists anonymous_questions_church_created_idx
   on public.anonymous_questions (church_id, created_at desc);
 create index if not exists anonymous_questions_theme_idx
   on public.anonymous_questions (church_id, theme_tag);
+
+-- ============================================================================
+-- Column-level update grants (paired with RLS policies above)
+-- Without these, the "Authenticated users bump prayer_count" policy would
+-- still expose every column to UPDATE statements. Granting only the count
+-- column means a malicious caller cannot rewrite body, flip is_public, or
+-- reassign author_id.
+-- ============================================================================
+
+revoke update on public.prayers from authenticated;
+grant  update (prayer_count) on public.prayers to authenticated;
 
 -- ============================================================================
 -- Seed walks (default library — members can browse from day one)
