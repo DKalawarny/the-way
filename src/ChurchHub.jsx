@@ -1,6 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { supabase } from './supabase.js';
 import { T, SEMANTIC, RADIUS, SPACE, SHADOW } from './theme.js';
+import { presetForRole } from './Badge.jsx';
+import { useUiKit } from './uikit.jsx';
+
+const Feed         = lazy(() => import('./Feed.jsx'));
+const PostComposer = lazy(() => import('./PostComposer.jsx'));
 
 function formatWeekOf(dateStr) {
   if (!dateStr) return null;
@@ -19,7 +24,9 @@ export default function ChurchHub({
   onOpenTalkToSomeone,
   onOpenCareInbox,
   onOpenPastorDashboard,
+  onOpenSermon,
   onFindChurches,
+  onProfileUpdate,
 }) {
   const churchId = profile?.church_id ?? null;
   const [church, setChurch] = useState(null);
@@ -29,6 +36,9 @@ export default function ChurchHub({
   const [isPastor, setIsPastor] = useState(false);
   const [isCareTeam, setIsCareTeam] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [feedRefresh, setFeedRefresh] = useState(0);
+  const [pendingInvites, setPendingInvites] = useState([]);  // role invites for me
+  const { showToast, ui: uikitUi } = useUiKit();
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +50,7 @@ export default function ChurchHub({
         { count: care },
         { count: mem },
         { data: careRow },
+        { data: invites },
       ] = await Promise.all([
         supabase.from('churches').select('id, name, tradition, description, pastor_id').eq('id', churchId).maybeSingle(),
         supabase.from('sermons').select('id, title, scripture_ref, summary, week_starts_on')
@@ -51,6 +62,12 @@ export default function ChurchHub({
         session?.user?.id
           ? supabase.from('care_team_members').select('id').eq('church_id', churchId).eq('user_id', session.user.id).eq('is_active', true).maybeSingle()
           : Promise.resolve({ data: null }),
+        session?.user?.id
+          ? supabase.from('church_role_invites')
+              .select('id, role_key, role_label, message, created_at, invited_by')
+              .eq('church_id', churchId).eq('user_id', session.user.id).eq('status', 'pending')
+              .order('created_at', { ascending: false })
+          : Promise.resolve({ data: [] }),
       ]);
       if (cancelled) return;
       setChurch(ch ?? null);
@@ -59,6 +76,7 @@ export default function ChurchHub({
       setMemberCount(mem ?? 0);
       setIsPastor(!!(ch && session?.user?.id && ch.pastor_id === session.user.id));
       setIsCareTeam(!!careRow);
+      setPendingInvites(invites ?? []);
       setLoading(false);
     }
     load();
@@ -81,12 +99,33 @@ export default function ChurchHub({
             <h1 className="editorial-h1" style={{ fontSize: 28, marginBottom: SPACE[3] }}>
               Find a church to walk with.
             </h1>
-            <p style={{ fontFamily: T.serif, fontSize: 15.5, color: T.inkSoft, lineHeight: 1.65, marginBottom: SPACE[6] }}>
-              The Way is better with people. Browse churches, or join one a friend recommends.
+            <p style={{ fontFamily: T.serif, fontSize: 15.5, color: T.inkSoft, lineHeight: 1.65, marginBottom: SPACE[5] }}>
+              Got an invite code from your pastor or a friend? Enter it below.
+              Otherwise, you can browse churches in the directory.
             </p>
-            <button onClick={onFindChurches} className="magnet" style={{
-              background: T.ink, color: T.cream, border: 'none', borderRadius: RADIUS.pill,
-              padding: '12px 26px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+
+            <JoinByCode
+              session={session}
+              profile={profile}
+              onJoined={(ch) => {
+                // Push the church_id into the parent profile so React re-renders
+                // the hub with the joined-state UI. No page reload needed —
+                // the next render hits the "you're in a church" branch.
+                onProfileUpdate?.({ ...profile, church_id: ch.id });
+              }}
+            />
+
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: SPACE[3], margin: `${SPACE[5]}px 0`,
+            }}>
+              <div style={{ flex: 1, height: 1, background: T.line }} />
+              <span style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 600 }}>or</span>
+              <div style={{ flex: 1, height: 1, background: T.line }} />
+            </div>
+
+            <button onClick={onFindChurches} style={{
+              background: 'transparent', color: T.goldDark, border: `1px solid ${T.gold}`, borderRadius: RADIUS.pill,
+              padding: '11px 22px', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
             }}>
               Browse churches →
             </button>
@@ -106,165 +145,239 @@ export default function ChurchHub({
 
   const sermonWeek = formatWeekOf(sermon?.week_starts_on);
 
+  async function respondToInvite(inviteId, accept) {
+    const invite = pendingInvites.find((i) => i.id === inviteId);
+    const { error } = await supabase
+      .from('church_role_invites')
+      .update({ status: accept ? 'accepted' : 'declined' })
+      .eq('id', inviteId);
+    if (error) {
+      showToast(`Could not respond: ${error.message}`, 'error');
+      return;
+    }
+    // Optimistic remove from banner; if accepted, the trigger will have already
+    // added the role row server-side.
+    setPendingInvites((prev) => prev.filter((i) => i.id !== inviteId));
+    setFeedRefresh((n) => n + 1);
+    if (accept && invite) {
+      const label = presetForRole(invite.role_key)?.label ?? invite.role_label ?? 'role';
+      showToast(`You're now part of the ${label}.`, 'success');
+    }
+  }
+
   return (
     <div className="scene" style={{ minHeight: '100vh', paddingBottom: 90 }}>
+      {uikitUi}
       <div style={{ maxWidth: 680, margin: '0 auto', padding: `${SPACE[6]}px ${SPACE[5]}px ${SPACE[4]}px` }}>
 
-        {/* ── Identity hero ──────────────────────────────── */}
+        {/* ── Identity hero — dark "sanctuary doorway" ─────
+            Personal surfaces stay parchment; the church shell goes dark
+            so the user knows at a glance which room they've walked into.
+            Body + feed below stay light so long-form reading doesn't suffer. */}
         <div className="float-in" style={{
           position: 'relative', overflow: 'hidden',
-          background: `linear-gradient(135deg, ${T.parchment} 0%, ${T.parchmentDark} 50%, rgba(216,155,82,0.45) 100%)`,
-          border: `1px solid ${T.line}`, borderRadius: RADIUS.xl,
+          background: `linear-gradient(135deg, ${T.ink} 0%, #1A0F08 55%, #3A2516 100%)`,
+          border: '1px solid rgba(196,129,58,0.35)',
+          borderRadius: RADIUS.xl,
           padding: `${SPACE[6]}px ${SPACE[5]}px ${SPACE[5]}px`,
           marginBottom: SPACE[6],
-          boxShadow: SHADOW.warm,
+          boxShadow: SHADOW.candle,
+          color: T.cream,
         }}>
+          {/* Candlelight gold-grain — same texture as light hero, glows on dark */}
           <div className="texture-bg" style={{
-            position: 'absolute', inset: 0, opacity: 0.35, pointerEvents: 'none',
+            position: 'absolute', inset: 0, opacity: 0.55, pointerEvents: 'none',
             maskImage: 'radial-gradient(circle at 100% 0%, black 20%, transparent 70%)',
             WebkitMaskImage: 'radial-gradient(circle at 100% 0%, black 20%, transparent 70%)',
           }} />
-          <div className="section-eyebrow" style={{ marginBottom: 6, color: T.goldDark }}>
+          <div className="section-eyebrow" style={{ marginBottom: 6, color: T.goldLight, position: 'relative' }}>
             ✦ Your church
           </div>
-          <h1 className="editorial-h1" style={{ fontSize: 26, marginBottom: 6 }}>
+          <h1 style={{
+            fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.cream,
+            letterSpacing: '-0.02em', lineHeight: 1.1, margin: 0, marginBottom: 6,
+            position: 'relative',
+          }}>
             {church?.name ?? 'Your church'}
           </h1>
-          <div style={{ display: 'flex', gap: SPACE[2], flexWrap: 'wrap', alignItems: 'center', marginTop: SPACE[3] }}>
+          {(isPastor || isCareTeam) && (
+            <div style={{
+              fontSize: 12, color: T.goldLight, fontStyle: 'italic',
+              position: 'relative', marginBottom: 4, fontFamily: T.serif,
+            }}>
+              {isPastor ? '✦ You\u2019re the pastor here' : '☎ You\u2019re on the care team'}
+            </div>
+          )}
+          <div style={{
+            display: 'flex', gap: SPACE[2], flexWrap: 'wrap', alignItems: 'center',
+            marginTop: SPACE[3], position: 'relative',
+          }}>
             {church?.tradition && (
               <span style={{
-                background: 'rgba(255,255,255,0.6)', border: `1px solid ${T.line}`,
+                background: 'rgba(253,248,240,0.10)',
+                border: '1px solid rgba(253,248,240,0.25)',
                 borderRadius: RADIUS.pill, padding: '3px 10px',
-                fontSize: 11.5, fontWeight: 600, color: T.inkSoft, letterSpacing: 0.2,
+                fontSize: 11.5, fontWeight: 600, color: T.cream, letterSpacing: 0.2,
               }}>{church.tradition}</span>
             )}
             <span style={{
-              background: T.white, border: `1px solid ${T.line}`,
+              background: 'rgba(253,248,240,0.10)',
+              border: '1px solid rgba(253,248,240,0.25)',
               borderRadius: RADIUS.pill, padding: '3px 10px',
-              fontSize: 11.5, fontWeight: 600, color: T.inkSoft,
+              fontSize: 11.5, fontWeight: 600, color: T.cream,
             }}>
               {memberCount} {memberCount === 1 ? 'member' : 'members'}
             </span>
-            {isPastor && (
-              <span style={{
-                background: T.ink, color: T.cream,
-                borderRadius: RADIUS.pill, padding: '3px 10px',
-                fontSize: 11.5, fontWeight: 600, letterSpacing: 0.3,
-              }}>Pastor</span>
-            )}
-            {isCareTeam && !isPastor && (
-              <span style={{
-                background: SEMANTIC.care.rail, color: T.cream,
-                borderRadius: RADIUS.pill, padding: '3px 10px',
-                fontSize: 11.5, fontWeight: 600, letterSpacing: 0.3,
-              }}>Care team</span>
-            )}
           </div>
           <button onClick={onOpenChurchPage} className="lift" style={{
             position: 'absolute', top: SPACE[4], right: SPACE[4],
-            background: 'rgba(255,255,255,0.8)', border: `1px solid ${T.line}`,
+            background: 'rgba(253,248,240,0.10)',
+            border: '1px solid rgba(253,248,240,0.30)',
             borderRadius: RADIUS.pill, padding: '6px 12px',
-            fontSize: 12, fontWeight: 600, color: T.inkSoft, cursor: 'pointer',
+            fontSize: 12, fontWeight: 600, color: T.cream, cursor: 'pointer',
           }}>
             View page →
           </button>
         </div>
 
-        {/* ── This week (sermon focus) ───────────────────── */}
-        <section style={{ marginBottom: SPACE[6] }}>
-          <div style={{ marginBottom: SPACE[3], display: 'flex', alignItems: 'center', gap: SPACE[3] }}>
-            <div className="section-eyebrow">This week</div>
-            <div className="rule-gold" style={{ flex: 1 }} />
-          </div>
-          {sermon ? (
-            <button onClick={onOpenChurchPage} className="lift" style={{
-              position: 'relative', textAlign: 'left', width: '100%',
-              background: `linear-gradient(180deg, rgba(196,129,58,0.12), ${T.white} 70%)`,
-              border: `1px solid ${T.line}`, borderRadius: RADIUS.lg,
-              padding: `${SPACE[5]}px ${SPACE[5]}px ${SPACE[5]}px ${SPACE[6]}px`,
-              cursor: 'pointer', overflow: 'hidden',
+        {/* ── Pending role invites (member side) ────────── */}
+        {pendingInvites.map((inv) => {
+          const preset = presetForRole(inv.role_key);
+          const label = inv.role_label ?? preset?.label ?? inv.role_key;
+          return (
+            <div key={inv.id} className="float-in" style={{
+              background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: RADIUS.lg,
+              padding: `${SPACE[4]}px ${SPACE[5]}px`, marginBottom: SPACE[4],
             }}>
-              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: T.gold }} />
-              {sermonWeek && (
-                <div className="section-eyebrow" style={{ color: T.goldDark, marginBottom: 6 }}>
-                  Week of {sermonWeek}
-                </div>
-              )}
-              <div className="editorial-h2" style={{ fontSize: 21, marginBottom: 6 }}>
-                {sermon.title}
+              <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 4 }}>
+                ✦ Invitation from your pastor
               </div>
-              {sermon.scripture_ref && (
-                <div style={{ fontFamily: T.sans, fontSize: 12.5, fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase', color: T.goldDark, marginBottom: SPACE[3] }}>
-                  {sermon.scripture_ref}
+              <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, lineHeight: 1.25, marginBottom: 4 }}>
+                Take on the {label.toLowerCase()} role?
+              </div>
+              {inv.message && (
+                <div style={{
+                  fontFamily: T.serif, fontSize: 14, color: T.inkSoft, lineHeight: 1.55,
+                  fontStyle: 'italic', marginBottom: 10,
+                  borderLeft: `3px solid ${T.goldLight}`, paddingLeft: 10,
+                }}>
+                  "{inv.message}"
                 </div>
               )}
-              {sermon.summary && (
-                <div style={{ fontFamily: T.serif, fontSize: 14.5, color: T.inkSoft, lineHeight: 1.6 }}>
-                  {sermon.summary.length > 180 ? sermon.summary.slice(0, 180) + '…' : sermon.summary}
+              {preset?.blurb && !inv.message && (
+                <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 10 }}>
+                  {preset.blurb}
                 </div>
               )}
-            </button>
-          ) : (
-            <div style={{
-              background: T.white, border: `1px dashed ${T.line}`, borderRadius: RADIUS.lg,
-              padding: `${SPACE[5]}px ${SPACE[5]}px`, textAlign: 'center',
-              color: T.inkMuted, fontFamily: T.serif, fontSize: 14, fontStyle: 'italic',
-            }}>
-              {isPastor ? 'No sermon posted yet — share what you\'re preaching this week.' : 'Nothing posted for this week yet.'}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button onClick={() => respondToInvite(inv.id, true)} style={{
+                  background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+                  padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                }}>Accept</button>
+                <button onClick={() => respondToInvite(inv.id, false)} style={{
+                  background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
+                  padding: '8px 16px', fontSize: 13, color: T.inkSoft, cursor: 'pointer',
+                }}>Not now</button>
+              </div>
             </div>
-          )}
-        </section>
+          );
+        })}
 
-        {/* ── Three doors specific to church ─────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE[3], marginBottom: SPACE[6] }} className="stagger-in">
-          <HubCard
-            i={0}
-            tone={SEMANTIC.connection}
-            eyebrow="Talk to someone"
-            title="Reach a real person"
-            blurb={careCount > 0
-              ? `${careCount} ${careCount === 1 ? 'person is' : 'people are'} on the care team — anonymous if you want.`
-              : 'Tap to see who\'s listening.'}
-            onClick={onOpenTalkToSomeone}
-          />
-          <HubCard
-            i={1}
-            tone={SEMANTIC.prayer}
-            eyebrow="Pray together"
-            title="Lift something up"
-            blurb="Share a need or pray with someone — anonymous if you want."
-            onClick={onOpenPrayer}
-          />
-          <HubCard
-            i={2}
-            tone={null}
-            eyebrow="Community"
-            title="See what's being shared"
-            blurb="Posts, conversations, and stories from people walking the same road."
-            onClick={onOpenFeed}
-          />
+        {/* ── This week's sermon — the new-member's first answer to
+            "what does this church actually teach?" The hub was already
+            fetching this row but never rendering it; a brand-new member
+            who joined Sunday afternoon used to land on a blank feed +
+            three mystery buttons. Now the freshest sermon is the first
+            content beat after the hero. Hidden when no sermon is
+            published yet. */}
+        {sermon && onOpenSermon && (
+          <button
+            onClick={() => onOpenSermon(sermon.id)}
+            className="lift"
+            style={{
+              width: '100%', textAlign: 'left',
+              background: T.parchment,
+              border: `1px solid ${T.goldLight}`,
+              borderLeft: `4px solid ${T.gold}`,
+              borderRadius: RADIUS.lg,
+              padding: `${SPACE[4]}px ${SPACE[5]}px`,
+              marginBottom: SPACE[4],
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(196,129,58,0.10)',
+            }}
+          >
+            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 6 }}>
+              ✦ This week{formatWeekOf(sermon.week_starts_on) ? ` · ${formatWeekOf(sermon.week_starts_on)}` : ''}
+            </div>
+            <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.2, marginBottom: 4 }}>
+              {sermon.title}
+            </div>
+            {sermon.scripture_ref && (
+              <div style={{ fontSize: 13, color: T.goldDark, fontStyle: 'italic', marginBottom: sermon.summary ? 8 : 0 }}>
+                {sermon.scripture_ref}
+              </div>
+            )}
+            {sermon.summary && (
+              <div style={{
+                fontFamily: T.serif, fontSize: 14, color: T.inkSoft, lineHeight: 1.6,
+                display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}>
+                {sermon.summary}
+              </div>
+            )}
+            <div style={{ marginTop: 10, fontSize: 12.5, fontWeight: 600, color: T.goldDark }}>
+              Read & go deeper →
+            </div>
+          </button>
+        )}
+
+        {/* ── Quick action row (compact entry points) ───── */}
+        <div style={{ display: 'flex', gap: SPACE[2], marginBottom: SPACE[5], flexWrap: 'wrap' }}>
+          <ActionChip emoji="☎" label="Talk to someone" onClick={onOpenTalkToSomeone} />
+          <ActionChip emoji="🙏" label="Pray together"   onClick={onOpenPrayer} />
+          <ActionChip emoji="✦" label="Community"        onClick={onOpenFeed} />
         </div>
 
-        {/* ── Role-specific shortcuts ────────────────────── */}
-        {(isPastor || isCareTeam) && (
+        {/* ── Church feed (sermon items + posts unified) ─ */}
+        <div style={{ marginBottom: SPACE[3], display: 'flex', alignItems: 'center', gap: SPACE[3] }}>
+          <div className="section-eyebrow">Latest</div>
+          <div className="rule-gold" style={{ flex: 1 }} />
+        </div>
+
+        <Suspense fallback={<div style={{ color: T.inkMuted, fontFamily: T.serif, textAlign: 'center', padding: 40 }}>Loading…</div>}>
+          <PostComposer
+            session={session}
+            scope="church"
+            scopeId={churchId}
+            placeholder={isPastor
+              ? 'Post to your congregation\u2026'
+              : `Share with ${church?.name ?? 'your church'}\u2026`}
+            onPosted={() => setFeedRefresh((n) => n + 1)}
+          />
+          <Feed
+            source={`church:${churchId}`}
+            sessionUserId={session?.user?.id}
+            refreshKey={feedRefresh}
+            onOpenSermon={onOpenSermon}
+            emptyMessage={isPastor
+              ? 'Nothing posted yet. Share this Sunday\u2019s sermon or write a note to your congregation.'
+              : 'Nothing posted yet — start a conversation or wait for your church to share.'}
+          />
+        </Suspense>
+
+        {/* ── Care team shortcut ─────────────────────────── */}
+        {isCareTeam && !isPastor && onOpenCareInbox && (
           <div style={{
             background: T.white, border: `1px solid ${T.line}`, borderRadius: RADIUS.lg,
             padding: `${SPACE[4]}px ${SPACE[5]}px`, marginBottom: SPACE[5],
             display: 'flex', alignItems: 'center', gap: SPACE[3], flexWrap: 'wrap',
           }}>
             <div className="section-eyebrow" style={{ color: T.goldDark }}>For you</div>
-            {isPastor && onOpenPastorDashboard && (
-              <button onClick={onOpenPastorDashboard} style={{
-                background: T.ink, color: T.cream, border: 'none', borderRadius: RADIUS.pill,
-                padding: '7px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
-              }}>Pastor dashboard →</button>
-            )}
-            {isCareTeam && onOpenCareInbox && (
-              <button onClick={onOpenCareInbox} style={{
-                background: SEMANTIC.care.rail, color: T.cream, border: 'none', borderRadius: RADIUS.pill,
-                padding: '7px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
-              }}>Care inbox →</button>
-            )}
+            <button onClick={onOpenCareInbox} style={{
+              background: SEMANTIC.care.rail, color: T.cream, border: 'none', borderRadius: RADIUS.pill,
+              padding: '7px 14px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+            }}>Care inbox →</button>
           </div>
         )}
       </div>
@@ -272,21 +385,121 @@ export default function ChurchHub({
   );
 }
 
-function HubCard({ i, tone, eyebrow, title, blurb, onClick }) {
-  const palette = tone ?? { bg: 'rgba(196,129,58,0.10)', rail: T.gold, text: T.goldDark };
+export function JoinByCode({ session, profile, onJoined, prefilledCode = '' }) {
+  const [code, setCode] = useState(prefilledCode);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  async function submit(e) {
+    e?.preventDefault?.();
+    const cleaned = code.trim().toUpperCase();
+    if (!cleaned) return;
+    if (!session?.user?.id) { setError('Please sign in first.'); return; }
+    if (!profile?.display_name) {
+      setError('Please finish setting up your profile before joining a church.');
+      return;
+    }
+    setBusy(true);
+    setError(null);
+
+    // 1. Look up the church by invite code
+    const { data: ch, error: lookupErr } = await supabase
+      .from('churches')
+      .select('id, name')
+      .eq('invite_code', cleaned)
+      .maybeSingle();
+
+    if (lookupErr || !ch) {
+      setBusy(false);
+      setError(`We couldn't find a church with that code. Double-check with whoever sent it.`);
+      return;
+    }
+
+    // 2. Set profile.church_id (trigger rejects if blocked)
+    const { error: updateErr } = await supabase
+      .from('profiles')
+      .update({ church_id: ch.id })
+      .eq('id', session.user.id);
+
+    setBusy(false);
+    if (updateErr) {
+      // Trigger error message bubbles up here
+      const msg = (updateErr.message || '').toLowerCase().includes('rejoin')
+        ? `You can no longer rejoin ${ch.name}. If this is a mistake, ask the pastor to lift the block.`
+        : `Couldn't join: ${updateErr.message}`;
+      setError(msg);
+      return;
+    }
+
+    setSuccess(`Welcome to ${ch.name}.`);
+    onJoined?.(ch);
+  }
+
   return (
-    <button onClick={onClick} className="lift" style={{
-      '--i': i,
-      position: 'relative', textAlign: 'left',
-      background: `linear-gradient(180deg, ${palette.bg}, ${T.white} 70%)`,
-      border: `1px solid ${T.line}`, borderRadius: RADIUS.lg,
-      padding: `${SPACE[5]}px ${SPACE[5]}px ${SPACE[5]}px ${SPACE[6]}px`,
-      cursor: 'pointer', overflow: 'hidden',
-    }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: palette.rail }} />
-      <div className="section-eyebrow" style={{ color: palette.text, marginBottom: 6 }}>{eyebrow}</div>
-      <div className="editorial-h2" style={{ fontSize: 19, marginBottom: 4 }}>{title}</div>
-      <div style={{ fontFamily: T.serif, fontSize: 14.5, color: T.inkSoft, lineHeight: 1.55 }}>{blurb}</div>
+    <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+      <div style={{
+        display: 'flex', gap: 8, width: '100%', maxWidth: 360,
+      }}>
+        <input
+          value={code}
+          onChange={(e) => { setCode(e.target.value); setError(null); }}
+          placeholder="ABCD1234"
+          maxLength={8}
+          autoCapitalize="characters"
+          autoCorrect="off"
+          spellCheck={false}
+          style={{
+            flex: 1, minWidth: 0,
+            background: T.white, border: `1px solid ${T.line}`, borderRadius: 10,
+            padding: '11px 14px', fontSize: 16,
+            fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+            letterSpacing: 2, textTransform: 'uppercase',
+            color: T.ink, outline: 'none',
+            textAlign: 'center', fontWeight: 600,
+          }}
+        />
+        <button
+          type="submit"
+          disabled={busy || !code.trim()}
+          style={{
+            background: T.ink, color: T.cream, border: 'none', borderRadius: 10,
+            padding: '11px 18px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+            opacity: (busy || !code.trim()) ? 0.5 : 1,
+            whiteSpace: 'nowrap',
+          }}
+        >{busy ? 'Joining…' : 'Join'}</button>
+      </div>
+      {error && (
+        <div style={{
+          fontSize: 13, color: '#c0392b', fontFamily: T.serif, lineHeight: 1.5,
+          maxWidth: 360, textAlign: 'left',
+        }}>{error}</div>
+      )}
+      {success && (
+        <div style={{ fontSize: 13.5, color: T.goldDark, fontFamily: T.serif, fontStyle: 'italic' }}>
+          {success}
+        </div>
+      )}
+    </form>
+  );
+}
+
+function ActionChip({ emoji, label, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="lift"
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        background: T.white, border: `1px solid ${T.line}`, borderRadius: 999,
+        padding: '8px 14px', fontSize: 13, fontWeight: 600, color: T.inkSoft,
+        cursor: 'pointer',
+      }}
+    >
+      <span style={{ fontSize: 14 }}>{emoji}</span>
+      {label}
     </button>
   );
 }
+

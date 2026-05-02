@@ -26,6 +26,11 @@ const input = {
   boxSizing: 'border-box',
 };
 
+const DEV_LOGIN_ENABLED =
+  import.meta.env.DEV &&
+  !!import.meta.env.VITE_DEV_LOGIN_EMAIL &&
+  !!import.meta.env.VITE_DEV_LOGIN_PASSWORD;
+
 export default function Auth({ onAuth, onBack }) {
   const [mode, setMode] = useState('signin'); // signin | signup | verify
   const [email, setEmail] = useState('');
@@ -33,6 +38,18 @@ export default function Auth({ onAuth, onBack }) {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  async function handleDevLogin() {
+    setLoading(true);
+    setError(null);
+    const { data, error: err } = await supabase.auth.signInWithPassword({
+      email: import.meta.env.VITE_DEV_LOGIN_EMAIL,
+      password: import.meta.env.VITE_DEV_LOGIN_PASSWORD,
+    });
+    setLoading(false);
+    if (err) return setError(`Dev login failed: ${err.message}`);
+    onAuth(data.session);
+  }
 
   async function handleSignUp(e) {
     e.preventDefault();
@@ -141,6 +158,22 @@ export default function Auth({ onAuth, onBack }) {
             {loading ? 'One moment…' : mode === 'signin' ? 'Sign in' : 'Create account'}
           </button>
         </form>
+
+        {DEV_LOGIN_ENABLED && (
+          <button
+            onClick={handleDevLogin}
+            disabled={loading}
+            style={{
+              ...btn,
+              background: 'transparent',
+              color: T.goldDark,
+              border: `1px dashed ${T.goldLight}`,
+              marginTop: 12,
+            }}
+          >
+            ⚡ Dev quick-login ({import.meta.env.VITE_DEV_LOGIN_EMAIL})
+          </button>
+        )}
 
         <div style={{ marginTop: 16, textAlign: 'center', fontSize: 13, color: T.inkMuted }}>
           {mode === 'signin' ? (

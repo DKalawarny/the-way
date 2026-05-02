@@ -4,12 +4,9 @@ import { T, SEMANTIC } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
 import { Avatar } from './ProfilePage.jsx';
 import AvatarPicker from './AvatarPicker.jsx';
-
-const REACTIONS = [
-  { kind: 'resonates', label: 'Love',      emoji: '❤️' },
-  { kind: 'amen',      label: 'Amen',       emoji: '🙏' },
-  { kind: 'thinking',  label: 'Insightful', emoji: '💡' },
-];
+// Shared with UserProfile — same constants, same helpers, same church card.
+// PRAYER_REACTIONS stays local because it's only used here (the prayer tab).
+import { REACTIONS, TYPE_COLORS, timeAgo, loadChurchContext, ChurchAttendsCard } from './profileShared.jsx';
 
 const PRAYER_REACTIONS = [
   { kind: 'praying',  emoji: '🙏', label: 'Praying',  semantic: 'prayer'     },
@@ -19,22 +16,7 @@ const PRAYER_REACTIONS = [
   { kind: 'strength', emoji: '💪', label: 'Strength' },
 ];
 
-const TYPE_COLORS = {
-  curious:    { bg: 'rgba(196,129,58,0.12)', border: 'rgba(196,129,58,0.4)', text: T.goldDark },
-  seeking:    { bg: 'rgba(74,123,157,0.12)', border: 'rgba(74,123,157,0.4)', text: '#2e6a8e' },
-  skeptic:    { bg: 'rgba(100,100,100,0.1)', border: 'rgba(100,100,100,0.3)', text: '#555' },
-  'new-faith':{ bg: 'rgba(74,139,90,0.12)', border: 'rgba(74,139,90,0.4)',  text: '#2e7a48' },
-};
-
-function timeAgo(ts) {
-  const diff = (Date.now() - new Date(ts)) / 1000;
-  if (diff < 60) return 'just now';
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
-
-function ProfilePost({ post, session, profile, onReact }) {
+function ProfilePost({ post, session, profile, onReact, churchCtx }) {
   const [expanded,     setExpanded]     = useState(false);
   const [sheetOpen,    setSheetOpen]    = useState(false);
   const [replies,      setReplies]      = useState(null);
@@ -47,8 +29,11 @@ function ProfilePost({ post, session, profile, onReact }) {
     setSheetOpen(true);
     if (replies === null) {
       setReplyLoading(true);
+      // post_comments is the privacy-gated canonical table (see
+      // scripts/2026-05-01-private-comments.sql). RLS limits reads to the
+      // post's church family, so callers outside that boundary see [].
       const { data } = await supabase
-        .from('replies')
+        .from('post_comments')
         .select('*, profiles(display_name, avatar_config)')
         .eq('post_id', post.id)
         .order('created_at', { ascending: true });
@@ -60,7 +45,7 @@ function ProfilePost({ post, session, profile, onReact }) {
   async function submitReply() {
     if (!replyInput.trim() || !session?.user?.id) return;
     const { data } = await supabase
-      .from('replies')
+      .from('post_comments')
       .insert({ post_id: post.id, author_id: session.user.id, body: replyInput.trim() })
       .select('*, profiles(display_name, avatar_config)')
       .single();
@@ -202,24 +187,36 @@ function ProfilePost({ post, session, profile, onReact }) {
             </div>
 
             {/* Pinned comment input */}
-            <div style={{ borderTop: `1px solid ${T.line}`, padding: '12px 18px 16px', display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0, background: T.white }}>
-              <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} size={36} style={{ flexShrink: 0 }} />
-              <div style={{ flex: 1, background: T.parchment, borderRadius: 22, border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', padding: '10px 16px', gap: 8 }}>
-                <input
-                  value={replyInput}
-                  onChange={(e) => setReplyInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitReply(); } }}
-                  placeholder="Write a comment…"
-                  autoFocus
-                  style={{ flex: 1, border: 'none', outline: 'none', fontFamily: T.serif, fontSize: 14, color: T.ink, background: 'transparent' }}
-                />
-                {replyInput.trim() && (
-                  <button onClick={submitReply} style={{
-                    background: T.gold, border: 'none', borderRadius: '50%',
-                    width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: T.cream, fontSize: 14, cursor: 'pointer', flexShrink: 0,
-                  }}>↑</button>
-                )}
+            <div style={{ borderTop: `1px solid ${T.line}`, padding: '12px 18px 16px', flexShrink: 0, background: T.white }}>
+              {/* Privacy hint — matches the composer's tone (search MePanel
+                  for "Visible to" near submitPost). Reads from RLS context:
+                  comments are post_comments rows, and the table's RLS only
+                  permits inserts/reads inside the parent post's church
+                  family — see scripts/2026-05-01-private-comments.sql. */}
+              <div style={{ fontSize: 11, color: T.inkMuted, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                {churchCtx?.church
+                  ? <>👥 Visible to {churchCtx.church.name} family</>
+                  : <>🔒 Visible only to you (join a church to share)</>}
+              </div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} size={36} style={{ flexShrink: 0 }} />
+                <div style={{ flex: 1, background: T.parchment, borderRadius: 22, border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', padding: '10px 16px', gap: 8 }}>
+                  <input
+                    value={replyInput}
+                    onChange={(e) => setReplyInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitReply(); } }}
+                    placeholder="Write a comment…"
+                    autoFocus
+                    style={{ flex: 1, border: 'none', outline: 'none', fontFamily: T.serif, fontSize: 14, color: T.ink, background: 'transparent' }}
+                  />
+                  {replyInput.trim() && (
+                    <button onClick={submitReply} style={{
+                      background: T.gold, border: 'none', borderRadius: '50%',
+                      width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: T.cream, fontSize: 14, cursor: 'pointer', flexShrink: 0,
+                    }}>↑</button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -229,7 +226,7 @@ function ProfilePost({ post, session, profile, onReact }) {
   );
 }
 
-export default function MePanel({ session, profile, onClose, onEditProfile, onSignOut, onOpenBoard, onOpenHistory, onProfileUpdate, onOpenChat, onViewProfile, onFindPeople, onInviteFriends, onFindChurches, onApplyAsPastor, onOpenChurch, onOpenWalks, onOpenTalkToSomeone, onOpenCareInbox, onOpenPastorDashboard, hasCareTeamRole, hasPastoredChurch }) {
+export default function MePanel({ session, profile, onClose, onEditProfile, onSignOut, onDeleteAccount, onOpenBoard, onOpenHistory, onProfileUpdate, onOpenChat, onViewProfile, onFindPeople, onInviteFriends, onFindChurches, onApplyAsPastor, onOpenPastorAdminQueue, onOpenChurch, onOpenSermon, onOpenWalks, onOpenTalkToSomeone, onOpenCareInbox, onOpenPastorDashboard, hasCareTeamRole, hasPastoredChurch }) {
   const [posts, setPosts] = useState([]);
   const [stats, setStats] = useState({ posts: 0, following: 0, followers: 0 });
   const [followingList, setFollowingList] = useState([]);
@@ -241,8 +238,6 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
   const [menuOpen, setMenuOpen] = useState(false);
   const [composeActive, setComposeActive] = useState(false);
   const [composeBody, setComposeBody] = useState('');
-  const [composeAudience, setComposeAudience] = useState('public');
-  const [composeAudienceOpen, setComposeAudienceOpen] = useState(false);
   const [composeSubmitting, setComposeSubmitting] = useState(false);
   const [prayers, setPrayers] = useState([]);
   const [prayerText, setPrayerText] = useState('');
@@ -259,29 +254,39 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
   const [reactionMap,       setReactionMap]       = useState({});   // { prayerId: { kind: count } }
   const [myReactionMap,     setMyReactionMap]     = useState({});   // { prayerId: kind | null }
   const [menuPrayerId,      setMenuPrayerId]      = useState(null); // which card's ⋯ menu is open
+  const [settingsOpen,      setSettingsOpen]      = useState(false);
+  // Your church + this week's sermon, for the ChurchAttendsCard above the
+  // tabs. Same shape as UserProfile — see profileShared.jsx#loadChurchContext.
+  const [churchCtx, setChurchCtx] = useState({ church: null, sermon: null, memberCount: 0 });
 
-  const AUDIENCE_OPTIONS = [
-    { value: 'public',  icon: '🌐', label: 'Everyone',     sub: 'Anyone on The Way' },
-    { value: 'friends', icon: '👥', label: 'Friends only', sub: 'Only your friends' },
-    { value: 'private', icon: '🔒', label: 'Only me',      sub: 'Saved privately' },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const ctx = await loadChurchContext(profile?.church_id);
+      if (!cancelled) setChurchCtx(ctx);
+    })();
+    return () => { cancelled = true; };
+  }, [profile?.church_id]);
 
   async function submitPost() {
     if (!composeBody.trim() || !session || composeSubmitting) return;
     setComposeSubmitting(true);
+    // scope='me' + kind='text' are required by the posts table NOT NULL
+    // constraints (added in the unified-feed migration). Privacy is enforced
+    // by the RLS policy "Same-church members read me-scope posts".
     const { data, error } = await supabase.from('posts').insert({
       author_id: session.user.id,
+      scope: 'me',
+      kind: 'text',
       body: composeBody.trim(),
       person_type: profile?.person_type ?? null,
-      audience: composeAudience,
-    }).select('*, profiles(display_name, city, country, tradition, person_type, avatar_config), replies(id)').single();
+    }).select('*, profiles(display_name, city, country, tradition, person_type, avatar_config), post_comments(id)').single();
     setComposeSubmitting(false);
     if (error) { console.error('Post failed:', error.message); return; }
     if (data) {
       setPosts((prev) => [{ ...data, reaction_counts: {}, my_reaction: null, reply_count: 0 }, ...prev]);
       setComposeBody('');
       setComposeActive(false);
-      setComposeAudience('public');
     }
   }
   async function loadPrayers() {
@@ -497,14 +502,14 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
 
   async function loadPosts(uid) {
     setLoading(true);
-    const { data } = await supabase.from('posts').select('*, replies(id)').eq('author_id', uid).order('created_at', { ascending: false });
+    const { data } = await supabase.from('posts').select('*, post_comments(id)').eq('author_id', uid).order('created_at', { ascending: false });
     if (!data) { setLoading(false); return; }
     const { data: reactions } = await supabase.from('reactions').select('post_id, kind, author_id').in('post_id', data.map((p) => p.id));
     setPosts(data.map((p) => {
       const pr = reactions?.filter((r) => r.post_id === p.id) ?? [];
       const counts = {};
       pr.forEach((r) => { counts[r.kind] = (counts[r.kind] ?? 0) + 1; });
-      return { ...p, reaction_counts: counts, my_reaction: pr.find((r) => r.author_id === session.user.id)?.kind ?? null, reply_count: p.replies?.length ?? 0 };
+      return { ...p, reaction_counts: counts, my_reaction: pr.find((r) => r.author_id === session.user.id)?.kind ?? null, reply_count: p.post_comments?.length ?? 0 };
     }));
     setLoading(false);
   }
@@ -525,6 +530,64 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
     <>
       {pickingAvatar && <AvatarPicker current={profile?.avatar_config} onSave={saveAvatar} onCancel={() => setPickingAvatar(false)} />}
 
+      {settingsOpen && (
+        <div
+          onClick={() => setSettingsOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(44,24,16,0.55)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 305, padding: 20,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: T.cream, borderRadius: 18, maxWidth: 420, width: '100%',
+              border: `1px solid ${T.line}`, overflow: 'hidden',
+            }}
+          >
+            <div style={{ padding: '20px 24px 12px', borderBottom: `1px solid ${T.line}` }}>
+              <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 4 }}>
+                Account
+              </div>
+              <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em' }}>
+                Settings
+              </div>
+            </div>
+            {[
+              { label: '◎  Edit profile',  onClick: () => { setSettingsOpen(false); onEditProfile(); } },
+              { label: 'Sign out',          onClick: () => { setSettingsOpen(false); onSignOut(); }, danger: true },
+              ...(onDeleteAccount ? [{ label: 'Delete account', onClick: () => { setSettingsOpen(false); onDeleteAccount(); }, danger: true }] : []),
+            ].map((item, i, arr) => (
+              <button
+                key={item.label}
+                onClick={item.onClick}
+                style={{
+                  width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                  padding: '16px 24px', fontSize: 15,
+                  color: item.danger ? '#c0392b' : T.ink, cursor: 'pointer',
+                  borderBottom: i < arr.length - 1 ? `1px solid ${T.line}` : 'none',
+                  fontFamily: 'inherit',
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+            <button
+              onClick={() => setSettingsOpen(false)}
+              style={{
+                width: '100%', textAlign: 'center', background: T.parchment, border: 'none',
+                padding: '14px 24px', fontSize: 14, color: T.inkMuted, cursor: 'pointer',
+                borderTop: `1px solid ${T.line}`, fontFamily: 'inherit',
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+
       {menuOpen && (
         <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 299 }}>
           <div onClick={(e) => e.stopPropagation()} style={{
@@ -540,11 +603,11 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
               ...(profile?.church_id && onOpenChurch ? [{ label: '⛪  My church',     onClick: () => { setMenuOpen(false); onOpenChurch(profile.church_id); } }] : []),
               ...(profile?.church_id && onOpenTalkToSomeone ? [{ label: '☎  Ask someone',  onClick: () => { setMenuOpen(false); onOpenTalkToSomeone(); } }] : []),
               ...(hasCareTeamRole && onOpenCareInbox ? [{ label: '✉  Conversations',  onClick: () => { setMenuOpen(false); onOpenCareInbox(); } }] : []),
-              ...(hasPastoredChurch && onOpenPastorDashboard ? [{ label: '✦  Pastor dashboard',  onClick: () => { setMenuOpen(false); onOpenPastorDashboard(); } }] : []),
+              ...(hasPastoredChurch && onOpenPastorDashboard ? [{ label: '⛪  Manage your church',  onClick: () => { setMenuOpen(false); onOpenPastorDashboard(); } }] : []),
               ...(onFindChurches ? [{ label: '🔍  Find a church',     onClick: () => { setMenuOpen(false); onFindChurches(); } }] : []),
               ...(onApplyAsPastor && !profile?.is_pastor ? [{ label: '✦  Apply as a pastor', onClick: () => { setMenuOpen(false); onApplyAsPastor(); } }] : []),
-              { label: '◎  Edit profile',       onClick: () => { setMenuOpen(false); onEditProfile(); } },
-              { label: 'Sign out',              onClick: () => { setMenuOpen(false); onSignOut(); }, danger: true },
+              ...(onOpenPastorAdminQueue ? [{ label: '🛡  Pastor applications (admin)', onClick: () => { setMenuOpen(false); onOpenPastorAdminQueue(); } }] : []),
+              { label: '⚙  Settings',           onClick: () => { setMenuOpen(false); setSettingsOpen(true); } },
             ].map((item, i, arr) => (
               <button key={item.label} onClick={item.onClick} style={{
                 width: '100%', textAlign: 'left', background: 'none', border: 'none',
@@ -734,6 +797,21 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
           </div>
         )}
 
+        {/* Your church — same component UserProfile uses on others' pages.
+            Renders nothing if you haven't joined a church yet. Self-mode shows
+            "Your church" instead of "Danny attends" and points the top row at
+            your existing onOpenChurch handler. */}
+        <div style={{ padding: '0 14px' }}>
+          <ChurchAttendsCard
+            isSelf={true}
+            church={churchCtx.church}
+            sermon={churchCtx.sermon}
+            memberCount={churchCtx.memberCount}
+            onOpenChurch={onOpenChurch}
+            onOpenSermon={onOpenSermon}
+          />
+        </div>
+
         {/* Tabs */}
         <div style={{ background: T.white, display: 'flex', borderBottom: `1px solid ${T.line}`, marginBottom: 12 }}>
           {[
@@ -786,49 +864,21 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                   />
                   {composeActive && (
                     <div style={{ marginTop: 10, borderTop: `1px solid ${T.line}`, paddingTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                      {/* Audience picker */}
-                      <div style={{ position: 'relative' }}>
-                        <button
-                          type="button"
-                          onClick={() => setComposeAudienceOpen((v) => !v)}
-                          style={{
-                            background: T.parchment, border: `1px solid ${T.line}`,
-                            borderRadius: 999, padding: '5px 12px',
-                            fontSize: 12, fontWeight: 600, color: T.inkSoft,
-                            cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
-                          }}
-                        >
-                          {AUDIENCE_OPTIONS.find((o) => o.value === composeAudience)?.icon}{' '}
-                          {AUDIENCE_OPTIONS.find((o) => o.value === composeAudience)?.label} ▾
-                        </button>
-                        {composeAudienceOpen && (
-                          <div style={{
-                            position: 'absolute', bottom: '110%', left: 0, zIndex: 20,
-                            background: T.white, border: `1px solid ${T.line}`,
-                            borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                            overflow: 'hidden', minWidth: 200,
-                          }}>
-                            {AUDIENCE_OPTIONS.map((opt) => (
-                              <button key={opt.value} onClick={() => { setComposeAudience(opt.value); setComposeAudienceOpen(false); }} style={{
-                                width: '100%', textAlign: 'left', background: composeAudience === opt.value ? T.parchment : T.white,
-                                border: 'none', borderBottom: `1px solid ${T.line}`,
-                                padding: '10px 14px', cursor: 'pointer',
-                                display: 'flex', gap: 10, alignItems: 'center',
-                              }}>
-                                <span style={{ fontSize: 15 }}>{opt.icon}</span>
-                                <div>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{opt.label}</div>
-                                  <div style={{ fontSize: 11, color: T.inkMuted }}>{opt.sub}</div>
-                                </div>
-                                {composeAudience === opt.value && <span style={{ marginLeft: 'auto', color: T.gold }}>✓</span>}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                      {/* Audience hint — privacy is set by RLS, not by the
+                          author. Posts here are scope='me' and visible to
+                          same-church members. The old 3-option picker was
+                          driving a column that doesn't exist. */}
+                      <div style={{
+                        fontSize: 11, color: T.inkMuted, fontStyle: 'italic',
+                        display: 'inline-flex', alignItems: 'center', gap: 5,
+                      }}>
+                        {churchCtx.church
+                          ? <>👥 Visible to {churchCtx.church.name} family</>
+                          : <>🔒 Visible only to you (join a church to share)</>}
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button
-                          onClick={() => { setComposeActive(false); setComposeBody(''); setComposeAudience('public'); }}
+                          onClick={() => { setComposeActive(false); setComposeBody(''); }}
                           style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 13, cursor: 'pointer', padding: '6px 10px' }}
                         >
                           Cancel
@@ -860,7 +910,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                 <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.6 }}>Thoughts, verses, questions — post anything.</div>
               </div>
             )}
-            {posts.map((p) => <ProfilePost key={p.id} post={p} session={session} profile={profile} onReact={handleReact} />)}
+            {posts.map((p) => <ProfilePost key={p.id} post={p} session={session} profile={profile} onReact={handleReact} churchCtx={churchCtx} />)}
           </div>
         )}
 

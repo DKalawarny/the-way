@@ -1,0 +1,161 @@
+import { useEffect, useState, useCallback } from 'react';
+import { supabase } from './supabase.js';
+import { T } from './theme.js';
+import PostCard from './PostCard.jsx';
+
+const PAGE_SIZE = 20;
+
+function parseSource(source) {
+  // Forms: "me:<uid>", "church:<cid>", "group:<gid>"
+  if (!source) return { scope: null, scopeId: null, authorId: null };
+  const [scope, id] = String(source).split(':');
+  if (scope === 'me')     return { scope: 'me',     scopeId: null, authorId: id ?? null };
+  if (scope === 'church') return { scope: 'church', scopeId: id,   authorId: null };
+  if (scope === 'group')  return { scope: 'group',  scopeId: id,   authorId: null };
+  return { scope: null, scopeId: null, authorId: null };
+}
+
+export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessage, onOpenSermon }) {
+  const { scope, scopeId, authorId } = parseSource(source);
+
+  const [items, setItems]         = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [authorMap, setAuthorMap] = useState({});      // { uid: { display_name, avatar_config } }
+  const [churchMap, setChurchMap] = useState({});      // { cid: { name, ... } }
+  const [rolesByUser, setRolesByUser] = useState({});  // { uid: [role rows] } per visible church scope
+  const [commentCounts, setCommentCounts] = useState({}); // { post_id: n }
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    let q = supabase
+      .from('feed_items')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(PAGE_SIZE);
+
+    if (scope === 'me' && authorId) {
+      // The author's profile feed: their 'me' posts + their public prayers.
+      q = q.eq('scope', 'me').eq('author_id', authorId);
+    } else if (scope === 'church' && scopeId) {
+      q = q.eq('scope', 'church').eq('scope_id', scopeId);
+    } else if (scope === 'group' && scopeId) {
+      q = q.eq('scope', 'group').eq('scope_id', scopeId);
+    }
+
+    const { data, error } = await q;
+    if (error) { console.error('feed load failed', error.message); setItems([]); setLoading(false); return; }
+    const rows = data ?? [];
+    setItems(rows);
+
+    // Hydrate author profiles + church names
+    const authorIds = [...new Set(rows.filter((r) => !r.is_anonymous).map((r) => r.author_id).filter(Boolean))];
+    const churchIds = [...new Set(rows.filter((r) => r.scope === 'church').map((r) => r.scope_id).filter(Boolean))];
+
+    if (authorIds.length) {
+      const { data: profs } = await supabase
+        .from('profiles')
+        .select('id, display_name, avatar_config')
+        .in('id', authorIds);
+      const map = {};
+      (profs ?? []).forEach((p) => { map[p.id] = p; });
+      setAuthorMap(map);
+    } else {
+      setAuthorMap({});
+    }
+
+    if (churchIds.length) {
+      const { data: churches } = await supabase
+        .from('churches')
+        .select('id, name, city, region')
+        .in('id', churchIds);
+      const map = {};
+      (churches ?? []).forEach((c) => { map[c.id] = c; });
+      setChurchMap(map);
+    } else {
+      setChurchMap({});
+    }
+
+    // Role badges — load every role row in the church scopes we're showing,
+    // for the author ids we have. RLS restricts this to churches the viewer
+    // belongs to; outside that, the query simply returns no rows.
+    if (churchIds.length && authorIds.length) {
+      const { data: roleRows } = await supabase
+        .from('church_roles')
+        .select('id, user_id, church_id, role_key, role_label')
+        .in('church_id', churchIds)
+        .in('user_id', authorIds);
+      const map = {};
+      (roleRows ?? []).forEach((r) => {
+        (map[r.user_id] ||= []).push(r);
+      });
+      setRolesByUser(map);
+    } else {
+      setRolesByUser({});
+    }
+
+    // Comment counts (only for native posts).
+    //
+    // We read the denormalized `comment_count` column on posts rather than
+    // count(*)-ing post_comments, because under the privacy gate
+    // (scripts/2026-05-01-private-comments.sql) non-church-members can see
+    // the post body but cannot read the comment rows themselves — a count
+    // query would silently return 0 and the badge would lie. The posts row
+    // is readable, and a trigger keeps the column in sync, so this gives
+    // the same number to members and non-members alike.
+    const postIds = rows.filter((r) => r.source === 'post').map((r) => r.id);
+    if (postIds.length) {
+      const { data: postRows } = await supabase
+        .from('posts')
+        .select('id, comment_count')
+        .in('id', postIds);
+      const counts = {};
+      (postRows ?? []).forEach((p) => { counts[p.id] = p.comment_count ?? 0; });
+      setCommentCounts(counts);
+    } else {
+      setCommentCounts({});
+    }
+
+    setLoading(false);
+  }, [scope, scopeId, authorId]);
+
+  useEffect(() => { load(); }, [load, refreshKey]);
+
+  if (loading) {
+    return (
+      <div style={{ color: T.inkMuted, fontFamily: T.serif, textAlign: 'center', padding: 40 }}>
+        Loading…
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div style={{
+        background: T.white, border: `1px dashed ${T.line}`, borderRadius: 14,
+        padding: '32px 20px', textAlign: 'center',
+        color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.65,
+      }}>
+        {emptyMessage ?? 'Nothing here yet.'}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {items.map((item) => (
+        <PostCard
+          key={`${item.source}:${item.id}`}
+          item={item}
+          authorProfile={authorMap[item.author_id]}
+          authorRoles={rolesByUser[item.author_id]}
+          churchInfo={churchMap[item.scope_id]}
+          sessionUserId={sessionUserId}
+          authorMap={authorMap}
+          rolesByUser={rolesByUser}
+          commentCount={commentCounts[item.id] ?? 0}
+          onOpenSermon={onOpenSermon}
+        />
+      ))}
+    </>
+  );
+}

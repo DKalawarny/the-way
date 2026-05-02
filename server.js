@@ -1,5 +1,6 @@
 import { config as loadEnv } from 'dotenv';
-loadEnv({ override: true });
+loadEnv({ path: '.env.local', override: true });
+loadEnv({ override: false });
 import express from 'express';
 import cors from 'cors';
 import { promises as fs } from 'node:fs';
@@ -326,7 +327,7 @@ app.post('/api/chat', optionalAuth, limitEither(
   if (!system || typeof system !== 'string' || !Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'system and messages are required' });
   }
-  if (system.length > 12000) return res.status(413).json({ error: 'system too long' });
+  if (system.length > 32000) return res.status(413).json({ error: 'system too long' });
   if (messages.some((m) => typeof m?.content !== 'string' || m.content.length > 8000)) {
     return res.status(413).json({ error: 'message too long' });
   }
@@ -498,6 +499,105 @@ async function classifyTheme(question) {
     return 'other';
   }
 }
+
+// ── DEV ONLY — instant pastor bypass ────────────────────────────────────────
+// Mirrors scripts/dev-make-pastor.sql but via API so the client can call it.
+// Gated on DEV_PASTOR_BYPASS=true (set only in .env.local). Returns 403 in prod.
+app.post('/api/dev/become-pastor', requireAuth, limitAuthed({ capacity: 5, refillPerSec: 5 / 600 }), async (req, res) => {
+  if (process.env.DEV_PASTOR_BYPASS !== 'true') {
+    return res.status(403).json({ error: 'dev bypass disabled' });
+  }
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    return res.status(503).json({ error: 'service role not configured' });
+  }
+  const headers = {
+    apikey: SUPABASE_SERVICE_KEY,
+    Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+    'Content-Type': 'application/json',
+    Prefer: 'return=representation',
+  };
+  try {
+    // If they already pastor a church, just flip the profile and return it.
+    const existing = await fetch(
+      `${SUPABASE_URL}/rest/v1/churches?pastor_id=eq.${req.userId}&select=id&limit=1`,
+      { headers },
+    ).then((r) => r.json()).catch(() => []);
+    let churchId = Array.isArray(existing) && existing[0]?.id;
+
+    if (!churchId) {
+      const insert = await fetch(`${SUPABASE_URL}/rest/v1/churches`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          name: 'Test Chapel',
+          denomination: 'Non-denominational',
+          city: 'Toronto',
+          country: 'Canada',
+          pastor_id: req.userId,
+          registration_country: 'CA',
+          registration_number: `TEST-${req.userId.slice(0, 8)}`,
+          verification_status: 'verified',
+          verification_tier: 'reference',
+          verified_at: new Date().toISOString(),
+          verification_notes: 'Dev bypass — /api/dev/become-pastor',
+          is_public: true,
+        }),
+      });
+      if (!insert.ok) {
+        const body = await insert.text().catch(() => '');
+        console.error('[the way] dev become-pastor church insert failed', insert.status, body);
+        return res.status(500).json({ error: 'church insert failed' });
+      }
+      const created = await insert.json();
+      churchId = Array.isArray(created) ? created[0]?.id : created?.id;
+    }
+
+    const update = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}`,
+      {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ is_pastor: true, church_id: churchId }),
+      },
+    );
+    if (!update.ok) {
+      const body = await update.text().catch(() => '');
+      console.error('[the way] dev become-pastor profile update failed', update.status, body);
+      return res.status(500).json({ error: 'profile update failed' });
+    }
+    res.json({ church_id: churchId });
+  } catch (err) {
+    safeError(res, err, 'dev-become-pastor');
+  }
+});
+
+// ── Delete own account ──────────────────────────────────────────────────────
+// Verifies the caller's JWT via requireAuth, then uses the service-role key to
+// remove the auth.users row. Profile + child rows cascade via FK constraints.
+app.delete('/api/account', requireAuth, limitAuthed({ capacity: 3, refillPerSec: 3 / 3600 }), async (req, res) => {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    return res.status(503).json({ error: 'account deletion not configured' });
+  }
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${req.userId}`, {
+      method: 'DELETE',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    });
+    if (!r.ok) {
+      const body = await r.text().catch(() => '');
+      console.error('[the way] account delete failed', r.status, body);
+      return res.status(500).json({ error: 'delete failed' });
+    }
+    // Drop the cached token so a stolen JWT cannot keep authenticating after delete.
+    for (const [tok, v] of tokenCache) if (v.userId === req.userId) tokenCache.delete(tok);
+    res.status(204).end();
+  } catch (err) {
+    safeError(res, err, 'account-delete');
+  }
+});
 
 app.post('/api/anon/ask', limitAnon({ capacity: 6, refillPerSec: 6 / 300 }), async (req, res) => {
   const { church_id, session_token, question, history } = req.body ?? {};

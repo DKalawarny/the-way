@@ -109,7 +109,7 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
         setFollowing(profiles ?? []);
       });
 
-    supabase.from('posts').select('*, reactions(kind), replies(id)')
+    supabase.from('posts').select('*, reactions(kind), post_comments(id)')
       .eq('author_id', session.user.id)
       .order('created_at', { ascending: false })
       .then(({ data }) => setPosts(data ?? []));
@@ -406,7 +406,7 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
                   {hasReactions && REACTIONS.map((r) => counts[r.kind] > 0 && (
                     <span key={r.kind}>{r.emoji} {counts[r.kind]}</span>
                   ))}
-                  <span style={{ marginLeft: hasReactions ? 'auto' : 0 }}>💬 {p.replies?.length ?? 0}</span>
+                  <span style={{ marginLeft: hasReactions ? 'auto' : 0 }}>💬 {p.post_comments?.length ?? 0}</span>
                   <span>{timeAgo(p.created_at)}</span>
                 </div>
               </div>

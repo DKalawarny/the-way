@@ -53,6 +53,7 @@ export default function Home({
   onOpenAsk,
   onOpenChurches,
   onFindPeople,
+  onOpenSermon,
 }) {
   const verse = dayIndex(DAILY_VERSES);
   const question = dayIndex(DAILY_QUESTIONS);
@@ -75,7 +76,7 @@ export default function Home({
       if (!profile?.church_id) return;
       const [{ data: church }, { data: sermon }] = await Promise.all([
         supabase.from('churches').select('name').eq('id', profile.church_id).maybeSingle(),
-        supabase.from('sermons').select('title, scripture_ref, week_starts_on')
+        supabase.from('sermons').select('id, title, scripture_ref, week_starts_on')
           .eq('church_id', profile.church_id).eq('is_published', true)
           .order('week_starts_on', { ascending: false }).limit(1).maybeSingle(),
       ]);
@@ -103,6 +104,44 @@ export default function Home({
             A small place to listen, ask, and stay with what you find.
           </div>
         </div>
+
+        {/* ── This week at {Church} ─────────────────────── */}
+        {churchName && latestSermon && onOpenSermon && (
+          <button
+            onClick={() => onOpenSermon(latestSermon.id)}
+            className="lift float-in"
+            style={{
+              width: '100%', textAlign: 'left', cursor: 'pointer',
+              position: 'relative', overflow: 'hidden',
+              background: `linear-gradient(135deg, ${T.ink} 0%, #2a1810 100%)`,
+              border: `1px solid ${T.goldDark}`,
+              borderRadius: RADIUS.xl,
+              padding: `${SPACE[5]}px ${SPACE[5]}px`,
+              marginBottom: SPACE[5],
+              boxShadow: '0 8px 28px rgba(196,129,58,0.18)',
+            }}
+          >
+            <div style={{
+              position: 'absolute', top: -30, right: -30, width: 120, height: 120,
+              background: 'radial-gradient(circle, rgba(196,129,58,0.28), transparent 70%)',
+              pointerEvents: 'none',
+            }} />
+            <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.gold, fontWeight: 700, marginBottom: 8 }}>
+              ✦ This week at {churchName}
+            </div>
+            <div className="editorial-h2" style={{ fontSize: 21, color: T.cream, marginBottom: 6, lineHeight: 1.25 }}>
+              {latestSermon.title}
+            </div>
+            {latestSermon.scripture_ref && (
+              <div style={{ fontFamily: T.sans, fontSize: 12, fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: T.gold, opacity: 0.85, marginBottom: SPACE[3] }}>
+                {latestSermon.scripture_ref}
+              </div>
+            )}
+            <div style={{ fontFamily: T.serif, fontSize: 14, fontStyle: 'italic', color: 'rgba(253,248,240,0.7)', lineHeight: 1.55 }}>
+              Read, sit with the questions, and join the conversation →
+            </div>
+          </button>
+        )}
 
         {/* ── Daily verse ─────────────────────────────────── */}
         <article className="float-in" style={{

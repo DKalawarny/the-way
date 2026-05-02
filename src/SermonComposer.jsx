@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase, authedFetch } from './supabase.js';
 import { T } from './theme.js';
+import { useUiKit } from './uikit.jsx';
 
 const KIND_LABEL = {
   daily_verse:    'Daily verse',
@@ -62,11 +63,12 @@ function ContentItem({ item, onChange, onRemove }) {
   );
 }
 
-export default function SermonComposer({ session, churchId, onBack }) {
+export default function SermonComposer({ session, churchId, onBack, initialSermonId, onOpenSermon, embedded = false }) {
   const [sermons, setSermons] = useState([]);
   const [view, setView] = useState('list');  // 'list' | 'edit'
   const [editing, setEditing] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [autoOpened, setAutoOpened] = useState(false);
 
   // Edit state
   const [title, setTitle] = useState('');
@@ -77,6 +79,7 @@ export default function SermonComposer({ session, churchId, onBack }) {
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const { showToast, ui: uikitUi } = useUiKit();
 
   useEffect(() => {
     if (!churchId) return;
@@ -89,8 +92,16 @@ export default function SermonComposer({ session, churchId, onBack }) {
       .then(({ data }) => {
         setSermons(data ?? []);
         setLoading(false);
+        if (initialSermonId && !autoOpened) {
+          const target = (data ?? []).find((s) => s.id === initialSermonId);
+          if (target) {
+            setAutoOpened(true);
+            startEdit(target);
+          }
+        }
       });
-  }, [churchId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [churchId, initialSermonId]);
 
   function startNew() {
     setEditing(null);
@@ -197,6 +208,63 @@ export default function SermonComposer({ session, churchId, onBack }) {
       if (e2) { setError(e2.message); setSaving(false); return; }
     }
 
+    // Announce this sermon in the church feed so members can discuss it.
+    // Stored as kind='text' with body_data.sermon_id + is_sermon_announcement.
+    // PostCard detects the flag and renders a "Discuss this sermon →" CTA.
+    // We update an existing announcement on edit (so comments/reactions survive)
+    // and only delete it if the sermon is unpublished.
+    const { data: existingAnn } = await supabase
+      .from('posts')
+      .select('id')
+      .eq('scope', 'church')
+      .eq('scope_id', churchId)
+      .filter('body_data->>sermon_id', 'eq', sermonId)
+      .filter('body_data->>is_sermon_announcement', 'eq', 'true')
+      .maybeSingle();
+
+    if (publish) {
+      const announcementBody = summary.trim()
+        ? `${title.trim()}\n\n${summary.trim()}`
+        : title.trim();
+      const announcementData = {
+        sermon_id:               sermonId,
+        is_sermon_announcement:  true,
+        sermon_title:            title.trim(),
+        scripture_ref:           scriptureRef.trim() || null,
+      };
+
+      if (existingAnn) {
+        const { error: eAnn } = await supabase
+          .from('posts')
+          .update({ body: announcementBody, body_data: announcementData })
+          .eq('id', existingAnn.id);
+        if (eAnn) {
+          console.warn('sermon announcement update failed', eAnn.message);
+          showToast(`Sermon saved, but the feed post couldn't be updated: ${eAnn.message}`, 'error');
+        }
+      } else {
+        const { error: eAnn } = await supabase.from('posts').insert({
+          author_id:    session.user.id,
+          scope:        'church',
+          scope_id:     churchId,
+          kind:         'text',
+          body:         announcementBody,
+          body_data:    announcementData,
+          is_anonymous: false,
+        });
+        if (eAnn) {
+          console.warn('sermon announcement insert failed', eAnn.message);
+          showToast(`Sermon saved, but it didn't post to the feed: ${eAnn.message}`, 'error');
+        } else {
+          showToast('Sermon published — your church can discuss it now.', 'success');
+        }
+      }
+    } else if (existingAnn) {
+      // Sermon was unpublished — pull the announcement from the feed.
+      await supabase.from('posts').delete().eq('id', existingAnn.id);
+      showToast('Sermon unpublished — the feed post is gone.', 'info');
+    }
+
     // Refresh list
     const { data: refreshed } = await supabase
       .from('sermons')
@@ -211,16 +279,19 @@ export default function SermonComposer({ session, churchId, onBack }) {
 
   if (view === 'edit') {
     return (
-      <div style={{ minHeight: '100vh', background: T.cream, padding: '32px 20px 80px', overflowY: 'auto' }}>
+      <div style={{ minHeight: embedded ? 'auto' : '100vh', background: T.cream, padding: embedded ? 0 : '32px 20px 80px', overflowY: 'auto' }}>
+        {uikitUi}
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
           <button onClick={() => setView('list')} style={{
             background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 14,
           }}>← Sermons</button>
 
-          <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 8 }}>
-            This week's content
-          </div>
-          <h1 style={{ fontFamily: T.display, fontSize: 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 8px' }}>
+          {!embedded && (
+            <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 8 }}>
+              This week's content
+            </div>
+          )}
+          <h1 style={{ fontFamily: T.display, fontSize: embedded ? 24 : 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 8px' }}>
             {editing ? 'Edit sermon' : 'New sermon'}
           </h1>
           <p style={{ color: T.inkSoft, fontSize: 14.5, lineHeight: 1.65, margin: '0 0 22px' }}>
@@ -326,21 +397,47 @@ export default function SermonComposer({ session, churchId, onBack }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: T.cream, padding: '32px 20px 80px', overflowY: 'auto' }}>
+    <div style={{ minHeight: embedded ? 'auto' : '100vh', background: T.cream, padding: embedded ? 0 : '32px 20px 80px', overflowY: 'auto' }}>
+      {uikitUi}
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
-        <button onClick={onBack} style={{
-          background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 14,
-        }}>← Pastor dashboard</button>
+        {!embedded && (
+          <>
+            <button onClick={onBack} style={{
+              background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 14,
+            }}>← Pastor dashboard</button>
 
-        <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 8 }}>
-          Sermons
-        </div>
-        <h1 style={{ fontFamily: T.display, fontSize: 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 8px' }}>
-          Sunday → the week
-        </h1>
-        <p style={{ color: T.inkSoft, fontSize: 14.5, lineHeight: 1.65, margin: '0 0 20px' }}>
-          Paste a sermon, get a week of daily verses, group questions, a deeper track, and a kid-friendly version.
-        </p>
+            <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 8 }}>
+              Sermons
+            </div>
+            <h1 style={{ fontFamily: T.display, fontSize: 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 8px' }}>
+              Sunday → the week
+            </h1>
+            <p style={{ color: T.inkSoft, fontSize: 14.5, lineHeight: 1.65, margin: '0 0 20px' }}>
+              Paste a sermon, get a week of daily verses, group questions, a deeper track, and a kid-friendly version.
+            </p>
+          </>
+        )}
+
+        {/* First-time framing — embedded mode hides the standalone-page
+            header above, but a brand-new pastor reaching this surface from
+            the dashboard's setup checklist still needs to know what it IS.
+            We surface a tight pitch only when sermons.length === 0 so it
+            disappears once they've shipped their first one. */}
+        {embedded && !loading && sermons.length === 0 && (
+          <div style={{
+            background: T.parchment, border: `1px solid ${T.goldLight}`,
+            borderRadius: 14, padding: '16px 18px', marginBottom: 14,
+          }}>
+            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 6 }}>
+              ✦ Sunday → the week
+            </div>
+            <div style={{ fontFamily: T.serif, fontSize: 14.5, color: T.ink, lineHeight: 1.6 }}>
+              Paste this Sunday's outline. We turn it into a week of daily verses,
+              small-group questions, a deeper track, and a kid-friendly version —
+              ready in about a minute. You can edit anything before publishing.
+            </div>
+          </div>
+        )}
 
         <button onClick={startNew} style={{
           width: '100%', background: T.parchment, border: `1px dashed ${T.goldLight}`,
@@ -356,33 +453,50 @@ export default function SermonComposer({ session, churchId, onBack }) {
             padding: '32px 20px', textAlign: 'center',
             color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.65,
           }}>
-            No sermons yet. Paste this Sunday's outline to begin.
+            Tap <span style={{ color: T.goldDark, fontStyle: 'normal', fontWeight: 600 }}>+ New sermon</span> above to begin.
           </div>
         ) : (
           sermons.map((s) => (
-            <button key={s.id} onClick={() => startEdit(s)} style={{
-              display: 'block', width: '100%', textAlign: 'left',
+            <div key={s.id} style={{
+              display: 'flex', alignItems: 'stretch',
               background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
-              padding: '14px 16px', cursor: 'pointer', marginBottom: 10,
+              marginBottom: 10, overflow: 'hidden',
             }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: T.ink, letterSpacing: '-0.012em', lineHeight: 1.2, marginBottom: 4 }}>
-                    {s.title}
-                  </div>
-                  {s.scripture_ref && (
-                    <div style={{ fontSize: 13, color: T.goldDark, fontStyle: 'italic', marginBottom: 4 }}>
-                      {s.scripture_ref}
-                    </div>
-                  )}
-                  <div style={{ fontSize: 12, color: T.inkMuted }}>
-                    Week of {new Date(s.week_starts_on + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    {!s.is_published && <span style={{ marginLeft: 8, color: T.error }}>· draft</span>}
-                  </div>
+              <button onClick={() => startEdit(s)} style={{
+                flex: 1, minWidth: 0, textAlign: 'left',
+                background: 'transparent', border: 'none',
+                padding: '14px 16px', cursor: 'pointer',
+              }}>
+                <div style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: T.ink, letterSpacing: '-0.012em', lineHeight: 1.2, marginBottom: 4 }}>
+                  {s.title}
                 </div>
-                <div style={{ color: T.inkMuted, fontSize: 18 }}>›</div>
-              </div>
-            </button>
+                {s.scripture_ref && (
+                  <div style={{ fontSize: 13, color: T.goldDark, fontStyle: 'italic', marginBottom: 4 }}>
+                    {s.scripture_ref}
+                  </div>
+                )}
+                <div style={{ fontSize: 12, color: T.inkMuted }}>
+                  Week of {new Date(s.week_starts_on + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  {!s.is_published && <span style={{ marginLeft: 8, color: T.error }}>· draft</span>}
+                </div>
+              </button>
+              {s.is_published && onOpenSermon && (
+                <button
+                  onClick={() => onOpenSermon(s.id)}
+                  title="Open the live sermon to read replies and comment"
+                  style={{
+                    flexShrink: 0,
+                    background: T.parchment, border: 'none',
+                    borderLeft: `1px solid ${T.line}`,
+                    padding: '0 16px', cursor: 'pointer',
+                    color: T.goldDark, fontSize: 12.5, fontWeight: 600,
+                    display: 'flex', alignItems: 'center', gap: 4,
+                  }}
+                >
+                  View live →
+                </button>
+              )}
+            </div>
           ))
         )}
       </div>

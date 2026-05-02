@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { Avatar } from './ProfilePage.jsx';
+import { useUiKit } from './uikit.jsx';
 
 const SAFETY_PATTERNS = [
   /\b(suicide|kill myself|end my life|don'?t want to (be alive|live)|wanna die|want to die|self[\s-]?harm|cutting myself|hurt myself)\b/i,
@@ -62,6 +63,7 @@ export default function CareConversation({ session, profile, conversationId, vie
   const [showSafety, setShowSafety] = useState(false);
   const [otherProfile, setOtherProfile] = useState(null);
   const scrollRef = useRef(null);
+  const { askConfirm, ui: uikitUi } = useUiKit();
 
   useEffect(() => {
     if (!conversationId) return;
@@ -165,7 +167,12 @@ export default function CareConversation({ session, profile, conversationId, vie
 
   async function handleClose() {
     if (!conversation) return;
-    if (!confirm('Close this conversation? Both of you will still be able to read it.')) return;
+    const ok = await askConfirm({
+      title: 'Close this conversation?',
+      body: "You'll both still be able to read it. Reopen any time by replying.",
+      confirmLabel: 'Close',
+    });
+    if (!ok) return;
     const { data } = await supabase
       .from('care_conversations')
       .update({ status: 'closed' })
@@ -205,6 +212,7 @@ export default function CareConversation({ session, profile, conversationId, vie
 
   return (
     <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', flexDirection: 'column' }}>
+      {uikitUi}
       {/* Top bar */}
       <header style={{
         padding: '0 16px', height: 60, background: T.white,

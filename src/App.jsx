@@ -11,7 +11,7 @@ function ScreenLoader() {
   );
 }
 
-import { supabase } from './supabase.js';
+import { supabase, authedFetch } from './supabase.js';
 import MsgText from './MsgText.jsx';
 import Auth from './Auth.jsx';
 import ProfileSetup from './Profile.jsx';
@@ -34,6 +34,7 @@ const PeopleSearch      = lazy(() => import('./PeopleSearch.jsx'));
 const BibleReader       = lazy(() => import('./BibleReader.jsx'));
 const InviteFriends     = lazy(() => import('./InviteFriends.jsx'));
 const PastorApply       = lazy(() => import('./PastorApply.jsx'));
+const PastorAdminQueue  = lazy(() => import('./PastorAdminQueue.jsx'));
 const ChurchPage        = lazy(() => import('./ChurchPage.jsx'));
 const ChurchDirectory   = lazy(() => import('./ChurchDirectory.jsx'));
 const Walks             = lazy(() => import('./Walks.jsx'));
@@ -41,7 +42,8 @@ const TalkToSomeone     = lazy(() => import('./TalkToSomeone.jsx'));
 const CareTeamInbox     = lazy(() => import('./CareTeamInbox.jsx'));
 const CareTeamAdmin     = lazy(() => import('./CareTeamAdmin.jsx'));
 const SermonComposer    = lazy(() => import('./SermonComposer.jsx'));
-const PastorDashboard   = lazy(() => import('./PastorDashboard.jsx'));
+const ChurchAdmin       = lazy(() => import('./ChurchAdmin.jsx'));
+const SermonView        = lazy(() => import('./SermonView.jsx'));
 const AnonymousWelcome  = lazy(() => import('./AnonymousWelcome.jsx'));
 const ChurchEntry       = lazy(() => import('./ChurchEntry.jsx'));
 const CareConversation  = lazy(() => import('./CareConversation.jsx'));
@@ -167,25 +169,50 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
 
       {/* For pastors */}
       {onPastorIntent && !profile?.is_pastor && (
-        <section style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '72px 24px 80px', textAlign: 'center', position: 'relative' }}>
-          <div style={{ maxWidth: 560, margin: '0 auto' }}>
+        <section style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '88px 24px 96px', textAlign: 'center', position: 'relative' }}>
+          <div style={{ maxWidth: 620, margin: '0 auto' }}>
             <div style={{ fontSize: 11, letterSpacing: 6, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 20 }}>
               For pastors & church leaders
             </div>
-            <h2 style={{ fontFamily: T.display, fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 600, color: T.cream, lineHeight: 1.1, margin: '0 0 16px', letterSpacing: '-0.022em' }}>
+            <h2 style={{ fontFamily: T.display, fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 600, color: T.cream, lineHeight: 1.1, margin: '0 0 18px', letterSpacing: '-0.022em' }}>
               Bring your church<br />into the conversation.
             </h2>
-            <p style={{ fontFamily: T.serif, fontSize: 16, color: 'rgba(253,248,240,0.55)', lineHeight: 1.7, margin: '0 0 32px' }}>
-              A quiet, honest space your congregation can use between Sundays — for questions, prayer, and going deeper. We verify every church by hand.
+            <p style={{ fontFamily: T.serif, fontSize: 17, color: 'rgba(253,248,240,0.62)', lineHeight: 1.7, margin: '0 auto 36px', maxWidth: 520 }}>
+              A quiet, honest space for the six days between Sundays — where members keep wrestling with what was preached, ask the questions they wouldn't raise in the lobby, and pray for each other.
             </p>
+
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gap: 14, textAlign: 'left', margin: '0 auto 40px',
+            }}>
+              {[
+                { icon: '✦', t: 'A page for every Sunday', d: 'Sermon, scripture, discussion questions, daily verses, kids version — all in one place.' },
+                { icon: '💬', t: 'Discussion that doesn\'t fade Monday', d: 'FB-style threads under each sermon. Members reply, you moderate, the conversation keeps going.' },
+                { icon: '🙏', t: 'Prayer that stays connected', d: 'Requests anchored to the people in your pews — not a global feed of strangers.' },
+                { icon: '🛡', t: 'Verified, every time', d: 'We confirm every church on the public registry — or instantly via your church domain. No fakes.' },
+              ].map((f) => (
+                <div
+                  key={f.t}
+                  style={{ padding: '18px 18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14 }}
+                >
+                  <div style={{ fontSize: 18, color: T.gold, marginBottom: 8 }}>{f.icon}</div>
+                  <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.cream, marginBottom: 6, letterSpacing: '-0.005em' }}>{f.t}</div>
+                  <div style={{ fontSize: 13, color: 'rgba(253,248,240,0.55)', lineHeight: 1.6 }}>{f.d}</div>
+                </div>
+              ))}
+            </div>
+
             <button
               onClick={onPastorIntent}
-              style={{ background: 'transparent', color: T.gold, border: `1px solid ${T.gold}`, borderRadius: 999, padding: '13px 30px', fontSize: 14, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.02em' }}
+              style={{ background: 'transparent', color: T.gold, border: `1px solid ${T.gold}`, borderRadius: 999, padding: '14px 32px', fontSize: 14, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.02em' }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(196,129,58,0.12)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
               ✦ Apply to bring your church
             </button>
+            <div style={{ marginTop: 14, fontSize: 12.5, color: 'rgba(253,248,240,0.4)', letterSpacing: '0.01em' }}>
+              Free. Verified by hand. Approved instantly when your email matches your church domain.
+            </div>
           </div>
         </section>
       )}
@@ -393,6 +420,150 @@ function PremiumModal({ open, onClose, profile, email, hitLimit }) {
   );
 }
 
+function DeleteAccountModal({ open, onClose, onDeleted }) {
+  const [confirm, setConfirm] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  if (!open) return null;
+  const canDelete = confirm.trim().toUpperCase() === 'DELETE' && !busy;
+
+  async function doDelete() {
+    if (!canDelete) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await authedFetch('/api/account', { method: 'DELETE' });
+      if (!res.ok && res.status !== 204) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `delete failed (${res.status})`);
+      }
+      await supabase.auth.signOut().catch(() => {});
+      onDeleted();
+    } catch (err) {
+      setBusy(false);
+      setError(err.message || 'delete failed');
+    }
+  }
+
+  return (
+    <div
+      onClick={busy ? undefined : onClose}
+      style={{
+        position: 'fixed', inset: 0, background: 'rgba(44,24,16,0.55)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 60, padding: 20, animation: 'fadeIn 0.15s ease',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="fade-up"
+        style={{
+          background: T.cream, borderRadius: 18, maxWidth: 440, width: '100%',
+          padding: 32, border: `1px solid ${T.line}`,
+        }}
+      >
+        <div style={{ fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 10 }}>
+          Delete your account?
+        </div>
+        <div style={{ color: T.inkSoft, fontSize: 15, lineHeight: 1.65, marginBottom: 18 }}>
+          This permanently removes your profile, posts, prayers, conversations, and follows. This can't be undone.
+        </div>
+        <label style={{ display: 'block', fontSize: 13, color: T.inkSoft, marginBottom: 6 }}>
+          Type <strong style={{ color: T.ink }}>DELETE</strong> to confirm
+        </label>
+        <input
+          autoFocus
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          disabled={busy}
+          style={{
+            width: '100%', boxSizing: 'border-box',
+            border: `1px solid ${T.line}`, borderRadius: 10,
+            padding: '11px 14px', fontSize: 15, background: T.white, color: T.ink,
+            outline: 'none', fontFamily: 'inherit', marginBottom: 14,
+          }}
+        />
+        {error && (
+          <div style={{ color: '#c0392b', fontSize: 13, marginBottom: 12 }}>{error}</div>
+        )}
+        <button
+          onClick={doDelete}
+          disabled={!canDelete}
+          style={{
+            width: '100%', background: canDelete ? '#c0392b' : 'rgba(192,57,43,0.4)',
+            color: T.cream, border: 'none', borderRadius: 999,
+            padding: '14px 20px', fontSize: 15, fontWeight: 600,
+            cursor: canDelete ? 'pointer' : 'not-allowed',
+          }}
+        >
+          {busy ? 'Deleting…' : 'Permanently delete my account'}
+        </button>
+        <button
+          onClick={onClose}
+          disabled={busy}
+          style={{ width: '100%', background: 'transparent', color: T.inkMuted, border: 'none', marginTop: 10, fontSize: 13, cursor: busy ? 'not-allowed' : 'pointer' }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function PastorPrompt({ open, onApply, onClose }) {
+  if (!open) return null;
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(44,24,16,0.55)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 50,
+        padding: 20,
+        animation: 'fadeIn 0.15s ease',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="fade-up"
+        style={{
+          background: T.cream,
+          borderRadius: 18,
+          maxWidth: 420,
+          width: '100%',
+          padding: 32,
+          border: `1px solid ${T.line}`,
+          textAlign: 'center',
+        }}
+      >
+        <div style={{ fontSize: 32, marginBottom: 12 }}>✦</div>
+        <div style={{ fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 10 }}>
+          Are you a pastor?
+        </div>
+        <div style={{ color: T.inkSoft, fontSize: 15, lineHeight: 1.65, marginBottom: 24 }}>
+          If you shepherd a church, you can apply for a verified pastor account — share weekly focus, post sermons, and connect with your congregation here.
+        </div>
+        <button
+          onClick={onApply}
+          style={{ width: '100%', background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '14px 20px', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}
+        >
+          Yes — apply as a pastor
+        </button>
+        <button
+          onClick={onClose}
+          style={{ width: '100%', background: 'transparent', color: T.inkMuted, border: 'none', marginTop: 10, fontSize: 13, cursor: 'pointer' }}
+        >
+          No, maybe later
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const NOTES_KEY = 'theway:notes:v1';
 const CONVS_KEY = 'theway:convs:v1';
 
@@ -446,9 +617,9 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
   // Map stages onto top-level tabs
   const tabFor = (s) => {
     if (s === 'home') return 'home';
-    if (s === 'church-hub' || s === 'church' || s === 'churches' || s === 'church-entry' || s === 'feed' || s === 'groups' || s === 'prayer' || s === 'talk-to-someone' || s === 'care-conversation') return 'church';
+    if (s === 'church-hub' || s === 'church' || s === 'churches' || s === 'church-entry' || s === 'feed' || s === 'groups' || s === 'prayer' || s === 'talk-to-someone' || s === 'care-conversation' || s === 'church-admin' || s === 'pastor-dashboard' || s === 'sermon-composer' || s === 'care-admin' || s === 'sermon-view') return 'church';
     if (s === 'read') return 'read';
-    if (s === 'me' || s === 'walks' || s === 'care-inbox' || s === 'pastor-dashboard') return 'me';
+    if (s === 'me' || s === 'walks' || s === 'care-inbox') return 'me';
     return null;
   };
   const active = tabFor(stage);
@@ -467,29 +638,30 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
 
   return (
     <>
-      {/* ── Floating Ask FAB ───────────────────────────────── */}
+      {/* ── Top-left fixed Friends button (FB-style) ────────
+          Lifted out of the bottom bar so the bottom row is reserved for
+          primary navigation + Ask. Friends/People stays one tap away from
+          any screen but doesn't compete with the main tabs for attention. */}
       <button
-        onClick={onToggleChat}
-        aria-label="Ask anything"
+        onClick={onGoPeople}
+        aria-label="Find people"
+        title="Find people"
         style={{
-          position: 'fixed', right: 18, bottom: 78,
-          width: 58, height: 58, borderRadius: '50%',
-          background: chatOpen
-            ? `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`
-            : `linear-gradient(135deg, ${T.ink} 0%, #1f1009 100%)`,
-          border: `3px solid ${T.white}`,
+          position: 'fixed', top: 'calc(env(safe-area-inset-top, 0px) + 12px)', left: 12,
+          width: 40, height: 40, borderRadius: '50%',
+          background: T.white, border: `1px solid ${T.line}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: T.cream, fontSize: 22,
-          cursor: 'pointer', zIndex: 101,
-          boxShadow: '0 6px 20px rgba(196,129,58,0.30)',
-          animation: chatOpen ? 'none' : 'askPulse 3.2s ease-in-out infinite',
-          transition: 'background 0.2s, transform 0.18s',
+          cursor: 'pointer', zIndex: 99,
+          boxShadow: '0 2px 8px rgba(44,24,16,0.10)',
+          color: T.inkSoft,
         }}
-        onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.94)'; }}
-        onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
       >
-        ✦
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
       </button>
 
       {/* ── Bottom tab bar ─────────────────────────────────── */}
@@ -515,20 +687,42 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
           <span style={labelStyle('church')}>Church</span>
         </button>
 
+        {/* Ask — center slot, slightly elevated with a soft gold halo so it
+            reads as the app's signature action without taking up FAB-sized
+            real estate. Same action (toggleChat); the halo intensifies when
+            chat is open so it doubles as the active-tab indicator. */}
+        <button onClick={onToggleChat} style={tabStyle('ask')} aria-label="Ask anything">
+          <span style={{
+            position: 'relative',
+            width: 36, height: 36, borderRadius: '50%',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            background: chatOpen
+              ? 'radial-gradient(circle, rgba(196,129,58,0.22) 0%, rgba(196,129,58,0.06) 70%, transparent 100%)'
+              : 'radial-gradient(circle, rgba(196,129,58,0.12) 0%, rgba(196,129,58,0.03) 70%, transparent 100%)',
+            transition: 'background 0.18s ease',
+          }}>
+            <span style={{
+              fontSize: 24, lineHeight: 1,
+              color: chatOpen ? T.goldDark : T.gold,
+              filter: chatOpen
+                ? 'drop-shadow(0 0 8px rgba(196,129,58,0.65))'
+                : 'drop-shadow(0 0 5px rgba(196,129,58,0.40))',
+              transition: 'color 0.18s ease, filter 0.18s ease',
+            }}>✦</span>
+          </span>
+          <span style={{
+            ...labelStyle('ask'),
+            color: chatOpen ? T.goldDark : T.inkMuted,
+            fontWeight: chatOpen ? 600 : 500,
+          }}>Ask</span>
+        </button>
+
         <button onClick={onGoRead} style={tabStyle('read')}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
             <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
           </svg>
           <span style={labelStyle('read')}>Bible</span>
-        </button>
-
-        <button onClick={onGoPeople} style={tabStyle('people')}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="7"/>
-            <path d="M21 21l-4.3-4.3"/>
-          </svg>
-          <span style={labelStyle('people')}>People</span>
         </button>
 
         <button onClick={onGoMe} style={tabStyle('me')}>
@@ -938,8 +1132,19 @@ export default function App() {
   const [studySessionId] = useState(() => new URLSearchParams(window.location.search).get('gs'));
   const [initialChurchId] = useState(() => new URLSearchParams(window.location.search).get('church'));
   const [initialAnonChurchId] = useState(() => new URLSearchParams(window.location.search).get('anon'));
+  const [initialJoinCode, setInitialJoinCode] = useState(() => new URLSearchParams(window.location.search).get('join'));
+  const [joinResult, setJoinResult] = useState(null); // { ok: bool, message: string, churchName? }
   const [careTeamRecord, setCareTeamRecord] = useState(null);
   const [pastorChurchId, setPastorChurchId] = useState(null);
+  // Which tab ChurchAdmin should land on when entered. Set by ChurchPage's
+  // "Edit in Pastor settings" deep-link, consumed by the ChurchAdmin mount.
+  const [pastorAdminInitialTab, setPastorAdminInitialTab] = useState('overview');
+  // QR-scan -> Join: when a signed-out visitor lands on /?church=<id> and
+  // taps "Sign up & join", we stash the church id here, send them through
+  // auth, and auto-attach them as a member once their profile is set up.
+  // Distinct from initialJoinCode because that path uses an invite *code*
+  // (admin-rotatable), whereas QR-scan lands on the church *id* directly.
+  const [pendingChurchJoin, setPendingChurchJoin] = useState(null);
   const [activeCareConv, setActiveCareConv] = useState(null);
   const [shareCopied, setShareCopied] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -967,6 +1172,64 @@ export default function App() {
   const [authStage, setAuthStage] = useState('idle'); // idle | auth | profile-setup | profile-view
   const [profileEditOrigin, setProfileEditOrigin] = useState('idle'); // where edit profile was opened from
   const [pendingPastorApply, setPendingPastorApply] = useState(false);
+  const [showPastorPrompt, setShowPastorPrompt] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [composerSermonId, setComposerSermonId] = useState(null);
+  const [viewingSermonId, setViewingSermonId] = useState(null);
+
+  // ── Navigation history ───────────────────────────────────────────
+  // Every screen-level transition pushes a snapshot here so the back
+  // button on any screen returns the user to where they actually came
+  // from — not a hardcoded fallback like 'home'. Each snapshot captures
+  // the stage AND its paired view-state (viewingChurchId, viewingSermonId,
+  // composerSermonId, activeCareConv) so we restore the exact screen.
+  //
+  // Why a snapshot effect rather than wrapping setStage? React batches
+  // state updates inside event handlers, so an effect watching `stage`
+  // sees all paired changes (e.g. setViewingChurchId + setStage) at once.
+  // We push the *previous* snapshot, then update lastNavRef to the current.
+  // skipPushRef short-circuits the push when goBack itself triggered the
+  // change — otherwise back-then-back-then-forward would loop.
+  const navHistoryRef = useRef([]);
+  const lastNavRef    = useRef(null);
+  const skipPushRef   = useRef(false);
+
+  useEffect(() => {
+    const snap = {
+      stage,
+      viewingChurchId,
+      viewingUserId,
+      viewingSermonId,
+      composerSermonId,
+      activeCareConv,
+    };
+    if (skipPushRef.current) {
+      skipPushRef.current = false;
+    } else if (lastNavRef.current && lastNavRef.current.stage !== stage) {
+      navHistoryRef.current.push(lastNavRef.current);
+      // Cap depth so a marathon session doesn't grow this forever.
+      if (navHistoryRef.current.length > 30) navHistoryRef.current.shift();
+    }
+    lastNavRef.current = snap;
+  }, [stage, viewingChurchId, viewingUserId, viewingSermonId, composerSermonId, activeCareConv]);
+
+  // Pop one entry off history and restore the screen + its paired state.
+  // Falls back to a sensible root when the stack is empty (first screen
+  // of the session, deep links, etc.).
+  function goBack(fallback = 'home') {
+    const prev = navHistoryRef.current.pop();
+    if (!prev) {
+      setStage(fallback);
+      return;
+    }
+    skipPushRef.current = true;
+    setStage(prev.stage);
+    setViewingChurchId(prev.viewingChurchId);
+    setViewingUserId(prev.viewingUserId);
+    setViewingSermonId(prev.viewingSermonId);
+    setComposerSermonId(prev.composerSermonId);
+    setActiveCareConv(prev.activeCareConv);
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -1002,6 +1265,118 @@ export default function App() {
     return () => listener.subscription.unsubscribe();
   }, [initialChurchId, initialAnonChurchId]);
 
+  // ?join=CODE deep link: auto-attempt the join once session + complete profile is ready.
+  useEffect(() => {
+    const code = initialJoinCode?.trim().toUpperCase();
+    if (!code) return;
+    if (!session?.user?.id) return;
+    if (!profile?.display_name) return;     // wait until profile is set up
+    if (profile.church_id) {                 // already in a church — don't override silently
+      setInitialJoinCode(null);
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      const { data: ch, error: lookupErr } = await supabase
+        .from('churches')
+        .select('id, name')
+        .eq('invite_code', code)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (lookupErr || !ch) {
+        setJoinResult({ ok: false, message: `That invite code didn't match any church. Ask whoever sent it for a new one.` });
+        setInitialJoinCode(null);
+        window.history.replaceState({}, '', window.location.pathname);
+        return;
+      }
+
+      const { error: updateErr } = await supabase
+        .from('profiles')
+        .update({ church_id: ch.id })
+        .eq('id', session.user.id);
+
+      if (cancelled) return;
+
+      if (updateErr) {
+        const blocked = (updateErr.message || '').toLowerCase().includes('rejoin');
+        setJoinResult({
+          ok: false,
+          message: blocked
+            ? `You can no longer rejoin ${ch.name}. Reach out to the pastor if this is a mistake.`
+            : `Couldn't join ${ch.name}: ${updateErr.message}`,
+        });
+      } else {
+        await loadProfile(session.user.id);
+        setJoinResult({ ok: true, churchName: ch.name, message: `Welcome to ${ch.name}.` });
+        setStage('church-hub');
+      }
+
+      setInitialJoinCode(null);
+      window.history.replaceState({}, '', window.location.pathname);
+    })();
+
+    return () => { cancelled = true; };
+  }, [initialJoinCode, session?.user?.id, profile?.display_name, profile?.church_id]);
+
+  // Pending QR-scan join — fires once a signed-out visitor who tapped
+  // "Sign up & join this church" finishes auth + onboarding and has a
+  // display_name. We attach them, surface the success banner, and land
+  // them on the congregation hub (where the conversation actually happens).
+  useEffect(() => {
+    if (!pendingChurchJoin) return;
+    if (!session?.user?.id) return;
+    if (!profile?.display_name) return;
+    if (profile.church_id === pendingChurchJoin) {
+      // Already a member (e.g. they signed back in). Nothing to do.
+      setPendingChurchJoin(null);
+      return;
+    }
+    if (profile.church_id) {
+      // Already in a different church — don't override silently.
+      setPendingChurchJoin(null);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      const { data: ch } = await supabase
+        .from('churches')
+        .select('id, name')
+        .eq('id', pendingChurchJoin)
+        .maybeSingle();
+      if (cancelled) return;
+      if (!ch) {
+        setJoinResult({ ok: false, message: `That church doesn't exist anymore.` });
+        setPendingChurchJoin(null);
+        return;
+      }
+      const { error: updateErr } = await supabase
+        .from('profiles')
+        .update({ church_id: ch.id })
+        .eq('id', session.user.id);
+      if (cancelled) return;
+      if (updateErr) {
+        const blocked = (updateErr.message || '').toLowerCase().includes('rejoin');
+        setJoinResult({
+          ok: false,
+          message: blocked
+            ? `You can no longer rejoin ${ch.name}. Reach out to the pastor if this is a mistake.`
+            : `Couldn't join ${ch.name}: ${updateErr.message}`,
+        });
+      } else {
+        await loadProfile(session.user.id);
+        setJoinResult({ ok: true, churchName: ch.name, message: `Welcome to ${ch.name}.` });
+        setStage('church-hub');
+      }
+      setPendingChurchJoin(null);
+    })();
+    return () => { cancelled = true; };
+  }, [pendingChurchJoin, session?.user?.id, profile?.display_name, profile?.church_id]);
+
   // Realtime: when a pastor application is approved/rejected, refresh roles immediately
   useEffect(() => {
     const userId = session?.user?.id;
@@ -1020,8 +1395,9 @@ export default function App() {
   async function loadProfile(userId) {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
     setProfile(data ?? null);
-    loadGroup(userId);
-    loadChurchRoles(userId);
+    // Await the role lookups so callers (e.g. onBecamePastor → setStage('church-admin'))
+    // can rely on pastorChurchId being populated by the time loadProfile resolves.
+    await Promise.all([loadGroup(userId), loadChurchRoles(userId)]);
   }
 
   async function loadChurchRoles(userId) {
@@ -1188,7 +1564,25 @@ export default function App() {
       <>
         <style>{globalCss}</style>
         <Auth
-          onAuth={(s) => { setSession(s); setAuthStage('profile-setup'); }}
+          onAuth={async (s) => {
+            setSession(s);
+            // Returning users with a complete profile skip profile-setup.
+            // Only first-time sign-ups (no profile row, or no display_name yet) see it.
+            const { data: existing } = await supabase
+              .from('profiles')
+              .select('id, display_name')
+              .eq('id', s.user.id)
+              .maybeSingle();
+            if (existing?.display_name) {
+              setProfile(existing);
+              loadProfile(s.user.id);
+              setAuthStage('idle');
+              if (pendingPastorApply) { setPendingPastorApply(false); setStage('pastor-apply'); }
+              else { setStage('home'); }
+            } else {
+              setAuthStage('profile-setup');
+            }
+          }}
           onBack={() => setAuthStage('idle')}
         />
       </>
@@ -1203,10 +1597,14 @@ export default function App() {
           user={session.user}
           existing={profile}
           onSave={(p) => {
+            const isFirstTime = profileEditOrigin === 'idle' && !pendingPastorApply && !p?.is_pastor;
             setProfile(p);
             setAuthStage('idle');
             if (pendingPastorApply) { setPendingPastorApply(false); setStage('pastor-apply'); }
-            else setStage(profileEditOrigin === 'me' ? 'me' : 'feed');
+            else {
+              setStage(profileEditOrigin === 'me' ? 'me' : 'feed');
+              if (isFirstTime) setShowPastorPrompt(true);
+            }
           }}
           onCancel={() => {
             if (pendingPastorApply && profile) { setPendingPastorApply(false); setAuthStage('idle'); setStage('pastor-apply'); return; }
@@ -1291,8 +1689,10 @@ export default function App() {
             if (profile?.church_id) { setViewingChurchId(profile.church_id); setStage('talk-to-someone'); }
           }}
           onOpenCareInbox={careTeamRecord ? () => setStage('care-inbox') : undefined}
-          onOpenPastorDashboard={pastorChurchId ? () => setStage('pastor-dashboard') : undefined}
+          onOpenPastorDashboard={pastorChurchId ? () => setStage('church-admin') : undefined}
+          onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
           onFindChurches={() => setStage('churches')}
+          onProfileUpdate={(p) => setProfile(p)}
         />
       )}
       {stage === 'home' && session && (
@@ -1307,6 +1707,15 @@ export default function App() {
           onOpenMe={() => setStage('me')}
           onOpenAsk={() => { if (!currentConvId) startChatFromProfile(); setChatPanelOpen(true); }}
           onFindPeople={() => setPeopleSearchOpen(true)}
+          onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
+        />
+      )}
+      {stage === 'sermon-view' && session && viewingSermonId && (
+        <SermonView
+          session={session}
+          profile={profile}
+          sermonId={viewingSermonId}
+          onBack={() => goBack('home')}
         />
       )}
       {stage === 'feed' && session && (
@@ -1314,7 +1723,7 @@ export default function App() {
           session={session}
           profile={profile}
           userGroup={userGroup}
-          onClose={() => setStage('home')}
+          onClose={() => goBack('home')}
           onOpenChat={(q) => { if (!currentConvId) startChatFromProfile(); if (q) setPrefilledInput(q); setChatPanelOpen(true); }}
           onViewProfile={(uid) => uid === session.user.id ? setStage('me') : setViewingUserId(uid)}
           onFindPeople={() => setPeopleSearchOpen(true)}
@@ -1325,7 +1734,7 @@ export default function App() {
         <Prayer
           session={session}
           profile={profile}
-          onClose={() => setStage('feed')}
+          onClose={() => goBack('feed')}
           userGroup={userGroup}
         />
       )}
@@ -1336,7 +1745,7 @@ export default function App() {
               role={userGroup.role}
               session={session}
               profile={profile}
-              onClose={() => setStage('feed')}
+              onClose={() => goBack('feed')}
               onLeave={async () => {
                 await supabase.from('group_members').delete().eq('member_id', session.user.id).eq('group_id', userGroup.group.id);
                 setUserGroup(null);
@@ -1346,18 +1755,19 @@ export default function App() {
           : <GroupSetup
               session={session}
               onJoined={(g) => { setUserGroup(g); setStage('feed'); }}
-              onClose={() => setStage('feed')}
+              onClose={() => goBack('feed')}
             />
       )}
       {stage === 'me' && session && (
         <MePanel
           session={session}
           profile={profile}
-          onClose={() => setStage('feed')}
+          onClose={() => goBack('feed')}
           onOpenBoard={() => { setStage('feed'); setBoardOpen(true); }}
           onOpenHistory={() => { setStage('feed'); setHistoryOpen(true); }}
           onEditProfile={() => { setProfileEditOrigin('me'); setAuthStage('profile-setup'); }}
           onSignOut={() => { supabase.auth.signOut(); setSession(null); setProfile(null); setStage('landing'); }}
+          onDeleteAccount={() => setShowDeleteAccount(true)}
           onProfileUpdate={(p) => setProfile(p)}
           onViewProfile={(uid) => setViewingUserId(uid)}
           onOpenChat={(q) => { if (!currentConvId) startChatFromProfile(); if (q) setPrefilledInput(q); setChatPanelOpen(true); }}
@@ -1365,11 +1775,13 @@ export default function App() {
           onInviteFriends={() => setStage('invite')}
           onFindChurches={() => setStage('churches')}
           onApplyAsPastor={() => setStage('pastor-apply')}
+          onOpenPastorAdminQueue={profile?.is_admin ? () => setStage('pastor-admin-queue') : undefined}
           onOpenChurch={(id) => { setViewingChurchId(id); setStage('church'); }}
+          onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
           onOpenWalks={() => setStage('walks')}
           onOpenTalkToSomeone={profile?.church_id ? () => { setViewingChurchId(profile.church_id); setStage('talk-to-someone'); } : undefined}
           onOpenCareInbox={careTeamRecord ? () => setStage('care-inbox') : undefined}
-          onOpenPastorDashboard={pastorChurchId ? () => setStage('pastor-dashboard') : undefined}
+          onOpenPastorDashboard={pastorChurchId ? () => setStage('church-admin') : undefined}
           hasCareTeamRole={!!careTeamRecord}
           hasPastoredChurch={!!pastorChurchId}
         />
@@ -1379,25 +1791,39 @@ export default function App() {
           session={session}
           profile={profile}
           homeKey={readHomeKey}
-          onClose={() => setStage('feed')}
+          onClose={() => goBack('feed')}
           onOpenChat={(q) => { if (!currentConvId) startChatFromProfile(); if (q) setPrefilledInput(q); setChatPanelOpen(true); }}
         />
       )}
       {stage === 'invite' && (
-        <InviteFriends onClose={() => setStage(session ? 'feed' : 'landing')} />
+        <InviteFriends onClose={() => goBack(session ? 'feed' : 'landing')} />
+      )}
+      {stage === 'pastor-admin-queue' && session && profile?.is_admin && (
+        <PastorAdminQueue
+          session={session}
+          profile={profile}
+          onClose={() => goBack('me')}
+        />
       )}
       {stage === 'pastor-apply' && session && (
         <PastorApply
           session={session}
           profile={profile}
-          onClose={() => setStage('me')}
+          onClose={() => goBack('me')}
+          onBecamePastor={async () => {
+            await loadProfile(session.user.id);
+            // Land directly on the dashboard so the setup checklist is the first
+            // thing they see — turns "you're approved" into "here's your ramp."
+            // Falls back to 'me' if the church row hasn't propagated yet.
+            setStage('church-admin');
+          }}
         />
       )}
       {stage === 'churches' && (
         <ChurchDirectory
           session={session}
           profile={profile}
-          onBack={() => setStage(session ? 'feed' : 'landing')}
+          onBack={() => goBack(session ? 'feed' : 'landing')}
           onOpenChurch={(id) => { setViewingChurchId(id); setStage('church'); }}
           onApply={() => {
             if (session && profile) { setStage('pastor-apply'); }
@@ -1411,22 +1837,36 @@ export default function App() {
           profile={profile}
           churchId={viewingChurchId}
           onBack={() => {
+            // Deeplink landing (?church=…) — clear the URL so refresh doesn't
+            // bounce back here, then return to feed/landing. Otherwise honor
+            // history so back lands wherever the user actually came from.
             if (initialChurchId) {
               window.history.replaceState({}, '', '/');
               setViewingChurchId(null);
               setStage(session ? 'feed' : 'landing');
             } else {
-              setViewingChurchId(null);
-              setStage('churches');
+              goBack('churches');
             }
           }}
           onProfileUpdate={(p) => setProfile(p)}
           onViewProfile={(uid) => setViewingUserId(uid)}
-          onOpenTalkToSomeone={() => setStage('talk-to-someone')}
-          onOpenAnonAsk={() => setStage('anon-welcome')}
-          onOpenPastorDashboard={pastorChurchId === viewingChurchId ? () => setStage('pastor-dashboard') : undefined}
-          onOpenSermons={pastorChurchId === viewingChurchId ? () => setStage('sermon-composer') : undefined}
-          onOpenCareAdmin={pastorChurchId === viewingChurchId ? () => setStage('care-admin') : undefined}
+          onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
+          // Pastor viewing their own page: jump into ChurchAdmin (defaulting
+          // to the requested tab — Settings, when triggered from the preview
+          // banner). Only pastors get this prop wired.
+          onOpenAdmin={(pastorChurchId === viewingChurchId)
+            ? (tab) => { setPastorAdminInitialTab(tab ?? 'overview'); setStage('church-admin'); }
+            : undefined}
+          // Member viewing their own page: open the congregation hub.
+          onOpenChurchHub={(profile?.church_id === viewingChurchId)
+            ? () => setStage('church-hub')
+            : undefined}
+          // Signed-out QR visitor tapping "Sign up & join": stash the church
+          // id and bounce through auth. The pendingChurchJoin effect picks
+          // it up post-onboarding and attaches them as a member.
+          onRequestJoin={!session
+            ? () => { setPendingChurchJoin(viewingChurchId); setAuthStage('auth'); }
+            : undefined}
         />
       )}
       {stage === 'church-entry' && viewingChurchId && (
@@ -1458,7 +1898,7 @@ export default function App() {
       {stage === 'walks' && session && (
         <Walks
           session={session}
-          onClose={() => setStage('me')}
+          onClose={() => goBack('me')}
         />
       )}
       {stage === 'talk-to-someone' && session && viewingChurchId && (
@@ -1466,7 +1906,7 @@ export default function App() {
           session={session}
           profile={profile}
           churchId={viewingChurchId}
-          onBack={() => setStage(initialAnonChurchId ? 'church-entry' : 'church')}
+          onBack={() => goBack(initialAnonChurchId ? 'church-entry' : 'church')}
         />
       )}
       {stage === 'care-conversation' && session && activeCareConv && (
@@ -1475,7 +1915,7 @@ export default function App() {
           profile={profile}
           conversationId={activeCareConv.id}
           viewerRole={activeCareConv.viewerRole}
-          onBack={() => { const wasCareMember = activeCareConv.viewerRole !== 'requester'; setActiveCareConv(null); setStage(wasCareMember ? 'care-inbox' : 'me'); }}
+          onBack={() => goBack(activeCareConv.viewerRole !== 'requester' ? 'care-inbox' : 'me')}
           onClaimed={() => setActiveCareConv((c) => c ? { ...c, viewerRole: 'care_member' } : c)}
         />
       )}
@@ -1484,45 +1924,58 @@ export default function App() {
           session={session}
           profile={profile}
           churchId={careTeamRecord.church_id}
-          onBack={() => setStage('me')}
+          onBack={() => goBack('me')}
         />
       )}
       {stage === 'care-admin' && session && pastorChurchId && (
         <CareTeamAdmin
           session={session}
           churchId={pastorChurchId}
-          onBack={() => setStage('pastor-dashboard')}
+          onBack={() => goBack('church-admin')}
         />
       )}
       {stage === 'sermon-composer' && session && pastorChurchId && (
         <SermonComposer
           session={session}
           churchId={pastorChurchId}
-          onBack={() => setStage('pastor-dashboard')}
+          initialSermonId={composerSermonId}
+          onBack={() => goBack('church-admin')}
         />
       )}
-      {stage === 'pastor-dashboard' && session && pastorChurchId && (
-        <PastorDashboard
+      {(stage === 'pastor-dashboard') && session && pastorChurchId && (
+        <ChurchAdmin
           session={session}
           profile={profile}
           churchId={pastorChurchId}
-          onBack={() => setStage('me')}
-          onOpenComposer={() => setStage('sermon-composer')}
-          onOpenCareAdmin={() => setStage('care-admin')}
+          onBack={() => goBack('me')}
           onOpenChurchPage={() => { setViewingChurchId(pastorChurchId); setStage('church'); }}
+          onOpenChurchHub={() => setStage('church-hub')}
+          onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
+        />
+      )}
+      {stage === 'church-admin' && session && pastorChurchId && (
+        <ChurchAdmin
+          session={session}
+          profile={profile}
+          churchId={pastorChurchId}
+          initialTab={pastorAdminInitialTab}
+          onBack={() => goBack('me')}
+          onOpenChurchPage={() => { setViewingChurchId(pastorChurchId); setStage('church'); }}
+          onOpenChurchHub={() => setStage('church-hub')}
+          onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
         />
       )}
       {stage === 'onboarding' && (
         <Onboarding
           onPick={(id) => newConversation(id)}
-          onBack={() => setStage(session ? 'feed' : 'landing')}
+          onBack={() => goBack(session ? 'feed' : 'landing')}
         />
       )}
       {stage === 'intake' && personType && (
         <SeekingIntake
           personType={personType}
           onComplete={(context) => startNewConversation(personType, context ?? '')}
-          onBack={() => setStage('onboarding')}
+          onBack={() => goBack('onboarding')}
         />
       )}
       </div>{/* end paddingRight wrapper */}
@@ -1534,6 +1987,8 @@ export default function App() {
           session={session}
           onClose={() => setViewingUserId(null)}
           onViewProfile={(uid) => setViewingUserId(uid)}
+          onOpenChurch={(churchId) => { setViewingUserId(null); setViewingChurchId(churchId); setStage('church'); }}
+          onOpenSermon={(id) => { setViewingUserId(null); setViewingSermonId(id); setStage('sermon-view'); }}
           onStartChat={(q) => { if (!currentConvId) startChatFromProfile(); setPrefilledInput(q); setChatPanelOpen(true); setViewingUserId(null); }}
         />
       )}
@@ -1651,6 +2106,16 @@ export default function App() {
         onNew={() => { setHistoryOpen(false); setStage('onboarding'); }}
       />
       <PremiumModal open={premium} onClose={() => setPremium(false)} profile={profile} email={session?.user?.email} hitLimit={premiumHitLimit} />
+      <PastorPrompt
+        open={showPastorPrompt}
+        onApply={() => { setShowPastorPrompt(false); setStage('pastor-apply'); }}
+        onClose={() => setShowPastorPrompt(false)}
+      />
+      <DeleteAccountModal
+        open={showDeleteAccount}
+        onClose={() => setShowDeleteAccount(false)}
+        onDeleted={() => { setShowDeleteAccount(false); setSession(null); setProfile(null); setStage('landing'); }}
+      />
       {peopleSearchOpen && (
         <PeopleSearch
           session={session}
@@ -1659,6 +2124,24 @@ export default function App() {
         />
       )}
       </Suspense>
+      {joinResult && (
+        <div
+          onClick={() => setJoinResult(null)}
+          style={{
+            position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 200, maxWidth: 'calc(100vw - 32px)', cursor: 'pointer',
+            background: joinResult.ok ? T.ink : '#c0392b',
+            color: T.cream, borderRadius: 999, padding: '11px 20px',
+            fontSize: 14, fontWeight: 500, fontFamily: T.sans,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}
+        >
+          <span style={{ fontSize: 16 }}>{joinResult.ok ? '✦' : '!'}</span>
+          <span>{joinResult.message}</span>
+          <span style={{ marginLeft: 6, opacity: 0.6, fontSize: 16 }}>×</span>
+        </div>
+      )}
       <BottomNav
         stage={stage}
         authStage={authStage}
@@ -1666,7 +2149,7 @@ export default function App() {
         profile={profile}
         chatOpen={chatPanelOpen}
         onGoHome={() => setStage('home')}
-        onGoChurch={() => setStage('church-hub')}
+        onGoChurch={() => setStage(pastorChurchId ? 'church-admin' : 'church-hub')}
         onGoRead={() => { if (stage === 'read') setReadHomeKey((k) => k + 1); else setStage('read'); }}
         onGoPeople={() => setPeopleSearchOpen(true)}
         onGoMe={() => setStage('me')}

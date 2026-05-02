@@ -41,6 +41,7 @@ function MyPrayers({ session }) {
   const [praiseText,   setPraiseText]   = useState('');
   const [expandedEnc,  setExpandedEnc]  = useState(new Set()); // prayer ids with enc open
   const [encMap,       setEncMap]       = useState({});          // { prayerId: [...encouragements] }
+  const [encCounts,    setEncCounts]    = useState({});          // { prayerId: count }
   const [supportMap,   setSupportMap]   = useState({});          // { prayerId: count }
 
   useEffect(() => {
@@ -60,6 +61,16 @@ function MyPrayers({ session }) {
               const counts = {};
               for (const r of sd ?? []) counts[r.prayer_id] = (counts[r.prayer_id] ?? 0) + 1;
               setSupportMap(counts);
+            });
+          // Encouragement counts so the expand button reads "💬 N encouragements"
+          // even before it's opened.
+          supabase.from('personal_prayer_encouragements')
+            .select('prayer_id')
+            .in('prayer_id', pubIds)
+            .then(({ data: ed }) => {
+              const counts = {};
+              for (const r of ed ?? []) counts[r.prayer_id] = (counts[r.prayer_id] ?? 0) + 1;
+              setEncCounts(counts);
             });
         }
       });
@@ -273,7 +284,11 @@ function MyPrayers({ session }) {
                   background: 'none', border: 'none', padding: 0,
                   color: 'rgba(253,248,240,0.4)', fontSize: 11, cursor: 'pointer',
                 }}>
-                  💬 {expandedEnc.has(p.id) ? 'Hide encouragements' : 'View encouragements'}
+                  💬 {expandedEnc.has(p.id)
+                    ? 'Hide encouragements'
+                    : ((encCounts[p.id] ?? 0) > 0
+                        ? `${encCounts[p.id]} encouragement${encCounts[p.id] === 1 ? '' : 's'}`
+                        : 'View encouragements')}
                 </button>
                 {expandedEnc.has(p.id) && (
                   <div style={{ marginTop: 10 }}>
@@ -371,13 +386,21 @@ function MyPrayers({ session }) {
 function CommunityPrayers({ session, profile }) {
   const [prayers,      setPrayers]      = useState([]);
   const [prayedFor,    setPrayedFor]    = useState(new Set());
-  const [encouraging,  setEncouraging]  = useState(null);
-  const [note,         setNote]         = useState('');
   const [text,         setText]         = useState('');
   const [anon,         setAnon]         = useState(false);
   const [audience,     setAudience]     = useState('public');
   const [audienceOpen, setAudienceOpen] = useState(false);
   const [submitting,   setSubmitting]   = useState(false);
+  // Inline encouragements thread state. Keys are `${_src}-${id}` so the
+  // merged feed (community prayers + public personal prayers) doesn't
+  // collide on numeric ids.
+  const [expandedEnc,  setExpandedEnc]  = useState(new Set());
+  const [encMap,       setEncMap]       = useState({});   // { key: [{ id, body, created_at, profiles }] }
+  const [encCounts,    setEncCounts]    = useState({});   // { key: number }
+  const [encNote,      setEncNote]      = useState({});   // { key: string } — per-card composer
+  const [encSending,   setEncSending]   = useState(null); // key currently posting
+
+  const encKey = (p) => `${p._src}-${p.id}`;
 
   const PRAYER_AUDIENCE = [
     { value: 'public',  icon: '🌐', label: 'Everyone' },
@@ -403,6 +426,44 @@ function CommunityPrayers({ session, profile }) {
         ...(pp ?? []).map(p => ({ ...p, _src: 'personal_prayers', _ownerId: p.user_id   })),
       ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 50);
       setPrayers(items);
+
+      // Encouragement counts in batch — drives the "💬 N encouragements"
+      // label so people can see at a glance which threads have a reply.
+      // For community prayers, encouragements are prayer_responses rows
+      // where note is not null (rows with null note are just pray-for-this
+      // counters). For personal prayers, they're a dedicated table.
+      const cpIds = (cp ?? []).map(p => p.id);
+      const ppIds = (pp ?? []).map(p => p.id);
+      const counts = {};
+      const queries = [];
+      if (cpIds.length) {
+        queries.push(
+          supabase.from('prayer_responses')
+            .select('prayer_id')
+            .in('prayer_id', cpIds)
+            .not('note', 'is', null)
+            .then(({ data }) => {
+              for (const r of data ?? []) {
+                const k = `prayers-${r.prayer_id}`;
+                counts[k] = (counts[k] ?? 0) + 1;
+              }
+            })
+        );
+      }
+      if (ppIds.length) {
+        queries.push(
+          supabase.from('personal_prayer_encouragements')
+            .select('prayer_id')
+            .in('prayer_id', ppIds)
+            .then(({ data }) => {
+              for (const r of data ?? []) {
+                const k = `personal_prayers-${r.prayer_id}`;
+                counts[k] = (counts[k] ?? 0) + 1;
+              }
+            })
+        );
+      }
+      if (queries.length) Promise.all(queries).then(() => setEncCounts(counts));
     });
 
     if (session) {
@@ -445,19 +506,70 @@ function CommunityPrayers({ session, profile }) {
     setPrayers(prev => prev.map(x => x.id === p.id && x._src === p._src ? { ...x, prayer_count: count } : x));
   }
 
-  async function sendEncouragement() {
-    if (!note.trim() || !session) return;
-    const body = note.trim().slice(0, 120);
-    if (encouraging._src === 'personal_prayers') {
-      await supabase.from('personal_prayer_encouragements').insert({
-        prayer_id: encouraging.id, user_id: session.user.id, body,
-      });
-    } else {
-      await supabase.from('prayer_responses').insert({
-        prayer_id: encouraging.id, author_id: session.user.id, note: body,
-      });
+  async function toggleEnc(p) {
+    const key = encKey(p);
+    if (expandedEnc.has(key)) {
+      setExpandedEnc(prev => { const s = new Set(prev); s.delete(key); return s; });
+      return;
     }
-    setNote(''); setEncouraging(null);
+    // Lazy-load on first expand
+    if (!encMap[key]) {
+      let rows = [];
+      if (p._src === 'personal_prayers') {
+        const { data } = await supabase
+          .from('personal_prayer_encouragements')
+          .select('id, body, created_at, profiles(display_name)')
+          .eq('prayer_id', p.id)
+          .order('created_at', { ascending: true });
+        rows = data ?? [];
+      } else {
+        const { data } = await supabase
+          .from('prayer_responses')
+          .select('id, note, created_at, profiles:author_id(display_name)')
+          .eq('prayer_id', p.id)
+          .not('note', 'is', null)
+          .order('created_at', { ascending: true });
+        // Normalize note → body so the rendering loop is shared.
+        rows = (data ?? []).map(r => ({
+          id: r.id, body: r.note, created_at: r.created_at, profiles: r.profiles,
+        }));
+      }
+      setEncMap(prev => ({ ...prev, [key]: rows }));
+    }
+    setExpandedEnc(prev => new Set([...prev, key]));
+  }
+
+  async function sendInlineEnc(p) {
+    if (!session) return;
+    const key = encKey(p);
+    const body = (encNote[key] ?? '').trim().slice(0, 120);
+    if (!body) return;
+    setEncSending(key);
+    let inserted = null;
+    if (p._src === 'personal_prayers') {
+      const { data } = await supabase
+        .from('personal_prayer_encouragements')
+        .insert({ prayer_id: p.id, user_id: session.user.id, body })
+        .select('id, body, created_at')
+        .single();
+      if (data) inserted = { ...data, profiles: { display_name: profile?.display_name ?? 'You' } };
+    } else {
+      const { data } = await supabase
+        .from('prayer_responses')
+        .insert({ prayer_id: p.id, author_id: session.user.id, note: body })
+        .select('id, note, created_at')
+        .single();
+      if (data) inserted = {
+        id: data.id, body: data.note, created_at: data.created_at,
+        profiles: { display_name: profile?.display_name ?? 'You' },
+      };
+    }
+    if (inserted) {
+      setEncMap(prev => ({ ...prev, [key]: [...(prev[key] ?? []), inserted] }));
+      setEncCounts(prev => ({ ...prev, [key]: (prev[key] ?? 0) + 1 }));
+    }
+    setEncNote(prev => ({ ...prev, [key]: '' }));
+    setEncSending(null);
   }
 
   return (
@@ -578,10 +690,13 @@ function CommunityPrayers({ session, profile }) {
               </div>
 
               {/* Actions */}
-              {session && (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                  {!isOwn && (
-                    <>
+              {session && (() => {
+                const key = encKey(p);
+                const expanded = expandedEnc.has(key);
+                const count = encCounts[key] ?? 0;
+                return (
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    {!isOwn && (
                       <button onClick={() => pray(p)} style={{
                         background: hasPrayed ? 'rgba(196,129,58,0.15)' : 'transparent',
                         border: `1px solid ${hasPrayed ? T.gold : 'rgba(255,255,255,0.18)'}`,
@@ -591,19 +706,83 @@ function CommunityPrayers({ session, profile }) {
                       }}>
                         🙏 {hasPrayed ? 'Prayed' : 'Pray for this'}{(p.prayer_count ?? 0) > 0 ? ` · ${p.prayer_count}` : ''}
                       </button>
-                      <button onClick={() => { setEncouraging(p); setNote(''); }} style={{
-                        background: 'transparent', border: '1px solid rgba(255,255,255,0.15)',
-                        borderRadius: 999, padding: '6px 14px', fontSize: 12,
-                        color: 'rgba(253,248,240,0.62)', cursor: 'pointer',
-                      }}>
-                        Send encouragement
-                      </button>
-                    </>
+                    )}
+                    <button onClick={() => toggleEnc(p)} style={{
+                      background: expanded ? 'rgba(255,255,255,0.06)' : 'transparent',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      borderRadius: 999, padding: '6px 14px', fontSize: 12,
+                      color: 'rgba(253,248,240,0.68)', cursor: 'pointer',
+                    }}>
+                      💬 {count > 0
+                        ? `${count} encouragement${count === 1 ? '' : 's'}`
+                        : (isOwn ? 'No encouragements yet' : 'Encourage')}
+                    </button>
+                    {isOwn && (p.prayer_count ?? 0) > 0 && (
+                      <span style={{ fontSize: 12, color: 'rgba(253,248,240,0.4)' }}>
+                        🙏 {p.prayer_count} praying
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Inline encouragements thread */}
+              {session && expandedEnc.has(encKey(p)) && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                  {(encMap[encKey(p)] ?? []).length === 0 ? (
+                    <div style={{ fontSize: 12, color: 'rgba(253,248,240,0.32)', fontStyle: 'italic', marginBottom: 12 }}>
+                      No encouragements yet. {!isOwn && 'Be the first.'}
+                    </div>
+                  ) : (
+                    <div style={{ marginBottom: 12 }}>
+                      {(encMap[encKey(p)] ?? []).map(enc => (
+                        <div key={enc.id} style={{
+                          padding: '8px 12px', marginBottom: 6,
+                          background: 'rgba(255,255,255,0.05)', borderRadius: 10,
+                        }}>
+                          <div style={{ fontFamily: T.serif, fontSize: 13.5, color: 'rgba(253,248,240,0.85)', lineHeight: 1.55 }}>
+                            "{enc.body}"
+                          </div>
+                          <div style={{ fontSize: 10.5, color: 'rgba(253,248,240,0.34)', marginTop: 3 }}>
+                            {enc.profiles?.display_name ?? 'Someone'} · {timeAgo(enc.created_at)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
-                  {isOwn && (p.prayer_count ?? 0) > 0 && (
-                    <span style={{ fontSize: 12, color: 'rgba(253,248,240,0.4)' }}>
-                      🙏 {p.prayer_count} praying
-                    </span>
+                  {!isOwn && (
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                      <textarea
+                        value={encNote[encKey(p)] ?? ''}
+                        onChange={(e) => {
+                          const v = e.target.value.slice(0, 120);
+                          setEncNote(prev => ({ ...prev, [encKey(p)]: v }));
+                        }}
+                        placeholder="A short word of encouragement…"
+                        rows={2}
+                        style={{
+                          flex: 1, boxSizing: 'border-box', resize: 'none',
+                          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(196,129,58,0.2)',
+                          borderRadius: 10, padding: '8px 12px', fontSize: 13, color: T.cream,
+                          fontFamily: T.serif, outline: 'none', lineHeight: 1.5,
+                        }}
+                        onFocus={e => (e.currentTarget.style.borderColor = T.gold)}
+                        onBlur={e => (e.currentTarget.style.borderColor = 'rgba(196,129,58,0.2)')}
+                      />
+                      <button
+                        onClick={() => sendInlineEnc(p)}
+                        disabled={!((encNote[encKey(p)] ?? '').trim()) || encSending === encKey(p)}
+                        style={{
+                          background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
+                          padding: '8px 16px', fontSize: 12, fontWeight: 600,
+                          cursor: ((encNote[encKey(p)] ?? '').trim() && encSending !== encKey(p)) ? 'pointer' : 'not-allowed',
+                          opacity: ((encNote[encKey(p)] ?? '').trim() && encSending !== encKey(p)) ? 1 : 0.4,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {encSending === encKey(p) ? '…' : 'Send'}
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
@@ -611,51 +790,6 @@ function CommunityPrayers({ session, profile }) {
           );
         })}
 
-        {/* Encouragement sheet */}
-        {encouraging && (
-          <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(44,24,16,0.7)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: 20 }}
-            onClick={() => setEncouraging(null)}
-          >
-            <div onClick={e => e.stopPropagation()} style={{
-              background: T.ink, border: '1px solid rgba(196,129,58,0.3)', borderRadius: 20,
-              padding: '24px', width: '100%', maxWidth: 420, marginBottom: 20,
-            }}>
-              <div style={{ fontSize: 13, color: 'rgba(253,248,240,0.4)', marginBottom: 14, fontFamily: T.serif, fontStyle: 'italic' }}>
-                "{encouraging.body}"
-              </div>
-              <textarea
-                value={note} onChange={e => setNote(e.target.value.slice(0, 120))}
-                placeholder="A short word of encouragement…"
-                rows={3} autoFocus
-                style={{
-                  width: '100%', boxSizing: 'border-box', resize: 'none',
-                  background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(196,129,58,0.2)',
-                  borderRadius: 10, padding: '11px 14px', fontSize: 14, color: T.cream,
-                  fontFamily: T.serif, outline: 'none', lineHeight: 1.6, marginBottom: 4,
-                }}
-                onFocus={e => (e.currentTarget.style.borderColor = T.gold)}
-                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(196,129,58,0.2)')}
-              />
-              <div style={{ fontSize: 10, color: 'rgba(253,248,240,0.28)', textAlign: 'right', marginBottom: 14 }}>
-                {note.length}/120
-              </div>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={sendEncouragement} disabled={!note.trim()} style={{
-                  background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
-                  padding: '10px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                  opacity: !note.trim() ? 0.5 : 1,
-                }}>
-                  Send
-                </button>
-                <button onClick={() => setEncouraging(null)} style={{
-                  background: 'none', border: 'none', color: 'rgba(253,248,240,0.35)', fontSize: 13, cursor: 'pointer',
-                }}>
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

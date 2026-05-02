@@ -222,7 +222,7 @@ function MemberForm({ initial, onSave, onCancel, saving }) {
   );
 }
 
-export default function CareTeamAdmin({ session, churchId, onBack }) {
+export default function CareTeamAdmin({ session, churchId, onBack, embedded = false }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);   // member | { _new: true } | null
@@ -284,21 +284,25 @@ export default function CareTeamAdmin({ session, churchId, onBack }) {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: T.cream, padding: '32px 20px 80px', overflowY: 'auto' }}>
+    <div style={{ minHeight: embedded ? 'auto' : '100vh', background: T.cream, padding: embedded ? 0 : '32px 20px 80px', overflowY: 'auto' }}>
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
-        <button onClick={onBack} style={{
-          background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 14,
-        }}>← Pastor dashboard</button>
+        {!embedded && (
+          <>
+            <button onClick={onBack} style={{
+              background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 14,
+            }}>← Pastor dashboard</button>
 
-        <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 8 }}>
-          Care Team
-        </div>
-        <h1 style={{ fontFamily: T.display, fontSize: 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 8px' }}>
-          Who's available to talk
-        </h1>
-        <p style={{ color: T.inkSoft, fontSize: 14.5, lineHeight: 1.65, margin: '0 0 20px' }}>
-          People your members can choose to talk to — elders, ministry leads, prayer team, lay counselors. You won't see what's said. Each conversation is private to the two participants.
-        </p>
+            <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 8 }}>
+              Care Team
+            </div>
+            <h1 style={{ fontFamily: T.display, fontSize: 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 8px' }}>
+              Who's available to talk
+            </h1>
+            <p style={{ color: T.inkSoft, fontSize: 14.5, lineHeight: 1.65, margin: '0 0 20px' }}>
+              People your members can choose to talk to — elders, ministry leads, prayer team, lay counselors. You won't see what's said. Each conversation is private to the two participants.
+            </p>
+          </>
+        )}
 
         {loading ? (
           <div style={{ color: T.inkMuted, fontFamily: T.serif, textAlign: 'center', padding: 40 }}>Loading…</div>

@@ -1,6 +1,56 @@
 import { useEffect, useState } from 'react';
-import { supabase } from './supabase.js';
+import { supabase, authedFetch } from './supabase.js';
 import { T } from './theme.js';
+
+// Gated on an explicit env var, not just DEV mode, so screenshares and
+// preview builds don't expose the bypass card. Set VITE_DEV_PASTOR_BYPASS=true
+// in .env.local when you want to use it.
+const DEV_PASTOR_BYPASS = import.meta.env.DEV
+  && import.meta.env.VITE_DEV_PASTOR_BYPASS === 'true';
+
+// Save-and-resume: pastors abandon long forms and come back later. Store the
+// in-progress form per user so they don't lose work. Cleared on successful
+// submit, on reapply (existing rejection takes precedence), or on explicit
+// discard. v1 in the key so we can reset all drafts safely if the schema
+// changes.
+const DRAFT_KEY = (userId) => `pastorApply:draft:v1:${userId}`;
+const DRAFT_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
+
+function readDraft(userId) {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY(userId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.savedAt || !parsed?.form) return null;
+    if (Date.now() - parsed.savedAt > DRAFT_TTL_MS) {
+      localStorage.removeItem(DRAFT_KEY(userId));
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writeDraft(userId, form) {
+  try {
+    localStorage.setItem(DRAFT_KEY(userId), JSON.stringify({ savedAt: Date.now(), form }));
+  } catch {}
+}
+
+function clearDraft(userId) {
+  try { localStorage.removeItem(DRAFT_KEY(userId)); } catch {}
+}
+
+function relativeTime(ts) {
+  if (!ts) return '';
+  const diff = Date.now() - ts;
+  if (diff < 5_000)        return 'just now';
+  if (diff < 60_000)       return `${Math.floor(diff / 1000)}s ago`;
+  if (diff < 3_600_000)    return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000)   return `${Math.floor(diff / 3_600_000)}h ago`;
+  return `${Math.floor(diff / 86_400_000)}d ago`;
+}
 
 const DENOMINATIONS = [
   'Catholic',
@@ -64,13 +114,32 @@ function Field({ label, hint, children }) {
   );
 }
 
-export default function PastorApply({ session, profile, onClose }) {
+export default function PastorApply({ session, profile, onClose, onBecamePastor }) {
   const [existing, setExisting] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [reapplying, setReapplying] = useState(false);
+  const [devBusy, setDevBusy] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState(null);
+
+  async function devBecomePastor() {
+    setDevBusy(true);
+    setError(null);
+    try {
+      const res = await authedFetch('/api/dev/become-pastor', { method: 'POST' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `bypass failed (${res.status})`);
+      }
+      onBecamePastor?.();
+    } catch (err) {
+      setDevBusy(false);
+      setError(err.message || 'bypass failed');
+    }
+  }
 
   const [form, setForm] = useState({
     full_name: profile?.display_name ?? '',
@@ -90,6 +159,9 @@ export default function PastorApply({ session, profile, onClose }) {
 
   function startReapply() {
     if (!existing) return;
+    // Bring the form into view so the pastor isn't disoriented after the
+    // rejection card collapses.
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
     setForm({
       full_name: existing.full_name ?? profile?.display_name ?? '',
       pastor_role: existing.pastor_role ?? '',
@@ -104,23 +176,94 @@ export default function PastorApply({ session, profile, onClose }) {
       website: existing.website ?? '',
       reason: existing.reason ?? '',
     });
+    // Reapply takes precedence over any first-time draft — clear it.
+    if (session?.user?.id) clearDraft(session.user.id);
+    setDraftRestored(false);
+    setDraftSavedAt(null);
     setReapplying(true);
+  }
+
+  function discardDraft() {
+    if (session?.user?.id) clearDraft(session.user.id);
+    setDraftRestored(false);
+    setDraftSavedAt(null);
+    setForm({
+      full_name: profile?.display_name ?? '',
+      pastor_role: '',
+      church_name: '',
+      denomination: '',
+      city: profile?.city ?? '',
+      country: profile?.country ?? '',
+      registration_country: 'CA',
+      registration_number: '',
+      no_registration: false,
+      denominational_reference: '',
+      website: '',
+      reason: '',
+    });
   }
 
   const regCountry = REG_COUNTRIES.find((c) => c.code === form.registration_country) ?? REG_COUNTRIES[0];
 
+  // Derived form-visibility flags — computed early so the auto-save effect
+  // can depend on `showFormOpen` to avoid persisting drafts when the form
+  // isn't on screen.
+  const showSuccess  = submitted || (existing && existing.status === 'pending');
+  const showApproved = existing && existing.status === 'approved';
+  const showRejected = existing && existing.status === 'rejected' && !reapplying;
+  const showFormOpen = (!showSuccess && !showApproved && !showRejected) || reapplying;
+
   useEffect(() => {
     if (!session?.user?.id) return;
+    const userId = session.user.id;
     supabase
       .from('pastor_applications')
       .select('*')
-      .eq('user_id', session.user.id)
+      .eq('user_id', userId)
       .maybeSingle()
       .then(({ data }) => {
         setExisting(data);
         setLoading(false);
+        // Only restore drafts for first-time applicants. If they've already
+        // applied (pending/approved/rejected), the existing row is the source
+        // of truth — startReapply seeds from the rejection if they re-open.
+        if (!data) {
+          const draft = readDraft(userId);
+          if (draft) {
+            setForm((f) => ({ ...f, ...draft.form }));
+            setDraftRestored(true);
+            setDraftSavedAt(draft.savedAt);
+          }
+        }
       });
   }, [session]);
+
+  // Auto-save the form to localStorage on edits (debounced).
+  // Skipped when the form isn't visible, when nothing has been typed yet,
+  // and during the loading flash so we don't write a half-restored form
+  // back over the real draft.
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    if (loading) return;
+    if (!showFormOpen) return;
+    const hasContent = !!(
+      form.church_name.trim()
+      || form.website.trim()
+      || form.registration_number.trim()
+      || form.reason.trim()
+      || form.denominational_reference.trim()
+      || form.pastor_role
+      || form.denomination
+    );
+    if (!hasContent) return;
+    const t = setTimeout(() => {
+      writeDraft(userId, form);
+      setDraftSavedAt(Date.now());
+      setDraftRestored(false); // banner gives way to the "saved" indicator
+    }, 600);
+    return () => clearTimeout(t);
+  }, [form, session, loading, showFormOpen]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -152,20 +295,41 @@ export default function PastorApply({ session, profile, onClose }) {
       reason: form.reason.trim() || null,
     };
 
-    const { error: err } = reapplying && existing?.id
+    // Use .select().single() so we get the row BACK after the BEFORE-trigger
+    // has run. The trigger may have flipped status to 'approved' on the
+    // domain-match fast path — see scripts/2026-05-01-pastor-domain-verification.sql.
+    const { data: row, error: err } = reapplying && existing?.id
       ? await supabase
           .from('pastor_applications')
           .update({ ...payload, status: 'pending', notes: null, reviewed_at: null })
           .eq('id', existing.id)
+          .select()
+          .single()
       : await supabase
           .from('pastor_applications')
-          .insert(payload);
+          .insert(payload)
+          .select()
+          .single();
 
     setSaving(false);
     if (err) return setError(err.message);
+
+    // Application is in the database — wipe the draft either way.
+    clearDraft(session.user.id);
+    setDraftRestored(false);
+    setDraftSavedAt(null);
+
+    // Tier 1 instant approval — the trigger created the church and flipped
+    // is_pastor=true. Hand off to the parent so the app reloads the profile
+    // and routes into the new pastor dashboard.
+    if (row?.status === 'approved' && row?.verification_method === 'auto_domain') {
+      onBecamePastor?.();
+      return;
+    }
+
     setSubmitted(true);
     setReapplying(false);
-    if (existing) setExisting({ ...existing, ...payload, status: 'pending', notes: null });
+    if (existing) setExisting({ ...existing, ...(row ?? payload), status: row?.status ?? 'pending', notes: row?.notes ?? null });
   }
 
   if (loading) {
@@ -176,10 +340,8 @@ export default function PastorApply({ session, profile, onClose }) {
     );
   }
 
-  const showSuccess  = submitted || (existing && existing.status === 'pending');
-  const showApproved = existing && existing.status === 'approved';
-  const showRejected = existing && existing.status === 'rejected' && !reapplying;
-  const showForm     = (!showSuccess && !showApproved && !showRejected) || reapplying;
+  // Alias kept for the JSX below so the diff stays small.
+  const showForm = showFormOpen;
 
   return (
     <div style={{ minHeight: '100vh', background: T.cream, padding: '40px 20px 80px', overflowY: 'auto' }}>
@@ -187,6 +349,31 @@ export default function PastorApply({ session, profile, onClose }) {
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 18 }}>
           ← Back
         </button>
+
+        {DEV_PASTOR_BYPASS && (
+          <div style={{
+            background: 'rgba(196,129,58,0.1)', border: `1px dashed ${T.goldLight}`,
+            borderRadius: 12, padding: '14px 16px', marginBottom: 20,
+          }}>
+            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 6 }}>
+              ⚡ Dev only
+            </div>
+            <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.5, marginBottom: 10 }}>
+              Skip the form and become a verified pastor of "Test Chapel" instantly. Server gates this on <code>DEV_PASTOR_BYPASS=true</code>.
+            </div>
+            <button
+              onClick={devBecomePastor}
+              disabled={devBusy}
+              style={{
+                background: T.goldDark, color: T.cream, border: 'none', borderRadius: 999,
+                padding: '10px 18px', fontSize: 13, fontWeight: 600,
+                cursor: devBusy ? 'not-allowed' : 'pointer', opacity: devBusy ? 0.6 : 1,
+              }}
+            >
+              {devBusy ? 'Working…' : 'Become a pastor instantly'}
+            </button>
+          </div>
+        )}
 
         <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 10 }}>
           For pastors & church leaders
@@ -203,12 +390,26 @@ export default function PastorApply({ session, profile, onClose }) {
             <div style={{ fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
               ✦ Approved
             </div>
-            <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', marginBottom: 6 }}>
+            <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', marginBottom: 8 }}>
               Welcome, pastor.
             </div>
-            <div style={{ color: T.inkSoft, fontSize: 14, lineHeight: 1.6 }}>
-              Your church has been added. You'll see it from your profile menu. You can edit the welcome note and share a QR code for your congregation to find it.
+            <div style={{ color: T.inkSoft, fontSize: 14, lineHeight: 1.6, marginBottom: 16 }}>
+              Your church is live. Here's your three-step ramp to the first Sunday:
             </div>
+            <ol style={{ margin: '0 0 18px', paddingLeft: 20, color: T.ink, fontSize: 14, lineHeight: 1.75 }}>
+              <li>Write a welcome note your members will see when they open the church.</li>
+              <li>Publish your first sermon — the page builds itself around it.</li>
+              <li>Print your QR code and share it Sunday.</li>
+            </ol>
+            <button
+              onClick={() => onBecamePastor?.()}
+              style={{
+                background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+                padding: '12px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              }}
+            >
+              ✦ Open your dashboard →
+            </button>
           </div>
         )}
 
@@ -253,9 +454,64 @@ export default function PastorApply({ session, profile, onClose }) {
             <div style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: T.ink, letterSpacing: '-0.012em', marginBottom: 6 }}>
               Thank you.
             </div>
-            <div style={{ color: T.inkSoft, fontSize: 14, lineHeight: 1.6 }}>
-              We verify each application against the public registry — usually within 2 business days. You'll get an email when your church is live.
+            <div style={{ color: T.inkSoft, fontSize: 14, lineHeight: 1.65, marginBottom: 14 }}>
+              We verify every application against the public registry — usually within 2 business days. You'll get an email when your church is live.
             </div>
+            <div style={{
+              background: T.white, border: `1px solid ${T.line}`, borderRadius: 10,
+              padding: '12px 14px', marginBottom: 14,
+            }}>
+              <div style={{ fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 600, marginBottom: 4 }}>
+                While you wait
+              </div>
+              <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.6 }}>
+                Browse The Way as a member — see what your congregation will see. Drop your church name into a sermon mockup, share early thoughts in community, learn the rhythm. The dashboard unlocks the moment you're approved.
+              </div>
+            </div>
+            <div style={{ fontSize: 12.5, color: T.inkMuted, lineHeight: 1.55 }}>
+              Been waiting more than 3 days?{' '}
+              <a href="mailto:dkalawarny@hotmail.com?subject=Pastor%20application%20status" style={{ color: T.goldDark, textDecoration: 'underline' }}>
+                Write to us
+              </a>{' '}— we'll look it up the same day.
+            </div>
+          </div>
+        )}
+
+        {showForm && reapplying && existing?.notes && (
+          <div style={{
+            background: 'rgba(196,129,58,0.07)', border: `1px solid ${T.goldLight}`,
+            borderRadius: 12, padding: '14px 16px', marginBottom: 18,
+          }}>
+            <div style={{ fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 6 }}>
+              ↻ What we found last time
+            </div>
+            <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+              {existing.notes}
+            </div>
+          </div>
+        )}
+
+        {showForm && draftRestored && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+            background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: 12,
+            padding: '12px 14px', marginBottom: 14,
+          }}>
+            <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.5 }}>
+              <strong style={{ color: T.goldDark, fontWeight: 700 }}>↻ We saved your progress.</strong>{' '}
+              Picked up where you left off {relativeTime(draftSavedAt)}.
+            </div>
+            <button
+              type="button"
+              onClick={discardDraft}
+              style={{
+                background: 'none', border: `1px solid ${T.line}`, borderRadius: 999,
+                padding: '6px 12px', fontSize: 12, color: T.inkSoft, cursor: 'pointer',
+                fontFamily: 'inherit', whiteSpace: 'nowrap',
+              }}
+            >
+              Start fresh
+            </button>
           </div>
         )}
 
@@ -311,9 +567,16 @@ export default function PastorApply({ session, profile, onClose }) {
             <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 6 }}>
               Verification
             </div>
-            <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.6, marginTop: 0, marginBottom: 16 }}>
-              We confirm your church on the public registry before going live. This is what stops fakes from claiming a church name.
+            <p style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.6, marginTop: 0, marginBottom: 12 }}>
+              We confirm every church on the public registry so members can trust who they find here.
             </p>
+            <div style={{
+              background: 'rgba(196,129,58,0.08)', border: `1px solid ${T.goldLight}`,
+              borderRadius: 10, padding: '10px 12px', marginBottom: 18,
+              fontSize: 12.5, color: T.inkSoft, lineHeight: 1.55,
+            }}>
+              <strong style={{ color: T.goldDark, fontWeight: 700 }}>✦ Fast-track:</strong> if you signed up with an email at your church's domain (e.g. <code style={{ fontSize: 12 }}>you@yourchurch.org</code>), and your church website matches, we'll approve you instantly — no waiting.
+            </div>
 
             {!form.no_registration && (
               <>
@@ -371,16 +634,25 @@ export default function PastorApply({ session, profile, onClose }) {
 
             <div style={{ height: 1, background: T.line, margin: '8px 0 22px' }} />
 
-            <Field label="Why do you want your church on The Way?" hint="One honest paragraph">
+            <Field label="Anything you want us to know? (optional)" hint="What you'd hope this gives your congregation. One sentence is plenty.">
               <textarea
-                style={{ ...input, minHeight: 110, resize: 'vertical', fontFamily: T.serif, lineHeight: 1.6 }}
+                style={{ ...input, minHeight: 64, resize: 'vertical', fontFamily: T.serif, lineHeight: 1.6 }}
                 value={form.reason}
                 onChange={(e) => set('reason', e.target.value)}
-                placeholder="What you'd hope this gives your congregation between Sundays…"
+                placeholder="e.g. We've been looking for a quieter way for our small group leaders to keep the conversation going midweek."
               />
             </Field>
 
             {error && <div style={{ color: T.error ?? '#c0392b', fontSize: 13, marginBottom: 12 }}>{error}</div>}
+
+            {draftSavedAt && !draftRestored && (
+              <div style={{
+                fontSize: 11.5, color: T.inkMuted, marginBottom: 10, textAlign: 'right',
+                fontFamily: T.serif, fontStyle: 'italic',
+              }}>
+                ✓ Draft saved · {relativeTime(draftSavedAt)}
+              </div>
+            )}
 
             <button
               type="submit"

@@ -130,7 +130,10 @@ function timeAgo(ts) {
 function PostCard({ post, index = 0, session, currentUserId, userProfile, userGroup, onReact, onReplySubmit, onRepost, isFollowing, onFollow, onViewProfile }) {
   const [bodyExpanded,   setBodyExpanded]   = useState(false);
   const [commentsOpen,   setCommentsOpen]   = useState(false);
-  const [localReplies,   setLocalReplies]   = useState(post.replies ?? []);
+  // post.post_comments is the embedded select from loadPosts; it's a thin
+  // shape ({id, body, created_at, profiles}) hydrated by the relationship.
+  // Optimistic appends use the same shape so the UI doesn't flicker.
+  const [localReplies,   setLocalReplies]   = useState(post.post_comments ?? []);
   const [replyText,      setReplyText]      = useState('');
   const [submitting,     setSubmitting]     = useState(false);
   const [shareOpen,      setShareOpen]      = useState(false);
@@ -182,8 +185,10 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                   {person ? ` · ${person.emoji} ${person.label}` : ''}
                   {' · '}{timeAgo(post.created_at)}
                 </span>
-                {post.audience === 'friends' && <span title="Friends only">👥</span>}
-                {post.audience === 'private' && <span title="Only you">🔒</span>}
+                {/* Audience badges removed 2026-05-01: posts.audience is being
+                    dropped — privacy is now expressed via posts.scope and
+                    enforced by RLS, so a 'friends'/'private' badge cannot
+                    correspond to anything visible in this feed. */}
               </div>
             </div>
             {currentUserId && !isOwnPost && (
@@ -743,32 +748,28 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile }) {
   );
 }
 
-const AUDIENCE_OPTIONS = [
-  { value: 'public',  icon: '🌐', label: 'Everyone',      sub: 'Anyone on The Way' },
-  { value: 'friends', icon: '👥', label: 'Friends only',  sub: 'Only your friends' },
-  { value: 'private', icon: '🔒', label: 'Only me',       sub: 'Saved privately' },
-];
-
 export function ComposeSheet({ session, profile, onPost, onClose }) {
   const [body, setBody] = useState('');
-  const [audience, setAudience] = useState('public');
-  const [audienceOpen, setAudienceOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const audiencePick = AUDIENCE_OPTIONS.find((o) => o.value === audience);
 
   async function handlePost(e) {
     e.preventDefault();
     if (!body.trim() || !session) return;
     setSubmitting(true);
+    // scope='me' + kind='text' are NOT NULL in posts; the old composer
+    // omitted them and the insert was silently failing for non-pastors.
+    // Privacy is enforced by the RLS policy "Same-church members read
+    // me-scope posts" — no client-side audience picker needed.
     const { data, error } = await supabase
       .from('posts')
       .insert({
         author_id: session.user.id,
+        scope: 'me',
+        kind: 'text',
         body: body.trim(),
         person_type: profile?.person_type ?? null,
-        audience,
       })
-      .select('*, profiles(display_name, city, country, tradition, person_type, avatar_config), replies(id)')
+      .select('*, profiles(display_name, city, country, tradition, person_type, avatar_config), post_comments(id)')
       .single();
     setSubmitting(false);
     if (error) { console.error('Post failed:', error.message); return; }
@@ -794,37 +795,14 @@ export function ComposeSheet({ session, profile, onPost, onClose }) {
           <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} size={40} />
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 600, fontSize: 14, color: T.ink, marginBottom: 4 }}>{profile?.display_name ?? 'You'}</div>
-            {/* Audience picker */}
-            <div style={{ position: 'relative' }}>
-              <button onClick={() => setAudienceOpen((v) => !v)} style={{
-                background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 999,
-                padding: '3px 10px 3px 8px', fontSize: 12, fontWeight: 600, color: T.inkSoft,
-                cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
-              }}>
-                {audiencePick.icon} {audiencePick.label} ▾
-              </button>
-              {audienceOpen && (
-                <div onClick={(e) => e.stopPropagation()} style={{
-                  position: 'absolute', top: '110%', left: 0, zIndex: 10,
-                  background: T.white, border: `1px solid ${T.line}`, borderRadius: 12,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.12)', overflow: 'hidden', minWidth: 210,
-                }}>
-                  {AUDIENCE_OPTIONS.map((opt) => (
-                    <button key={opt.value} onClick={() => { setAudience(opt.value); setAudienceOpen(false); }} style={{
-                      width: '100%', textAlign: 'left', background: audience === opt.value ? T.parchment : T.white,
-                      border: 'none', padding: '11px 14px', cursor: 'pointer',
-                      borderBottom: `1px solid ${T.line}`, display: 'flex', gap: 10, alignItems: 'center',
-                    }}>
-                      <span style={{ fontSize: 16 }}>{opt.icon}</span>
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{opt.label}</div>
-                        <div style={{ fontSize: 11, color: T.inkMuted }}>{opt.sub}</div>
-                      </div>
-                      {audience === opt.value && <span style={{ marginLeft: 'auto', color: T.gold, fontSize: 14 }}>✓</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
+            {/* Privacy hint — replaces the old 3-option picker. The visibility
+                is set by RLS, not the author: same-church members can read,
+                everyone else sees the count but can't enter the comments. */}
+            <div style={{
+              fontSize: 11, color: T.inkMuted, fontStyle: 'italic',
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+            }}>
+              👥 Visible to your church family
             </div>
           </div>
         </div>
@@ -870,7 +848,6 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [following, setFollowing] = useState(new Set());
-  const [friendIds, setFriendIds] = useState(new Set());
   const [featuredThread, setFeaturedThread] = useState(null);
   const [composeOpen, setComposeOpen] = useState(false);
   const [feedType, setFeedType] = useState('posts');
@@ -890,13 +867,9 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
     const uid = session.user.id;
     supabase.from('follows').select('following_id').eq('follower_id', uid)
       .then(({ data }) => setFollowing(new Set(data?.map((f) => f.following_id) ?? [])));
-    supabase.from('friend_requests').select('sender_id, receiver_id')
-      .or(`sender_id.eq.${uid},receiver_id.eq.${uid}`)
-      .eq('status', 'accepted')
-      .then(({ data }) => {
-        const ids = (data ?? []).map((r) => r.sender_id === uid ? r.receiver_id : r.sender_id);
-        setFriendIds(new Set(ids));
-      });
+    // The friend_requests fetch lived here to power the now-removed
+    // audience='friends' filter; with RLS doing privacy gating we no
+    // longer need to know who the viewer's friends are at this surface.
   }, [session]);
 
   useEffect(() => {
@@ -926,7 +899,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
     setLoading(true);
     let query = supabase
       .from('posts')
-      .select(`*, profiles(display_name, city, country, tradition, person_type, avatar_config), replies(id, body, created_at, profiles(display_name, avatar_config))`)
+      .select(`*, profiles(display_name, city, country, tradition, person_type, avatar_config), post_comments(id, body, created_at, profiles(display_name, avatar_config))`)
       .order('created_at', { ascending: false })
       .limit(60);
     if (filter !== 'all') query = query.eq('person_type', filter);
@@ -934,13 +907,12 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
     if (!postData) { setLoading(false); return; }
 
     const myId = session?.user?.id;
-    const visible = postData.filter((p) => {
-      const aud = p.audience ?? 'public';
-      if (aud === 'public') return true;
-      if (aud === 'private') return p.author_id === myId;
-      if (aud === 'friends') return p.author_id === myId || friendIds.has(p.author_id);
-      return true;
-    });
+    // Visibility is now enforced entirely by RLS — see
+    // scripts/2026-05-01-private-comments.sql. The legacy client-side
+    // audience filter (public/private/friends) was removed because no
+    // composer writes audience anymore and RLS already returns only the
+    // posts this viewer is allowed to see.
+    const visible = postData;
 
     const postIds = visible.map((p) => p.id);
     const { data: reactions } = postIds.length
@@ -952,12 +924,12 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
       const counts = {};
       postReactions.forEach((r) => { counts[r.kind] = (counts[r.kind] ?? 0) + 1; });
       const myReaction = postReactions.find((r) => r.author_id === myId)?.kind ?? null;
-      return { ...p, reaction_counts: counts, my_reaction: myReaction, reply_count: p.replies?.length ?? 0 };
+      return { ...p, reaction_counts: counts, my_reaction: myReaction, reply_count: p.post_comments?.length ?? 0 };
     });
 
     setPosts(enriched);
     setLoading(false);
-  }, [filter, session, friendIds]);
+  }, [filter, session]);
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 
@@ -973,7 +945,10 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
 
   async function handleReply(postId, body) {
     if (!session) return;
-    await supabase.from('replies').insert({ post_id: postId, author_id: session.user.id, body });
+    // post_comments is the privacy-gated canonical table (see
+    // scripts/2026-05-01-private-comments.sql). The legacy 'replies' table
+    // is wide-open to any authed user and should not be written anymore.
+    await supabase.from('post_comments').insert({ post_id: postId, author_id: session.user.id, body });
     loadPosts();
   }
 

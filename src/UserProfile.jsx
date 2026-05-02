@@ -1,77 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { supabase } from './supabase.js';
 import { T, SEMANTIC } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
 import { Avatar } from './ProfilePage.jsx';
+// Shared with MePanel — same constants, same helpers, same church card.
+// If you find yourself adding a profile primitive, put it there, not here.
+import { TYPE_COLORS, timeAgo, loadChurchContext, ChurchAttendsCard } from './profileShared.jsx';
 
-const REACTIONS = [
-  { kind: 'resonates', label: 'Love',      emoji: '❤️' },
-  { kind: 'amen',      label: 'Amen',       emoji: '🙏' },
-  { kind: 'thinking',  label: 'Insightful', emoji: '💡' },
-];
+const Feed          = lazy(() => import('./Feed.jsx'));
+const PostComposer  = lazy(() => import('./PostComposer.jsx'));
 
-const TYPE_COLORS = {
-  curious:    { bg: 'rgba(196,129,58,0.12)', border: 'rgba(196,129,58,0.4)', text: '#8a5a1a' },
-  seeking:    { bg: 'rgba(74,123,157,0.12)', border: 'rgba(74,123,157,0.4)', text: '#2e6a8e' },
-  skeptic:    { bg: 'rgba(100,100,100,0.1)', border: 'rgba(100,100,100,0.3)', text: '#555' },
-  'new-faith':{ bg: 'rgba(74,139,90,0.12)', border: 'rgba(74,139,90,0.4)',  text: '#2e7a48' },
-};
-
-const AUDIENCE_ICONS = { public: '🌐', friends: '👥', private: '🔒' };
-
-function timeAgo(ts) {
-  const diff = (Date.now() - new Date(ts)) / 1000;
-  if (diff < 60) return 'just now';
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
-
-function ProfilePost({ post, session, onReact }) {
-  const [expanded, setExpanded] = useState(false);
-  return (
-    <div style={{ background: T.white, borderRadius: 16, border: `1px solid ${T.line}`, marginBottom: 12, overflow: 'hidden' }}>
-      <div style={{ padding: '14px 18px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          <span style={{ fontSize: 12, color: T.inkMuted }}>{timeAgo(post.created_at)}</span>
-          {post.audience && post.audience !== 'public' && (
-            <span style={{ fontSize: 11, color: T.inkMuted }}>{AUDIENCE_ICONS[post.audience]}</span>
-          )}
-        </div>
-        <div style={{ fontFamily: T.serif, fontSize: 16, color: T.ink, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
-          {expanded ? post.body : post.body.slice(0, 300) + (post.body.length > 300 ? '…' : '')}
-        </div>
-        {post.body.length > 300 && (
-          <button onClick={() => setExpanded((v) => !v)} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 13, cursor: 'pointer', padding: '6px 0 0', display: 'block' }}>
-            {expanded ? 'Show less' : 'Read more'}
-          </button>
-        )}
-      </div>
-      <div style={{ padding: '8px 18px', borderTop: `1px solid ${T.line}`, display: 'flex', gap: 6, alignItems: 'center' }}>
-        {REACTIONS.map((r) => {
-          const count = post.reaction_counts?.[r.kind] ?? 0;
-          const active = post.my_reaction === r.kind;
-          return (
-            <button key={r.kind} onClick={() => session && onReact(post.id, r.kind, active)} style={{
-              background: active ? 'rgba(196,129,58,0.12)' : 'transparent',
-              border: `1px solid ${active ? T.gold : T.line}`,
-              borderRadius: 999, padding: '5px 11px', fontSize: 12,
-              color: active ? T.goldDark : T.inkMuted, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.15s',
-            }}>
-              {r.emoji} <span>{r.label}</span>{count > 0 && <span style={{ fontWeight: 700, marginLeft: 2 }}>{count}</span>}
-            </button>
-          );
-        })}
-        <span style={{ marginLeft: 'auto', fontSize: 12, color: T.inkMuted }}>💬 {post.reply_count ?? 0}</span>
-      </div>
-    </div>
-  );
-}
-
-export default function UserProfile({ userId, session, onClose, onStartChat, onViewProfile }) {
+export default function UserProfile({ userId, session, onClose, onStartChat, onViewProfile, onOpenChurch, onOpenSermon }) {
   const [profile, setProfile] = useState(null);
-  const [posts, setPosts] = useState([]);
   const [followingList, setFollowingList] = useState([]);
   const [stats, setStats] = useState({ posts: 0, following: 0, followers: 0 });
   const [isFollowing, setIsFollowing] = useState(false);
@@ -79,16 +19,23 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
   const [friendStatus, setFriendStatus] = useState('none');
   const [friendRequestId, setFriendRequestId] = useState(null);
   const [tab, setTab] = useState('posts');
-  const [loading, setLoading] = useState(true);
+  const [feedRefresh, setFeedRefresh] = useState(0);
   const [publicPrayers, setPublicPrayers] = useState([]);
   const [prayedFor, setPrayedFor] = useState(new Set());
   const [prayingFor, setPrayingFor] = useState(false); // "Pray for [name]" button state
+  // Their home church + this week's sermon — fetched via the shared
+  // loadChurchContext helper so MePanel and UserProfile use the same query
+  // shape. ChurchAttendsCard renders this object directly.
+  const [churchCtx, setChurchCtx] = useState({ church: null, sermon: null, memberCount: 0 });
   const person = PERSON_TYPES.find((p) => p.id === profile?.person_type);
   const typeColors = TYPE_COLORS[profile?.person_type] ?? TYPE_COLORS.curious;
 
   useEffect(() => {
     if (!userId) return;
-    supabase.from('profiles').select('*').eq('id', userId).single().then(({ data }) => setProfile(data ?? null));
+    supabase.from('profiles').select('*').eq('id', userId).single().then(async ({ data }) => {
+      setProfile(data ?? null);
+      setChurchCtx(await loadChurchContext(data?.church_id));
+    });
     Promise.all([
       supabase.from('posts').select('*', { count: 'exact', head: true }).eq('author_id', userId),
       supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', userId),
@@ -109,7 +56,6 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
           .in('id', data.map((f) => f.following_id));
         setFollowingList(profiles ?? []);
       });
-    loadPosts(userId);
   }, [userId, session]);
 
   async function loadFriendStatus(myId) {
@@ -151,20 +97,6 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
     }
   }
 
-  async function loadPosts(uid) {
-    setLoading(true);
-    const { data } = await supabase.from('posts').select('*, replies(id)').eq('author_id', uid).order('created_at', { ascending: false });
-    if (!data) { setLoading(false); return; }
-    const { data: reactions } = await supabase.from('reactions').select('post_id, kind, author_id').in('post_id', data.map((p) => p.id));
-    setPosts(data.map((p) => {
-      const pr = reactions?.filter((r) => r.post_id === p.id) ?? [];
-      const counts = {};
-      pr.forEach((r) => { counts[r.kind] = (counts[r.kind] ?? 0) + 1; });
-      return { ...p, reaction_counts: counts, my_reaction: pr.find((r) => r.author_id === session?.user?.id)?.kind ?? null, reply_count: p.replies?.length ?? 0 };
-    }));
-    setLoading(false);
-  }
-
   async function handleFollow() {
     if (!session) return;
     if (isFollowing) {
@@ -176,13 +108,6 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
       setIsFollowing(true);
       setStats((s) => ({ ...s, followers: s.followers + 1 }));
     }
-  }
-
-  async function handleReact(postId, kind, isActive) {
-    if (!session) return;
-    if (isActive) { await supabase.from('reactions').delete().eq('post_id', postId).eq('author_id', session.user.id); }
-    else { await supabase.from('reactions').upsert({ post_id: postId, author_id: session.user.id, kind }, { onConflict: 'post_id,author_id' }); }
-    loadPosts(userId);
   }
 
   async function loadPublicPrayers() {
@@ -222,40 +147,51 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
   const canSendFriendReq = profile?.allow_friend_requests !== false;
 
   return (
-    <div className="scene" style={{ position: 'fixed', inset: 0, zIndex: 200, overflowY: 'auto', paddingBottom: 80 }}>
+    <div className="scene" style={{ position: 'fixed', inset: 0, zIndex: 200, overflowY: 'auto', paddingBottom: 80, background: T.cream }}>
 
-      {/* Sticky header */}
+      {/* Sticky header — full width, content centered inside */}
       <div style={{
-        position: 'sticky', top: 0, zIndex: 10, height: 52,
-        padding: '0 12px', background: T.white, borderBottom: `1px solid ${T.line}`,
-        display: 'flex', alignItems: 'center', gap: 8,
+        position: 'sticky', top: 0, zIndex: 10,
+        background: T.white, borderBottom: `1px solid ${T.line}`,
       }}>
-        <button onClick={onClose} style={{
-          background: 'none', border: 'none', color: T.goldDark,
-          fontSize: 18, cursor: 'pointer', width: 36, height: 36, borderRadius: 10,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          transition: 'background 0.15s',
-        }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = T.parchment)}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-          aria-label="Back"
-        >←</button>
         <div style={{
-          flex: 1, textAlign: 'center', fontFamily: T.display,
-          fontSize: 17, fontWeight: 600, color: T.ink, letterSpacing: '-0.012em',
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          maxWidth: 640, margin: '0 auto', height: 52,
+          padding: '0 12px',
+          display: 'flex', alignItems: 'center', gap: 8,
         }}>
-          {profile?.display_name ?? ''}
+          <button onClick={onClose} style={{
+            background: 'none', border: 'none', color: T.goldDark,
+            fontSize: 18, cursor: 'pointer', width: 36, height: 36, borderRadius: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'background 0.15s',
+          }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = T.parchment)}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            aria-label="Back"
+          >←</button>
+          <div style={{
+            flex: 1, textAlign: 'center', fontFamily: T.display,
+            fontSize: 17, fontWeight: 600, color: T.ink, letterSpacing: '-0.012em',
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
+            {profile?.display_name ?? ''}
+          </div>
+          {friendStatus === 'friends' ? (
+            <span style={{ fontSize: 11, color: T.goldDark, background: 'rgba(196,129,58,0.1)', borderRadius: 999, padding: '4px 10px', fontWeight: 600 }}>👥 Friends</span>
+          ) : (
+            <div style={{ width: 36 }} />
+          )}
         </div>
-        {friendStatus === 'friends' ? (
-          <span style={{ fontSize: 11, color: T.goldDark, background: 'rgba(196,129,58,0.1)', borderRadius: 999, padding: '4px 10px', fontWeight: 600 }}>👥 Friends</span>
-        ) : (
-          <div style={{ width: 36 }} />
-        )}
       </div>
 
-      {/* Hero cover — warm parchment-to-gold band */}
-      <div style={{ background: T.white, marginBottom: 10 }}>
+      {/* Centered column for the whole profile body */}
+      <div style={{ maxWidth: 640, margin: '0 auto', padding: '14px 14px 0' }}>
+
+      {/* Hero card — warm parchment-to-gold banner with avatar + identity */}
+      <div style={{
+        background: T.white, marginBottom: 12,
+        borderRadius: 16, border: `1px solid ${T.line}`, overflow: 'hidden',
+      }}>
         <div style={{
           height: 108,
           background: `linear-gradient(135deg, ${T.parchment} 0%, ${T.parchmentDark} 45%, rgba(216,155,82,0.55) 100%)`,
@@ -271,7 +207,11 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
 
         <div style={{ padding: '0 20px 22px' }}>
           {/* Avatar + action buttons row */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: -50, marginBottom: 16 }}>
+          {/* position: relative + zIndex: 2 keeps the avatar painting above the
+              banner texture and above the gold ring's drop-shadow — without
+              it the dotted radial mask on the banner can visually swallow the
+              top half of the avatar on certain browsers / scroll positions. */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: -50, marginBottom: 16, position: 'relative', zIndex: 2 }}>
             <div style={{
               borderRadius: '50%', padding: 4,
               background: `linear-gradient(135deg, ${T.gold}, #e8a050, ${T.gold})`,
@@ -386,56 +326,76 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
             </div>
           )}
 
-          {/* Stats */}
-          <div style={{ display: 'flex', gap: 24, paddingTop: 14, borderTop: `1px solid ${T.line}` }}>
-            {[
-              { value: stats.posts, label: 'Posts' },
-              { value: stats.following, label: 'Following' },
-              { value: stats.followers, label: 'Followers' },
-            ].map((s) => (
-              <div key={s.label}>
-                <span style={{ fontFamily: T.display, fontSize: 21, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>{s.value}</span>
-                <span style={{ fontSize: 12, color: T.inkMuted, marginLeft: 5 }}>{s.label}</span>
-              </div>
-            ))}
-          </div>
+          {/* Stats — hidden when this person has no posts, no follows, no
+              followers. A row of zeros tells visitors "nothing's here" before
+              they've even read the bio; better to show no stats at all than
+              three sad zeros. */}
+          {(stats.posts > 0 || stats.following > 0 || stats.followers > 0) && (
+            <div style={{ display: 'flex', gap: 24, paddingTop: 14, borderTop: `1px solid ${T.line}` }}>
+              {[
+                { value: stats.posts, label: 'Posts' },
+                { value: stats.following, label: 'Following' },
+                { value: stats.followers, label: 'Followers' },
+              ].map((s) => (
+                <div key={s.label}>
+                  <span style={{ fontFamily: T.display, fontSize: 21, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>{s.value}</span>
+                  <span style={{ fontSize: 12, color: T.inkMuted, marginLeft: 5 }}>{s.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* AI Chat CTA */}
-      {onStartChat && (
-        <div style={{ padding: '0 14px 14px' }}>
-          <button
-            onClick={() => onStartChat(`I've been reading ${profile?.display_name ?? 'someone'}'s posts about their faith journey. Help me understand their perspective — what questions should I ask or explore?`)}
-            style={{
-              width: '100%',
-              background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
-              color: T.cream, border: 'none', borderRadius: 14,
-              padding: '16px 20px', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 14,
-              boxShadow: '0 4px 20px rgba(196,129,58,0.4)',
-              transition: 'transform 0.15s, box-shadow 0.15s',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 28px rgba(196,129,58,0.55)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(196,129,58,0.4)'; }}
-          >
-            <div style={{
-              width: 42, height: 42, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 20, flexShrink: 0,
-            }}>✦</div>
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 2 }}>Discuss {firstName}'s journey</div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4 }}>Ask AI to help you explore their perspective</div>
-            </div>
-            <div style={{ marginLeft: 'auto', fontSize: 18, opacity: 0.7 }}>→</div>
-          </button>
-        </div>
+      {/* Their church + this week's sermon — see profileShared.jsx.
+          Hidden on the viewer's own profile (you don't need a "your church"
+          card on someone else's profile that's actually you — the bottom-nav
+          Church tab already covers that case). */}
+      {session?.user?.id !== userId && (
+        <ChurchAttendsCard
+          firstName={firstName}
+          isSelf={false}
+          church={churchCtx.church}
+          sermon={churchCtx.sermon}
+          memberCount={churchCtx.memberCount}
+          onOpenChurch={onOpenChurch}
+          onOpenSermon={onOpenSermon}
+        />
       )}
 
-      {/* Tabs */}
-      <div style={{ background: T.white, display: 'flex', borderBottom: `1px solid ${T.line}`, marginBottom: 12 }}>
+      {/* AI chat — demoted to a quiet link.
+          Was a full-width gold gradient banner that visually screamed louder
+          than the actual person whose page this is. The point of this page
+          is to read what they wrote and connect with them — AI is a side
+          door, not the front door. Now sits as a one-line ghost row below
+          the tabs, only on others' profiles, only when posts exist. */}
+      {onStartChat && session?.user?.id !== userId && stats.posts > 0 && (
+        <button
+          onClick={() => onStartChat(`I've been reading ${profile?.display_name ?? 'someone'}'s posts about their faith journey. Help me understand their perspective — what questions should I ask or explore?`)}
+          style={{
+            width: '100%', marginBottom: 12,
+            background: 'transparent', color: T.goldDark,
+            border: `1px dashed ${T.goldLight}`, borderRadius: 12,
+            padding: '9px 14px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 10,
+            fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+            transition: 'border-color 0.15s, background 0.15s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.background = 'rgba(196,129,58,0.05)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.goldLight; e.currentTarget.style.background = 'transparent'; }}
+        >
+          <span style={{ fontSize: 14 }}>✦</span>
+          <span>Ask AI to help you explore {firstName}'s perspective</span>
+          <span style={{ marginLeft: 'auto', fontSize: 14 }}>→</span>
+        </button>
+      )}
+
+      {/* Tabs — sit inside the card column, not full-bleed */}
+      <div style={{
+        background: T.white, display: 'flex',
+        border: `1px solid ${T.line}`, borderRadius: 12,
+        marginBottom: 12, overflow: 'hidden',
+      }}>
         {[
           { id: 'posts',     label: `Posts (${stats.posts})` },
           { id: 'prayers',   label: 'Prayers' },
@@ -454,22 +414,44 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
         ))}
       </div>
 
-      {/* Posts tab */}
+      {/* Posts tab — unified feed (your own profile shows the composer) */}
       {tab === 'posts' && (
-        <div style={{ padding: '0 14px' }}>
-          {loading && <div style={{ textAlign: 'center', padding: 40, color: T.inkMuted, fontFamily: T.serif }}>Loading…</div>}
-          {!loading && posts.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '40px 20px', background: T.white, borderRadius: 16, border: `1px solid ${T.line}` }}>
-              <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.15 }}>Nothing shared yet.</div>
-            </div>
-          )}
-          {posts.map((p) => <ProfilePost key={p.id} post={p} session={session} onReact={handleReact} />)}
+        <div>
+          <Suspense fallback={<div style={{ textAlign: 'center', padding: 40, color: T.inkMuted, fontFamily: T.serif }}>Loading…</div>}>
+            {session?.user?.id === userId && (
+              <PostComposer
+                session={session}
+                scope="me"
+                placeholder="Share something on your page…"
+                onPosted={() => setFeedRefresh((n) => n + 1)}
+              />
+            )}
+            <Feed
+              source={`me:${userId}`}
+              sessionUserId={session?.user?.id}
+              refreshKey={feedRefresh}
+              emptyMessage={
+                // Three flavors:
+                //   - own profile: gentle nudge to post
+                //   - viewing someone with a church: hints at the privacy gate so a
+                //     non-member doesn't read empty as "they haven't posted" when really
+                //     they aren't in the same church. RLS will still filter posts the
+                //     viewer can't see, so this copy is the honest read of the situation.
+                //   - viewing someone with no church: plain empty
+                session?.user?.id === userId
+                  ? 'Nothing shared yet — say hello to your page.'
+                  : churchCtx.church
+                    ? `Posts here are visible to ${churchCtx.church.name} family.`
+                    : 'Nothing shared yet.'
+              }
+            />
+          </Suspense>
         </div>
       )}
 
       {/* Prayers tab */}
       {tab === 'prayers' && (
-        <div style={{ padding: '0 14px' }}>
+        <div>
           {publicPrayers.length === 0 && (
             <div style={{ textAlign: 'center', padding: '48px 20px', background: T.white, borderRadius: 16, border: `1px solid ${T.line}` }}>
               <div style={{ fontSize: 28, marginBottom: 10 }}>🕯️</div>
@@ -515,7 +497,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
 
       {/* Following tab */}
       {tab === 'following' && (
-        <div style={{ padding: '0 14px' }}>
+        <div>
           {followingList.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
               <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.15 }}>Not following anyone yet.</div>
@@ -559,6 +541,8 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
           })}
         </div>
       )}
+
+      </div>{/* /centered column */}
     </div>
   );
 }
