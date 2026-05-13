@@ -92,20 +92,10 @@ export default function SermonView({ session, profile, sermonId, onBack, chromel
   // group_question rows on older sermons.
   const dailyAll = items.filter((i) => i.kind === 'daily_verse' || i.kind === 'group_question');
 
-  // Backwards-compat: a sermon written before the scheduling rollout has
-  // every daily_verse with scheduled_at = NULL. Treat that whole sermon as
-  // "legacy / show all" so we don't blank out old content. As soon as the
-  // pastor schedules even one item, gating kicks in for the sermon.
-  const hasAnySchedule = dailyAll.some((i) => i.kind === 'daily_verse' && i.scheduled_at != null);
-
-  // An item is "not yet visible to members" if:
-  //   • it's a daily_verse, AND
-  //   • the sermon is in scheduled mode, AND
-  //   • either no scheduled_at (still a draft) OR scheduled_at is in the future.
-  // Legacy group_question rows are always visible.
+  // A daily_verse is hidden if it has no scheduled_at (draft) or its
+  // scheduled_at is in the future. Legacy group_question rows always show.
   const isHiddenForMembers = (it) => {
     if (it.kind !== 'daily_verse') return false;
-    if (!hasAnySchedule) return false;
     if (it.scheduled_at == null) return true;
     return new Date(it.scheduled_at).getTime() > now;
   };
