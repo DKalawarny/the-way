@@ -1336,7 +1336,11 @@ create or replace view public.feed_items
     sc.created_at
   from public.sermon_content sc
   join public.sermons s on s.id = sc.sermon_id
-  where s.is_published = true;
+  where s.is_published = true
+    and (
+      sc.kind != 'daily_verse'
+      or (sc.scheduled_at is not null and sc.scheduled_at <= now())
+    );
 
 grant select on public.feed_items to authenticated, anon;
 
