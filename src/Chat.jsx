@@ -849,6 +849,30 @@ export default function Chat({
   // ── AI usage limits ────────────────────────────────────────────────────────
   const aiUsage = useAiUsage(session?.user?.id, profile?.plan ?? 'free');
 
+  // ── Upgrade nudge — shown once/day when user asks 3+ deep questions ────────
+  const NUDGE_KEY = 'kinwove:last_nudge_date';
+  const DEEP_RE = /\b(free will|theodicy|suffering|evil|trinity|predestination|salvation|atonement|resurrection|eschatology|hermeneutic|reconcil|contradict|hypocri|doubt|deconstruct|faith crisis|why would god|how can god)\b/i;
+  const [deepCount, setDeepCount] = useState(0);
+  const [showNudge, setShowNudge] = useState(false);
+
+  function maybeShowNudge(userMsg) {
+    const plan = profile?.plan ?? 'free';
+    if (plan === 'premium_plus') return; // Pro users don't need nudge
+    const isDeepMsg = DEEP_RE.test(userMsg) || userMsg.length > 200;
+    if (!isDeepMsg) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const lastNudge = localStorage.getItem(NUDGE_KEY);
+    if (lastNudge === today) return; // already showed today
+    setDeepCount((c) => {
+      const next = c + 1;
+      if (next >= 3) {
+        setShowNudge(true);
+        localStorage.setItem(NUDGE_KEY, today);
+      }
+      return next;
+    });
+  }
+
   useEffect(() => {
     if (!busy && messages.length > 0) onMessagesChange?.(messages);
   }, [busy]);
@@ -1143,6 +1167,8 @@ export default function Chat({
       if (assistantContent) {
         const finalMsgs = [...next, { role: 'assistant', content: assistantContent }];
         fetchSuggestions(finalMsgs);
+        const lastUser = next.filter((m) => m.role === 'user').at(-1)?.content ?? '';
+        maybeShowNudge(lastUser);
       }
     }
   }
@@ -1675,6 +1701,47 @@ export default function Chat({
           {messages.length >= 3 && (
             <div style={{ marginTop: 8, marginBottom: 12, borderRadius: 10, overflow: 'hidden', border: `1px solid ${T.line}` }}>
               <AdStrip />
+            </div>
+          )}
+
+          {showNudge && (
+            <div style={{
+              margin: '8px 0 12px',
+              background: T.parchment,
+              border: `1px solid ${T.goldLight}`,
+              borderRadius: 12,
+              padding: '12px 14px',
+              display: 'flex', alignItems: 'flex-start', gap: 10,
+            }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: T.goldDark, marginBottom: 3 }}>
+                  You're asking deep questions
+                </div>
+                <div style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.5 }}>
+                  Individual Pro gives you access to our most powerful AI — better equipped for theology, doubt, and the hard stuff. $9.99/mo.
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                <button
+                  onClick={() => { setShowNudge(false); aiUsage.atLimit || document.querySelector('[data-upgrade]')?.click(); }}
+                  style={{
+                    background: T.goldDark, color: T.cream, border: 'none',
+                    borderRadius: 999, padding: '5px 12px',
+                    fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+                  }}
+                >
+                  Learn more →
+                </button>
+                <button
+                  onClick={() => setShowNudge(false)}
+                  style={{
+                    background: 'none', border: 'none', color: T.inkMuted,
+                    fontSize: 11.5, cursor: 'pointer', padding: 0, textAlign: 'center',
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
           )}
 
