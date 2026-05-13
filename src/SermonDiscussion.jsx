@@ -4,6 +4,8 @@ import { T } from './theme.js';
 import { BadgeList } from './Badge.jsx';
 import { relativeTime } from './time.js';
 import { useUiKit, EmptyState, TextButton } from './uikit.jsx';
+import PostImageGrid from './PostImageGrid.jsx';
+import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
 
 /**
  * Threaded discussion anchored to either:
@@ -29,6 +31,7 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
   const [replyTo, setReplyTo] = useState(null);
   const [open, setOpen]       = useState(defaultOpen);
   const { showToast, askConfirm, ui: uikitUi } = useUiKit();
+  const imageDrafts = useImageDrafts(4);
 
   // Which anchor column to filter / insert against. The component is a no-op
   // if neither is provided, but that's a developer error — render nothing
@@ -78,6 +81,7 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
   async function submit() {
     if (!sessionUserId || !text.trim() || !anchorVal) return;
     setBusy(true);
+    const image_urls = await imageDrafts.uploadAll(sessionUserId);
     // Set whichever anchor was supplied; leave the other null. The DB
     // CHECK constraint enforces the same invariant — exactly one set.
     const insertRow = {
@@ -87,6 +91,7 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
       is_anonymous: anon,
       sermon_id:         sermonId        ?? null,
       sermon_content_id: sermonContentId ?? null,
+      image_urls,
     };
     const { data, error } = await supabase
       .from('sermon_discussions')
@@ -97,6 +102,7 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
     if (error) { showToast(`Couldn't post: ${error.message}`, 'error'); return; }
     setRows((r) => [...r, data]);
     setText(''); setAnon(false); setReplyTo(null);
+    imageDrafts.clear();
   }
 
   async function remove(id) {
@@ -155,6 +161,11 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
           <div style={{ fontFamily: T.serif, fontSize: 14.5, color: T.ink, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
             {row.body}
           </div>
+          {Array.isArray(row.image_urls) && row.image_urls.length > 0 && (
+            <div style={{ marginTop: 8 }}>
+              <PostImageGrid urls={row.image_urls} />
+            </div>
+          )}
           {depth === 0 && (
             <button onClick={() => setReplyTo(row)} style={{
               background: 'none', border: 'none', color: T.goldDark, fontSize: 12, cursor: 'pointer',
@@ -210,11 +221,16 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
             background: T.white, color: T.ink, outline: 'none', resize: 'vertical',
           }}
         />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+        <ImageDraftGrid drafts={imageDrafts.drafts} onRemove={imageDrafts.remove} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: T.inkSoft, cursor: 'pointer' }}>
             <input type="checkbox" checked={anon} onChange={(e) => setAnon(e.target.checked)} style={{ accentColor: T.gold }} />
             Anonymously
           </label>
+          <ImageAttachButton
+            drafts={imageDrafts.drafts} max={imageDrafts.max}
+            fileInputRef={imageDrafts.fileInputRef} onPick={imageDrafts.pick}
+          />
           <div style={{ flex: 1 }} />
           <button
             onClick={submit}

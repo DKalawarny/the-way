@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+
+# AI crawlers — explicitly welcome for discoverability
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# Keep auth flows and private API routes out of indexes
+Disallow: /api/
+Disallow: /auth/callback
+Disallow: /admin/
+
+Sitemap: https://theway.app/sitemap.xml

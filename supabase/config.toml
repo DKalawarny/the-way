@@ -216,7 +216,7 @@ double_confirm_changes = true
 # Currently OFF for dev iteration. Flip to true when ready to test the
 # pastor-domain auto-verification fast path — see
 # scripts/2026-05-01-pastor-domain-verification.sql.
-enable_confirmations = false
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.

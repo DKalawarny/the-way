@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { T } from './theme.js';
 
-const DEFAULT_MESSAGE = 'Thought of you — The Way is a place for the big questions: life, meaning, faith, doubt. Honest conversation, no pressure, no agenda. Wherever you\u2019re at.';
+const DEFAULT_MESSAGE = 'Thought of you — kinwove is a place for the big questions: life, meaning, faith, doubt. Honest conversation, no pressure, no agenda. Wherever you\u2019re at.';
 
 function isValidEmail(s) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
 }
 
-export default function InviteFriends({ onClose }) {
+export default function InviteFriends({ onClose, profile }) {
   const [message, setMessage] = useState(DEFAULT_MESSAGE);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkText, setBulkText] = useState('');
@@ -16,7 +16,16 @@ export default function InviteFriends({ onClose }) {
   const [hasContactsApi, setHasContactsApi] = useState(false);
   const [hasNativeShare, setHasNativeShare] = useState(false);
 
-  const url = typeof window !== 'undefined' ? window.location.origin : '';
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+
+  // Build a tagged URL per channel so Plausible can show you exactly
+  // which share method is driving sign-ups. Referral param ties the
+  // sign-up back to the specific user who shared.
+  const ref = profile?.id ? `&ref=${profile.id.slice(0, 8)}` : '';
+  const taggedUrl = (source, medium = 'invite') =>
+    `${origin}?utm_source=${source}&utm_medium=${medium}&utm_campaign=referral${ref}`;
+
+  const url      = taggedUrl('invite', 'share'); // fallback / copy-link
   const fullText = `${message}\n\n${url}`;
 
   useEffect(() => {
@@ -27,7 +36,8 @@ export default function InviteFriends({ onClose }) {
 
   function openSMS(prefilledNumbers) {
     const recipients = prefilledNumbers ? prefilledNumbers.join(',') : '';
-    const body = encodeURIComponent(fullText);
+    const text = `${message}\n\n${taggedUrl('sms')}`;
+    const body = encodeURIComponent(text);
     const sep = /iPhone|iPad/i.test(navigator.userAgent) ? '&' : '?';
     window.location.href = recipients
       ? `sms:${recipients}${sep}body=${body}`
@@ -48,7 +58,8 @@ export default function InviteFriends({ onClose }) {
   }
 
   function openWhatsApp() {
-    window.open(`https://wa.me/?text=${encodeURIComponent(fullText)}`, '_blank');
+    const text = `${message}\n\n${taggedUrl('whatsapp', 'social')}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   }
 
   function openMessenger() {
@@ -57,22 +68,33 @@ export default function InviteFriends({ onClose }) {
   }
 
   function openFacebook() {
-    const u = encodeURIComponent(url);
+    const u = encodeURIComponent(taggedUrl('facebook', 'social'));
     const q = encodeURIComponent(message);
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${u}&quote=${q}`, '_blank', 'width=600,height=600');
   }
 
+  function openLinkedIn() {
+    const u = encodeURIComponent(taggedUrl('linkedin', 'social'));
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${u}`, '_blank', 'width=600,height=600');
+  }
+
+  function openX() {
+    const t = encodeURIComponent(`${message}\n\n${taggedUrl('twitter', 'social')}`);
+    window.open(`https://x.com/intent/tweet?text=${t}`, '_blank', 'width=600,height=600');
+  }
+
   async function nativeShare() {
     try {
-      await navigator.share({ title: 'The Way', text: message, url });
+      await navigator.share({ title: 'kinwove — AI Bible & Faith Community', text: message, url: taggedUrl('native', 'share') });
     } catch (e) {
       if (e.name !== 'AbortError') openEmail();
     }
   }
 
   function openEmail() {
-    const subject = encodeURIComponent('Thought you might like this');
-    const body = encodeURIComponent(fullText);
+    const subject = encodeURIComponent("Something I've been using — thought of you");
+    const text = `${message}\n\n${taggedUrl('email')}`;
+    const body = encodeURIComponent(text);
     window.open(`mailto:?subject=${subject}&body=${body}`);
   }
 
@@ -94,8 +116,9 @@ export default function InviteFriends({ onClose }) {
 
   function sendBulkEmail() {
     if (!validBulkEmails.length) return;
-    const subject = encodeURIComponent('Thought you might like this');
-    const body = encodeURIComponent(fullText);
+    const subject = encodeURIComponent("Something I've been using — thought of you");
+    const text = `${message}\n\n${taggedUrl('email-bulk')}`;
+    const body = encodeURIComponent(text);
     const bcc = validBulkEmails.join(',');
     window.location.href = `mailto:?bcc=${bcc}&subject=${subject}&body=${body}`;
   }
@@ -142,6 +165,22 @@ export default function InviteFriends({ onClose }) {
       sub: 'Share to your timeline or a group',
       bg: '#1877F2',
       onClick: openFacebook,
+    },
+    {
+      id: 'x',
+      icon: '𝕏',
+      label: 'Post to X',
+      sub: 'Share to your followers',
+      bg: '#000000',
+      onClick: openX,
+    },
+    {
+      id: 'linkedin',
+      icon: '🔷',
+      label: 'Share on LinkedIn',
+      sub: 'Great for pastors and faith leaders',
+      bg: '#0A66C2',
+      onClick: openLinkedIn,
     },
     {
       id: 'email',
@@ -202,7 +241,7 @@ export default function InviteFriends({ onClose }) {
         </div>
       </header>
 
-      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '20px 16px 60px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '20px 16px 80px' }}>
         <div style={{ maxWidth: 560, margin: '0 auto' }}>
 
           {/* Editable message */}
@@ -231,7 +270,7 @@ export default function InviteFriends({ onClose }) {
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               marginTop: 6, fontSize: 11, color: T.inkMuted,
             }}>
-              <span>The link to The Way is added automatically</span>
+              <span>The link to kinwove is added automatically</span>
               <button
                 onClick={() => setMessage(DEFAULT_MESSAGE)}
                 disabled={message === DEFAULT_MESSAGE}
@@ -381,7 +420,7 @@ export default function InviteFriends({ onClose }) {
                 ? 'No valid emails yet'
                 : `Ready to send to ${validBulkEmails.length} ${validBulkEmails.length === 1 ? 'address' : 'addresses'}`}
               {validBulkEmails.length > 50 && (
-                <span style={{ color: '#c0392b', display: 'block', marginTop: 4 }}>
+                <span style={{ color: T.error, display: 'block', marginTop: 4 }}>
                   Tip: many email apps cap BCC at ~50. Send in batches if needed.
                 </span>
               )}
@@ -425,7 +464,7 @@ export default function InviteFriends({ onClose }) {
             textAlign: 'center',
           }}>
             <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: 4 }}>
-              Scan to open The Way
+              Scan to open kinwove
             </div>
             <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 18 }}>
               Hand this to someone in person
@@ -437,7 +476,7 @@ export default function InviteFriends({ onClose }) {
             }}>
               <img
                 src={qrSrc}
-                alt="QR code linking to The Way"
+                alt="QR code linking to kinwove"
                 style={{ width: 240, height: 240, display: 'block' }}
               />
             </div>

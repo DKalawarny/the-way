@@ -1,8 +1,8 @@
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useEffect, useState, useRef, lazy, Suspense } from 'react';
 import { supabase } from './supabase.js';
-import { T, SEMANTIC } from './theme.js';
+import { T } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
-import { Avatar } from './ProfilePage.jsx';
+import { Avatar, bannerBackground } from './ProfilePage.jsx';
 // Shared with MePanel — same constants, same helpers, same church card.
 // If you find yourself adding a profile primitive, put it there, not here.
 import { TYPE_COLORS, timeAgo, loadChurchContext, ChurchAttendsCard } from './profileShared.jsx';
@@ -10,7 +10,7 @@ import { TYPE_COLORS, timeAgo, loadChurchContext, ChurchAttendsCard } from './pr
 const Feed          = lazy(() => import('./Feed.jsx'));
 const PostComposer  = lazy(() => import('./PostComposer.jsx'));
 
-export default function UserProfile({ userId, session, onClose, onStartChat, onViewProfile, onOpenChurch, onOpenSermon }) {
+export default function UserProfile({ userId, session, onClose, onStartChat, onStartDM, onViewProfile, onOpenChurch, onOpenSermon }) {
   const [profile, setProfile] = useState(null);
   const [followingList, setFollowingList] = useState([]);
   const [stats, setStats] = useState({ posts: 0, following: 0, followers: 0 });
@@ -20,6 +20,9 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
   const [friendRequestId, setFriendRequestId] = useState(null);
   const [tab, setTab] = useState('posts');
   const [feedRefresh, setFeedRefresh] = useState(0);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockBusy, setBlockBusy] = useState(false);
+  const [blockedByThem, setBlockedByThem] = useState(false);
   const [publicPrayers, setPublicPrayers] = useState([]);
   const [prayedFor, setPrayedFor] = useState(new Set());
   const [prayingFor, setPrayingFor] = useState(false); // "Pray for [name]" button state
@@ -47,12 +50,16 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
       supabase.from('follows').select('id').eq('follower_id', session.user.id).eq('following_id', userId)
         .then(({ data }) => setIsFollowing((data?.length ?? 0) > 0));
       loadFriendStatus(session.user.id);
+      supabase.from('blocked_users').select('id').eq('blocker_id', session.user.id).eq('blocked_id', userId)
+        .then(({ data }) => setIsBlocked((data?.length ?? 0) > 0));
+      supabase.from('blocked_users').select('id').eq('blocker_id', userId).eq('blocked_id', session.user.id)
+        .then(({ data }) => setBlockedByThem((data?.length ?? 0) > 0));
     }
     supabase.from('follows').select('following_id').eq('follower_id', userId)
       .then(async ({ data }) => {
         if (!data?.length) return;
         const { data: profiles } = await supabase
-          .from('profiles').select('id, display_name, avatar_config, person_type, tradition')
+          .from('profiles').select('id, display_name, avatar_config, avatar_url, person_type, tradition')
           .in('id', data.map((f) => f.following_id));
         setFollowingList(profiles ?? []);
       });
@@ -143,20 +150,59 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
     setPrayingFor(true);
   }
 
+  async function toggleBlock() {
+    if (!session || blockBusy) return;
+    setBlockBusy(true);
+    if (isBlocked) {
+      await supabase.from('blocked_users').delete().eq('blocker_id', session.user.id).eq('blocked_id', userId);
+      setIsBlocked(false);
+    } else {
+      await supabase.from('blocked_users').insert({ blocker_id: session.user.id, blocked_id: userId });
+      setIsBlocked(true);
+    }
+    setBlockBusy(false);
+  }
+
   const firstName = profile?.display_name?.split(' ')[0] ?? 'them';
   const canSendFriendReq = profile?.allow_friend_requests !== false;
 
-  return (
-    <div className="scene" style={{ position: 'fixed', inset: 0, zIndex: 200, overflowY: 'auto', paddingBottom: 80, background: T.cream }}>
+  const [actionMenuOpen, setActionMenuOpen] = useState(false);
+  const actionMenuRef = useRef(null);
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
+  useEffect(() => {
+    const handle = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener('resize', handle);
+    return () => window.removeEventListener('resize', handle);
+  }, []);
+  // Close action menu on outside click
+  useEffect(() => {
+    if (!actionMenuOpen) return;
+    const handler = (e) => { if (!actionMenuRef.current?.contains(e.target)) setActionMenuOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [actionMenuOpen]);
 
-      {/* Sticky header — full width, content centered inside */}
+  return (
+    <div className="scene" style={{
+      position: 'fixed',
+      top: isDesktop ? 56 : 0,
+      left: isDesktop ? 240 : 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 150,
+      overflowY: 'auto',
+      paddingBottom: 80,
+      background: T.cream,
+    }}>
+
+      {/* Sticky header */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
         background: T.white, borderBottom: `1px solid ${T.line}`,
       }}>
         <div style={{
-          maxWidth: 640, margin: '0 auto', height: 52,
-          padding: '0 12px',
+          maxWidth: 760, margin: '0 auto', height: 52,
+          padding: '0 16px',
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
           <button onClick={onClose} style={{
@@ -177,7 +223,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
             {profile?.display_name ?? ''}
           </div>
           {friendStatus === 'friends' ? (
-            <span style={{ fontSize: 11, color: T.goldDark, background: 'rgba(196,129,58,0.1)', borderRadius: 999, padding: '4px 10px', fontWeight: 600 }}>👥 Friends</span>
+            <span style={{ fontSize: 11, color: T.goldDark, background: 'rgba(184,115,58,0.1)', borderRadius: 999, padding: '4px 10px', fontWeight: 600 }}>👥 Friends</span>
           ) : (
             <div style={{ width: 36 }} />
           )}
@@ -185,7 +231,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
       </div>
 
       {/* Centered column for the whole profile body */}
-      <div style={{ maxWidth: 640, margin: '0 auto', padding: '14px 14px 0' }}>
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '14px 16px 0' }}>
 
       {/* Hero card — warm parchment-to-gold banner with avatar + identity */}
       <div style={{
@@ -194,15 +240,9 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
       }}>
         <div style={{
           height: 108,
-          background: `linear-gradient(135deg, ${T.parchment} 0%, ${T.parchmentDark} 45%, rgba(216,155,82,0.55) 100%)`,
+          background: bannerBackground(profile),
           position: 'relative', overflow: 'hidden',
         }}>
-          <div style={{
-            position: 'absolute', inset: 0,
-            backgroundImage: 'radial-gradient(circle, rgba(196,129,58,0.18) 1px, transparent 1px)',
-            backgroundSize: '22px 22px',
-            maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, #000 30%, transparent 75%)',
-          }} />
         </div>
 
         <div style={{ padding: '0 20px 22px' }}>
@@ -216,51 +256,49 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
               borderRadius: '50%', padding: 4,
               background: `linear-gradient(135deg, ${T.gold}, #e8a050, ${T.gold})`,
               display: 'inline-block',
-              boxShadow: '0 4px 20px rgba(196,129,58,0.35)',
+              boxShadow: '0 4px 20px rgba(184,115,58,0.35)',
             }}>
               <Avatar
                 name={profile?.display_name}
                 avatarConfig={profile?.avatar_config}
+                photoUrl={profile?.avatar_url}
                 size={84}
                 style={{ border: `3px solid ${T.white}`, display: 'block' }}
               />
             </div>
 
             {session && session.user.id !== userId && (
-              <div style={{ display: 'flex', gap: 6, paddingBottom: 4, alignItems: 'center' }}>
-                {/* Friend request — primary action */}
+              <div style={{ display: 'flex', gap: 8, paddingBottom: 4, alignItems: 'center' }}>
+
+                {/* ── Friend request ── primary pill */}
                 {canSendFriendReq && friendStatus === 'none' && (
                   <button onClick={sendFriendRequest} style={{
-                    background: T.gold, color: T.cream,
-                    border: 'none', borderRadius: 999,
-                    padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                  }}>
-                    + Friend
-                  </button>
+                    background: T.gold, color: T.cream, border: 'none',
+                    borderRadius: 999, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(184,115,58,0.30)',
+                  }}>+ Friend</button>
                 )}
                 {friendStatus === 'pending-sent' && (
                   <button onClick={cancelFriendRequest} style={{
                     background: T.white, color: T.inkMuted,
                     border: `1.5px solid ${T.line}`, borderRadius: 999,
                     padding: '8px 14px', fontSize: 13, cursor: 'pointer',
-                  }}>
-                    Requested ×
-                  </button>
+                  }}>Requested ×</button>
                 )}
                 {friendStatus === 'pending-received' && (
                   <>
                     <button onClick={() => respondToRequest(true)} style={{
                       background: T.gold, color: T.cream, border: 'none',
-                      borderRadius: 999, padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                      borderRadius: 999, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
                     }}>Accept</button>
                     <button onClick={() => respondToRequest(false)} style={{
                       background: T.white, color: T.inkMuted, border: `1.5px solid ${T.line}`,
-                      borderRadius: 999, padding: '8px 10px', fontSize: 13, cursor: 'pointer',
+                      borderRadius: 999, padding: '8px 12px', fontSize: 13, cursor: 'pointer',
                     }}>✕</button>
                   </>
                 )}
 
-                {/* Follow — secondary */}
+                {/* ── Follow ── secondary outline */}
                 {profile?.allow_follows !== false && friendStatus !== 'pending-received' && (
                   <button onClick={handleFollow} style={{
                     background: isFollowing ? T.white : 'transparent',
@@ -268,25 +306,69 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
                     border: `1.5px solid ${isFollowing ? T.line : T.ink}`,
                     borderRadius: 999, padding: '8px 14px',
                     fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    transition: 'all 0.15s',
                   }}>
                     {isFollowing ? '✓ Following' : 'Follow'}
                   </button>
                 )}
 
-                {/* Pray-for — icon-only ghost button, sage when active */}
-                <button
-                  onClick={addToPrayerList}
-                  disabled={prayingFor}
-                  title={prayingFor ? 'On your prayer list' : `Pray for ${profile?.display_name?.split(' ')[0] ?? 'them'}`}
-                  style={{
-                    background: prayingFor ? SEMANTIC.prayer.bgActive : 'transparent',
-                    border: `1.5px solid ${prayingFor ? SEMANTIC.prayer.line : T.line}`,
-                    borderRadius: '50%', width: 36, height: 36,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 14, cursor: prayingFor ? 'default' : 'pointer',
-                    transition: 'all 0.15s', flexShrink: 0,
-                  }}
-                >🙏</button>
+                {/* ── ⋯ overflow: Pray + Block ── */}
+                <div ref={actionMenuRef} style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => setActionMenuOpen((v) => !v)}
+                    style={{
+                      background: actionMenuOpen ? T.parchment : 'transparent',
+                      border: `1.5px solid ${T.line}`,
+                      borderRadius: '50%', width: 36, height: 36,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 17, cursor: 'pointer', color: T.inkMuted,
+                      transition: 'all 0.15s', flexShrink: 0,
+                    }}
+                    aria-label="More actions"
+                  >⋯</button>
+                  {actionMenuOpen && (
+                    <div style={{
+                      position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+                      background: T.white, border: `1px solid ${T.line}`, borderRadius: 12,
+                      boxShadow: '0 8px 28px rgba(0,0,0,0.13)', minWidth: 210,
+                      zIndex: 200, overflow: 'hidden',
+                    }}>
+                      {/* Pray */}
+                      <button
+                        onClick={() => { addToPrayerList(); setActionMenuOpen(false); }}
+                        disabled={prayingFor}
+                        style={{
+                          width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                          borderBottom: `1px solid ${T.line}`,
+                          padding: '13px 16px', fontSize: 13.5,
+                          color: prayingFor ? T.inkMuted : T.ink,
+                          cursor: prayingFor ? 'default' : 'pointer',
+                          display: 'flex', alignItems: 'center', gap: 10,
+                        }}
+                      >
+                        <span style={{ fontSize: 16 }}>🙏</span>
+                        {prayingFor ? 'Added to prayer list' : `Pray for ${firstName}`}
+                      </button>
+                      {/* Block */}
+                      <button
+                        onClick={() => { toggleBlock(); setActionMenuOpen(false); }}
+                        disabled={blockBusy}
+                        style={{
+                          width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                          padding: '13px 16px', fontSize: 13.5,
+                          color: isBlocked ? T.inkMuted : (T.error ?? '#A53F2B'),
+                          cursor: blockBusy ? 'wait' : 'pointer',
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          opacity: blockBusy ? 0.6 : 1,
+                        }}
+                      >
+                        <span style={{ fontSize: 16 }}>🚫</span>
+                        {isBlocked ? `Unblock ${firstName}` : `Block ${firstName}`}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
               </div>
             )}
           </div>
@@ -318,7 +400,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
               fontFamily: T.serif, fontSize: 15, color: T.inkSoft,
               fontStyle: 'italic', lineHeight: 1.65, marginBottom: 16,
               padding: '12px 14px',
-              background: 'rgba(196,129,58,0.05)',
+              background: 'rgba(184,115,58,0.05)',
               borderLeft: `3px solid ${T.gold}`,
               borderRadius: '0 10px 10px 0',
             }}>
@@ -363,34 +445,55 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
         />
       )}
 
-      {/* AI chat — demoted to a quiet link.
-          Was a full-width gold gradient banner that visually screamed louder
-          than the actual person whose page this is. The point of this page
-          is to read what they wrote and connect with them — AI is a side
-          door, not the front door. Now sits as a one-line ghost row below
-          the tabs, only on others' profiles, only when posts exist. */}
-      {onStartChat && session?.user?.id !== userId && stats.posts > 0 && (
+      {/* Direct message */}
+      {onStartDM && session?.user?.id !== userId && (
         <button
-          onClick={() => onStartChat(`I've been reading ${profile?.display_name ?? 'someone'}'s posts about their faith journey. Help me understand their perspective — what questions should I ask or explore?`)}
+          onClick={() => onStartDM(userId)}
           style={{
-            width: '100%', marginBottom: 12,
-            background: 'transparent', color: T.goldDark,
-            border: `1px dashed ${T.goldLight}`, borderRadius: 12,
-            padding: '9px 14px', cursor: 'pointer',
+            width: '100%', marginBottom: 10,
+            background: T.ink, color: T.cream,
+            border: 'none', borderRadius: 12,
+            padding: '11px 14px', cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 10,
-            fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
-            transition: 'border-color 0.15s, background 0.15s',
+            fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.background = 'rgba(196,129,58,0.05)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.goldLight; e.currentTarget.style.background = 'transparent'; }}
         >
-          <span style={{ fontSize: 14 }}>✦</span>
-          <span>Ask AI to help you explore {firstName}'s perspective</span>
+          <span style={{ fontSize: 16 }}>✉</span>
+          <span>Message {profile?.display_name?.split(' ')[0] ?? 'them'}</span>
           <span style={{ marginLeft: 'auto', fontSize: 14 }}>→</span>
         </button>
       )}
 
+
+      {/* Blocked overlay — replaces tabs + content when user is blocked or has blocked you */}
+      {(isBlocked || blockedByThem) && (
+        <div style={{ textAlign: 'center', padding: '48px 24px', background: T.white, borderRadius: 14, border: `1px solid ${T.line}`, marginBottom: 12 }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>🚫</div>
+          <div style={{ fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.ink, marginBottom: 8 }}>
+            {isBlocked ? 'You\'ve blocked this person' : 'Content not available'}
+          </div>
+          <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, marginBottom: 20 }}>
+            {isBlocked
+              ? 'Their posts and activity are hidden from you.'
+              : 'This content isn\'t available right now.'}
+          </div>
+          {isBlocked && (
+            <button
+              onClick={toggleBlock}
+              disabled={blockBusy}
+              style={{
+                background: T.white, border: `1.5px solid ${T.line}`,
+                borderRadius: 999, padding: '9px 20px',
+                fontSize: 13, color: T.inkSoft, cursor: blockBusy ? 'wait' : 'pointer',
+                opacity: blockBusy ? 0.6 : 1,
+              }}
+            >Unblock</button>
+          )}
+        </div>
+      )}
+
       {/* Tabs — sit inside the card column, not full-bleed */}
+      {!isBlocked && !blockedByThem && (<>
       <div style={{
         background: T.white, display: 'flex',
         border: `1px solid ${T.line}`, borderRadius: 12,
@@ -421,6 +524,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
             {session?.user?.id === userId && (
               <PostComposer
                 session={session}
+                profile={profile}
                 scope="me"
                 placeholder="Share something on your page…"
                 onPosted={() => setFeedRefresh((n) => n + 1)}
@@ -453,7 +557,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
       {tab === 'prayers' && (
         <div>
           {publicPrayers.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '48px 20px', background: T.white, borderRadius: 16, border: `1px solid ${T.line}` }}>
+            <div style={{ textAlign: 'center', padding: '48px 20px', background: T.white, borderRadius: 14, border: `1px solid ${T.line}` }}>
               <div style={{ fontSize: 28, marginBottom: 10 }}>🕯️</div>
               <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: 6 }}>No public prayers yet.</div>
               <div style={{ fontSize: 13, color: T.inkMuted }}>{profile?.display_name?.split(' ')[0] ?? 'They'} hasn't shared any prayer requests.</div>
@@ -464,7 +568,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
             return (
               <div key={p.id} style={{
                 background: T.white, border: `1px solid ${T.line}`,
-                borderRadius: 16, padding: '18px 20px', marginBottom: 10,
+                borderRadius: 14, padding: '16px 18px', marginBottom: 12,
               }}>
                 <div style={{ fontSize: 11, color: T.inkMuted, marginBottom: 10, letterSpacing: '0.04em' }}>
                   {timeAgo(p.created_at)}
@@ -477,7 +581,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
                     onClick={() => reactToPrayer(p.id)}
                     disabled={hasPrayed}
                     style={{
-                      background: hasPrayed ? 'rgba(196,129,58,0.08)' : 'transparent',
+                      background: hasPrayed ? 'rgba(184,115,58,0.08)' : 'transparent',
                       border: `1px solid ${hasPrayed ? T.goldLight : T.line}`,
                       borderRadius: 999, padding: '6px 16px', fontSize: 13,
                       color: hasPrayed ? T.goldDark : T.inkMuted,
@@ -520,7 +624,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; }}
                 onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.line; }}
               >
-                <Avatar name={f.display_name} avatarConfig={f.avatar_config} size={48} />
+                <Avatar name={f.display_name} avatarConfig={f.avatar_config} photoUrl={f.avatar_url} size={48} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, fontSize: 15, color: T.ink, marginBottom: 4 }}>{f.display_name}</div>
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -542,6 +646,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onV
         </div>
       )}
 
+      </>)}
       </div>{/* /centered column */}
     </div>
   );

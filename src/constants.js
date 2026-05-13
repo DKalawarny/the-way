@@ -3,58 +3,64 @@ export const PERSON_TYPES = [
     id: 'curious',
     emoji: '🌱',
     label: 'Just Curious',
-    description: "I've never really read it. I just want to know what's in there.",
+    description: "Never really read it. Just want to know what's in there.",
   },
   {
     id: 'seeking',
     emoji: '🕯️',
     label: 'Used to Believe',
-    description: "I grew up in faith or used to believe. Something changed — and I'm trying to figure out where I stand now.",
+    description: "Grew up in faith or stepped away. Trying to figure out where I stand.",
     hasIntake: true,
   },
   {
     id: 'skeptic',
     emoji: '🤔',
     label: 'Skeptic',
-    description: "I have doubts and hard questions. Don't dodge them.",
+    description: "Real doubts, hard questions. Don't dodge them.",
     hasIntake: true,
   },
   {
     id: 'heard-things',
     emoji: '👁️',
     label: "I've Heard Things",
-    description: 'The stranger corners of scripture — giants, lost books, hidden texts. What is actually there?',
+    description: 'Giants, lost books, hidden texts. What is actually there?',
   },
   {
     id: 'new-faith',
     emoji: '✨',
     label: 'New to Faith',
-    description: "I'm early in the journey. I want to understand, not be preached at.",
+    description: "Early in the journey. Want to understand, not be preached at.",
     hasIntake: true,
   },
   {
     id: 'deeper',
     emoji: '📖',
     label: 'Going Deeper',
-    description: 'I know the stories. Now I want the history, the language, the layers underneath.',
+    description: 'Know the stories. Now I want the history, language, and layers.',
   },
   {
     id: 'group',
     emoji: '👥',
     label: 'Group Study',
-    description: "We're reading together. Help us think, question, and go deeper as a group.",
+    description: "Reading together. Help us think, question, and go deeper.",
   },
   {
     id: 'inter-faith',
     emoji: '🌍',
     label: 'Other Faiths',
-    description: 'Help me understand other faiths and talk about Jesus with confidence and love.',
+    description: 'Understand other faiths and talk about Jesus with confidence.',
   },
   {
     id: 'guided',
     emoji: '🧭',
     label: 'Walk Me Through',
-    description: 'Take me through the Bible step by step. Plain language, real examples, no jargon.',
+    description: 'Step by step through the Bible. Plain language, no jargon.',
+  },
+  {
+    id: 'kids',
+    emoji: '🌟',
+    label: 'For Kids',
+    description: 'Simple words, fun examples. Explain it like I\'m a child.',
   },
 ];
 
@@ -206,6 +212,13 @@ export const STARTERS = {
     'Take me through the Easter story in plain English.',
     'I want to understand the Psalms — where do I start?',
   ],
+  kids: [
+    'Who made the world?',
+    'Why did Noah build a big boat?',
+    'Who was David and why did he fight a giant?',
+    'What is the Bible about?',
+    'Why is Jesus so important?',
+  ],
 };
 
 export const DEEPER_STARTERS = {
@@ -271,6 +284,13 @@ export const DEEPER_STARTERS = {
     "Walk me through the Exodus story and what it meant to the people living it.",
     "Take me through Revelation — what kind of writing is it and how do I actually read it?",
     "Walk me through the prophets — who were they, when did they live, and what were they doing?",
+  ],
+  kids: [
+    'Why did God make so many animals for Noah?',
+    'What happened when Moses split the sea in half?',
+    'How did Jesus feed thousands of people with just a little food?',
+    'What does it mean that God loves everyone?',
+    "Why did the disciples leave everything to follow Jesus?",
   ],
 };
 

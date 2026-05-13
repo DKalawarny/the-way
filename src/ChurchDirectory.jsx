@@ -42,7 +42,7 @@ export default function ChurchDirectory({ session, profile, onBack, onOpenChurch
   }, [churches, query]);
 
   return (
-    <div style={{ minHeight: '100vh', background: T.cream, paddingBottom: 60 }}>
+    <div style={{ minHeight: '100vh', background: T.cream, paddingBottom: 80 }}>
       <header style={{
         padding: '0 16px', height: 56, background: T.white,
         borderBottom: `1px solid ${T.line}`,
@@ -54,10 +54,12 @@ export default function ChurchDirectory({ session, profile, onBack, onOpenChurch
         <div style={{ marginLeft: 12, fontFamily: T.display, fontSize: 20, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>
           Churches
         </div>
+        {/* Push pastor CTA away from the fixed FAB cluster (bell + messages + search + menu ≈ 200px from right) */}
         {onApply && (
           <button onClick={onApply} style={{
-            marginLeft: 'auto', background: T.parchment, border: `1px solid ${T.line}`,
+            marginLeft: 'auto', marginRight: 208, background: T.parchment, border: `1px solid ${T.line}`,
             borderRadius: 999, padding: '6px 14px', fontSize: 13, color: T.goldDark, fontWeight: 600, cursor: 'pointer',
+            flexShrink: 0,
           }}>
             ✦ I'm a pastor
           </button>
@@ -90,7 +92,7 @@ export default function ChurchDirectory({ session, profile, onBack, onOpenChurch
               {query ? 'No churches match.' : 'No churches yet.'}
             </div>
             <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.6, maxWidth: 360, margin: '0 auto' }}>
-              {query ? 'Try a different search.' : 'Be the first — if you\u2019re a pastor, apply to bring your church to The Way.'}
+              {query ? 'Try a different search.' : 'Be the first — if you\u2019re a pastor, apply to bring your church to kinwove.'}
             </div>
             {!query && onApply && (
               <button onClick={onApply} style={{
@@ -129,7 +131,7 @@ export default function ChurchDirectory({ session, profile, onBack, onOpenChurch
                     {c.name}
                   </div>
                   {isMine && (
-                    <span style={{ fontSize: 10, fontWeight: 700, color: T.goldDark, background: 'rgba(196,129,58,0.12)', padding: '2px 7px', borderRadius: 999, letterSpacing: 0.4, textTransform: 'uppercase' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: T.goldDark, background: 'rgba(184,115,58,0.12)', padding: '2px 7px', borderRadius: 999, letterSpacing: 0.4, textTransform: 'uppercase' }}>
                       Yours
                     </span>
                   )}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
+import { getStoredUtm, clearStoredUtm } from './utm.js';
 
 function Field({ label, children }) {
   return (
@@ -31,6 +32,30 @@ const DEV_LOGIN_ENABLED =
   !!import.meta.env.VITE_DEV_LOGIN_EMAIL &&
   !!import.meta.env.VITE_DEV_LOGIN_PASSWORD;
 
+function ResendButton({ email }) {
+  const [state, setState] = useState('idle'); // idle | sending | sent | error
+  async function resend() {
+    setState('sending');
+    const { error } = await supabase.auth.resend({ type: 'signup', email });
+    setState(error ? 'error' : 'sent');
+    if (!error) setTimeout(() => setState('idle'), 5000);
+  }
+  return (
+    <button
+      onClick={resend}
+      disabled={state === 'sending' || state === 'sent'}
+      style={{
+        width: '100%', background: T.gold, color: T.cream, border: 'none',
+        borderRadius: 999, padding: '13px 20px', fontSize: 15, fontWeight: 600,
+        cursor: state === 'sending' || state === 'sent' ? 'default' : 'pointer',
+        opacity: state === 'sending' ? 0.7 : 1, marginTop: 4,
+      }}
+    >
+      {state === 'sending' ? 'Sending…' : state === 'sent' ? '✓ Email sent!' : state === 'error' ? 'Try again' : 'Resend confirmation email'}
+    </button>
+  );
+}
+
 export default function Auth({ onAuth, onBack }) {
   const [mode, setMode] = useState('signin'); // signin | signup | verify
   const [email, setEmail] = useState('');
@@ -55,13 +80,26 @@ export default function Auth({ onAuth, onBack }) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    const utm = getStoredUtm();
     const { error: err } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: name } },
+      options: {
+        data: {
+          display_name: name,
+          // First-touch attribution — stored in raw_user_meta_data,
+          // visible in the Supabase dashboard under Authentication → Users.
+          ...(utm?.utm_source   && { utm_source:   utm.utm_source }),
+          ...(utm?.utm_medium   && { utm_medium:   utm.utm_medium }),
+          ...(utm?.utm_campaign && { utm_campaign: utm.utm_campaign }),
+          ...(utm?.ref          && { referral_ref:  utm.ref }),
+          ...(utm?.landing_url  && { landing_url:   utm.landing_url }),
+        },
+      },
     });
     setLoading(false);
     if (err) return setError(err.message);
+    clearStoredUtm(); // attribution captured — clean up
     setMode('verify');
   }
 
@@ -93,13 +131,17 @@ export default function Auth({ onAuth, onBack }) {
     return (
       <div style={wrap}>
         <div style={card}>
-          <div style={eyebrow}>The Way</div>
+          <div style={eyebrow}>kinwove</div>
           <h2 style={title}>Check your email</h2>
           <p style={{ color: T.inkSoft, fontSize: 15, lineHeight: 1.6 }}>
-            We sent a confirmation link to <strong>{email}</strong>. Click it to verify your account,
-            then come back and sign in.
+            We sent a confirmation link to <strong>{email}</strong>. Click it to verify
+            your account, then come back and sign in.
           </p>
-          <button onClick={() => setMode('signin')} style={{ ...btn, marginTop: 20 }}>
+          <p style={{ color: T.inkMuted, fontSize: 13, lineHeight: 1.6, marginTop: 0 }}>
+            No email? Check spam, or tap below to send another.
+          </p>
+          <ResendButton email={email} />
+          <button onClick={() => setMode('signin')} style={{ ...btn, background: 'transparent', color: T.inkMuted, border: `1px solid ${T.line}`, marginTop: 10 }}>
             Back to sign in
           </button>
         </div>
@@ -113,7 +155,7 @@ export default function Auth({ onAuth, onBack }) {
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 16 }}>
           ← Back
         </button>
-        <div style={eyebrow}>The Way</div>
+        <div style={eyebrow}>kinwove</div>
         <h2 style={title}>{mode === 'signin' ? 'Welcome back' : 'Join the journey'}</h2>
 
         <form onSubmit={mode === 'signin' ? handleSignIn : handleSignUp}>
@@ -221,17 +263,18 @@ const card = {
   background: T.white,
   borderRadius: 18,
   border: `1px solid ${T.line}`,
-  padding: 32,
+  padding: 'clamp(20px, 5.5vw, 32px)',
   maxWidth: 420,
   width: '100%',
 };
 
 const eyebrow = {
-  fontSize: 12,
-  letterSpacing: 2,
-  textTransform: 'uppercase',
+  fontFamily: T.display,
+  fontSize: 18,
+  fontWeight: 500,
+  letterSpacing: '-0.02em',
   color: T.goldDark,
-  marginBottom: 10,
+  marginBottom: 14,
 };
 
 const title = {

@@ -3,34 +3,173 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>The Way — Big questions, ancient text, modern conversation</title>
-    <meta name="description" content="Real questions, real answers. Whether you&rsquo;re a believer, a skeptic, or just curious — explore at your own pace." />
+    <title>kinwove — AI Bible Study, Church Community &amp; Faith Questions</title>
+    <meta name="description" content="Ask anything about the Bible, explore faith at your own pace, and connect with your church community. Grace-first AI for believers, skeptics, and everyone in between." />
+    <meta name="keywords" content="Bible study app, Christian AI, AI Bible assistant, faith questions, scripture exploration, church community app, Christian community, sermon study, prayer app, ask about the Bible, explore Christianity, church directory, faith app, Bible AI, Christian discussion" />
+    <link rel="canonical" href="https://theway.app/" />
 
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="The Way" />
-    <meta property="og:title" content="The Way — Big questions, ancient text, modern conversation" />
-    <meta property="og:description" content="Real questions, real answers. Whether you&rsquo;re a believer, a skeptic, or just curious — explore at your own pace." />
-    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:site_name" content="kinwove" />
+    <meta property="og:url" content="https://theway.app/" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="kinwove — AI Bible Study, Church Community &amp; Faith Questions" />
+    <meta property="og:description" content="Ask anything about the Bible, explore faith at your own pace, and connect with your church community. Grace-first AI for believers, skeptics, and everyone in between." />
+    <meta property="og:image" content="https://theway.app/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="kinwove — AI Bible &amp; Faith Community App" />
 
+    <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="The Way — Big questions, ancient text, modern conversation" />
-    <meta name="twitter:description" content="Real questions, real answers. Whether you&rsquo;re a believer, a skeptic, or just curious — explore at your own pace." />
-    <meta name="twitter:image" content="/og-image.png" />
+    <meta name="twitter:site" content="@thewayapp" />
+    <meta name="twitter:title" content="kinwove — AI Bible Study, Church Community &amp; Faith Questions" />
+    <meta name="twitter:description" content="Ask anything about the Bible, explore faith at your own pace, and connect with your church community. Grace-first AI for believers, skeptics, and everyone in between." />
+    <meta name="twitter:image" content="https://theway.app/og-image.png" />
+
+    <!-- JSON-LD structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://theway.app/#app",
+          "name": "kinwove",
+          "url": "https://theway.app",
+          "description": "Grace-first AI Bible study, church community, and faith exploration app. Ask any question about scripture or Christianity — for believers, skeptics, and seekers.",
+          "applicationCategory": "LifestyleApplication",
+          "operatingSystem": "iOS, Android, Web",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "featureList": [
+            "AI Bible companion",
+            "Church directory",
+            "Sermon study tools and discussion questions",
+            "Community prayer wall",
+            "Small group Bible study",
+            "Guided faith journeys",
+            "Daily verses and devotionals"
+          ],
+          "screenshot": "https://theway.app/og-image.png",
+          "publisher": {
+            "@id": "https://theway.app/#organization"
+          }
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://theway.app/#organization",
+          "name": "kinwove",
+          "url": "https://theway.app",
+          "logo": "https://theway.app/icon-512.png",
+          "sameAs": []
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://theway.app/#website",
+          "url": "https://theway.app",
+          "name": "kinwove",
+          "description": "AI Bible study, church community, and faith exploration",
+          "publisher": {
+            "@id": "https://theway.app/#organization"
+          },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://theway.app/?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        }
+      ]
+    }
+    </script>
 
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#2C1810" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="The Way" />
+    <meta name="apple-mobile-web-app-title" content="kinwove" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
+    <!-- Plausible analytics — privacy-first, no cookies, GDPR compliant.
+         Create a free account at plausible.io, add your domain, then this
+         script is live. No other config needed. -->
+    <script defer data-domain="theway.app" src="https://plausible.io/js/script.js"></script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <!-- Fraunces loaded here so display headings don't flash on first paint -->
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+
+    <!-- Crawler / no-JS fallback — search engines and AI crawlers that don't
+         execute JavaScript see this content instead of an empty root div. -->
+    <noscript>
+      <style>
+        body { font-family: Georgia, serif; background: #FDF8F0; color: #2C1810; margin: 0; padding: 40px 20px; }
+        .ns-wrap { max-width: 680px; margin: 0 auto; }
+        h1 { font-size: 2.2rem; font-weight: 700; margin-bottom: 0.4em; }
+        h2 { font-size: 1.25rem; font-weight: 600; margin: 2em 0 0.5em; color: #8E5528; }
+        p  { line-height: 1.7; color: #4A3828; }
+        ul { line-height: 1.9; color: #4A3828; }
+        a  { color: #8E5528; }
+      </style>
+      <div class="ns-wrap">
+        <p style="font-size:0.85rem;letter-spacing:0.1em;text-transform:uppercase;color:#8E5528;">kinwove · AI Bible &amp; Faith App</p>
+        <h1>Big questions. Ancient text. Honest conversation.</h1>
+        <p>
+          kinwove is a free AI-powered Bible study and Christian community app.
+          Ask any question about scripture, faith, or doubt — and get a thoughtful,
+          grace-first answer. No pressure. No agenda. Whether you're a lifelong
+          believer, a new Christian, or just curious, there's a place for you here.
+        </p>
+
+        <h2>AI Bible companion</h2>
+        <p>
+          Ask anything about the Bible, theology, Christian living, or hard questions
+          about faith. Our AI responds with warmth and intellectual honesty — quoting
+          scripture, acknowledging complexity, and never talking down to you.
+        </p>
+
+        <h2>Church community</h2>
+        <p>
+          Connect with your local church, follow your pastor's weekly sermon, discuss
+          the Sunday message with your congregation, and pray for one another. kinwove
+          is a church community app designed around depth, not noise.
+        </p>
+
+        <h2>Church directory</h2>
+        <p>
+          Search thousands of churches by denomination, city, and name. Pastors can
+          claim their listing, post sermon content, and invite members.
+        </p>
+
+        <h2>Prayer wall &amp; guided journeys</h2>
+        <p>
+          Keep a personal prayer list, share requests with your group, and work through
+          structured reading journeys — Gospels, Psalms, Epistles, and more.
+        </p>
+
+        <h2>Who it's for</h2>
+        <ul>
+          <li>People with questions about Christianity who want honest, non-preachy answers</li>
+          <li>New believers looking for structure and community</li>
+          <li>Church members who want to go deeper than Sunday morning</li>
+          <li>Pastors managing congregation content and care</li>
+          <li>Skeptics and seekers exploring at their own pace</li>
+        </ul>
+
+        <p style="margin-top:2em;">
+          <a href="https://theway.app">Open kinwove →</a>
+        </p>
+      </div>
+    </noscript>
   </body>
 </html>

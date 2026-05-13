@@ -38,13 +38,13 @@ export default function ChurchEntry({ churchId, session, onAskAI, onAskSomeone, 
           This church isn't live yet.
         </div>
         <div style={{ fontSize: 15, color: T.inkSoft, lineHeight: 1.65, maxWidth: 380, marginBottom: 28 }}>
-          We verify every church on The Way before listing it. This one is still being reviewed, or the link is out of date.
+          We verify every church on kinwove before listing it. This one is still being reviewed, or the link is out of date.
         </div>
         <button onClick={onClose} style={{
           background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
           padding: '12px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
         }}>
-          Open The Way
+          Open kinwove
         </button>
       </div>
     );
@@ -93,7 +93,7 @@ export default function ChurchEntry({ churchId, session, onAskAI, onAskSomeone, 
               }}
             >
               <div style={{
-                width: 44, height: 44, borderRadius: 12, background: 'rgba(196,129,58,0.10)',
+                width: 44, height: 44, borderRadius: 12, background: 'rgba(184,115,58,0.10)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: T.goldDark, fontSize: 22, flexShrink: 0,
               }}>✦</div>

@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { T } from './theme.js';
 import { authedFetch } from './supabase.js';
+import ShareSheet from './ShareSheet.jsx';
 
 const EXAMPLE_QUESTIONS = [
   "Why does God allow so much suffering?",
@@ -13,9 +14,12 @@ const EXAMPLE_QUESTIONS = [
 
 const LEVELS = [
   { id: 'curious',     emoji: '🤔', label: 'A bit curious',   hint: 'Heard of it, wondering where to start' },
-  { id: 'believer',    emoji: '🙏', label: 'I believe',       hint: 'Growing in faith and want to go deeper' },
+  { id: 'skeptic',     emoji: '🤨', label: "I'm skeptical",   hint: "Doubt it's true — want honest answers, not a pitch" },
+  { id: 'agnostic',    emoji: '🤷', label: "Not sure",        hint: 'Open but genuinely unconvinced either way' },
   { id: 'questioning', emoji: '💭', label: 'Used to Believe', hint: 'Had faith, now wrestling with doubts' },
+  { id: 'believer',    emoji: '🙏', label: 'I believe',       hint: 'Growing in faith and want to go deeper' },
   { id: 'new',         emoji: '🌱', label: 'Brand new',       hint: 'Never really thought about this before' },
+  { id: 'kids',        emoji: '🧒', label: 'For my kids',     hint: 'Any question — answered simply enough for a child to understand' },
 ];
 
 const DENOMS = [
@@ -49,13 +53,19 @@ const SYSTEMS = {
   },
 
   new: `You are a warm, patient friend answering for someone who has never thought about the Bible or religion at all. Assume zero background — no church, no vocabulary, no prior reading. Use plain everyday language a curious teenager could follow. If you must use any term like "gospel", "sin", or "covenant", explain it immediately in one plain sentence. Keep your response to 2 short paragraphs. Be warm and human. End with one simple question that makes them want to keep talking.`,
+
+  skeptic: `You are an honest, intellectually rigorous conversation partner answering for someone who is skeptical about religion and likely doesn't believe it's true. Do NOT be preachy, do NOT try to convert them, and do NOT assume they'll ever believe. Engage with their question on its own terms — intellectually, historically, philosophically. Acknowledge where religion has caused real harm, where the Bible is genuinely difficult, and where smart people reasonably disagree. If there are strong counter-arguments or historical evidence worth knowing, present them fairly and without overselling. Be a good-faith dialogue partner, not a salesperson. 2–3 paragraphs. End with a question that shows you're genuinely curious what they think — not trying to lead them anywhere.`,
+
+  agnostic: `You are a thoughtful, patient conversation partner answering for someone who is genuinely unsure whether God, faith, or the Bible has any truth to it. They are sitting with real uncertainty and haven't landed anywhere. Don't try to resolve their uncertainty for them — hold space for "I don't know." Engage honestly with the complexity. If there are multiple reasonable perspectives, name them. Don't push toward belief or away from it. Give them things to think about, not conclusions to reach. 2–3 paragraphs. End with a question that honours their uncertainty and keeps the conversation open on their own terms.`,
+
+  kids: `You are answering a hard question about faith, God, or the Bible — but your job is to make it simple enough for a child (roughly 6–12 years old) to genuinely understand. No matter how complex or difficult the question is, find the clearest, most honest way to explain it. Use everyday words, short sentences, and concrete images a child can picture in their head. Never use church jargon — if you must use a word like "sin", "covenant", or "resurrection", explain it in one plain sentence immediately. Don't talk down to them or avoid the hard parts — kids deserve honest answers, just in language they can hold. Think of how the best teacher you ever had would explain something difficult to a curious child: clear, warm, respectful of the question. Two short paragraphs. End with one simple thought or question that makes them want to keep asking.`,
 };
 
 function MsgText({ text }) {
   return <span style={{ whiteSpace: 'pre-wrap' }}>{text}</span>;
 }
 
-export default function GuestQuestion({ onSignUp }) {
+export default function GuestQuestion({ onSignUp, initialQuestion }) {
   const [input, setInput] = useState('');
   const [response, setResponse] = useState('');
   const [busy, setBusy] = useState(false);
@@ -64,6 +74,15 @@ export default function GuestQuestion({ onSignUp }) {
   const [denom, setDenom] = useState(null);
   const [questionCount, setQuestionCount] = useState(0);
   const taRef = useRef(null);
+  const [showShare, setShowShare] = useState(false);
+
+  // Auto-fire if a pre-populated question was deep-linked in
+  useEffect(() => {
+    if (initialQuestion && initialQuestion.trim()) {
+      ask(initialQuestion.trim());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuestion]);
 
   function getSystem() {
     const s = SYSTEMS[level];
@@ -142,7 +161,7 @@ export default function GuestQuestion({ onSignUp }) {
                   onClick={() => { setLevel(l.id); if (l.id !== 'questioning') setDenom(null); }}
                   title={l.hint}
                   style={{
-                    background: level === l.id ? 'rgba(196,129,58,0.2)' : 'rgba(255,255,255,0.04)',
+                    background: level === l.id ? 'rgba(184,115,58,0.2)' : 'rgba(255,255,255,0.04)',
                     border: `1.5px solid ${level === l.id ? T.gold : 'rgba(255,255,255,0.1)'}`,
                     borderRadius: 999,
                     padding: '7px 16px',
@@ -175,7 +194,7 @@ export default function GuestQuestion({ onSignUp }) {
                     key={d.id}
                     onClick={() => setDenom(denom === d.id ? null : d.id)}
                     style={{
-                      background: denom === d.id ? 'rgba(196,129,58,0.2)' : 'rgba(255,255,255,0.04)',
+                      background: denom === d.id ? 'rgba(184,115,58,0.2)' : 'rgba(255,255,255,0.04)',
                       border: `1.5px solid ${denom === d.id ? T.gold : 'rgba(255,255,255,0.1)'}`,
                       borderRadius: 999,
                       padding: '6px 14px',
@@ -207,7 +226,7 @@ export default function GuestQuestion({ onSignUp }) {
               style={{
                 width: '100%', boxSizing: 'border-box',
                 background: 'rgba(255,255,255,0.06)',
-                border: `1.5px solid rgba(196,129,58,0.35)`,
+                border: `1.5px solid rgba(184,115,58,0.35)`,
                 borderRadius: 16, padding: '16px 18px',
                 fontSize: 16, fontFamily: T.serif,
                 color: T.cream, outline: 'none', resize: 'none',
@@ -215,14 +234,14 @@ export default function GuestQuestion({ onSignUp }) {
                 transition: 'border-color 0.15s',
               }}
               onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
-              onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(196,129,58,0.35)')}
+              onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(184,115,58,0.35)')}
             />
             <button
               onClick={() => ask()}
               disabled={!input.trim()}
               style={{
                 position: 'absolute', bottom: 12, right: 12,
-                background: input.trim() ? T.gold : 'rgba(196,129,58,0.2)',
+                background: input.trim() ? T.gold : 'rgba(184,115,58,0.2)',
                 color: T.cream, border: 'none', borderRadius: 999,
                 padding: '8px 18px', fontSize: 13, fontWeight: 600,
                 cursor: input.trim() ? 'pointer' : 'default',
@@ -241,14 +260,14 @@ export default function GuestQuestion({ onSignUp }) {
                 onClick={() => ask(q)}
                 style={{
                   background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(196,129,58,0.25)',
+                  border: '1px solid rgba(184,115,58,0.25)',
                   borderRadius: 999, padding: '7px 14px',
                   fontSize: 12, color: 'rgba(253,248,240,0.65)',
                   cursor: 'pointer', lineHeight: 1.4,
                   transition: 'all 0.15s',
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.color = T.cream; e.currentTarget.style.background = 'rgba(196,129,58,0.1)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(196,129,58,0.25)'; e.currentTarget.style.color = 'rgba(253,248,240,0.65)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.color = T.cream; e.currentTarget.style.background = 'rgba(184,115,58,0.1)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(184,115,58,0.25)'; e.currentTarget.style.color = 'rgba(253,248,240,0.65)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
               >
                 {q}
               </button>
@@ -257,9 +276,21 @@ export default function GuestQuestion({ onSignUp }) {
         </>
       )}
 
+      {/* Share sheet — mounts over the page when user taps "Share this" */}
+      {showShare && (
+        <ShareSheet
+          title="Thought you'd find this"
+          body={`Q: ${input}\n\n${response}`}
+          previewBody={response.slice(0, 90)}
+          url={typeof window !== 'undefined' ? `${window.location.origin}/?q=${encodeURIComponent(input)}` : ''}
+          intro="— answered on kinwove"
+          onClose={() => setShowShare(false)}
+        />
+      )}
+
       {/* Streaming / response */}
       {(busy || response) && (
-        <div style={{ animation: 'fadeIn 0.3s ease', textAlign: 'left', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(196,129,58,0.18)', borderRadius: 20, padding: '24px 28px' }}>
+        <div style={{ animation: 'fadeIn 0.3s ease', textAlign: 'left', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.18)', borderRadius: 20, padding: '24px 28px' }}>
           {/* The question */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 20 }}>
             <div style={{
@@ -296,15 +327,15 @@ export default function GuestQuestion({ onSignUp }) {
           {/* Post-response CTAs */}
           {done && (
             <div style={{ animation: 'fadeUp 0.4s ease both' }}>
-              <div style={{ height: 1, background: 'rgba(196,129,58,0.2)', marginBottom: 24 }} />
+              <div style={{ height: 1, background: 'rgba(184,115,58,0.2)', marginBottom: 24 }} />
               <div style={{ textAlign: 'center' }}>
                 {questionCount < 3 ? (
                   <>
                     <div style={{ fontFamily: T.display, fontSize: 22, color: T.cream, fontWeight: 600, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: 8 }}>
                       What else are you wondering?
                     </div>
-                    <div style={{ fontSize: 13, color: 'rgba(253,248,240,0.45)', marginBottom: 22, lineHeight: 1.6 }}>
-                      Keep asking — no account needed yet.
+                    <div style={{ fontSize: 13, color: 'rgba(253,248,240,0.55)', marginBottom: 22, lineHeight: 1.6 }}>
+                      Keep going — or join free to save this conversation.
                     </div>
                     <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
                       <button
@@ -313,7 +344,7 @@ export default function GuestQuestion({ onSignUp }) {
                           background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
                           color: T.cream, border: 'none', borderRadius: 999,
                           padding: '13px 32px', fontSize: 14, fontWeight: 600,
-                          cursor: 'pointer', boxShadow: '0 4px 20px rgba(196,129,58,0.4)',
+                          cursor: 'pointer', boxShadow: '0 4px 20px rgba(184,115,58,0.4)',
                         }}
                       >
                         Ask another →
@@ -321,23 +352,43 @@ export default function GuestQuestion({ onSignUp }) {
                       <button
                         onClick={onSignUp}
                         style={{
-                          background: 'transparent', color: 'rgba(253,248,240,0.45)',
-                          border: '1px solid rgba(253,248,240,0.15)',
+                          background: 'rgba(184,115,58,0.15)',
+                          color: T.cream,
+                          border: '1px solid rgba(184,115,58,0.4)',
                           borderRadius: 999, padding: '13px 24px',
-                          fontSize: 14, cursor: 'pointer',
+                          fontSize: 14, fontWeight: 500, cursor: 'pointer',
                         }}
                       >
-                        Continue free
+                        Save this + keep going →
+                      </button>
+                      <button
+                        onClick={() => setShowShare(true)}
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid rgba(253,248,240,0.15)',
+                          color: 'rgba(253,248,240,0.5)',
+                          borderRadius: 999, padding: '13px 20px',
+                          fontSize: 14, cursor: 'pointer',
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                          transition: 'all 0.15s',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(184,115,58,0.4)'; e.currentTarget.style.color = 'rgba(253,248,240,0.75)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(253,248,240,0.15)'; e.currentTarget.style.color = 'rgba(253,248,240,0.5)'; }}
+                      >
+                        ↗ Share this
                       </button>
                     </div>
                   </>
                 ) : (
                   <>
                     <div style={{ fontFamily: T.display, fontSize: 22, color: T.cream, fontWeight: 600, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: 8 }}>
-                      Want to keep going?
+                      You're asking the right questions.
                     </div>
-                    <div style={{ fontSize: 13, color: 'rgba(253,248,240,0.45)', marginBottom: 22, lineHeight: 1.6 }}>
-                      Save your conversations, explore scripture at your own pace,<br />and ask anything — no judgment, ever.
+                    <div style={{ fontSize: 13, color: 'rgba(253,248,240,0.55)', marginBottom: 6, lineHeight: 1.6 }}>
+                      Join free to save your conversations, go deeper in scripture,<br />and connect with people on the same road.
+                    </div>
+                    <div style={{ fontSize: 12, color: 'rgba(253,248,240,0.3)', marginBottom: 22 }}>
+                      No credit card. Takes 30 seconds.
                     </div>
                     <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
                       <button
@@ -346,21 +397,37 @@ export default function GuestQuestion({ onSignUp }) {
                           background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
                           color: T.cream, border: 'none', borderRadius: 999,
                           padding: '13px 32px', fontSize: 14, fontWeight: 600,
-                          cursor: 'pointer', boxShadow: '0 4px 20px rgba(196,129,58,0.4)',
+                          cursor: 'pointer', boxShadow: '0 4px 20px rgba(184,115,58,0.4)',
                         }}
                       >
-                        Continue free →
+                        Join free — keep going →
                       </button>
                       <button
                         onClick={reset}
                         style={{
-                          background: 'transparent', color: 'rgba(253,248,240,0.45)',
-                          border: '1px solid rgba(253,248,240,0.15)',
+                          background: 'transparent', color: 'rgba(253,248,240,0.4)',
+                          border: '1px solid rgba(253,248,240,0.12)',
                           borderRadius: 999, padding: '13px 24px',
                           fontSize: 14, cursor: 'pointer',
                         }}
                       >
-                        Ask another
+                        One more question
+                      </button>
+                      <button
+                        onClick={() => setShowShare(true)}
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid rgba(253,248,240,0.15)',
+                          color: 'rgba(253,248,240,0.5)',
+                          borderRadius: 999, padding: '13px 20px',
+                          fontSize: 14, cursor: 'pointer',
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                          transition: 'all 0.15s',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(184,115,58,0.4)'; e.currentTarget.style.color = 'rgba(253,248,240,0.75)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(253,248,240,0.15)'; e.currentTarget.style.color = 'rgba(253,248,240,0.5)'; }}
+                      >
+                        ↗ Share this
                       </button>
                     </div>
                   </>

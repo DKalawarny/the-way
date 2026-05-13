@@ -5,10 +5,215 @@ import { getSystemPrompt } from './prompts.js';
 import { useSpeechRecognition } from './useSpeechRecognition.js';
 import { useTextToSpeech } from './useTextToSpeech.js';
 import { supabase, authedFetch } from './supabase.js';
-import { trialStatus } from './trial.js';
 import MsgText from './MsgText.jsx';
+import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
+import { getDailyVerse } from './dailyVerse.js';
+import { useAiUsage } from './useAiUsage.js';
+import AiLimitWall, { AiUsageWarning } from './AiLimitWall.jsx';
+import Tip from './Tip.jsx';
+import { extractRefs, parseRef, toApiVerseId, VALIDATION_BIBLE_ID } from './bibleRefUtils.js';
 
 const GUEST_COUNT_KEY = 'theway:guest_count';
+
+// ── Chat contextual topic illustrations ──────────────────────────────────────
+// Topic detection: match user question keywords → symbolic thematic accent.
+// Symbols are intentionally abstract (no figurative biblical scenes)
+// so they can't be theologically inaccurate.
+
+const TOPIC_RULES = [
+  { topic: 'prayer',       keywords: ['pray','prayer','intercession','petition','ask god','talk to god','communicate with'] },
+  { topic: 'creation',     keywords: ['creation','created','universe','earth','big bang','evolution','genesis','how did the world'] },
+  { topic: 'suffering',    keywords: ['suffer','pain','grief','loss','died','death','cancer','tragedy','why does god allow'] },
+  { topic: 'forgiveness',  keywords: ['forgiv','grace','mercy','repent','sin','guilt','shame','confess'] },
+  { topic: 'resurrection', keywords: ['resurrect','risen','easter','alive again','raised','empty tomb','death and life'] },
+  { topic: 'scripture',    keywords: ['bible','verse','scripture','word of god','passage','old testament','new testament','book of'] },
+  { topic: 'salvation',    keywords: ['saved','salvation','eternal life','heaven','born again','accept jesus','gospel'] },
+  { topic: 'doubt',        keywords: ['doubt','skeptic','proof','evidence','believe','trust god','where is god','is god real','atheist'] },
+  { topic: 'peace',        keywords: ['anxiety','worry','fear','peace','calm','stress','overwhelm','rest','weary'] },
+  { topic: 'love',         keywords: ['love','marriage','relationship','family','loneliness','belong','community'] },
+  { topic: 'purpose',      keywords: ['purpose','calling','mission','why am i here','meaning','direction','vocation'] },
+  { topic: 'worship',      keywords: ['worship','praise','sing','church','hymn','devotion','grateful','thankful'] },
+];
+
+function detectTopic(text) {
+  if (!text) return null;
+  const lower = text.toLowerCase();
+  for (const rule of TOPIC_RULES) {
+    if (rule.keywords.some((kw) => lower.includes(kw))) return rule.topic;
+  }
+  return null;
+}
+
+// Small inline SVG accent for each topic (36×36 viewBox, rendered at 28px)
+function TopicIcon({ topic, size = 28 }) {
+  const c = T.gold;
+  const icons = {
+    prayer: (
+      <svg width={size} height={size} viewBox="0 0 36 36" fill="none" aria-hidden>
+        {/* Dove */}
+        <path d="M18 22 Q10 18 7 11 Q15 9 21 14" fill={c} opacity="0.8"/>
+        <path d="M18 22 Q12 26 7 27 Q11 22 18 22" fill={c} opacity="0.5"/>
+        <ellipse cx="21" cy="20" rx="7" ry="4.5" fill={c} opacity="0.85"/>
+        <path d="M26 17 Q31 13 33 9 Q31 15 27 19" fill={c} opacity="0.75"/>
+        <circle cx="24" cy="18" r="1.1" fill="rgba(30,10,0,0.35)"/>
+      </svg>
+    ),
+    creation: (
+      <svg width={size} height={size} viewBox="0 0 36 36" fill="none" aria-hidden>
+        {/* Sunrise */}
+        <path d="M6 22 Q18 12 30 22" stroke={c} strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+        <circle cx="18" cy="22" r="6" fill="none" stroke={c} strokeWidth="1.8"/>
+        {['0','45','90','135','180','225','270','315'].map((deg, i) => {
+          const r = parseFloat(deg) * Math.PI / 180;
+          const x1 = 18 + 9 * Math.cos(r), y1 = 22 + 9 * Math.sin(r);
+          const x2 = 18 + 12 * Math.cos(r), y2 = 22 + 12 * Math.sin(r);
+          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={c} strokeWidth="1.4" strokeLinecap="round" opacity={y1 < 22 ? 0.85 : 0.35}/>;
+        })}
+      </svg>
+    ),
+    suffering: (
+      <svg width={size} height={size} viewBox="0 0 36 36" fill="none" aria-hidden>
+        {/* Candle with gentle flame */}
+        <rect x="15" y="20" width="6" height="12" rx="2" fill="none" stroke={c} strokeWidth="1.8"/>
+        <path d="M18 20 Q14 15 16 8 Q18 13 18 17 Q18 13 20 8 Q22 15 18 20" fill={c} opacity="0.8"/>
+        <path d="M18 18 Q17 14 17.5 11 Q18 13 18 16 Q18 13 18.5 11 Q19 14 18 18" fill="rgba(255,220,100,0.5)"/>
+        <line x1="10" y1="32" x2="26" y2="32" stroke={c} strokeWidth="1.8" strokeLinecap="round" opacity="0.5"/>
+      </svg>
+    ),
+    forgiveness: (
+      <svg width={size} height={size} viewBox="0 0 36 36" fill="none" aria-hidden>
+        {/* Open hands, palms up */}
+        <path d="M6 20 Q6 14 10 13 Q13 12 14 16 L14 24" stroke={c} strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+        <path d="M30 20 Q30 14 26 13 Q23 12 22 16 L22 24" stroke={c} strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+        <path d="M8 24 Q8 28 18 28 Q28 28 28 24" stroke={c} strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+        <path d="M14 24 L22 24" stroke={c} strokeWidth="1.4" strokeLinecap="round" opacity="0.6"/>
+        {/* Small descending sparkle above */}
+        <circle cx="18" cy="9" r="1.5" fill={c} opacity="0.7"/>
+        <line x1="18" y1="11" x2="18" y2="13" stroke={c} strokeWidth="1.2" strokeLinecap="round" opacity="0.5"/>
+      </svg>
+    ),
+    resurrection: (
+      <svg width={size} height={size} viewBox="0 0 36 36" fill="none" aria-hidden>
+        {/* Simple cross with sunrise rays — empty tomb sunrise */}
+        <line x1="18" y1="6" x2="18" y2="26" stroke={c} strokeWidth="2.2" strokeLinecap="round"/>
+        <line x1="10" y1="13" x2="26" y2="13" stroke={c} strokeWidth="2.2" strokeLinecap="round"/>
+        {/* Subtle rays */}
+        {[-45, 0, 45].map((deg, i) => {
+          const r = deg * Math.PI / 180;
+          return <line key={i} x1={18 + 14 * Math.sin(r)} y1={28 - 14 * Math.cos(r)} x2={18 + 18 * Math.sin(r)} y2={28 - 18 * Math.cos(r)} stroke={c} strokeWidth="1.2" strokeLinecap="round" opacity="0.45"/>;
+        })}
+        <path d="M4 28 Q18 20 32 28" stroke={c} strokeWidth="1.4" fill="none" strokeLinecap="round" opacity="0.4"/>
+      </svg>
+    ),
+    scripture: (
+      <svg width={size} height={size} viewBox="0 0 36 36" fill="none" aria-hidden>
+        {/* Open scroll */}
+        <path d="M7 8 Q7 5 11 5 L25 5 Q29 5 29 8 L29 28 Q29 31 25 31 L11 31 Q7 31 7 28 Z" fill="none" stroke={c} strokeWidth="1.8"/>
+        <path d="M7 8 Q3 8 3 11 Q3 14 7 14" stroke={c} strokeWidth="1.5" fill="none"/>
+        <path d="M7 28 Q3 28 3 25 Q3 22 7 22" stroke={c} strokeWidth="1.5" fill="none"/>
+        <line x1="12" y1="13" x2="24" y2="13" stroke={c} strokeWidth="1.3" opacity="0.65"/>
+        <line x1="12" y1="18" x2="24" y2="18" stroke={c} strokeWidth="1.3" opacity="0.65"/>
+        <line x1="12" y1="23" x2="20" y2="23" stroke={c} strokeWidth="1.3" opacity="0.65"/>
+      </svg>
+    ),
+    salvation: (
+      <svg width={size} height={size} viewBox="0 0 36 36" fill="none" aria-hidden>
+        {/* Eight-pointed star */}
+        <path d="M18 4 L20 14 L29 7 L22 16 L32 18 L22 20 L29 29 L20 22 L18 32 L16 22 L7 29 L14 20 L4 18 L14 16 L7 7 L16 14 Z" fill={c} opacity="0.85"/>
+        <circle cx="18" cy="18" r="3.5" fill="rgba(255,220,100,0.45)"/>
+      </svg>
+    ),
+    doubt: (
+      <svg width={size} height={size} viewBox="0 0 36 36" fill="none" aria-hidden>
+        {/* Magnifying glass with question mark */}
+        <circle cx="16" cy="16" r="9" fill="none" stroke={c} strokeWidth="1.8"/>
+        <line x1="22" y1="22" x2="30" y2="30" stroke={c} strokeWidth="2" strokeLinecap="round"/>
+        <path d="M13 12 Q13 10 16 10 Q19 10 19 13 Q19 15 16 16" stroke={c} strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+        <circle cx="16" cy="19" r="1.2" fill={c}/>
+      </svg>
+    ),
+    peace: (
+      <svg width={size} height={size} viewBox="0 0 36 36" fill="none" aria-hidden>
+        {/* Olive branch — two small leaves on a stem */}
+        <path d="M18 30 Q14 22 12 16 Q16 14 18 18" stroke={c} strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+        <path d="M12 16 Q8 12 10 8 Q14 10 12 16" fill={c} opacity="0.7"/>
+        <path d="M14 20 Q10 18 11 14 Q15 15 14 20" fill={c} opacity="0.55"/>
+        <path d="M18 18 Q22 14 20 10 Q16 12 18 18" fill={c} opacity="0.7"/>
+        <path d="M18 24 Q22 22 22 17 Q18 18 18 24" fill={c} opacity="0.55"/>
+      </svg>
+    ),
+    love: (
+      <svg width={size} height={size} viewBox="0 0 36 36" fill="none" aria-hidden>
+        {/* Two connected circles (community) */}
+        <circle cx="13" cy="18" r="7" fill="none" stroke={c} strokeWidth="1.8"/>
+        <circle cx="23" cy="18" r="7" fill="none" stroke={c} strokeWidth="1.8"/>
+        <path d="M18 12 Q21 10 24 12" stroke={c} strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.5"/>
+      </svg>
+    ),
+    purpose: (
+      <svg width={size} height={size} viewBox="0 0 36 36" fill="none" aria-hidden>
+        {/* Compass rose */}
+        <circle cx="18" cy="18" r="12" fill="none" stroke={c} strokeWidth="1.6" opacity="0.5"/>
+        <polygon points="18,6 20,16 18,18 16,16" fill={c} opacity="0.9"/>
+        <polygon points="18,30 20,20 18,18 16,20" fill={c} opacity="0.45"/>
+        <polygon points="6,18 16,16 18,18 16,20" fill={c} opacity="0.45"/>
+        <polygon points="30,18 20,20 18,18 20,16" fill={c} opacity="0.45"/>
+        <circle cx="18" cy="18" r="2.5" fill={c}/>
+      </svg>
+    ),
+    worship: (
+      <svg width={size} height={size} viewBox="0 0 36 36" fill="none" aria-hidden>
+        {/* Lyre */}
+        <path d="M11 30 Q7 20 11 10 Q18 4 25 10 Q29 20 25 30" stroke={c} strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+        <line x1="11" y1="30" x2="25" y2="30" stroke={c} strokeWidth="1.8" strokeLinecap="round"/>
+        <line x1="15" y1="30" x2="15" y2="14" stroke={c} strokeWidth="1.2" opacity="0.7"/>
+        <line x1="18" y1="30" x2="18" y2="11" stroke={c} strokeWidth="1.2" opacity="0.7"/>
+        <line x1="21" y1="30" x2="21" y2="14" stroke={c} strokeWidth="1.2" opacity="0.7"/>
+        <line x1="9" y1="19" x2="27" y2="19" stroke={c} strokeWidth="1.4" strokeLinecap="round"/>
+      </svg>
+    ),
+  };
+  return icons[topic] ? (
+    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+      {icons[topic]}
+    </span>
+  ) : null;
+}
+
+// PersonType welcome illustration — shows above starter questions
+function PersonTypeWelcome({ personType }) {
+  const config = {
+    curious:     { icon: 'doubt',    label: 'Curious',       desc: 'Every honest question is a door worth opening.' },
+    skeptic:     { icon: 'doubt',    label: 'Skeptical',     desc: 'Doubt deserves honest answers, not deflection.' },
+    agnostic:    { icon: 'peace',    label: 'Still deciding', desc: 'You don\'t have to have it figured out to begin.' },
+    questioning: { icon: 'suffering',label: 'Wrestling',     desc: 'The hardest questions are the most important ones.' },
+    believer:    { icon: 'scripture',label: 'Believing',     desc: 'Go deeper into what you already hold as true.' },
+    new:         { icon: 'creation', label: 'Just starting', desc: 'Welcome. There\'s no wrong place to begin.' },
+  };
+  const c = config[personType] ?? config.curious;
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      marginBottom: 24,
+    }}>
+      <div style={{
+        width: 56, height: 56, borderRadius: '50%',
+        background: 'rgba(184,115,58,0.10)',
+        border: `1px solid rgba(184,115,58,0.22)`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        marginBottom: 10,
+      }}>
+        <TopicIcon topic={c.icon} size={32} />
+      </div>
+      <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 4, opacity: 0.8 }}>
+        {c.label}
+      </div>
+      <div style={{ fontSize: 13, color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.5 }}>
+        {c.desc}
+      </div>
+    </div>
+  );
+}
 
 function getStarters(personType, conversations) {
   const totalMessages = conversations.reduce((sum, c) => sum + c.messages.length, 0);
@@ -97,10 +302,10 @@ function BookmarkIcon({ filled, size = 16 }) {
 function GuestWall({ onSignUp }) {
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'rgba(44,24,16,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)', padding: 24 }}>
-      <div style={{ background: T.ink, borderRadius: 24, padding: '44px 32px', maxWidth: 400, width: '100%', textAlign: 'center', border: '1px solid rgba(196,129,58,0.3)', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}>
+      <div style={{ background: T.ink, borderRadius: 24, padding: '44px 32px', maxWidth: 400, width: '100%', textAlign: 'center', border: '1px solid rgba(184,115,58,0.3)', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}>
         <svg width="28" height="28" viewBox="0 0 28 28" style={{ marginBottom: 22 }}>
-          <line x1="14" y1="0" x2="14" y2="28" stroke="#C4813A" strokeWidth="2"/>
-          <line x1="0" y1="14" x2="28" y2="14" stroke="#C4813A" strokeWidth="2"/>
+          <line x1="14" y1="0" x2="14" y2="28" stroke="#B8733A" strokeWidth="2"/>
+          <line x1="0" y1="14" x2="28" y2="14" stroke="#B8733A" strokeWidth="2"/>
         </svg>
         <div style={{ fontFamily: T.display, fontSize: 30, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.12, marginBottom: 14 }}>
           This conversation is worth keeping.
@@ -108,7 +313,7 @@ function GuestWall({ onSignUp }) {
         <div style={{ fontSize: 15, color: 'rgba(253,248,240,0.5)', lineHeight: 1.7, marginBottom: 32 }}>
           You've had 5 free exchanges. Create a free account to keep going, save your notes, and join the community.
         </div>
-        <button onClick={onSignUp} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '15px 0', fontSize: 15, fontWeight: 600, cursor: 'pointer', width: '100%', marginBottom: 12, boxShadow: '0 4px 20px rgba(196,129,58,0.4)' }}>
+        <button onClick={onSignUp} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '15px 0', fontSize: 15, fontWeight: 600, cursor: 'pointer', width: '100%', marginBottom: 12, boxShadow: '0 4px 20px rgba(184,115,58,0.4)' }}>
           Create a free account
         </button>
         <div style={{ fontSize: 12, color: 'rgba(253,248,240,0.28)' }}>No credit card needed.</div>
@@ -121,7 +326,7 @@ function formatConversation(messages, title) {
   const parts = title ? [title, ''] : [];
   messages.forEach((m) => {
     if (m.role === 'user') parts.push(`You: ${m.content}`);
-    else if (m.role === 'assistant' && m.content) parts.push(`The Way:\n${m.content}`);
+    else if (m.role === 'assistant' && m.content) parts.push(`kinwove:\n${m.content}`);
     parts.push('');
   });
   return parts.join('\n').trim();
@@ -139,6 +344,7 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
   const [sentTo, setSentTo] = useState(null);
   const canNativeShare = typeof navigator !== 'undefined' && !!navigator.share;
   const isMobile = typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  const imageDrafts = useImageDrafts(4);
 
   useEffect(() => {
     async function createShareLink() {
@@ -146,7 +352,7 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
       const msgs = rawMessages ?? [{ role: 'assistant', content: text }];
       const { error } = await supabase.from('shared_conversations').insert({
         id,
-        title: convTitle ?? 'A response from The Way',
+        title: convTitle ?? 'A response from kinwove',
         messages: msgs,
         person_type: profile?.person_type ?? 'curious',
       });
@@ -238,32 +444,41 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
 
   async function handlePost() {
     if (!session) return;
+    const image_urls = await imageDrafts.uploadAll(session.user.id);
+    const body_data = image_urls.length ? { image_urls } : {};
     const { error } = await supabase.from('posts').insert({
       author_id: session.user.id,
       body: getBody().slice(0, 2000),
+      body_data,
       person_type: profile?.person_type ?? null,
     });
-    if (!error) { setPosted(true); setTimeout(onClose, 900); }
+    if (!error) {
+      imageDrafts.clear();
+      setPosted(true); setTimeout(onClose, 900);
+    }
   }
 
   async function handleGroupShare() {
     if (!session || !userGroup) return;
+    const image_urls = await imageDrafts.uploadAll(session.user.id);
     await supabase.from('group_posts').insert({
       group_id: userGroup.group.id,
       author_id: session.user.id,
       body: getBody().slice(0, 2000),
+      image_urls,
     });
+    imageDrafts.clear();
     setGroupShared(true);
     setTimeout(onClose, 900);
   }
 
   async function handleNativeShare() {
     try {
-      await navigator.share({ title: heading || 'The Way', text: getBody() });
+      await navigator.share({ title: heading || 'kinwove', text: getBody() });
       onClose();
     } catch (e) {
       if (e.name !== 'AbortError') {
-        window.open(`mailto:?subject=${encodeURIComponent(heading || 'From The Way')}&body=${encodeURIComponent(getBody())}`);
+        window.open(`mailto:?subject=${encodeURIComponent(heading || 'From kinwove')}&body=${encodeURIComponent(getBody())}`);
       }
     }
   }
@@ -295,7 +510,7 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
   }
 
   function handleEmail() {
-    window.open(`mailto:?subject=${encodeURIComponent(heading || 'From The Way')}&body=${encodeURIComponent(getBody())}`);
+    window.open(`mailto:?subject=${encodeURIComponent(heading || 'From kinwove')}&body=${encodeURIComponent(getBody())}`);
     onClose();
   }
 
@@ -312,7 +527,7 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
     const body = getBody();
     try {
       if (canNativeShare) {
-        await navigator.share({ title: heading || 'The Way', text: body });
+        await navigator.share({ title: heading || 'kinwove', text: body });
       } else {
         window.open(`sms:?&body=${encodeURIComponent(body)}`);
       }
@@ -382,6 +597,19 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
         maxHeight: '90vh', overflowY: 'auto',
       }}>
         <div style={{ width: 36, height: 4, borderRadius: 2, background: T.line, margin: '0 auto 20px' }} />
+
+        {session && (
+          <div style={{ marginBottom: 16 }}>
+            <ImageDraftGrid drafts={imageDrafts.drafts} onRemove={imageDrafts.remove} />
+            <div style={{ marginTop: imageDrafts.drafts.length ? 8 : 0 }}>
+              <ImageAttachButton
+                drafts={imageDrafts.drafts} max={imageDrafts.max}
+                fileInputRef={imageDrafts.fileInputRef} onPick={imageDrafts.pick}
+                label={imageDrafts.drafts.length ? '📷 Add another' : '📷 Attach a photo'}
+              />
+            </div>
+          </div>
+        )}
 
         {contacts.length > 0 && (
           <div style={{ marginBottom: 20 }}>
@@ -508,7 +736,7 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
             {shareUrl ? (
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: 4,
-                background: 'rgba(196,129,58,0.10)', borderRadius: 6,
+                background: 'rgba(184,115,58,0.10)', borderRadius: 6,
                 padding: '3px 8px',
               }}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={T.goldDark} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
@@ -553,7 +781,6 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
 export default function Chat({
   personType,
   seekingContext,
-  onOpenPremium,
   onChangeType,
   notes,
   onAddNote,
@@ -572,17 +799,20 @@ export default function Chat({
   profile,
   session,
   onSignUp,
+  preferredLanguage,
   initialMessages,
   onMessagesChange,
   conversations,
   userGroup,
   panelMode,
+  scrollToMsg,
   onClose,
   docked,
   canDock,
   onToggleDock,
   onNewConversation,
   onSetPersonType,
+  seededFromNote,
 }) {
   const [messages, setMessages] = useState(initialMessages ?? []);
   const [input, setInput] = useState('');
@@ -590,6 +820,11 @@ export default function Chat({
   const [error, setError] = useState(null);
   const [savedIdx, setSavedIdx] = useState(() => new Set());
   const [copiedIdx, setCopiedIdx] = useState(null);
+  // ── Scripture verification + flag state ──────────────────────────────────
+  const [refStatusMap,  setRefStatusMap]  = useState({}); // { [msgIdx]: Map<refRaw, 'ok'|'invalid'|'loading'> }
+  const [flaggedMsgs,   setFlaggedMsgs]   = useState(new Set());
+  const [flagToast,     setFlagToast]     = useState(false);
+  const [versePopover,  setVersePopover]  = useState(null); // { refRaw, verseId, text } | null
   const [shareContent, setShareContent] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [modePickerOpen, setModePickerOpen] = useState(false);
@@ -605,10 +840,14 @@ export default function Chat({
   const listRef = useRef(null);
   const taRef = useRef(null);
   const userScrolledRef = useRef(false);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
   const { listening: micListening, toggle: toggleMic, supported: micSupported } =
     useSpeechRecognition((t) => { setInput(t); taRef.current?.focus(); });
   const ttsVoice = profile?.tts_voice ?? 'onyx';
   const { speakingId, speak: speakMsg, stop: stopSpeech, supported: ttsSupported } = useTextToSpeech({ voice: ttsVoice });
+
+  // ── AI usage limits ────────────────────────────────────────────────────────
+  const aiUsage = useAiUsage(session?.user?.id, profile?.plan ?? 'free');
 
   useEffect(() => {
     if (!busy && messages.length > 0) onMessagesChange?.(messages);
@@ -629,34 +868,53 @@ export default function Chat({
     }
   }, []);
 
-  const FREE_MSG_LIMIT = 10;
-
   const totalMessages = useMemo(
     () => (conversations ?? []).reduce((sum, c) => sum + (c.messages?.length ?? 0), 0),
     [conversations]
   );
-  const userMessageCount = useMemo(
-    () => (conversations ?? []).reduce((sum, c) => sum + (c.messages ?? []).filter((m) => m.role === 'user').length, 0),
-    [conversations]
-  );
-  const isPremium = profile?.is_premium === true;
-  const atLimit = !isPremium && userMessageCount >= FREE_MSG_LIMIT;
 
-  const system = useMemo(() => getSystemPrompt(personType, seekingContext, totalMessages), [personType, seekingContext, totalMessages]);
-  const starters = useMemo(() => getStarters(personType, conversations ?? []), [personType, conversations]);
+  const system = useMemo(() => {
+    const base = getSystemPrompt(personType, seekingContext, totalMessages);
+    const lang = preferredLanguage ?? 'en';
+    return lang !== 'en' ? `${base}\n\nRespond in the user's preferred language: ${lang}.` : base;
+  }, [personType, seekingContext, totalMessages, preferredLanguage]);
+  const starters = useMemo(() => {
+    const base = getStarters(personType, conversations ?? []);
+    const verse = getDailyVerse();
+    const versePrompt = `Help me understand ${verse.ref} — "${verse.text}"`;
+    return [versePrompt, ...base.slice(0, 2)];
+  }, [personType, conversations]);
   const person = PERSON_TYPES.find((p) => p.id === personType);
-  const trial = trialStatus(profile);
 
   useEffect(() => {
     const el = listRef.current;
     if (!el) return;
     if (!userScrolledRef.current) {
-      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      // Use instant during streaming so the animation doesn't fight user scroll
+      el.scrollTo({ top: el.scrollHeight, behavior: busy ? 'instant' : 'smooth' });
     }
   }, [messages, busy]);
 
+  // On mount: if a specific message index was requested (from Go Deeper),
+  // scroll to it and briefly highlight it instead of going to the bottom.
+  useEffect(() => {
+    if (scrollToMsg == null) return;
+    const timeout = setTimeout(() => {
+      const el = listRef.current?.querySelector(`[data-msg-idx="${scrollToMsg}"]`);
+      if (el) {
+        userScrolledRef.current = true; // prevent auto-scroll-to-bottom overriding us
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.style.transition = 'background 0.3s';
+        el.style.background = 'rgba(184,115,58,0.12)';
+        setTimeout(() => { if (el) el.style.background = ''; }, 2500);
+      }
+    }, 150);
+    return () => clearTimeout(timeout);
+  }, []); // intentionally runs once on mount only
+
   function resetScroll() {
     userScrolledRef.current = false;
+    setShowScrollBtn(false);
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
   }
 
@@ -665,6 +923,7 @@ export default function Chat({
     if (!el) return;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     userScrolledRef.current = !nearBottom;
+    setShowScrollBtn(!nearBottom);
   }
 
   useEffect(() => {
@@ -700,6 +959,61 @@ export default function Chat({
     navigator.clipboard.writeText(sessionLink).catch(() => {});
     setSessionLinkCopied(true);
     setTimeout(() => setSessionLinkCopied(false), 1800);
+  }
+
+  // ── Validate scripture refs against Bible API (background, after stream) ──
+  async function validateRefsForMsg(msgIdx, fullText) {
+    const refs = extractRefs(fullText);
+    if (refs.size === 0) return;
+    // Mark all refs as loading
+    setRefStatusMap((prev) => ({
+      ...prev,
+      [msgIdx]: new Map([...refs.keys()].map((r) => [r, 'loading'])),
+    }));
+    const results = new Map();
+    await Promise.all(
+      [...refs.entries()].map(async ([raw, verseId]) => {
+        try {
+          const res = await fetch(`/api/bible/${VALIDATION_BIBLE_ID}/verses/${verseId}`);
+          results.set(raw, res.ok ? 'ok' : 'invalid');
+        } catch {
+          results.set(raw, 'invalid');
+        }
+      })
+    );
+    setRefStatusMap((prev) => ({ ...prev, [msgIdx]: results }));
+  }
+
+  async function handleFlag(msgIdx, msgText) {
+    setFlaggedMsgs((prev) => new Set([...prev, msgIdx]));
+    setFlagToast(true);
+    setTimeout(() => setFlagToast(false), 3000);
+    try {
+      await authedFetch('/api/ai-feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message_text: msgText?.slice(0, 4000) }),
+      });
+    } catch { /* fire-and-forget */ }
+  }
+
+  async function handleRefClick(refRaw) {
+    const parsed = parseRef(refRaw);
+    if (!parsed) return;
+    const verseId = toApiVerseId(parsed);
+    setVersePopover({ refRaw, verseId, text: null });
+    try {
+      const res = await fetch(`/api/bible/${VALIDATION_BIBLE_ID}/verses/${verseId}`);
+      if (res.ok) {
+        const json = await res.json();
+        const verseText = json?.data?.content ?? null;
+        setVersePopover({ refRaw, verseId, text: verseText });
+      } else {
+        setVersePopover(null);
+      }
+    } catch {
+      setVersePopover(null);
+    }
   }
 
   async function fetchSuggestions(msgs) {
@@ -742,7 +1056,7 @@ export default function Chat({
   async function send(text) {
     const prompt = (text ?? input).trim();
     if (!prompt || busy) return;
-    if (atLimit) { onOpenPremium(true); return; }
+    if (aiUsage.atLimit) return; // hard gate — UI should prevent this anyway
     resetScroll();
     setInput('');
     setError(null);
@@ -809,6 +1123,12 @@ export default function Chat({
       setError(e.message || 'Something went wrong.');
     } finally {
       setBusy(false);
+      if (assistantContent && session) aiUsage.increment();
+      // Validate refs in the background — does not block UI
+      if (assistantContent) {
+        const lastAssistantIdx = next.length; // next = messages + user msg; assistant msg is appended after
+        validateRefsForMsg(lastAssistantIdx, assistantContent).catch(() => {});
+      }
       if (activeStudySessionId && assistantContent) {
         const finalMsgs = [...next, { role: 'assistant', content: assistantContent }];
         supabase.from('study_sessions').update({ messages: finalMsgs }).eq('id', activeStudySessionId);
@@ -841,8 +1161,11 @@ export default function Chat({
       <header
         style={{
           padding: '12px 16px',
-          background: T.white,
-          borderBottom: `1px solid ${T.line}`,
+          background: panelMode
+            ? 'linear-gradient(180deg, #2a1a14 0%, #1f1410 100%)'
+            : T.white,
+          borderBottom: panelMode ? '1px solid #3a261d' : `1px solid ${T.line}`,
+          boxShadow: panelMode ? 'inset 0 -1px 0 rgba(184,115,58,0.18)' : 'none',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -852,23 +1175,25 @@ export default function Chat({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {panelMode && (
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 18, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>
+            <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', color: 'rgba(253,248,240,0.7)', fontSize: 16, cursor: 'pointer', padding: '4px 8px', lineHeight: 1, borderRadius: 8 }}>
               ×
             </button>
           )}
           {!panelMode && (
-            <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>
-              The Way
+            <div style={{ fontFamily: T.display, fontSize: 24, fontWeight: 500, color: T.ink, letterSpacing: '-0.025em' }}>
+              kinwove
             </div>
           )}
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setModePickerOpen((v) => !v)}
               style={{
-                background: modePickerOpen ? 'rgba(196,129,58,0.1)' : T.parchment,
-                border: `1px solid ${modePickerOpen ? T.gold : T.line}`,
+                background: modePickerOpen
+                  ? 'rgba(184,115,58,0.22)'
+                  : (panelMode ? 'rgba(255,255,255,0.08)' : T.parchment),
+                border: `1px solid ${modePickerOpen ? T.gold : (panelMode ? 'rgba(184,115,58,0.35)' : T.line)}`,
                 borderRadius: 999, padding: '4px 12px',
-                fontSize: 12, color: modePickerOpen ? T.goldDark : T.inkSoft,
+                fontSize: 12, color: panelMode ? '#e8b563' : (modePickerOpen ? T.goldDark : T.inkSoft),
                 cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
                 transition: 'all 0.15s',
               }}
@@ -884,58 +1209,60 @@ export default function Chat({
             )}
             {modePickerOpen && (
               <div style={{
-                position: 'absolute', top: 'calc(100% + 8px)', left: 0,
+                position: 'fixed', top: '50%', left: '50%',
+                transform: 'translate(-50%, -50%)',
                 background: T.white, border: `1px solid ${T.line}`,
-                borderRadius: 14, boxShadow: '0 8px 32px rgba(44,24,16,0.14)',
-                overflow: 'hidden', minWidth: 220, zIndex: 200,
+                borderRadius: 16, boxShadow: '0 12px 48px rgba(44,24,16,0.18)',
+                padding: 10, zIndex: 200,
+                width: 'min(calc(100vw - 32px), 420px)',
+                maxHeight: '85vh', overflowY: 'auto',
               }}>
-                <div style={{ padding: '10px 14px 6px', fontSize: 10, letterSpacing: '0.07em', textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700 }}>
+                <div style={{ padding: '2px 4px 8px', fontSize: 10, letterSpacing: '0.07em', textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700 }}>
                   Switch mode
                 </div>
-                {PERSON_TYPES.map((pt) => {
-                  const active = pt.id === personType;
-                  return (
-                    <button
-                      key={pt.id}
-                      onClick={() => { setModePickerOpen(false); onSetPersonType?.(pt.id); }}
-                      style={{
-                        width: '100%', textAlign: 'left', background: active ? 'rgba(196,129,58,0.07)' : 'none',
-                        border: 'none', borderTop: `1px solid ${T.line}`,
-                        padding: '10px 16px', fontSize: 13, color: T.ink,
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
-                        fontWeight: active ? 600 : 400,
-                      }}
-                    >
-                      <span style={{ fontSize: 16, width: 22, textAlign: 'center' }}>{pt.emoji}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, color: active ? T.goldDark : T.ink, fontWeight: active ? 700 : 500 }}>{pt.label}</div>
-                        <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 160 }}>{pt.description}</div>
-                      </div>
-                      {active && <span style={{ marginLeft: 'auto', color: T.gold, fontSize: 14 }}>✓</span>}
-                    </button>
-                  );
-                })}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                  {PERSON_TYPES.map((pt) => {
+                    const active = pt.id === personType;
+                    return (
+                      <button
+                        key={pt.id}
+                        onClick={() => { setModePickerOpen(false); onSetPersonType?.(pt.id); }}
+                        onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'rgba(184,115,58,0.06)'; }}
+                        onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = T.parchment; }}
+                        style={{
+                          textAlign: 'left', cursor: 'pointer',
+                          background: active ? 'rgba(184,115,58,0.10)' : T.parchment,
+                          border: `1.5px solid ${active ? T.gold : 'transparent'}`,
+                          borderRadius: 12, padding: '10px 10px',
+                          transition: 'background 0.12s',
+                          position: 'relative',
+                        }}
+                      >
+                        {active && (
+                          <span style={{
+                            position: 'absolute', top: 7, right: 9,
+                            fontSize: 10, color: T.goldDark, fontWeight: 700,
+                          }}>✓</span>
+                        )}
+                        <div style={{ fontSize: 20, marginBottom: 5, lineHeight: 1 }}>{pt.emoji}</div>
+                        <div style={{ fontSize: 12.5, fontWeight: 700, color: active ? T.goldDark : T.ink, marginBottom: 3 }}>{pt.label}</div>
+                        <div style={{ fontSize: 10.5, color: T.inkMuted, lineHeight: 1.45 }}>{pt.description}</div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {trial.active && (
-            <div style={{
-              fontSize: 11, color: T.goldDark,
-              border: `1px solid ${T.goldLight}`, borderRadius: 999,
-              padding: '4px 10px', background: 'rgba(196,129,58,0.08)',
-            }}>
-              {trial.daysLeft}d free
-            </div>
-          )}
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
               style={{
-                background: menuOpen ? T.parchment : 'transparent',
-                border: `1px solid ${menuOpen ? T.gold : T.line}`,
-                color: T.inkSoft, borderRadius: 999,
+                background: menuOpen ? 'rgba(184,115,58,0.18)' : (panelMode ? 'rgba(255,255,255,0.08)' : 'transparent'),
+                border: `1px solid ${menuOpen ? T.gold : (panelMode ? 'rgba(184,115,58,0.35)' : T.line)}`,
+                color: panelMode ? 'rgba(253,248,240,0.75)' : T.inkSoft, borderRadius: 999,
                 padding: '6px 12px', fontSize: 16, cursor: 'pointer',
                 lineHeight: 1,
               }}
@@ -965,22 +1292,6 @@ export default function Chat({
                 }}>
                   <span style={{ fontSize: 15 }}>✦</span><span style={{ fontWeight: 600 }}>New conversation</span>
                 </button>
-                <button onClick={() => { setMenuOpen(false); onChangeType(); }} style={{
-                  width: '100%', textAlign: 'left', background: 'none',
-                  border: 'none', borderBottom: `1px solid ${T.line}`,
-                  padding: '12px 16px', fontSize: 14, color: T.ink,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
-                }}>
-                  <span style={{ fontSize: 13 }}>⇄</span><span>Change mode</span>
-                </button>
-                <button onClick={() => { setMenuOpen(false); onOpenPrayer(); }} style={{
-                  width: '100%', textAlign: 'left', background: 'none',
-                  border: 'none', borderBottom: `1px solid ${T.line}`,
-                  padding: '12px 16px', fontSize: 14, color: T.ink,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
-                }}>
-                  <span>🕯️</span><span>Prayer</span>
-                </button>
                 {messages.length > 0 && (
                   <button onClick={() => { setMenuOpen(false); setShareContent({ text: formatConversation(messages, conversationTitle), label: 'Share conversation', rawMessages: messages, convTitle: conversationTitle }); }} style={{
                     width: '100%', textAlign: 'left', background: 'none',
@@ -1005,7 +1316,49 @@ export default function Chat({
         </div>
       </header>
 
-      <AdStrip />
+      {seededFromNote && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          padding: '5px 16px',
+          background: panelMode ? 'rgba(184,115,58,0.08)' : 'rgba(184,115,58,0.05)',
+          borderBottom: `1px solid rgba(184,115,58,0.15)`,
+          flexShrink: 0,
+        }}>
+          <span style={{ fontSize: 11, color: T.goldDark, opacity: 0.8 }}>◷</span>
+          <span style={{ fontSize: 11, color: T.inkMuted, letterSpacing: '0.01em' }}>
+            Continuing from a saved note · history unavailable
+          </span>
+        </div>
+      )}
+
+      {/* Scroll-to-bottom button — appears when user has scrolled up */}
+      {showScrollBtn && (
+        <button
+          onClick={resetScroll}
+          style={{
+            position: 'absolute',
+            bottom: panelMode ? 80 : 100,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 50,
+            background: T.ink,
+            color: T.cream,
+            border: 'none',
+            borderRadius: 999,
+            padding: '7px 16px',
+            fontSize: 12.5,
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            boxShadow: '0 4px 16px rgba(44,24,16,0.25)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          ↓ {busy ? 'Still loading — scroll down' : 'Scroll to bottom'}
+        </button>
+      )}
 
       <div
         ref={listRef}
@@ -1023,7 +1376,7 @@ export default function Chat({
             activeStudySessionId ? (
               <div style={{ background: 'rgba(34,179,105,0.07)', border: '1px solid rgba(34,179,105,0.22)', borderRadius: 12, padding: '12px 16px', marginBottom: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22b369', animation: 'bounce 2s infinite ease-in-out' }} />
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#6B8758', animation: 'bounce 2s infinite ease-in-out' }} />
                   <span style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>Live session active</span>
                   <button onClick={endStudySession} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer', padding: 0 }}>End session</button>
                 </div>
@@ -1051,13 +1404,69 @@ export default function Chat({
           )}
 
           {messages.length === 0 && (
-            <div className="fade-up">
-              <div style={{ fontFamily: T.serif, fontSize: 26, color: T.ink, marginBottom: 8, fontWeight: 500 }}>
+            <div
+              className="fade-up"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                padding: '20px 12px 0',
+              }}
+            >
+              <PersonTypeWelcome personType={personType} />
+              <div style={{ fontFamily: T.serif, fontSize: 26, color: T.ink, marginBottom: 8, fontWeight: 500, letterSpacing: '-0.01em' }}>
                 Take your time.
               </div>
-              <div style={{ fontSize: 15, color: T.inkMuted, lineHeight: 1.6 }}>
+              <div style={{ fontSize: 14.5, color: T.inkMuted, lineHeight: 1.55, maxWidth: 360, marginBottom: 22 }}>
                 Ask anything — a question, a doubt, a verse you want to understand.
               </div>
+              <div style={{
+                fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase',
+                color: T.inkMuted, fontWeight: 700, marginBottom: 10,
+              }}>
+                Or start here
+              </div>
+              <div style={{
+                display: 'flex', flexDirection: 'column', gap: 8,
+                width: '100%', maxWidth: 440,
+              }}>
+                {starters.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => send(s)}
+                    style={{
+                      width: '100%', textAlign: 'left',
+                      background: T.parchment, border: `1px solid ${T.line}`,
+                      borderRadius: 14, padding: '13px 16px',
+                      fontSize: 14, color: T.ink, fontFamily: T.serif,
+                      cursor: 'pointer', lineHeight: 1.45,
+                      transition: 'border-color 0.15s, background 0.15s, box-shadow 0.15s',
+                      display: 'flex', alignItems: 'flex-start', gap: 10,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = T.gold;
+                      e.currentTarget.style.background = 'rgba(184,115,58,0.07)';
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(44,24,16,0.06)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = T.line;
+                      e.currentTarget.style.background = T.parchment;
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    <span style={{ color: T.gold, fontSize: 11, flexShrink: 0, marginTop: 3 }}>✦</span>
+                    <span style={{ flex: 1 }}>{s}</span>
+                  </button>
+                ))}
+              </div>
+
+              <Tip
+                tipId="chat_save_note"
+                icon="📌"
+                text="Save any answer as a note — tap the bookmark icon on a response to keep it on your board."
+                style={{ marginTop: 20, width: '100%', maxWidth: 440, textAlign: 'left' }}
+              />
             </div>
           )}
 
@@ -1078,20 +1487,37 @@ export default function Chat({
                 answer: m.content,
                 personType,
                 personLabel: personDef ? `${personDef.emoji} ${personDef.label}` : '',
+                msgIdx: i,
               });
               setSavedIdx((s) => new Set(s).add(i));
             };
+            // Topic accent: detect from the preceding user question (first AI response only per topic)
+            const precedingUserMsg = isAssistant && i > 0 && messages[i - 1]?.role === 'user'
+              ? messages[i - 1].content : null;
+            const topicForAccent = isAssistant && i <= 2 ? detectTopic(precedingUserMsg) : null;
             return (
               <div
                 key={i}
+                data-msg-idx={i}
                 className="fade-up"
                 style={{
                   marginBottom: 20,
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: m.role === 'user' ? 'flex-end' : 'flex-start',
+                  borderRadius: 8,
                 }}
               >
+                {/* Subtle topic accent before first assistant response */}
+                {topicForAccent && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    marginBottom: 10, opacity: 0.7,
+                  }}>
+                    <TopicIcon topic={topicForAccent} size={20} />
+                    <div style={{ height: 1, flex: 1, background: `linear-gradient(90deg, rgba(184,115,58,0.3), transparent)` }} />
+                  </div>
+                )}
                 <div
                   style={{
                     maxWidth: m.role === 'user' ? '80%' : '100%',
@@ -1105,7 +1531,13 @@ export default function Chat({
                     whiteSpace: 'pre-wrap',
                   }}
                 >
-                  {isStreaming ? <TypingDots /> : <MsgText text={m.content} />}
+                  {isStreaming ? <TypingDots /> : (
+                    <MsgText
+                      text={m.content}
+                      onRefClick={handleRefClick}
+                      refStatus={refStatusMap[i]}
+                    />
+                  )}
                 </div>
                 {canSave && (
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6 }}>
@@ -1146,6 +1578,28 @@ export default function Chat({
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                       Share
                     </button>
+                    {!flaggedMsgs.has(i) ? (
+                      <button
+                        onClick={() => handleFlag(i, m.content)}
+                        title="Something seems off — flag this response"
+                        style={{
+                          background: 'transparent', border: 'none',
+                          padding: '4px 8px', cursor: 'pointer',
+                          color: T.inkMuted, fontSize: 12,
+                          display: 'inline-flex', alignItems: 'center', gap: 5,
+                          transition: 'color 0.2s',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = '#c05050'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = T.inkMuted; }}
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
+                        </svg>
+                        Flag
+                      </button>
+                    ) : (
+                      <span style={{ padding: '4px 8px', fontSize: 12, color: T.inkMuted }}>Flagged</span>
+                    )}
                     <button
                       onClick={async () => {
                         try {
@@ -1218,6 +1672,12 @@ export default function Chat({
             );
           })}
 
+          {messages.length >= 3 && (
+            <div style={{ marginTop: 8, marginBottom: 12, borderRadius: 10, overflow: 'hidden', border: `1px solid ${T.line}` }}>
+              <AdStrip />
+            </div>
+          )}
+
           {error && (
             <div
               style={{
@@ -1236,6 +1696,14 @@ export default function Chat({
         </div>
       </div>
 
+      {/* ── AI limit wall — replaces composer when user is out of messages ── */}
+      {aiUsage.atLimit && session && (
+        <AiLimitWall plan={profile?.plan ?? 'free'} panelMode={panelMode} />
+      )}
+
+      {/* ── Low-messages warning strip ── */}
+      {!aiUsage.atLimit && session && <AiUsageWarning remaining={aiUsage.remaining} />}
+
       <div
         style={{
           borderTop: `1px solid ${T.line}`,
@@ -1244,28 +1712,13 @@ export default function Chat({
             ? `12px 16px max(14px, env(safe-area-inset-bottom, 14px))`
             : '14px 20px 76px',
           flexShrink: 0,
+          display: aiUsage.atLimit && session ? 'none' : undefined,
         }}
       >
-        {atLimit && (
-          <div style={{ maxWidth: 720, margin: '0 auto 12px', background: 'rgba(196,129,58,0.08)', border: `1px solid rgba(196,129,58,0.3)`, borderRadius: 12, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <div style={{ fontSize: 13, color: T.ink, lineHeight: 1.5 }}>
-              <strong>You've used your 10 free messages.</strong><br />
-              <span style={{ color: T.inkSoft }}>Billing opens soon — join the list to be first.</span>
-            </div>
-            <button
-              onClick={() => onOpenPremium(true)}
-              style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
-            >
-              Notify me →
-            </button>
-          </div>
-        )}
-        {!busy && !atLimit && !showGuestWall && (() => {
-          const chips = suggestions.length > 0
-            ? suggestions
-            : messages.length === 0
-              ? (STARTERS[personType] ?? STARTERS.curious).slice(0, 3)
-              : [];
+        {!busy && !showGuestWall && (() => {
+          // When no messages exist the body already shows the large starter cards —
+          // only render the footer chips once a conversation is underway.
+          const chips = suggestions.length > 0 ? suggestions : (messages.length > 0 ? starters : []);
           if (chips.length === 0) return null;
           return (
             <div
@@ -1297,7 +1750,7 @@ export default function Chat({
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = T.gold;
                     e.currentTarget.style.color = T.goldDark;
-                    e.currentTarget.style.background = 'rgba(196,129,58,0.07)';
+                    e.currentTarget.style.background = 'rgba(184,115,58,0.07)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.borderColor = T.line;
@@ -1330,9 +1783,9 @@ export default function Chat({
                 send();
               }
             }}
-            placeholder={atLimit ? 'Upgrade to keep the conversation going…' : 'Ask anything about faith, God, or the Bible…'}
+            placeholder="Ask anything about faith, God, or the Bible…"
             rows={1}
-            disabled={busy || showGuestWall || atLimit}
+            disabled={busy || showGuestWall}
             style={{
               flex: 1,
               resize: 'none',
@@ -1383,7 +1836,7 @@ export default function Chat({
               fontWeight: 600,
               cursor: busy || !input.trim() ? 'not-allowed' : 'pointer',
               transition: 'all 0.15s ease',
-              boxShadow: busy || !input.trim() ? 'none' : '0 4px 14px rgba(196,129,58,0.35)',
+              boxShadow: busy || !input.trim() ? 'none' : '0 4px 14px rgba(184,115,58,0.35)',
             }}
           >
             Send
@@ -1399,10 +1852,64 @@ export default function Chat({
               textAlign: 'center',
             }}
           >
-            Every claim referenced. The Way won't always be right — but it will always show its work.
+            Built to honour scripture, not replace it. Always verify references in your own Bible.
           </div>
         )}
       </div>
+      {/* ── Verse preview popover ── */}
+      {versePopover && (
+        <div
+          style={{
+            position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200,
+            background: 'rgba(44,24,16,0.55)', backdropFilter: 'blur(6px)',
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          }}
+          onClick={() => setVersePopover(null)}
+        >
+          <div
+            style={{
+              background: '#FDF8F0', borderRadius: '20px 20px 0 0',
+              padding: '24px 24px 32px', width: '100%', maxWidth: 520,
+              boxShadow: '0 -8px 40px rgba(44,24,16,0.25)',
+              animation: 'fadeUp 0.22s ease both',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+              <span style={{
+                fontSize: 12, fontWeight: 600, color: '#B8733A',
+                letterSpacing: 1.5, textTransform: 'uppercase',
+              }}>
+                {versePopover.refRaw.replace(/[()]/g, '')}
+              </span>
+              <button
+                onClick={() => setVersePopover(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9C7B5E', fontSize: 18, lineHeight: 1, padding: '0 0 0 12px' }}
+              >×</button>
+            </div>
+            {versePopover.text === null ? (
+              <div style={{ fontSize: 15, color: '#9C7B5E', fontStyle: 'italic' }}>Loading…</div>
+            ) : (
+              <p style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 17, lineHeight: 1.75, color: '#2C1810', margin: '0 0 16px' }}>
+                {versePopover.text}
+              </p>
+            )}
+            <div style={{ fontSize: 11, color: '#9C7B5E', marginBottom: 12 }}>King James Version · api.bible</div>
+          </div>
+        </div>
+      )}
+      {/* ── Flag toast ── */}
+      {flagToast && (
+        <div style={{
+          position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
+          background: '#2C1810', color: '#FDF8F0', borderRadius: 999,
+          padding: '10px 20px', fontSize: 13, zIndex: 300,
+          boxShadow: '0 4px 20px rgba(44,24,16,0.4)',
+          animation: 'fadeIn 0.2s ease both',
+        }}>
+          Thanks — we'll take a look at this response.
+        </div>
+      )}
       {showGuestWall && <GuestWall onSignUp={onSignUp} />}
       {shareContent && (
         <ChatShareSheet

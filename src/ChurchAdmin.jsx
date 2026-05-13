@@ -1,46 +1,16 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
+import { Download, Copy, Check, QrCode } from 'lucide-react';
 import { supabase } from './supabase.js';
-import { T, SHADOW } from './theme.js';
+import { T } from './theme.js';
 import Badge, { INVITABLE_ROLES, presetForRole } from './Badge.jsx';
 import { useUiKit, EmptyState, TextButton } from './uikit.jsx';
+import ChurchModeShell from './ChurchModeShell.jsx';
+import FlagPicker from './FlagPicker.jsx';
+import { usePlan } from './usePlan.js';
+import { TrialBanner, UpgradeWall } from './PlanGate.jsx';
 
 const PastorDashboard = lazy(() => import('./PastorDashboard.jsx'));
 const SermonComposer  = lazy(() => import('./SermonComposer.jsx'));
-
-const TABS = [
-  { id: 'overview', label: 'Overview', emoji: '✦' },
-  { id: 'sermons',  label: 'Sermons',  emoji: '📖' },
-  { id: 'people',   label: 'People',   emoji: '👥' },
-  { id: 'settings', label: 'Settings', emoji: '⚙' },
-];
-
-function TabButton({ tab, active, onClick }) {
-  // The ChurchAdmin sticky header is dark, so this button is tuned for cream-on-dark.
-  // Active: solid cream pill with ink text — pops like a lit lantern.
-  // Inactive: transparent with cream-translucent text — recedes into the doorway.
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        background: active ? T.cream : 'transparent',
-        color: active ? T.ink : 'rgba(253,248,240,0.65)',
-        border: active ? 'none' : '1px solid rgba(253,248,240,0.18)',
-        borderRadius: 999,
-        padding: '8px 14px',
-        fontSize: 13,
-        fontWeight: 600,
-        cursor: 'pointer',
-        whiteSpace: 'nowrap',
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 6,
-      }}
-    >
-      <span style={{ fontSize: 13 }}>{tab.emoji}</span>
-      {tab.label}
-    </button>
-  );
-}
 
 function qrUrl(url) {
   return `https://quickchart.io/qr?text=${encodeURIComponent(url)}&size=320&margin=2&dark=2C1810&light=FDF8F0`;
@@ -55,17 +25,172 @@ function buildAnnouncementText(churchName, link) {
   return [
     `Hey ${name} family — we're trying something new.`,
     '',
-    'The Way is a quiet space between Sundays — for questions, prayer, and going deeper with what we hear on Sunday. No noise, no algorithms. Just our church.',
+    'kinwove is a quiet space between Sundays — for questions, prayer, and going deeper with what we hear on Sunday. No noise, no algorithms. Just our church.',
     '',
     `Join here: ${link}`,
   ].join('\n');
 }
 
-function SettingsPanel({ church, churchId, onOpenChurchPage, onChurchUpdate, pendingAction, onActionConsumed }) {
+function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUpdate, onTransferComplete, pendingAction, onActionConsumed }) {
   const { showToast, ui: uikitUi } = useUiKit();
   const publicUrl = typeof window !== 'undefined' && church?.id
     ? `${window.location.origin}/?church=${church.id}`
     : '';
+
+  // Church photo upload
+  const [avatarUploading, setAvatarUploading] = useState(false);
+
+  async function uploadChurchPhoto(file) {
+    if (!file || !churchId) return;
+    if (!file.type.startsWith('image/')) { showToast('Please pick an image file.', 'error'); return; }
+    if (file.size > 5 * 1024 * 1024) { showToast('Image must be under 5 MB.', 'error'); return; }
+    setAvatarUploading(true);
+    const ext = file.name.split('.').pop() || 'jpg';
+    const path = `${churchId}/avatar.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from('church-avatars')
+      .upload(path, file, { upsert: true, contentType: file.type });
+    if (upErr) { showToast(`Upload failed: ${upErr.message}`, 'error'); setAvatarUploading(false); return; }
+    const { data: { publicUrl: url } } = supabase.storage.from('church-avatars').getPublicUrl(path);
+    const busted = `${url}?t=${Date.now()}`;
+    const { error: dbErr } = await supabase.from('churches').update({ avatar_url: busted }).eq('id', churchId);
+    setAvatarUploading(false);
+    if (dbErr) { showToast(`Couldn't save: ${dbErr.message}`, 'error'); return; }
+    onChurchUpdate?.({ avatar_url: busted });
+    showToast('Church photo updated.', 'success');
+  }
+
+  // Ownership transfer
+  const [transferOpen, setTransferOpen]       = useState(false);
+  const [transferSearch, setTransferSearch]   = useState('');
+  const [transferResults, setTransferResults] = useState([]);
+  const [transferTarget, setTransferTarget]   = useState(null);
+  const [transferConfirm, setTransferConfirm] = useState(false);
+  const [transferBusy, setTransferBusy]       = useState(false);
+  const [transferError, setTransferError]     = useState(null);
+
+  useEffect(() => {
+    if (!transferSearch.trim() || !churchId) { setTransferResults([]); return; }
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, display_name')
+        .eq('church_id', churchId)
+        .neq('id', session?.user?.id ?? '')
+        .ilike('display_name', `%${transferSearch.trim()}%`)
+        .limit(8);
+      setTransferResults(data ?? []);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [transferSearch, churchId, session?.user?.id]);
+
+  function openTransfer() {
+    setTransferSearch(''); setTransferResults([]);
+    setTransferTarget(null); setTransferConfirm(false);
+    setTransferError(null); setTransferOpen(true);
+  }
+
+  async function executeTransfer() {
+    if (!transferTarget || !churchId || !session?.user?.id) return;
+    setTransferBusy(true); setTransferError(null);
+    const userId = session.user.id;
+
+    // 1. Upsert new owner row (insert or update existing staff row)
+    const { error: e1 } = await supabase.from('church_roles').upsert({
+      church_id: churchId, user_id: transferTarget.id,
+      role_key: 'owner', role_title: 'Lead Pastor', is_owner: true,
+      can_post_sermons: true, can_post_announcements: true,
+      can_moderate: true, can_view_prayers: true,
+      can_manage_staff: true, can_edit_church: true,
+    }, { onConflict: 'church_id,user_id,role_key' });
+
+    if (e1) { setTransferError(e1.message); setTransferBusy(false); return; }
+
+    // 2. Demote current owner — keep them as staff, strip owner flag
+    const { error: e2 } = await supabase
+      .from('church_roles')
+      .update({ is_owner: false, role_key: 'staff' })
+      .eq('church_id', churchId)
+      .eq('user_id', userId)
+      .eq('is_owner', true);
+
+    setTransferBusy(false);
+    if (e2) { setTransferError(e2.message); return; }
+
+    // 3. Update display pastor_id on the church record
+    await supabase.from('churches').update({ pastor_id: transferTarget.id }).eq('id', churchId);
+
+    setTransferOpen(false);
+    onTransferComplete?.();
+  }
+
+  // Membership approval toggle
+  const [openJoin, setOpenJoin]     = useState(church?.open_join ?? true);
+  const [savingJoin, setSavingJoin] = useState(false);
+
+  async function saveOpenJoin(val) {
+    setSavingJoin(true);
+    const { error } = await supabase.from('churches').update({ open_join: val }).eq('id', churchId);
+    setSavingJoin(false);
+    if (error) { showToast(`Couldn't save: ${error.message}`, 'error'); return; }
+    setOpenJoin(val);
+    onChurchUpdate?.({ open_join: val });
+    showToast(val ? 'Open joining on — no approval needed.' : 'Approval required for new members.', 'success');
+  }
+
+  // Question of the Day
+  const [qotdDraft, setQotdDraft]   = useState(church?.question_of_day ?? '');
+  const [savingQotd, setSavingQotd] = useState(false);
+
+  useEffect(() => { setQotdDraft(church?.question_of_day ?? ''); }, [church?.question_of_day]);
+
+  async function saveQotd() {
+    if (!churchId || !qotdDraft.trim()) return;
+    setSavingQotd(true);
+    const question = qotdDraft.trim();
+    const { error } = await supabase
+      .from('churches')
+      .update({
+        question_of_day: question,
+        question_of_day_set_at: new Date().toISOString(),
+        question_of_day_set_by: session?.user?.id,
+      })
+      .eq('id', churchId);
+    if (error) { showToast(`Couldn't save: ${error.message}`, 'error'); setSavingQotd(false); return; }
+
+    // Notify all church members (excluding current user)
+    const { data: members } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('church_id', churchId)
+      .neq('id', session?.user?.id ?? '');
+    if (members?.length) {
+      await supabase.from('notifications').insert(
+        members.map(m => ({
+          recipient_id: m.id,
+          actor_id: session?.user?.id,
+          kind: 'church_question_of_day',
+          data: { church_id: churchId, question },
+        }))
+      );
+    }
+
+    onChurchUpdate?.({ question_of_day: question, question_of_day_set_at: new Date().toISOString() });
+    setSavingQotd(false);
+    showToast('Question set \u2014 your church has been notified.', 'success');
+  }
+
+  async function clearQotd() {
+    if (!churchId) return;
+    const { error } = await supabase
+      .from('churches')
+      .update({ question_of_day: null, question_of_day_set_at: null, question_of_day_set_by: null })
+      .eq('id', churchId);
+    if (error) { showToast(`Couldn't clear: ${error.message}`, 'error'); return; }
+    setQotdDraft('');
+    onChurchUpdate?.({ question_of_day: null, question_of_day_set_at: null });
+    showToast('Question cleared.', 'success');
+  }
 
   // Welcome-note editor — moved here from ChurchPage so the public page is
   // truly visitor-only. Pastor edits live in admin; the public page just shows.
@@ -93,10 +218,42 @@ function SettingsPanel({ church, churchId, onOpenChurchPage, onChurchUpdate, pen
   const [addressDraft, setAddressDraft] = useState(church?.street_address ?? '');
   const [savingVisit, setSavingVisit]   = useState(false);
 
+  // Countries we serve — up to 2 ISO codes.
+  const [countriesDraft, setCountriesDraft] = useState(church?.countries_open_to ?? []);
+  const [savingCountries, setSavingCountries] = useState(false);
+  const countriesDirty = JSON.stringify(countriesDraft) !== JSON.stringify(church?.countries_open_to ?? []);
+
+  const [walks, setWalks] = useState([]);
+  const [savingFeatured, setSavingFeatured] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from('walks')
+      .select('id, title, subtitle, cover_emoji, length_days, sort_order')
+      .eq('is_published', true)
+      .order('sort_order', { ascending: true })
+      .then(({ data }) => { if (!cancelled) setWalks(data ?? []); });
+    return () => { cancelled = true; };
+  }, []);
+
+  async function setFeaturedWalk(nextId) {
+    if (!churchId) return;
+    setSavingFeatured(true);
+    const { error } = await supabase
+      .from('churches')
+      .update({ featured_walk_id: nextId })
+      .eq('id', churchId);
+    setSavingFeatured(false);
+    if (error) { showToast(`Couldn't save: ${error.message}`, 'error'); return; }
+    onChurchUpdate?.({ featured_walk_id: nextId });
+    showToast(nextId ? 'Featured walk updated.' : 'Featured walk cleared.', 'success');
+  }
+
   // Keep the drafts in sync if the parent's church state hot-swaps under us.
   useEffect(() => { setPinDraft(church?.pinned_post ?? ''); }, [church?.pinned_post]);
   useEffect(() => { setServiceDraft(church?.service_info ?? ''); }, [church?.service_info]);
   useEffect(() => { setAddressDraft(church?.street_address ?? ''); }, [church?.street_address]);
+  useEffect(() => { setCountriesDraft(church?.countries_open_to ?? []); }, [church?.countries_open_to]);
 
   const dirty      = (pinDraft.trim() || '') !== (church?.pinned_post ?? '');
   const visitDirty = (serviceDraft.trim() || '') !== (church?.service_info ?? '')
@@ -129,6 +286,19 @@ function SettingsPanel({ church, churchId, onOpenChurchPage, onChurchUpdate, pen
     if (error) { showToast(`Couldn't save: ${error.message}`, 'error'); return; }
     onChurchUpdate?.({ service_info: nextService, street_address: nextAddress });
     showToast('Visit info saved.', 'success');
+  }
+
+  async function saveCountries() {
+    if (!churchId) return;
+    setSavingCountries(true);
+    const { error } = await supabase
+      .from('churches')
+      .update({ countries_open_to: countriesDraft })
+      .eq('id', churchId);
+    setSavingCountries(false);
+    if (error) { showToast(`Couldn't save: ${error.message}`, 'error'); return; }
+    onChurchUpdate?.({ countries_open_to: countriesDraft });
+    showToast('Countries saved.', 'success');
   }
 
   async function copyLink() {
@@ -187,6 +357,54 @@ function SettingsPanel({ church, churchId, onOpenChurchPage, onChurchUpdate, pen
   return (
     <div style={{ display: 'grid', gap: 14 }}>
       {uikitUi}
+
+      {/* ── Church photo ── */}
+      <div style={{
+        background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
+        padding: '16px 18px',
+      }}>
+        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
+          ⛪ Church photo
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{
+            width: 72, height: 72, borderRadius: '50%', flexShrink: 0,
+            background: 'rgba(253,248,240,0.06)',
+            border: `2px solid ${T.goldLight}`,
+            overflow: 'hidden',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 32,
+          }}>
+            {church?.avatar_url
+              ? <img src={church.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : '⛪'}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 10 }}>
+              Shows in your banner and directory listing. Square images work best. Max 5 MB.
+            </div>
+            <label style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              background: avatarUploading ? T.parchment : T.ink,
+              color: avatarUploading ? T.inkMuted : T.cream,
+              border: 'none', borderRadius: 999,
+              padding: '8px 16px', fontSize: 13, fontWeight: 600,
+              cursor: avatarUploading ? 'wait' : 'pointer',
+              opacity: avatarUploading ? 0.7 : 1,
+              transition: 'opacity 0.15s',
+            }}>
+              {avatarUploading ? 'Uploading…' : (church?.avatar_url ? 'Change photo' : 'Upload photo')}
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                disabled={avatarUploading}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadChurchPhoto(f); e.target.value = ''; }}
+              />
+            </label>
+          </div>
+        </div>
+      </div>
 
       {/* ── Welcome note (formerly inline-edited on the public page) ── */}
       <div style={{
@@ -308,6 +526,42 @@ function SettingsPanel({ church, churchId, onOpenChurchPage, onChurchUpdate, pen
         </div>
       </div>
 
+      {/* ── Countries we serve ──────────────────────────────────── */}
+      <div style={{
+        background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
+        padding: '16px 18px',
+      }}>
+        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
+          🌍 Countries we serve
+        </div>
+        <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, marginBottom: 4 }}>
+          Countries we serve (up to 2)
+        </div>
+        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>
+          Optional. Shown on your public page to help people from those countries find you.
+        </div>
+        <FlagPicker value={countriesDraft} onChange={setCountriesDraft} />
+        <div style={{ display: 'flex', alignItems: 'center', marginTop: 12, gap: 8 }}>
+          <div style={{ flex: 1 }} />
+          {countriesDirty && (
+            <button onClick={() => setCountriesDraft(church?.countries_open_to ?? [])} style={{
+              background: 'none', border: `1px solid ${T.line}`, borderRadius: 999,
+              padding: '7px 14px', fontSize: 13, color: T.inkMuted, cursor: 'pointer',
+            }}>Discard</button>
+          )}
+          <button
+            onClick={saveCountries}
+            disabled={!countriesDirty || savingCountries}
+            style={{
+              background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+              padding: '7px 18px', fontSize: 13, fontWeight: 600,
+              cursor: (!countriesDirty || savingCountries) ? 'not-allowed' : 'pointer',
+              opacity: (!countriesDirty || savingCountries) ? 0.45 : 1,
+            }}
+          >{savingCountries ? 'Saving…' : 'Save'}</button>
+        </div>
+      </div>
+
       {/* ── Public page + share + QR ─────────────────────────────── */}
       <div style={{
         background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
@@ -351,6 +605,341 @@ function SettingsPanel({ church, churchId, onOpenChurchPage, onChurchUpdate, pen
         </div>
       </div>
 
+      {/* ── Featured walk — pick one for the whole church ────────── */}
+      <div style={{
+        background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
+        padding: '16px 18px',
+      }}>
+        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
+          ✶ Featured walk
+        </div>
+        <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, marginBottom: 4 }}>
+          A walk for the whole church
+        </div>
+        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>
+          Pick one walk from the library to highlight on your ChurchHub. Members still pace it privately — you won't see who started or finished. Change or clear anytime.
+        </div>
+
+        <div style={{ display: 'grid', gap: 8 }}>
+          {walks.map((w) => {
+            const active = church?.featured_walk_id === w.id;
+            return (
+              <button
+                key={w.id}
+                onClick={() => setFeaturedWalk(active ? null : w.id)}
+                disabled={savingFeatured}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  textAlign: 'left',
+                  background: active ? T.parchment : T.cream,
+                  border: `1px solid ${active ? T.goldDark : T.line}`,
+                  borderRadius: 12, padding: '10px 12px',
+                  cursor: savingFeatured ? 'wait' : 'pointer',
+                }}
+              >
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: T.white, border: `1px solid ${T.line}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 18, color: T.goldDark, flexShrink: 0,
+                }}>{w.cover_emoji}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, lineHeight: 1.25 }}>{w.title}</div>
+                  {w.subtitle && (
+                    <div style={{ fontSize: 12, color: T.inkSoft, fontStyle: 'italic', lineHeight: 1.4, marginTop: 2 }}>{w.subtitle}</div>
+                  )}
+                  <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 2 }}>{w.length_days}-day walk</div>
+                </div>
+                {active && (
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase',
+                    background: T.goldDark, color: T.cream, borderRadius: 999, padding: '3px 9px',
+                  }}>Featured</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        {church?.featured_walk_id && (
+          <button
+            onClick={() => setFeaturedWalk(null)}
+            disabled={savingFeatured}
+            style={{
+              marginTop: 10, background: 'none', border: `1px solid ${T.line}`,
+              borderRadius: 999, padding: '7px 14px', fontSize: 12,
+              color: T.inkMuted, cursor: savingFeatured ? 'wait' : 'pointer',
+            }}
+          >Clear featured walk</button>
+        )}
+      </div>
+
+      {/* ── Membership approval ─────────────────────────────────────── */}
+      <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '16px 18px' }}>
+        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
+          👥 Membership
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.ink, marginBottom: 3 }}>
+              Require approval to join
+            </div>
+            <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.55 }}>
+              {openJoin
+                ? 'Anyone can join instantly. Turn this on to review requests before they become members.'
+                : 'New members need your approval. Requests appear in People → Join requests.'}
+            </div>
+          </div>
+          <button
+            onClick={() => !savingJoin && saveOpenJoin(!openJoin)}
+            disabled={savingJoin}
+            style={{
+              width: 44, height: 24, borderRadius: 999, flexShrink: 0,
+              background: openJoin ? T.line : T.goldDark,
+              border: 'none', cursor: savingJoin ? 'wait' : 'pointer',
+              position: 'relative', transition: 'background 0.2s',
+            }}
+          >
+            <div style={{
+              position: 'absolute', top: 3,
+              left: openJoin ? 3 : 23,
+              width: 18, height: 18, borderRadius: '50%',
+              background: '#fff', transition: 'left 0.2s',
+            }} />
+          </button>
+        </div>
+      </div>
+
+      {/* ── Question of the Day ───────────────────────────── */}
+      <div style={{ background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: 14, padding: '16px 18px' }}>
+        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
+          💬 Question of the Day
+        </div>
+        <div style={{ fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.ink, marginBottom: 4 }}>
+          Spark a conversation
+        </div>
+        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>
+          Post a question for your whole church. It appears as a banner in the community feed and members get notified.
+        </div>
+        {church?.question_of_day && (
+          <div style={{
+            fontFamily: T.serif, fontSize: 14, fontStyle: 'italic', color: T.inkSoft,
+            background: 'rgba(184,115,58,0.08)', border: `1px solid rgba(184,115,58,0.18)`,
+            borderRadius: 10, padding: '10px 12px', marginBottom: 12, lineHeight: 1.55,
+          }}>
+            Current: “{church.question_of_day}”
+          </div>
+        )}
+        <textarea
+          value={qotdDraft}
+          onChange={(e) => setQotdDraft(e.target.value.slice(0, 300))}
+          placeholder="Ask your church a question…"
+          rows={3}
+          style={{
+            width: '100%', boxSizing: 'border-box',
+            border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 12px',
+            fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.6,
+            background: T.cream, outline: 'none', resize: 'vertical',
+          }}
+        />
+        <div style={{ fontSize: 11.5, color: T.inkMuted, marginTop: 4, marginBottom: 10 }}>
+          {qotdDraft.length}/300
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          {church?.question_of_day && (
+            <button
+              onClick={clearQotd}
+              style={{
+                background: 'none', border: `1px solid ${T.line}`, borderRadius: 999,
+                padding: '7px 14px', fontSize: 12, color: T.inkMuted, cursor: 'pointer',
+              }}
+            >Clear</button>
+          )}
+          <div style={{ flex: 1 }} />
+          <button
+            onClick={saveQotd}
+            disabled={!qotdDraft.trim() || savingQotd}
+            style={{
+              background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+              padding: '7px 18px', fontSize: 13, fontWeight: 600,
+              cursor: (!qotdDraft.trim() || savingQotd) ? 'not-allowed' : 'pointer',
+              opacity: (!qotdDraft.trim() || savingQotd) ? 0.45 : 1,
+            }}
+          >{savingQotd ? 'Saving…' : 'Set Question'}</button>
+        </div>
+      </div>
+
+      {/* ── Danger zone — ownership transfer ───────────────────────── */}
+      <div style={{
+        background: T.white, border: '1px solid rgba(165,63,43,0.35)',
+        borderLeft: '4px solid #a53f2b', borderRadius: 14, padding: '16px 18px',
+      }}>
+        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: '#a53f2b', fontWeight: 700, marginBottom: 6 }}>
+          Danger zone
+        </div>
+        <div style={{ fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.ink, marginBottom: 4 }}>
+          Transfer church ownership
+        </div>
+        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>
+          Hand this church account to another member. They become the lead admin. You keep a staff role but lose owner access immediately.
+        </div>
+        <button
+          onClick={openTransfer}
+          style={{
+            background: 'transparent', border: '1px solid rgba(165,63,43,0.5)',
+            borderRadius: 999, padding: '8px 16px', fontSize: 13,
+            color: '#a53f2b', fontWeight: 600, cursor: 'pointer',
+          }}
+        >Transfer ownership…</button>
+      </div>
+
+      {/* Transfer modal */}
+      {transferOpen && (
+        <div
+          onClick={() => !transferBusy && setTransferOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(44,24,16,0.70)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="modal-sheet"
+            style={{
+              background: T.cream, borderRadius: 18, maxWidth: 440, width: '100%',
+              maxHeight: '90vh', overflowY: 'auto',
+              padding: '24px 22px', border: '1px solid rgba(165,63,43,0.4)',
+            }}
+          >
+            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: '#a53f2b', fontWeight: 700, marginBottom: 4 }}>
+              Transfer ownership
+            </div>
+            <div style={{ fontFamily: T.display, fontSize: 21, fontWeight: 600, color: T.ink, letterSpacing: '-0.018em', marginBottom: 16 }}>
+              Who takes over {church?.name}?
+            </div>
+
+            {!transferConfirm ? (
+              <>
+                <div style={{ marginBottom: 14, position: 'relative' }}>
+                  <label style={{ display: 'block', fontSize: 12, color: T.inkSoft, fontWeight: 600, marginBottom: 4 }}>
+                    Search church members
+                  </label>
+                  {transferTarget ? (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      background: T.parchment, border: `1px solid ${T.goldLight}`,
+                      borderRadius: 10, padding: '9px 12px',
+                    }}>
+                      <span style={{ flex: 1, fontSize: 14, color: T.ink, fontWeight: 600 }}>{transferTarget.display_name}</span>
+                      <button
+                        onClick={() => { setTransferTarget(null); setTransferSearch(''); setTransferResults([]); }}
+                        style={{ background: 'none', border: 'none', color: T.inkMuted, cursor: 'pointer', fontSize: 16, padding: 0 }}
+                      >×</button>
+                    </div>
+                  ) : (
+                    <>
+                      <input
+                        type="text"
+                        value={transferSearch}
+                        onChange={(e) => setTransferSearch(e.target.value)}
+                        placeholder="Type a name…"
+                        autoFocus
+                        style={{
+                          width: '100%', boxSizing: 'border-box',
+                          border: `1px solid ${T.line}`, borderRadius: 10, padding: '9px 12px',
+                          fontFamily: 'inherit', fontSize: 14, color: T.ink,
+                          background: T.white, outline: 'none',
+                        }}
+                      />
+                      {transferResults.length > 0 && (
+                        <div style={{
+                          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                          background: T.white, border: `1px solid ${T.line}`, borderRadius: 10,
+                          boxShadow: '0 4px 16px rgba(0,0,0,0.12)', marginTop: 4, overflow: 'hidden',
+                        }}>
+                          {transferResults.map(r => (
+                            <button
+                              key={r.id}
+                              onClick={() => { setTransferTarget(r); setTransferSearch(''); setTransferResults([]); }}
+                              style={{
+                                display: 'block', width: '100%', textAlign: 'left',
+                                background: 'none', border: 'none', padding: '10px 14px',
+                                fontSize: 14, color: T.ink, cursor: 'pointer', fontFamily: 'inherit',
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = T.parchment; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
+                            >{r.display_name}</button>
+                          ))}
+                        </div>
+                      )}
+                      {transferSearch.trim().length > 1 && transferResults.length === 0 && (
+                        <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 6, fontStyle: 'italic' }}>
+                          No members found — they need to join this church first.
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                  <button onClick={() => setTransferOpen(false)} style={{
+                    flex: '0 0 auto', background: 'transparent', border: `1px solid ${T.line}`,
+                    borderRadius: 999, padding: '10px 18px', fontSize: 13, color: T.inkMuted, cursor: 'pointer',
+                  }}>Cancel</button>
+                  <button
+                    onClick={() => setTransferConfirm(true)}
+                    disabled={!transferTarget}
+                    style={{
+                      flex: 1, background: transferTarget ? '#a53f2b' : T.parchment,
+                      color: transferTarget ? T.cream : T.inkMuted,
+                      border: 'none', borderRadius: 999, padding: '10px 18px',
+                      fontSize: 13.5, fontWeight: 600,
+                      cursor: transferTarget ? 'pointer' : 'not-allowed',
+                      opacity: transferTarget ? 1 : 0.6,
+                    }}
+                  >Continue →</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{
+                  background: 'rgba(165,63,43,0.06)', border: '1px solid rgba(165,63,43,0.25)',
+                  borderRadius: 12, padding: '14px 16px', marginBottom: 16,
+                }}>
+                  <div style={{ fontSize: 13.5, color: T.ink, lineHeight: 1.6 }}>
+                    <strong>{transferTarget.display_name}</strong> will become the owner of <strong>{church?.name}</strong>.<br />
+                    You will lose admin access immediately and cannot undo this yourself.
+                  </div>
+                </div>
+
+                {transferError && (
+                  <div style={{ fontSize: 12.5, color: T.error, marginBottom: 10 }}>{transferError}</div>
+                )}
+
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => setTransferConfirm(false)}
+                    disabled={transferBusy}
+                    style={{
+                      flex: '0 0 auto', background: 'transparent', border: `1px solid ${T.line}`,
+                      borderRadius: 999, padding: '10px 18px', fontSize: 13, color: T.inkMuted,
+                      cursor: transferBusy ? 'wait' : 'pointer',
+                    }}
+                  >← Back</button>
+                  <button
+                    onClick={executeTransfer}
+                    disabled={transferBusy}
+                    style={{
+                      flex: 1, background: '#a53f2b', color: T.cream,
+                      border: 'none', borderRadius: 999, padding: '10px 18px',
+                      fontSize: 13.5, fontWeight: 600,
+                      cursor: transferBusy ? 'wait' : 'pointer',
+                      opacity: transferBusy ? 0.6 : 1,
+                    }}
+                  >{transferBusy ? 'Transferring…' : `Transfer to ${transferTarget.display_name}`}</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* QR modal (pastor-only context — print-for-bulletin language) */}
       {showQr && publicUrl && (
         <div
@@ -359,6 +948,7 @@ function SettingsPanel({ church, churchId, onOpenChurchPage, onChurchUpdate, pen
         >
           <div
             onClick={(e) => e.stopPropagation()}
+            className="modal-sheet"
             style={{
               background: T.cream, borderRadius: 18, maxWidth: 400, width: '100%',
               padding: '28px 24px', textAlign: 'center', border: `1px solid ${T.line}`,
@@ -399,7 +989,7 @@ function SettingsPanel({ church, churchId, onOpenChurchPage, onChurchUpdate, pen
                   opacity: downloadingQr ? 0.7 : 1,
                 }}
               >
-                {downloadingQr ? 'Preparing…' : '📥 Download QR (PNG)'}
+                {downloadingQr ? 'Preparing…' : <><Download size={14} strokeWidth={2} style={{ marginRight: 6 }} />Download QR (PNG)</>}
               </button>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={copyAnnouncement} style={{
@@ -407,14 +997,14 @@ function SettingsPanel({ church, churchId, onOpenChurchPage, onChurchUpdate, pen
                   color: T.goldDark, borderRadius: 999,
                   padding: '11px 16px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
                 }}>
-                  {announceCopied ? '✓ Copied — paste anywhere' : '📋 Copy announcement'}
+                  {announceCopied ? <><Check size={13} strokeWidth={2.5} /> Copied — paste anywhere</> : <><Copy size={13} strokeWidth={2} /> Copy announcement</>}
                 </button>
                 <button onClick={copyLink} style={{
                   background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
                   padding: '11px 16px', fontSize: 14, color: T.inkSoft, cursor: 'pointer',
-                  whiteSpace: 'nowrap',
+                  whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 6,
                 }}>
-                  {copied ? '✓ Link' : 'Copy link'}
+                  {copied ? <><Check size={13} strokeWidth={2.5} /> Link</> : 'Copy link'}
                 </button>
               </div>
               <div style={{ fontSize: 12, color: T.inkMuted, lineHeight: 1.5, marginTop: 2, padding: '0 4px' }}>
@@ -434,8 +1024,9 @@ function SettingsPanel({ church, churchId, onOpenChurchPage, onChurchUpdate, pen
 }
 
 const FILTERS = [
-  { id: 'all',     label: 'All' },
-  { id: 'roles',   label: 'With roles' },
+  { id: 'all',      label: 'All' },
+  { id: 'requests', label: 'Join requests' },
+  { id: 'roles',    label: 'With roles' },
   { id: 'care',    label: 'Care team' },
   { id: 'pending', label: 'Pending invites' },
   { id: 'blocked', label: 'Blocked' },
@@ -474,9 +1065,9 @@ function InviteModal({ member, existingRoles, onClose, onSubmit }) {
       position: 'fixed', inset: 0, background: 'rgba(44,24,16,0.55)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: 20,
     }}>
-      <div onClick={(e) => e.stopPropagation()} style={{
+      <div onClick={(e) => e.stopPropagation()} className="modal-sheet" style={{
         background: T.cream, borderRadius: 16, maxWidth: 480, width: '100%',
-        padding: 26, border: `1px solid ${T.line}`,
+        padding: 'clamp(20px, 4vw, 26px)', border: `1px solid ${T.line}`,
       }}>
         <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, marginBottom: 6 }}>
           Invite to a role
@@ -589,9 +1180,11 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
   const [members, setMembers]   = useState([]);
   const [rolesByUser, setRolesByUser] = useState({});  // { user_id: [role rows] }
   const [pendingInvites, setPendingInvites] = useState([]);  // [{...invite, user_profile}]
+  const [joinRequests, setJoinRequests] = useState([]);  // pending join requests
   const [blocked, setBlocked]   = useState([]);
   const [loading, setLoading]   = useState(true);
   const [filter, setFilter]     = useState('all');
+  const [reviewBusy, setReviewBusy] = useState(null); // request id being actioned
 
   const [copied, setCopied]       = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -621,15 +1214,16 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
       { data: roleRows },
       { data: inviteRows },
       { data: blockRows },
+      { data: joinReqRows },
     ] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, display_name, city, country, is_pastor')
+        .select('id, display_name, city, country')
         .eq('church_id', churchId)
         .order('display_name', { ascending: true }),
       supabase
         .from('church_roles')
-        .select('id, user_id, role_key, role_label, granted_at')
+        .select('id, user_id, role_key, role_label, role_title, is_owner, granted_at')
         .eq('church_id', churchId),
       supabase
         .from('church_role_invites')
@@ -641,10 +1235,20 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
         .from('church_blocks')
         .select('user_id, blocked_at')
         .eq('church_id', churchId),
+      supabase
+        .from('church_join_requests')
+        .select('id, user_id, created_at, profiles(display_name, city, country)')
+        .eq('church_id', churchId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true }),
     ]);
 
     const m = memberRows ?? [];
     setMembers(m);
+    setJoinRequests((joinReqRows ?? []).map(r => ({
+      ...r, display_name: r.profiles?.display_name ?? 'Member',
+      city: r.profiles?.city, country: r.profiles?.country,
+    })));
 
     const rolesMap = {};
     (roleRows ?? []).forEach((r) => {
@@ -700,6 +1304,23 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
     } catch (_) {
       showToast("Couldn't copy — long-press to copy manually.", 'error');
     }
+  }
+
+  async function reviewRequest(requestId, userId, approve) {
+    setReviewBusy(requestId);
+    if (approve) {
+      const { error } = await supabase.from('profiles')
+        .update({ church_id: churchId })
+        .eq('id', userId);
+      if (error) { showToast(`Couldn't approve: ${error.message}`, 'error'); setReviewBusy(null); return; }
+    }
+    await supabase.from('church_join_requests')
+      .update({ status: approve ? 'approved' : 'declined', reviewed_by: session?.user?.id, reviewed_at: new Date().toISOString() })
+      .eq('id', requestId);
+    setJoinRequests(prev => prev.filter(r => r.id !== requestId));
+    if (approve) await loadAll(); // refresh member list
+    showToast(approve ? 'Member approved and added.' : 'Request declined.', approve ? 'success' : 'info');
+    setReviewBusy(null);
   }
 
   async function rotateCode() {
@@ -853,7 +1474,7 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
           )}
         </div>
         <p style={{ fontFamily: T.serif, fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, margin: '12px 0 0' }}>
-          Anyone with a profile in The Way can join your church by entering this code.
+          Anyone with a profile in kinwove can join your church by entering this code.
           Share it during a service, in a group chat, or by sending the link.
         </p>
         {/* Secondary share affordances — pre-written announcement (matches the
@@ -868,7 +1489,7 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
               color: T.goldDark, borderRadius: 999,
               padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
             }}>
-              {announceCopied ? '✓ Copied — paste anywhere' : '📋 Copy announcement'}
+              {announceCopied ? <><Check size={13} strokeWidth={2.5} /> Copied — paste anywhere</> : <><Copy size={13} strokeWidth={2} /> Copy announcement</>}
             </button>
             {onShowQr && (
               <button onClick={onShowQr} style={{
@@ -876,7 +1497,7 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
                 color: T.inkSoft, borderRadius: 999,
                 padding: '8px 14px', fontSize: 13, cursor: 'pointer',
               }}>
-                ⌘ Show QR code
+                <QrCode size={14} strokeWidth={2} style={{ marginRight: 6 }} />Show QR code
               </button>
             )}
           </div>
@@ -893,10 +1514,11 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', overflowX: 'auto' }}>
         {FILTERS.map((f) => {
           const count =
-            f.id === 'pending' ? pendingInvites.length :
-            f.id === 'blocked' ? blocked.length :
-            f.id === 'all'     ? members.length :
-            f.id === 'roles'   ? Object.values(rolesByUser).filter((rs) => rs.length > 0).length :
+            f.id === 'requests' ? joinRequests.length :
+            f.id === 'pending'  ? pendingInvites.length :
+            f.id === 'blocked'  ? blocked.length :
+            f.id === 'all'      ? members.length :
+            f.id === 'roles'    ? Object.values(rolesByUser).filter((rs) => rs.length > 0).length :
             members.filter((m) => (rolesByUser[m.id] ?? []).some((r) => r.role_key === f.id)).length;
           const active = filter === f.id;
           return (
@@ -916,6 +1538,60 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
           );
         })}
       </div>
+
+      {/* Join requests pane */}
+      {filter === 'requests' && (
+        <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '14px 18px' }}>
+          <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, marginBottom: 4 }}>
+            Join requests
+          </div>
+          <div style={{ fontSize: 13, color: T.inkSoft, marginBottom: 14 }}>
+            People who asked to join {church?.name}. Approve to add them as members.
+          </div>
+          {joinRequests.length === 0 ? (
+            <div style={{ color: T.inkMuted, fontStyle: 'italic', padding: 12, lineHeight: 1.6 }}>
+              No pending requests. {!church?.open_join && 'Approval mode is on — new requests will appear here.'}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {joinRequests.map(r => (
+                <div key={r.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  background: T.parchment, borderRadius: 12, padding: '12px 14px',
+                }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: T.ink }}>{r.display_name}</div>
+                    {(r.city || r.country) && (
+                      <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2 }}>
+                        {[r.city, r.country].filter(Boolean).join(', ')}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => reviewRequest(r.id, r.user_id, false)}
+                    disabled={reviewBusy === r.id}
+                    style={{
+                      background: 'none', border: `1px solid ${T.line}`, borderRadius: 999,
+                      padding: '6px 14px', fontSize: 12.5, color: T.inkMuted,
+                      cursor: reviewBusy === r.id ? 'wait' : 'pointer',
+                    }}
+                  >Decline</button>
+                  <button
+                    onClick={() => reviewRequest(r.id, r.user_id, true)}
+                    disabled={reviewBusy === r.id}
+                    style={{
+                      background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+                      padding: '6px 14px', fontSize: 12.5, fontWeight: 600,
+                      cursor: reviewBusy === r.id ? 'wait' : 'pointer',
+                      opacity: reviewBusy === r.id ? 0.5 : 1,
+                    }}
+                  >{reviewBusy === r.id ? '…' : 'Approve'}</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Pending invites pane */}
       {filter === 'pending' && (
@@ -1035,7 +1711,7 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 14.5, fontWeight: 600, color: T.ink, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                         {m.display_name ?? 'Member'}
-                        {m.is_pastor && <Badge role={{ role_key: 'pastor' }} />}
+                        {(rolesByUser[m.id] ?? []).some(r => r.is_owner) && <Badge role={{ role_key: 'pastor' }} />}
                         {memberRoles.map((r) => (
                           <Badge key={r.id} role={r} />
                         ))}
@@ -1066,7 +1742,7 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
                         </div>
                       )}
                     </div>
-                    {m.id !== session?.user?.id && !m.is_pastor && (
+                    {m.id !== session?.user?.id && !(rolesByUser[m.id] ?? []).some(r => r.is_owner) && (
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         <button onClick={() => setInvitingMember(m)} style={{
                           background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: 999,
@@ -1175,7 +1851,7 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
                 padding: '9px 16px', fontSize: 13, color: T.inkSoft, cursor: 'pointer',
               }}>Cancel</button>
               <button onClick={confirmRemove} disabled={removeBusy} style={{
-                background: '#c0392b', color: T.cream, border: 'none', borderRadius: 999,
+                background: T.error, color: T.cream, border: 'none', borderRadius: 999,
                 padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: removeBusy ? 0.5 : 1,
               }}>{removeBusy ? 'Removing…' : 'Remove'}</button>
             </div>
@@ -1189,8 +1865,10 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
 export default function ChurchAdmin({ session, profile, churchId, onBack, onOpenChurchPage, onOpenChurchHub, onOpenSermon, initialTab }) {
   // Allow deep-links into a specific tab (e.g. ChurchPage's "Edit in Pastor
   // settings" lands on Settings, not Overview). Falls back to overview.
-  const [tab, setTab] = useState(initialTab && TABS.some((t) => t.id === initialTab) ? initialTab : 'overview');
+  const VALID_TABS = ['overview', 'sermons', 'people', 'settings'];
+  const [tab, setTab] = useState(initialTab && VALID_TABS.includes(initialTab) ? initialTab : 'overview');
   const [church, setChurch] = useState(null);
+  const planInfo = usePlan(churchId);
   const [composerSermonId, setComposerSermonId] = useState(null);
   // One-shot action that the next mounted panel should execute (e.g. when the
   // setup checklist's "Print your QR code" item fires, we route to Settings
@@ -1208,7 +1886,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
     let active = true;
     supabase
       .from('churches')
-      .select('id, name, city, region, invite_code, invite_code_rotated_at')
+      .select('id, name, city, region, invite_code, invite_code_rotated_at, countries_open_to')
       .eq('id', churchId)
       .single()
       .then(({ data }) => { if (active) setChurch(data); });
@@ -1220,109 +1898,70 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
     setTab('sermons');
   }
 
+  // Upgrade wall: trial has expired
+  if (!planInfo.loading && planInfo.trialExpired) {
+    return <UpgradeWall onBack={onBack} />;
+  }
+
   return (
-    <div style={{ minHeight: '100vh', background: T.cream, overflowY: 'auto' }}>
-      {/* Sticky header — sanctuary-doorway dark, matching ChurchHub & ChurchPage.
-          The whole church section now wears one signature: cross the threshold,
-          the screen darkens. Body below stays cream for long-form reading. */}
-      <div style={{
-        position: 'sticky', top: 0, zIndex: 20,
-        background: `linear-gradient(135deg, ${T.ink} 0%, #1A0F08 55%, #3A2516 100%)`,
-        borderBottom: '1px solid rgba(196,129,58,0.35)',
-        boxShadow: SHADOW.candle,
-        padding: '14px 20px 0',
-        color: T.cream,
-      }}>
-        <div style={{ maxWidth: 760, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-            <button onClick={onBack} style={{
-              background: 'none', border: 'none', color: T.goldLight, fontSize: 14, cursor: 'pointer', padding: 0,
-            }}>← My page</button>
-            <div style={{ flex: 1 }} />
-            {onOpenChurchHub && (
-              <button onClick={onOpenChurchHub} style={{
-                background: 'rgba(253,248,240,0.10)', border: '1px solid rgba(253,248,240,0.25)', borderRadius: 999,
-                padding: '5px 12px', fontSize: 12, color: T.cream, fontWeight: 600, cursor: 'pointer',
-              }}>Congregation feed →</button>
-            )}
-            {onOpenChurchPage && (
-              <button onClick={onOpenChurchPage} style={{
-                background: 'rgba(253,248,240,0.10)', border: '1px solid rgba(253,248,240,0.25)', borderRadius: 999,
-                padding: '5px 12px', fontSize: 12, color: T.cream, fontWeight: 600, cursor: 'pointer',
-              }}>Public page →</button>
-            )}
-            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldLight, fontWeight: 700 }}>
-              Church mode
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-            <h1 style={{ fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.1, margin: 0 }}>
-              {church?.name ?? 'Your church'}
-            </h1>
-            {church?.city && (
-              <span style={{ fontSize: 13, color: 'rgba(253,248,240,0.65)' }}>{church.city}{church.region ? `, ${church.region}` : ''}</span>
-            )}
-          </div>
-
-          {/* Tab strip */}
-          <div style={{
-            display: 'flex', gap: 6, overflowX: 'auto',
-            paddingBottom: 10,
-          }}>
-            {TABS.map((t) => (
-              <TabButton key={t.id} tab={t} active={tab === t.id} onClick={() => setTab(t.id)} />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Body */}
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '20px 20px 80px' }}>
-        <Suspense fallback={<div style={{ color: T.inkMuted, fontFamily: T.serif, padding: 40, textAlign: 'center' }}>Loading…</div>}>
-          {tab === 'overview' && (
-            <PastorDashboard
-              embedded
-              session={session}
-              profile={profile}
-              churchId={churchId}
-              onOpenComposer={openSermonInComposer}
-              onOpenCareAdmin={() => setTab('people')}
-              onOpenChurchPage={onOpenChurchPage}
-              onOpenSettings={gotoSettings}
-              onOpenPeople={() => setTab('people')}
-            />
-          )}
-          {tab === 'sermons' && (
-            <SermonComposer
-              embedded
-              session={session}
-              churchId={churchId}
-              initialSermonId={composerSermonId}
-              onOpenSermon={onOpenSermon}
-            />
-          )}
-          {tab === 'people' && (
-            <PeoplePanel
-              session={session}
-              church={church}
-              churchId={churchId}
-              onChurchUpdate={(c) => setChurch((prev) => ({ ...prev, ...c }))}
-              onShowQr={() => gotoSettings('open-qr')}
-            />
-          )}
-          {tab === 'settings' && (
-            <SettingsPanel
-              church={church}
-              churchId={churchId}
-              onOpenChurchPage={onOpenChurchPage}
-              onChurchUpdate={(c) => setChurch((prev) => ({ ...prev, ...c }))}
-              pendingAction={pendingAction}
-              onActionConsumed={() => setPendingAction(null)}
-            />
-          )}
-        </Suspense>
-      </div>
-    </div>
+    <ChurchModeShell
+      church={church}
+      tab={tab}
+      onTabChange={setTab}
+      onBack={onBack}
+      onOpenChurchPage={onOpenChurchPage}
+      onOpenChurchHub={onOpenChurchHub}
+      currentSubpage={null}
+    >
+      {/* Trial banner — visible during active trial only */}
+      {!planInfo.loading && planInfo.plan === 'trial' && !planInfo.trialExpired && (
+        <TrialBanner daysLeft={planInfo.daysLeft} />
+      )}
+      <Suspense fallback={<div style={{ color: T.inkMuted, fontFamily: T.serif, padding: 40, textAlign: 'center' }}>Loading…</div>}>
+        {tab === 'overview' && (
+          <PastorDashboard
+            embedded
+            session={session}
+            profile={profile}
+            churchId={churchId}
+            onOpenComposer={openSermonInComposer}
+            onOpenCareAdmin={() => setTab('people')}
+            onOpenChurchPage={onOpenChurchPage}
+            onOpenSettings={gotoSettings}
+            onOpenPeople={() => setTab('people')}
+          />
+        )}
+        {tab === 'sermons' && (
+          <SermonComposer
+            embedded
+            session={session}
+            churchId={churchId}
+            initialSermonId={composerSermonId}
+            onOpenSermon={onOpenSermon}
+          />
+        )}
+        {tab === 'people' && (
+          <PeoplePanel
+            session={session}
+            church={church}
+            churchId={churchId}
+            onChurchUpdate={(c) => setChurch((prev) => ({ ...prev, ...c }))}
+            onShowQr={() => gotoSettings('open-qr')}
+          />
+        )}
+        {tab === 'settings' && (
+          <SettingsPanel
+            church={church}
+            churchId={churchId}
+            session={session}
+            onOpenChurchPage={onOpenChurchPage}
+            onChurchUpdate={(c) => setChurch((prev) => ({ ...prev, ...c }))}
+            onTransferComplete={onBack}
+            pendingAction={pendingAction}
+            onActionConsumed={() => setPendingAction(null)}
+          />
+        )}
+      </Suspense>
+    </ChurchModeShell>
   );
 }

@@ -29,7 +29,7 @@ export const REACTIONS = [
 // Used to tint the person-type pill on profiles. Matches the colors used in
 // onboarding so a "Going Deeper" badge looks the same wherever it appears.
 export const TYPE_COLORS = {
-  curious:    { bg: 'rgba(196,129,58,0.12)', border: 'rgba(196,129,58,0.4)', text: '#8a5a1a' },
+  curious:    { bg: 'rgba(184,115,58,0.12)', border: 'rgba(184,115,58,0.4)', text: '#8a5a1a' },
   seeking:    { bg: 'rgba(74,123,157,0.12)', border: 'rgba(74,123,157,0.4)', text: '#2e6a8e' },
   skeptic:    { bg: 'rgba(100,100,100,0.1)', border: 'rgba(100,100,100,0.3)', text: '#555' },
   'new-faith':{ bg: 'rgba(74,139,90,0.12)', border: 'rgba(74,139,90,0.4)',  text: '#2e7a48' },
@@ -169,16 +169,16 @@ export function ChurchAttendsCard({
           onClick={() => onOpenSermon(sermon.id)}
           style={{
             width: '100%', textAlign: 'left',
-            background: 'rgba(196,129,58,0.04)',
+            background: 'rgba(184,115,58,0.04)',
             border: 'none', borderTop: `1px solid ${T.line}`,
             cursor: 'pointer', padding: '12px 16px',
             display: 'flex', alignItems: 'center', gap: 12,
             transition: 'background 0.15s',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(196,129,58,0.10)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(196,129,58,0.04)'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.10)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.04)'; }}
         >
-          <span style={{ fontSize: 14, color: T.goldDark, filter: 'drop-shadow(0 0 4px rgba(196,129,58,0.4))', flexShrink: 0 }}>✦</span>
+          <span style={{ fontSize: 14, color: T.goldDark, filter: 'drop-shadow(0 0 4px rgba(184,115,58,0.4))', flexShrink: 0 }}>✦</span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 11, color: T.goldDark, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 2 }}>
               This week{formatWeekOf(sermon.week_starts_on) ? ` · ${formatWeekOf(sermon.week_starts_on)}` : ''}

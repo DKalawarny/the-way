@@ -84,7 +84,7 @@ export default function CareConversation({ session, profile, conversationId, vie
         if (showOther) {
           const { data: p } = await supabase
             .from('profiles')
-            .select('id, display_name, avatar_config')
+            .select('id, display_name, avatar_config, avatar_url')
             .eq('id', otherId)
             .maybeSingle();
           if (active) setOtherProfile(p);
@@ -211,7 +211,7 @@ export default function CareConversation({ session, profile, conversationId, vie
   const closed = conversation.status === 'closed';
 
   return (
-    <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100vh', background: T.cream, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {uikitUi}
       {/* Top bar */}
       <header style={{
@@ -224,7 +224,7 @@ export default function CareConversation({ session, profile, conversationId, vie
         }}>← Back</button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
           {viewerRole === 'requester' && otherProfile && (
-            <Avatar name={otherProfile.display_name} avatarConfig={otherProfile.avatar_config} size={32} />
+            <Avatar name={otherProfile.display_name} avatarConfig={otherProfile.avatar_config} photoUrl={otherProfile.avatar_url} size={32} />
           )}
           {viewerRole !== 'requester' && conversation.is_anonymous && (
             <div style={{
@@ -234,7 +234,7 @@ export default function CareConversation({ session, profile, conversationId, vie
             }}>?</div>
           )}
           {viewerRole !== 'requester' && !conversation.is_anonymous && otherProfile && (
-            <Avatar name={otherProfile.display_name} avatarConfig={otherProfile.avatar_config} size={32} />
+            <Avatar name={otherProfile.display_name} avatarConfig={otherProfile.avatar_config} photoUrl={otherProfile.avatar_url} size={32} />
           )}
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink, lineHeight: 1.2 }}>{headingName}</div>
@@ -253,7 +253,7 @@ export default function CareConversation({ session, profile, conversationId, vie
 
       {/* Body */}
       <div ref={scrollRef} className="scroll" style={{
-        flex: 1, overflowY: 'auto', padding: '20px 16px',
+        flex: 1, minHeight: 0, overflowY: 'auto', padding: '20px 16px',
       }}>
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
           {/* Privacy reminder for both sides */}
@@ -321,10 +321,14 @@ export default function CareConversation({ session, profile, conversationId, vie
         </div>
       </div>
 
-      {/* Composer */}
+      {/* Composer — sits above the fixed bottom nav (62px) */}
       {!closed && !isUnclaimed && (
         <div style={{
-          borderTop: `1px solid ${T.line}`, padding: '12px 16px', background: T.white,
+          borderTop: `1px solid ${T.line}`,
+          padding: '12px 16px',
+          paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+          background: T.white,
+          marginBottom: 62,
         }}>
           <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
             <textarea

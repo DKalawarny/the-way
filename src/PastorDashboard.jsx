@@ -1,6 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
+
+const PostComposer  = lazy(() => import('./PostComposer.jsx'));
+const WalkCreator   = lazy(() => import('./WalkCreator.jsx'));
 
 const THEME_LABEL = {
   anxiety:   'Anxiety',
@@ -67,7 +70,7 @@ function SetupChecklist({ items, allDone, onDismiss }) {
       </div>
 
       {/* Progress rail */}
-      <div style={{ height: 4, background: 'rgba(196,129,58,0.18)', borderRadius: 999, overflow: 'hidden', marginBottom: 14 }}>
+      <div style={{ height: 4, background: 'rgba(184,115,58,0.18)', borderRadius: 999, overflow: 'hidden', marginBottom: 14 }}>
         <div style={{
           width: `${pct}%`, height: '100%',
           background: `linear-gradient(90deg, ${T.goldLight}, ${T.gold})`,
@@ -94,8 +97,8 @@ function SetupChecklist({ items, allDone, onDismiss }) {
           >
             <div style={{
               width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-              background: item.done ? '#4a8b5a' : 'transparent',
-              border: `1.5px solid ${item.done ? '#4a8b5a' : T.line}`,
+              background: item.done ? T.success : 'transparent',
+              border: `1.5px solid ${item.done ? T.success : T.line}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: item.done ? T.cream : 'transparent',
               fontSize: 13, fontWeight: 700,
@@ -253,8 +256,8 @@ function SermonRow({ sermon, onEdit, onTogglePublish, busy }) {
         disabled={busy}
         title={published ? 'Click to unpublish' : 'Click to publish'}
         style={{
-          background: published ? 'rgba(74,139,90,0.12)' : 'rgba(165,63,43,0.08)',
-          color: published ? '#2e7a48' : '#a53f2b',
+          background: published ? T.successBg : 'rgba(165,63,43,0.08)',
+          color: published ? T.success : T.error,
           border: `1px solid ${published ? 'rgba(74,139,90,0.35)' : 'rgba(165,63,43,0.3)'}`,
           borderRadius: 999, padding: '5px 12px', fontSize: 11.5, fontWeight: 700, letterSpacing: 0.5,
           textTransform: 'uppercase', cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
@@ -279,6 +282,147 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
   const [sermonBusy, setSermonBusy] = useState(null); // id currently toggling
   const [recentAnonCount, setRecentAnonCount] = useState(0);
 
+  const [walks, setWalks] = useState([]);
+  const [walkModalOpen, setWalkModalOpen] = useState(false);
+  const [walkCreatorOpen, setWalkCreatorOpen] = useState(false);
+  const [walkSelected, setWalkSelected] = useState(null);
+  const [walkNote, setWalkNote] = useState('');
+  const [walkBusy, setWalkBusy] = useState(false);
+  const [walkError, setWalkError] = useState(null);
+  const [postModalOpen, setPostModalOpen] = useState(false);
+
+  // Team management
+  const [staff, setStaff] = useState([]);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [editingStaff, setEditingStaff] = useState(null); // null = new invite
+  const [memberSearch, setMemberSearch] = useState('');
+  const [memberResults, setMemberResults] = useState([]);
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [inviteTitle, setInviteTitle] = useState('');
+  const [invitePerms, setInvitePerms] = useState({
+    can_post_sermons: false, can_post_announcements: false,
+    can_moderate: false, can_view_prayers: false,
+    can_manage_staff: false, can_edit_church: false,
+  });
+  const [inviteBusy, setInviteBusy] = useState(false);
+  const [inviteError, setInviteError] = useState(null);
+
+  const PERMS = [
+    { key: 'can_post_sermons',       label: 'Post & edit sermons' },
+    { key: 'can_post_announcements', label: 'Post announcements' },
+    { key: 'can_moderate',           label: 'Moderate comments & posts' },
+    { key: 'can_view_prayers',       label: 'View prayer requests' },
+    { key: 'can_manage_staff',       label: 'Invite & manage team members' },
+    { key: 'can_edit_church',        label: 'Edit church profile & settings' },
+  ];
+
+  function openInvite(member = null) {
+    setEditingStaff(member);
+    setSelectedMember(member ? { id: member.user_id, display_name: member.display_name } : null);
+    setInviteTitle(member?.role_title ?? '');
+    setInvitePerms({
+      can_post_sermons:       member?.can_post_sermons ?? false,
+      can_post_announcements: member?.can_post_announcements ?? false,
+      can_moderate:           member?.can_moderate ?? false,
+      can_view_prayers:       member?.can_view_prayers ?? false,
+      can_manage_staff:       member?.can_manage_staff ?? false,
+      can_edit_church:        member?.can_edit_church ?? false,
+    });
+    setMemberSearch(''); setMemberResults([]); setInviteError(null);
+    setInviteOpen(true);
+  }
+
+  function closeInvite() {
+    setInviteOpen(false); setEditingStaff(null); setSelectedMember(null);
+    setInviteTitle(''); setMemberSearch(''); setMemberResults([]);
+  }
+
+  useEffect(() => {
+    if (!memberSearch.trim() || !churchId) { setMemberResults([]); return; }
+    const t = setTimeout(async () => {
+      const { data } = await supabase.from('profiles')
+        .select('id, display_name')
+        .eq('church_id', churchId)
+        .ilike('display_name', `%${memberSearch.trim()}%`)
+        .limit(8);
+      setMemberResults(data ?? []);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [memberSearch, churchId]);
+
+  async function saveStaffMember() {
+    if (!selectedMember || !inviteTitle.trim() || !churchId) return;
+    setInviteBusy(true); setInviteError(null);
+    const payload = {
+      church_id: churchId, user_id: selectedMember.id,
+      role_key: 'staff', role_label: inviteTitle.trim(),
+      role_title: inviteTitle.trim(),
+      is_owner: false,
+      ...invitePerms,
+    };
+    const { error } = editingStaff
+      ? await supabase.from('church_roles').update(payload).eq('id', editingStaff.id)
+      : await supabase.from('church_roles').upsert(payload, { onConflict: 'church_id,user_id,role_key' });
+    setInviteBusy(false);
+    if (error) { setInviteError(error.message); return; }
+    const { data } = await supabase.from('church_roles')
+      .select('*, profiles(display_name)')
+      .eq('church_id', churchId).neq('user_id', profile?.id ?? '');
+    setStaff((data ?? []).map(r => ({ ...r, display_name: r.profiles?.display_name ?? 'Member' })));
+    closeInvite();
+  }
+
+  async function removeStaffMember(roleId) {
+    await supabase.from('church_roles').delete().eq('id', roleId);
+    setStaff(s => s.filter(m => m.id !== roleId));
+  }
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from('walks')
+      .select('id, title, subtitle, cover_emoji, length_days, sort_order')
+      .eq('is_published', true)
+      .order('sort_order', { ascending: true })
+      .then(({ data }) => { if (!cancelled) setWalks(data ?? []); });
+    return () => { cancelled = true; };
+  }, []);
+
+  function openWalkModal() {
+    setWalkSelected(church?.featured_walk_id ?? null);
+    setWalkNote('');
+    setWalkError(null);
+    setWalkModalOpen(true);
+  }
+
+  async function announceWalk() {
+    if (!walkSelected || !churchId || !session?.user?.id) return;
+    const w = walks.find((x) => x.id === walkSelected);
+    if (!w) return;
+    setWalkBusy(true); setWalkError(null);
+    const body = walkNote.trim()
+      || `We're walking through "${w.title}" together. Pace is yours — start when you're ready.`;
+    const [{ error: postErr }, { error: chErr }] = await Promise.all([
+      supabase.from('posts').insert({
+        author_id: session.user.id,
+        scope: 'church',
+        scope_id: churchId,
+        kind: 'text',
+        body,
+        body_data: { walk_id: w.id, walk_title: w.title, walk_emoji: w.cover_emoji, walk_length_days: w.length_days },
+        is_anonymous: false,
+        person_type: profile?.person_type ?? null,
+      }),
+      supabase.from('churches').update({ featured_walk_id: w.id }).eq('id', churchId),
+    ]);
+    setWalkBusy(false);
+    if (postErr || chErr) {
+      setWalkError((postErr || chErr)?.message || 'Could not announce.');
+      return;
+    }
+    setChurch((c) => c ? { ...c, featured_walk_id: w.id } : c);
+    setWalkModalOpen(false);
+  }
+
   // First-run setup card — localStorage-backed, keyed per church.
   // Re-read when churchId changes (covers the rare case of swapping churches
   // without a full unmount, e.g. in dev / future multi-church support).
@@ -300,6 +444,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
         { count: careConvCount },
         { count: careTeam },
         { data: sermonRows },
+        { data: staffRows },
       ] = await Promise.all([
         supabase.from('churches').select('*').eq('id', churchId).maybeSingle(),
         supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('church_id', churchId),
@@ -328,12 +473,19 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
           .select('*')
           .eq('church_id', churchId)
           .order('week_starts_on', { ascending: false }),
+        supabase
+          .from('church_roles')
+          .select('*, profiles(display_name)')
+          .eq('church_id', churchId)
+          .eq('is_owner', false)
+          .neq('user_id', session?.user?.id ?? ''),
       ]);
       if (!active) return;
 
       setChurch(c);
       setMemberCount(members ?? 0);
       setRecentAnonCount(anonCount ?? 0);
+      setStaff((staffRows ?? []).map(r => ({ ...r, display_name: r.profiles?.display_name ?? 'Member' })));
 
       const themeCounts = {};
       (anonRows ?? []).forEach((r) => {
@@ -490,15 +642,26 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
             {/* Quick actions */}
             <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
               <QuickAction emoji="✦" label="New sermon"        hint="Turn Sunday into a week"    onClick={onOpenComposer}    accent={T.goldDark} />
+              <QuickAction emoji="✶" label="Announce a walk"   hint="Post & feature for everyone" onClick={openWalkModal}     accent={T.goldDark} />
+              <QuickAction emoji="✎" label="Post to feed"      hint="A note for the congregation" onClick={() => setPostModalOpen(true)} />
               <QuickAction emoji="👥" label="People & roles"    hint="Invite, badge, and manage" onClick={onOpenCareAdmin} />
               <QuickAction emoji="⛪" label="Public church page" hint="See what visitors see"     onClick={onOpenChurchPage} />
             </div>
           </>
         )}
 
+        {/* Embedded mode (inside ChurchAdmin) — surface the publishing pills
+            that don't have a dedicated tab (Walk announce + general post). */}
+        {embedded && (
+          <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+            <QuickAction emoji="✶" label="Announce a walk" hint="Post & feature for everyone" onClick={openWalkModal} accent={T.goldDark} />
+            <QuickAction emoji="✎" label="Post to feed"    hint="A note for the congregation" onClick={() => setPostModalOpen(true)} />
+          </div>
+        )}
+
         {/* Top row stats */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
-          <StatTile label="Members" value={memberCount} sublabel="on The Way" />
+          <StatTile label="Members" value={memberCount} sublabel="on kinwove" />
           <StatTile label="Questions asked" value={recentAnonCount} sublabel="last 7 days" accent={T.goldDark} />
           <StatTile label="Care convos" value={careCount} sublabel="last 7 days" />
           <StatTile label="Care team" value={careTeamSize} sublabel="active" />
@@ -507,7 +670,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
         {/* Question heatmap */}
         <Section
           title="What your people are wrestling with"
-          hint="Anonymous questions to The Way, classified by theme. No identities, ever."
+          hint="Anonymous questions to kinwove, classified by theme. No identities, ever."
         >
           {themes.length === 0 ? (
             <div style={{ color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', textAlign: 'center', padding: '20px 0', lineHeight: 1.6 }}>
@@ -589,9 +752,51 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
         </Section>
         )}
 
+        {/* Church team */}
+        {!embedded && (
+        <Section
+          title="Church team"
+          hint="Team members access only what you allow. You control every permission."
+          action={() => openInvite()}
+          actionLabel="+ Add member"
+        >
+          {staff.length === 0 ? (
+            <button onClick={() => openInvite()} style={{
+              width: '100%', textAlign: 'left', cursor: 'pointer',
+              background: T.parchment, border: `1px dashed ${T.goldLight}`, borderRadius: 12,
+              padding: '14px 16px', color: T.inkSoft, fontSize: 14, lineHeight: 1.55, fontFamily: T.serif,
+            }}>
+              <strong style={{ color: T.ink }}>No team members yet.</strong> Add associate pastors, worship leaders, or elders — each with exactly the permissions they need. <span style={{ color: T.goldDark, fontWeight: 600 }}>Add someone →</span>
+            </button>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {staff.map(m => (
+                <div key={m.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  background: T.parchment, borderRadius: 12, padding: '12px 14px',
+                }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: T.ink }}>{m.display_name}</div>
+                    <div style={{ fontSize: 12, color: T.goldDark, marginTop: 1 }}>{m.role_title || m.role_label}</div>
+                    <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: '3px 8px' }}>
+                      {PERMS.filter(p => m[p.key]).map(p => (
+                        <span key={p.key}>· {p.label}</span>
+                      ))}
+                      {PERMS.every(p => !m[p.key]) && <span style={{ fontStyle: 'italic' }}>No permissions assigned yet</span>}
+                    </div>
+                  </div>
+                  <button onClick={() => openInvite(m)} style={{ background: 'none', border: `1px solid ${T.line}`, borderRadius: 999, padding: '5px 12px', fontSize: 12, color: T.inkSoft, cursor: 'pointer' }}>Edit</button>
+                  <button onClick={() => removeStaffMember(m.id)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer', padding: '5px 6px' }}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+        )}
+
         {/* Quick links */}
         <div style={{
-          background: 'rgba(196,129,58,0.06)', border: `1px solid ${T.goldLight}`,
+          background: 'rgba(184,115,58,0.06)', border: `1px solid ${T.goldLight}`,
           borderRadius: 14, padding: '14px 18px',
           fontSize: 13, color: T.inkSoft, lineHeight: 1.65,
         }}>
@@ -609,6 +814,369 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
           </button>
         )}
       </div>
+
+      {walkModalOpen && (
+        <div
+          onClick={() => !walkBusy && setWalkModalOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(44,24,16,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: T.cream, borderRadius: 18, maxWidth: 480, width: '100%',
+              maxHeight: '90vh', overflowY: 'auto',
+              padding: '24px 22px', border: `1px solid ${T.line}`,
+            }}
+          >
+            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 6 }}>
+              ✶ Announce a walk
+            </div>
+            <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.018em', marginBottom: 6 }}>
+              Pick one for the whole church
+            </div>
+            <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.55, marginBottom: 14 }}>
+              Posts to your congregation's wall and features it on the ChurchHub. Members still pace it privately.
+            </div>
+
+            {/* Create custom walk CTA */}
+            <button
+              onClick={() => { setWalkModalOpen(false); setWalkCreatorOpen(true); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                textAlign: 'left', background: T.parchment,
+                border: `1px dashed ${T.gold}`, borderRadius: 12,
+                padding: '10px 14px', cursor: 'pointer', marginBottom: 14,
+              }}
+            >
+              <div style={{
+                width: 36, height: 36, borderRadius: 10,
+                background: T.white, border: `1px solid ${T.goldLight}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 18, flexShrink: 0,
+              }}>✦</div>
+              <div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: T.ink }}>Create your own walk with AI</div>
+                <div style={{ fontSize: 12, color: T.inkSoft, marginTop: 1 }}>Write a custom devotional journey for your congregation</div>
+              </div>
+            </button>
+
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: T.inkMuted, marginBottom: 8 }}>
+              Or choose from the global library
+            </div>
+
+            <div style={{ display: 'grid', gap: 8, marginBottom: 14 }}>
+              {walks.map((w) => {
+                const active = walkSelected === w.id;
+                return (
+                  <button
+                    key={w.id}
+                    onClick={() => setWalkSelected(w.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
+                      background: active ? T.parchment : T.white,
+                      border: `1px solid ${active ? T.goldDark : T.line}`,
+                      borderRadius: 12, padding: '10px 12px', cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10,
+                      background: T.cream, border: `1px solid ${T.line}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 18, color: T.goldDark, flexShrink: 0,
+                    }}>{w.cover_emoji}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, lineHeight: 1.25 }}>{w.title}</div>
+                      {w.subtitle && (
+                        <div style={{ fontSize: 12, color: T.inkSoft, fontStyle: 'italic', lineHeight: 1.4, marginTop: 2 }}>{w.subtitle}</div>
+                      )}
+                      <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 2 }}>{w.length_days}-day walk</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <label style={{ display: 'block', fontSize: 12, color: T.inkSoft, fontWeight: 600, marginBottom: 4 }}>
+              Note to your congregation (optional)
+            </label>
+            <textarea
+              value={walkNote}
+              onChange={(e) => setWalkNote(e.target.value.slice(0, 500))}
+              placeholder="e.g. We're doing this together for Lent. No pressure on pace — pick it up when you can."
+              rows={3}
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 12px',
+                fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.55,
+                background: T.white, outline: 'none', resize: 'vertical', marginBottom: 10,
+              }}
+            />
+            <div style={{ fontSize: 11.5, color: T.inkMuted, marginBottom: 14 }}>
+              Leave blank for a default warm announcement.
+            </div>
+
+            {walkError && (
+              <div style={{ fontSize: 12.5, color: T.error, marginBottom: 10 }}>{walkError}</div>
+            )}
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => setWalkModalOpen(false)}
+                disabled={walkBusy}
+                style={{
+                  flex: '0 0 auto', background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
+                  padding: '10px 18px', fontSize: 13, color: T.inkMuted,
+                  cursor: walkBusy ? 'wait' : 'pointer',
+                }}
+              >Cancel</button>
+              <button
+                onClick={announceWalk}
+                disabled={!walkSelected || walkBusy}
+                style={{
+                  flex: 1, background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+                  padding: '10px 18px', fontSize: 13.5, fontWeight: 600,
+                  cursor: (!walkSelected || walkBusy) ? 'not-allowed' : 'pointer',
+                  opacity: (!walkSelected || walkBusy) ? 0.5 : 1,
+                }}
+              >{walkBusy ? 'Posting…' : 'Post & feature'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Walk Creator full-screen overlay ── */}
+      {walkCreatorOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 250, background: T.cream, overflowY: 'auto', padding: '28px 20px 80px' }}>
+          <Suspense fallback={<div style={{ textAlign: 'center', padding: 60, color: T.inkMuted }}>Loading…</div>}>
+            <WalkCreator
+              session={session}
+              churchId={churchId}
+              onBack={() => setWalkCreatorOpen(false)}
+              onSaved={(walk) => {
+                setWalkCreatorOpen(false);
+                setWalks((prev) => [...prev, walk]);
+              }}
+            />
+          </Suspense>
+        </div>
+      )}
+
+      {inviteOpen && (
+        <div
+          onClick={() => !inviteBusy && closeInvite()}
+          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(44,24,16,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: T.cream, borderRadius: 18, maxWidth: 460, width: '100%',
+              maxHeight: '90vh', overflowY: 'auto',
+              padding: '24px 22px', border: `1px solid ${T.line}`,
+            }}
+          >
+            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 4 }}>
+              {editingStaff ? 'Edit team member' : '+ Add team member'}
+            </div>
+            <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.018em', marginBottom: 16 }}>
+              {editingStaff ? editingStaff.display_name : 'Who are you adding?'}
+            </div>
+
+            {/* Member search — only shown for new invites */}
+            {!editingStaff && (
+              <div style={{ marginBottom: 14, position: 'relative' }}>
+                <label style={{ display: 'block', fontSize: 12, color: T.inkSoft, fontWeight: 600, marginBottom: 4 }}>
+                  Search church members
+                </label>
+                {selectedMember ? (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    background: T.parchment, border: `1px solid ${T.goldLight}`,
+                    borderRadius: 10, padding: '9px 12px',
+                  }}>
+                    <span style={{ flex: 1, fontSize: 14, color: T.ink, fontWeight: 600 }}>{selectedMember.display_name}</span>
+                    <button
+                      onClick={() => { setSelectedMember(null); setMemberSearch(''); setMemberResults([]); }}
+                      style={{ background: 'none', border: 'none', color: T.inkMuted, cursor: 'pointer', fontSize: 16, padding: 0, lineHeight: 1 }}
+                    >×</button>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      value={memberSearch}
+                      onChange={(e) => setMemberSearch(e.target.value)}
+                      placeholder="Type a name…"
+                      autoFocus
+                      style={{
+                        width: '100%', boxSizing: 'border-box',
+                        border: `1px solid ${T.line}`, borderRadius: 10, padding: '9px 12px',
+                        fontFamily: 'inherit', fontSize: 14, color: T.ink,
+                        background: T.white, outline: 'none',
+                      }}
+                    />
+                    {memberResults.length > 0 && (
+                      <div style={{
+                        position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                        background: T.white, border: `1px solid ${T.line}`, borderRadius: 10,
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.12)', marginTop: 4, overflow: 'hidden',
+                      }}>
+                        {memberResults.map(r => (
+                          <button
+                            key={r.id}
+                            onClick={() => { setSelectedMember(r); setMemberSearch(''); setMemberResults([]); }}
+                            style={{
+                              display: 'block', width: '100%', textAlign: 'left',
+                              background: 'none', border: 'none', padding: '10px 14px',
+                              fontSize: 14, color: T.ink, cursor: 'pointer', fontFamily: 'inherit',
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = T.parchment; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
+                          >
+                            {r.display_name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {memberSearch.trim().length > 1 && memberResults.length === 0 && (
+                      <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 6, fontStyle: 'italic' }}>
+                        No members found — they need to join your church first.
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Role title */}
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 12, color: T.inkSoft, fontWeight: 600, marginBottom: 4 }}>
+                Role title
+              </label>
+              <input
+                type="text"
+                value={inviteTitle}
+                onChange={(e) => setInviteTitle(e.target.value.slice(0, 60))}
+                placeholder="e.g. Associate Pastor, Worship Leader, Elder…"
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  border: `1px solid ${T.line}`, borderRadius: 10, padding: '9px 12px',
+                  fontFamily: 'inherit', fontSize: 14, color: T.ink,
+                  background: T.white, outline: 'none',
+                }}
+              />
+            </div>
+
+            {/* Permissions checklist */}
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ fontSize: 12, color: T.inkSoft, fontWeight: 600, marginBottom: 8 }}>
+                What can they do?
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {PERMS.map(p => (
+                  <label
+                    key={p.key}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      background: invitePerms[p.key] ? T.parchment : T.white,
+                      border: `1px solid ${invitePerms[p.key] ? T.goldLight : T.line}`,
+                      borderRadius: 10, padding: '9px 12px', cursor: 'pointer',
+                      transition: 'background 0.1s, border-color 0.1s',
+                    }}
+                  >
+                    <div style={{
+                      width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+                      background: invitePerms[p.key] ? T.goldDark : 'transparent',
+                      border: `1.5px solid ${invitePerms[p.key] ? T.goldDark : T.line}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: T.cream, fontSize: 11, fontWeight: 700,
+                    }}>
+                      {invitePerms[p.key] ? '✓' : ''}
+                    </div>
+                    <span style={{ fontSize: 13.5, color: T.ink }}>{p.label}</span>
+                    <input
+                      type="checkbox"
+                      checked={invitePerms[p.key]}
+                      onChange={(e) => setInvitePerms(prev => ({ ...prev, [p.key]: e.target.checked }))}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {inviteError && (
+              <div style={{ fontSize: 12.5, color: T.error, marginBottom: 10 }}>{inviteError}</div>
+            )}
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={closeInvite}
+                disabled={inviteBusy}
+                style={{
+                  flex: '0 0 auto', background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
+                  padding: '10px 18px', fontSize: 13, color: T.inkMuted,
+                  cursor: inviteBusy ? 'wait' : 'pointer',
+                }}
+              >Cancel</button>
+              <button
+                onClick={saveStaffMember}
+                disabled={inviteBusy || !selectedMember || !inviteTitle.trim()}
+                style={{
+                  flex: 1, background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+                  padding: '10px 18px', fontSize: 13.5, fontWeight: 600,
+                  cursor: (inviteBusy || !selectedMember || !inviteTitle.trim()) ? 'not-allowed' : 'pointer',
+                  opacity: (inviteBusy || !selectedMember || !inviteTitle.trim()) ? 0.5 : 1,
+                }}
+              >{inviteBusy ? 'Saving…' : editingStaff ? 'Save changes' : 'Add to team'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {postModalOpen && (
+        <div
+          onClick={() => setPostModalOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(44,24,16,0.65)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 20, overflowY: 'auto' }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: T.cream, borderRadius: 18, maxWidth: 560, width: '100%',
+              marginTop: 40, padding: '22px 22px 18px', border: `1px solid ${T.line}`,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 4 }}>
+                  ✎ Post to feed
+                </div>
+                <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>
+                  A note for your congregation
+                </div>
+              </div>
+              <div style={{ flex: 1 }} />
+              <button
+                onClick={() => setPostModalOpen(false)}
+                aria-label="Close"
+                style={{
+                  background: 'none', border: 'none', fontSize: 22, color: T.inkMuted,
+                  cursor: 'pointer', padding: 4, lineHeight: 1,
+                }}
+              >×</button>
+            </div>
+            <Suspense fallback={<div style={{ color: T.inkMuted, fontFamily: T.serif, padding: 12 }}>Loading…</div>}>
+              <PostComposer
+                session={session}
+                profile={profile}
+                scope="church"
+                scopeId={churchId}
+                placeholder="Share something with your church…"
+                onPosted={() => setPostModalOpen(false)}
+              />
+            </Suspense>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

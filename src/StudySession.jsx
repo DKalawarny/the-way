@@ -41,7 +41,7 @@ export default function StudySession({ sessionId, onBegin }) {
           This study session has ended or the link is no longer valid.
         </div>
         <button onClick={onBegin} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '12px 28px', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
-          Open The Way
+          Open kinwove
         </button>
       </div>
     );
@@ -62,11 +62,11 @@ export default function StudySession({ sessionId, onBegin }) {
       <div style={{ height: 3, background: `linear-gradient(90deg, transparent, ${T.gold}, transparent)` }} />
 
       <header style={{ padding: '14px 20px', background: T.white, borderBottom: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-        <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>The Way</div>
+        <div style={{ fontFamily: T.display, fontSize: 24, fontWeight: 500, color: T.ink, letterSpacing: '-0.025em' }}>kinwove</div>
         <div style={{ width: 1, height: 18, background: T.line }} />
         <div style={{ fontSize: 13, color: T.inkMuted }}>Live Group Study</div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22b369', animation: 'livePulse 2s infinite' }} />
+          <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#6B8758', animation: 'livePulse 2s infinite' }} />
           <div style={{ fontSize: 12, color: T.inkMuted }}>Live</div>
         </div>
       </header>
@@ -120,7 +120,7 @@ export default function StudySession({ sessionId, onBegin }) {
           borderRadius: 999, padding: '11px 26px', fontSize: 14,
           fontWeight: 600, cursor: 'pointer',
         }}>
-          Ask your own questions in The Way →
+          Ask your own questions in kinwove →
         </button>
       </div>
 

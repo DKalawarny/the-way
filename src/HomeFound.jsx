@@ -16,8 +16,8 @@ const particleCss = `
     100% { transform: translateY(-120px) scale(0.3); opacity: 0; }
   }
   @keyframes glow-pulse {
-    0%, 100% { box-shadow: 0 0 40px 0 rgba(196,129,58,0.3); }
-    50%       { box-shadow: 0 0 80px 20px rgba(196,129,58,0.5); }
+    0%, 100% { box-shadow: 0 0 40px 0 rgba(184,115,58,0.3); }
+    50%       { box-shadow: 0 0 80px 20px rgba(184,115,58,0.5); }
   }
   @keyframes scale-in {
     from { transform: scale(0.7); opacity: 0; }

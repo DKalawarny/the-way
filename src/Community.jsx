@@ -1,122 +1,113 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, lazy, Suspense, Fragment } from 'react';
+import { Smile, Bookmark } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T, tintFor, SEMANTIC } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
 import { Avatar } from './ProfilePage.jsx';
 import ShareSheet from './ShareSheet.jsx';
+import PostImageGrid from './PostImageGrid.jsx';
+import { getDailyVerse } from './dailyVerse.js';
+import { codeToFlag } from './countries.js';
+import EmptyState from './EmptyState.jsx';
+import SponsoredCard from './SponsoredCard.jsx';
+const PostComposer = lazy(() => import('./PostComposer.jsx'));
 
+// Each reaction owns its own register: Love is warm + relational (rose),
+// Amen is the sacred one (gold + serif weight), Insightful is the lit
+// thought (amber). Share stays parchment so it reads as utility.
 const REACTIONS = [
-  { kind: 'resonates', label: 'Love',      emoji: '❤️' },
-  { kind: 'amen',      label: 'Amen',       emoji: '🙏' },
-  { kind: 'thinking',  label: 'Insightful', emoji: '💡' },
+  {
+    kind: 'resonates', label: 'Love', emoji: '❤️',
+    activeBg: 'linear-gradient(180deg, #F5D0D6 0%, #E9B5BD 100%)',
+    activeBorder: '#c47a86', activeText: '#7a3c46',
+    activeShadow: '0 2px 6px rgba(196,122,134,0.30)',
+  },
+  {
+    kind: 'amen', label: 'Amen', emoji: '🙏',
+    activeBg: 'linear-gradient(180deg, #F4D89A 0%, #E8B563 100%)',
+    activeBorder: '#9a6328', activeText: '#4d2c0d',
+    activeShadow: '0 2px 8px rgba(154,99,40,0.40)',
+    serifLabel: true,
+  },
+  {
+    kind: 'thinking', label: 'Insightful', emoji: '💡',
+    activeBg: 'linear-gradient(180deg, #FBE5C4 0%, #F4D5A6 100%)',
+    activeBorder: '#c4813a', activeText: '#6b3d12',
+    activeShadow: '0 2px 6px rgba(184,115,58,0.28)',
+  },
 ];
 
-const DAILY_VERSES = [
-  { text: 'Come to me, all you who are weary and burdened, and I will give you rest.', ref: 'Matthew 11:28' },
-  { text: 'The Lord is my shepherd; I shall not want.', ref: 'Psalm 23:1' },
-  { text: 'Be still, and know that I am God.', ref: 'Psalm 46:10' },
-  { text: 'Cast all your anxiety on him, because he cares for you.', ref: '1 Peter 5:7' },
-  { text: 'Trust in the Lord with all your heart, and lean not on your own understanding.', ref: 'Proverbs 3:5' },
-  { text: 'For I know the plans I have for you — plans to prosper you and not to harm you, plans to give you hope and a future.', ref: 'Jeremiah 29:11' },
-  { text: 'And we know that in all things God works for the good of those who love him.', ref: 'Romans 8:28' },
-  { text: 'Those who hope in the Lord will renew their strength. They will soar on wings like eagles.', ref: 'Isaiah 40:31' },
-  { text: 'His mercies are new every morning; great is your faithfulness.', ref: 'Lamentations 3:22–23' },
-  { text: 'I am the way, the truth, and the life.', ref: 'John 14:6' },
-  { text: 'Do not be anxious about anything, but in every situation, by prayer and petition, present your requests to God.', ref: 'Philippians 4:6' },
-  { text: 'The peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.', ref: 'Philippians 4:7' },
-  { text: 'If God is for us, who can be against us?', ref: 'Romans 8:31' },
-  { text: 'Be strong and courageous. Do not be afraid; the Lord your God will be with you wherever you go.', ref: 'Joshua 1:9' },
-  { text: 'For God so loved the world that he gave his one and only Son.', ref: 'John 3:16' },
-  { text: 'Therefore, if anyone is in Christ, the new creation has come: the old has gone, the new is here.', ref: '2 Corinthians 5:17' },
-  { text: 'For we walk by faith, not by sight.', ref: '2 Corinthians 5:7' },
-  { text: 'The Lord is my light and my salvation — whom shall I fear?', ref: 'Psalm 27:1' },
-  { text: 'Delight yourself in the Lord, and he will give you the desires of your heart.', ref: 'Psalm 37:4' },
-  { text: 'Weeping may stay for the night, but rejoicing comes in the morning.', ref: 'Psalm 30:5' },
-  { text: 'Your word is a lamp for my feet, a light on my path.', ref: 'Psalm 119:105' },
-  { text: 'He heals the brokenhearted and binds up their wounds.', ref: 'Psalm 147:3' },
-  { text: 'Ask and it will be given to you; seek and you will find; knock and the door will be opened.', ref: 'Matthew 7:7' },
-  { text: 'Love is patient, love is kind. It does not envy, it does not boast.', ref: '1 Corinthians 13:4' },
-  { text: 'Above all, love each other deeply, because love covers over a multitude of sins.', ref: '1 Peter 4:8' },
-  { text: 'Now faith is confidence in what we hope for and assurance about what we do not see.', ref: 'Hebrews 11:1' },
-  { text: 'I have told you these things, so that in me you may have peace. Take heart — I have overcome the world.', ref: 'John 16:33' },
-  { text: 'There is now no condemnation for those who are in Christ Jesus.', ref: 'Romans 8:1' },
-  { text: 'For by grace you have been saved through faith — and this is not your own doing; it is the gift of God.', ref: 'Ephesians 2:8' },
-  { text: 'I sought the Lord, and he answered me; he delivered me from all my fears.', ref: 'Psalm 34:4' },
-  { text: 'The Lord is close to the brokenhearted and saves those who are crushed in spirit.', ref: 'Psalm 34:18' },
-  { text: 'Surely your goodness and love will follow me all the days of my life.', ref: 'Psalm 23:6' },
-  { text: 'He has made everything beautiful in its time.', ref: 'Ecclesiastes 3:11' },
-  { text: 'Let us not become weary in doing good, for at the proper time we will reap a harvest if we do not give up.', ref: 'Galatians 6:9' },
-  { text: 'The Lord your God is with you, the Mighty Warrior who saves.', ref: 'Zephaniah 3:17' },
-  { text: 'Blessed are the pure in heart, for they will see God.', ref: 'Matthew 5:8' },
-  { text: 'Greater love has no one than this: to lay down one\u2019s life for one\u2019s friends.', ref: 'John 15:13' },
-  { text: 'Cast your cares on the Lord and he will sustain you.', ref: 'Psalm 55:22' },
-  { text: 'He gives strength to the weary and increases the power of the weak.', ref: 'Isaiah 40:29' },
-  { text: 'I can do all things through Christ who strengthens me.', ref: 'Philippians 4:13' },
-];
+// One hue per post kind. Drives a 6px left-edge rail on each card so a
+// mixed feed reads at a glance. Saturated on purpose — the rail is the
+// only kind signal on the card, so it has to read instantly without
+// dominating the parchment palette.
+const KIND_TINTS = {
+  text:              { rail: '#8c7a5e', bg: 'rgba(140,122,94,0.06)'  }, // dark clay — neutral thoughts
+  verse:             { rail: '#c4813a', bg: 'rgba(184,115,58,0.08)'  }, // gold — scripture
+  question:          { rail: '#3a6b8a', bg: 'rgba(58,107,138,0.08)'  }, // deep blue — seeking
+  prayer:            { rail: '#5a8064', bg: 'rgba(90,128,100,0.08)'  }, // forest sage — prayer
+  share:             { rail: '#8c7a5e', bg: 'rgba(140,122,94,0.06)'  }, // same as text
+  journey:           { rail: '#a05870', bg: 'rgba(160,88,112,0.08)'  }, // saturated rose — journey
+  journey_milestone: { rail: '#a05870', bg: 'rgba(160,88,112,0.08)'  }, // same as journey
+  sermon_item:       { rail: '#9c5a1f', bg: 'rgba(156,90,31,0.08)'   }, // deep gold — sermons
+};
+function kindTint(k) { return KIND_TINTS[k] ?? KIND_TINTS.text; }
 
-function getDailyVerse() {
+// Rotating compose prompts — invites a different register than "What's on
+// your mind?". Cycles daily so the page feels alive without overwhelming.
+// Mix of registers: gratitude, doubt, awe, lament, encouragement, the everyday.
+// Kept open enough for newcomers and skeptics — no insider language that assumes belief.
+const COMPOSE_PROMPTS = [
+  'What\u2019s on your mind today?',
+  'A thought, a thanks, a doubt\u2026',
+  'What\u2019s on your heart?',
+  'Where are you weary?',
+  'What are you wrestling with?',
+  'A moment worth sharing\u2026',
+  'Something you\u2019re grateful for\u2026',
+  'What made you pause this week?',
+  'A question you can\u2019t answer yet\u2026',
+  'What are you carrying?',
+  'A moment you didn\u2019t expect\u2026',
+  'What would you like support with?',
+  'Speak honestly\u2026',
+  'A truth you\u2019re still learning\u2026',
+  'What\u2019s the hard part right now?',
+  'A small joy worth naming\u2026',
+  'What did you read today?',
+  'What\u2019s this season teaching you?',
+  'Reflect, celebrate, or simply share\u2026',
+  'A word for someone who needs it\u2026',
+  'What surprised you today?',
+  'Where are you hopeful?',
+  'A doubt, voiced gently\u2026',
+  'What are you thankful for?',
+  'A burden you can set down here\u2026',
+  'What\u2019s becoming clearer to you?',
+  'Something small that mattered today\u2026',
+  'What are you still figuring out?',
+];
+function getComposePrompt() {
   const d = new Date();
   const dayKey = d.getFullYear() * 366 + d.getMonth() * 31 + d.getDate();
-  return DAILY_VERSES[dayKey % DAILY_VERSES.length];
+  return COMPOSE_PROMPTS[dayKey % COMPOSE_PROMPTS.length];
 }
 
-const DAILY_QUESTIONS = [
-  'If God is good, why is there suffering?',
-  'What does it mean to forgive someone who isn\u2019t sorry?',
-  'How do I know if I\u2019m reading the Bible right?',
-  'Why pray if God already knows?',
-  'What if I have doubts \u2014 does that mean my faith is fake?',
-  'How was the Bible put together \u2014 and can I trust it?',
-  'What\u2019s the difference between religion and faith?',
-  'Did Jesus actually say he was God?',
-  'What does grace really mean?',
-  'Why are there so many denominations?',
-  'Is it okay to be angry at God?',
-  'What does the Bible actually say about heaven?',
-  'How do I pray when I don\u2019t know what to say?',
-  'Why did Jesus have to die?',
-  'What does \u201cborn again\u201d mean \u2014 and why does it matter?',
-  'How do I read the Old Testament without getting lost?',
-  'Is it possible to be a Christian and have unanswered questions?',
-  'What does it mean to love your enemies?',
-  'How does free will fit with God\u2019s plan?',
-  'How do I know God hears me?',
-  'What\u2019s the gospel \u2014 in one sentence?',
-  'Why does God allow evil?',
-  'What does the Bible say about anxiety?',
-  'Is hell really forever?',
-  'How do I find a church that fits?',
-  'What if I don\u2019t \u201cfeel\u201d God?',
-  'What does Jesus mean by \u201cthe Kingdom of God\u201d?',
-  'How do I know if a feeling is from God or just from me?',
-  'What\u2019s the point of communion?',
-  'How do I deal with shame from things I\u2019ve done?',
-  'What does the Bible say about money?',
-  'How do I love someone I really don\u2019t like?',
-  'What is the Holy Spirit?',
-  'How do I trust God when life is falling apart?',
-  'What did Jesus mean by \u201cturn the other cheek\u201d?',
-  'Is doubt the opposite of faith?',
-  'What does it mean to be saved?',
-  'Why are the four Gospels different?',
-  'How can I tell if I\u2019m hearing God?',
-  'What does the Bible say about purpose?',
-  'Why is grace so hard to accept?',
-  'What does it mean to take up your cross?',
-  'How do I deal with regret?',
-  'How do I start reading the Bible if I never have?',
-  'Can a Christian love someone who hurt them?',
-];
-
-function getDailyQuestion() {
-  const d = new Date();
-  const dayKey = d.getFullYear() * 366 + d.getMonth() * 31 + d.getDate();
-  return DAILY_QUESTIONS[dayKey % DAILY_QUESTIONS.length];
-}
-
-function todayKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+// Tiny ornamental separator between feed cards — a hairline rule with a
+// faint ✦ floating in the middle. Pulled into the existing 22px margin
+// with negative offset so it sits in the gap rather than adding height.
+function CardSeparator() {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      margin: '-12px auto 10px', maxWidth: 220,
+      pointerEvents: 'none',
+    }}>
+      <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, rgba(154,99,40,0.28), transparent)' }} />
+      <span style={{ fontSize: 11, color: 'rgba(154,99,40,0.55)' }}>✦</span>
+      <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, rgba(154,99,40,0.28), transparent)' }} />
+    </div>
+  );
 }
 
 function timeAgo(ts) {
@@ -127,7 +118,7 @@ function timeAgo(ts) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-function PostCard({ post, index = 0, session, currentUserId, userProfile, userGroup, onReact, onReplySubmit, onRepost, isFollowing, onFollow, onViewProfile }) {
+function PostCard({ post, index = 0, session, currentUserId, userProfile, userGroup, onReact, onReplySubmit, onRepost, isFollowing, onFollow, onViewProfile, tabColor = '#B8733A', tabText = '#8E5528', isSaved = false, onSaveToggle, isAuthorBlocked = false, onBlockAuthor }) {
   const [bodyExpanded,   setBodyExpanded]   = useState(false);
   const [commentsOpen,   setCommentsOpen]   = useState(false);
   // post.post_comments is the embedded select from loadPosts; it's a thin
@@ -137,8 +128,50 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
   const [replyText,      setReplyText]      = useState('');
   const [submitting,     setSubmitting]     = useState(false);
   const [shareOpen,      setShareOpen]      = useState(false);
-  const person     = PERSON_TYPES.find((p) => p.id === post.profiles?.person_type);
-  const tint       = tintFor(post.profiles?.person_type);
+  const [emojiOpen,      setEmojiOpen]      = useState(false);
+  const [menuOpen,       setMenuOpen]       = useState(false);
+  const [reportOpen,     setReportOpen]     = useState(false);
+  const [reportType,     setReportType]     = useState('');
+  const [reportNote,     setReportNote]     = useState('');
+  const [reportBusy,     setReportBusy]     = useState(false);
+  const [reportDone,     setReportDone]     = useState(false);
+  const [blockBusy,      setBlockBusy]      = useState(false);
+  const replyInputRef = useRef(null);
+
+  function insertReplyEmoji(emoji) {
+    const el = replyInputRef.current;
+    const start = el?.selectionStart ?? replyText.length;
+    const end   = el?.selectionEnd   ?? replyText.length;
+    const next  = replyText.slice(0, start) + emoji + replyText.slice(end);
+    setReplyText(next);
+    setEmojiOpen(false);
+    requestAnimationFrame(() => {
+      el?.focus();
+      const pos = start + [...emoji].length;
+      el?.setSelectionRange(pos, pos);
+    });
+  }
+  async function handleBlockAuthor() {
+    if (!currentUserId || blockBusy || !onBlockAuthor) return;
+    setBlockBusy(true);
+    await onBlockAuthor(post.author_id, isAuthorBlocked);
+    setBlockBusy(false);
+  }
+
+  async function submitReport() {
+    if (!currentUserId || !reportType || reportBusy) return;
+    setReportBusy(true);
+    const { error } = await supabase.from('post_reports').insert({
+      reporter_id: currentUserId,
+      post_id: post.id,
+      type: reportType,
+      note: reportNote.trim() || null,
+    });
+    setReportBusy(false);
+    if (error) { console.error('report failed', error.message); return; }
+    setReportDone(true);
+  }
+
   const myReaction = post.my_reaction;
   const isOwnPost  = currentUserId && post.author_id === currentUserId;
 
@@ -157,50 +190,112 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
     <>
       <div className="lift" style={{
         '--i': index,
-        background: `linear-gradient(180deg, ${tint.bg}, ${T.white})`,
-        borderRadius: 16, border: `1px solid ${T.line}`,
-        marginBottom: 14, overflow: 'hidden',
+        background: 'linear-gradient(180deg, #FFFEFA 0%, #FBF4E3 100%)',
+        borderRadius: 14,
+        border: '1px solid rgba(154,99,40,0.18)',
+        marginBottom: 22, overflow: 'hidden',
         position: 'relative',
-        boxShadow: '0 1px 2px rgba(44,24,16,0.04)',
+        // Engraved/debossed: top edge catches a soft shadow (looks pressed
+        // into the page), bottom edge a hairline white highlight (the lip
+        // of the depression). No drop shadow — cards live in the page,
+        // not floating on it.
+        boxShadow: 'inset 0 2px 4px rgba(44,24,16,0.07), inset 0 -1px 0 rgba(255,255,255,0.6), 0 1px 0 rgba(255,253,247,0.9)',
       }}>
-        {/* Persona accent rail (left edge) — full-color so the post owns its identity */}
+        {/* Kind accent rail — color signals what type of post this is
+            (verse vs prayer vs milestone). Persona stays in the bg gradient. */}
         <div style={{
-          position: 'absolute', left: 0, top: 0, bottom: 0, width: 4,
-          background: tint.rail,
+          position: 'absolute', left: 0, top: 0, bottom: 0, width: 6,
+          background: kindTint(post.kind).rail,
         }} />
         {/* Header */}
         <div style={{ padding: '16px 18px 0' }}>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
-            <button onClick={() => onViewProfile?.(post.author_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }}>
-              <Avatar name={post.profiles?.display_name} avatarConfig={post.profiles?.avatar_config} size={38} />
+            <button onClick={() => onViewProfile?.(post.author_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0, lineHeight: 0 }}>
+              <Avatar name={post.profiles?.display_name} avatarConfig={post.profiles?.avatar_config} photoUrl={post.profiles?.avatar_url} size={38} />
             </button>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <button onClick={() => onViewProfile?.(post.author_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}>
-                <div style={{ fontWeight: 600, fontSize: 14, color: T.ink }}>{post.profiles?.display_name ?? 'Anonymous'}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 600, fontSize: 15, color: T.ink, letterSpacing: '-0.005em' }}>
+                  {post.profiles?.display_name ?? 'Anonymous'}
+                  {post.profiles?.show_flag && (post.profiles?.flags ?? []).length > 0 && (
+                    <span style={{ fontSize: 14, lineHeight: 1 }}>{codeToFlag(post.profiles.flags[0])}</span>
+                  )}
+                </div>
               </button>
-              <div style={{ fontSize: 12, color: T.inkMuted, display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-                <span>
-                  {[post.profiles?.city, post.profiles?.country].filter(Boolean).join(', ')}
-                  {post.profiles?.tradition ? ` · ${post.profiles.tradition}` : ''}
-                  {person ? ` · ${person.emoji} ${person.label}` : ''}
-                  {' · '}{timeAgo(post.created_at)}
-                </span>
-                {/* Audience badges removed 2026-05-01: posts.audience is being
-                    dropped — privacy is now expressed via posts.scope and
-                    enforced by RLS, so a 'friends'/'private' badge cannot
-                    correspond to anything visible in this feed. */}
+              {/* Quiet dateline: just place + time. Denomination & person-type
+                  become chips below so they don't crowd the byline. */}
+              <div style={{ fontSize: 11.5, color: T.inkMuted, marginTop: 1 }}>
+                {post.profiles?.country ? `${post.profiles.country} · ` : ''}
+                {timeAgo(post.created_at)}
               </div>
             </div>
             {currentUserId && !isOwnPost && (
-              <button onClick={() => onFollow(post.author_id, isFollowing)} style={{
-                background: isFollowing ? 'transparent' : T.ink,
-                color: isFollowing ? T.inkMuted : T.cream,
-                border: `1px solid ${isFollowing ? T.line : T.ink}`,
-                borderRadius: 999, padding: '5px 14px',
-                fontSize: 12, fontWeight: 500, cursor: 'pointer', flexShrink: 0,
-              }}>
-                {isFollowing ? 'Following' : '+ Follow'}
-              </button>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+                <button onClick={() => onFollow(post.author_id, isFollowing)} style={{
+                  background: isFollowing
+                    ? 'transparent'
+                    : 'linear-gradient(180deg, #FFFCF4 0%, #F5ECD9 100%)',
+                  color: isFollowing ? T.inkMuted : tabText,
+                  border: `1px solid ${isFollowing ? T.line : tabColor}`,
+                  borderRadius: 999, padding: '5px 12px',
+                  fontSize: 11.5, fontWeight: 600, cursor: 'pointer', flexShrink: 0,
+                  letterSpacing: '0.02em',
+                  boxShadow: isFollowing
+                    ? 'none'
+                    : 'inset 0 1px 0 rgba(255,255,255,0.7), 0 1px 2px rgba(184,115,58,0.15)',
+                  transition: 'all 0.15s',
+                }}>
+                  {isFollowing ? 'Following' : '+ Follow'}
+                </button>
+                <div style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => setMenuOpen((v) => !v)}
+                    aria-label="Post options"
+                    style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      fontSize: 18, color: T.inkMuted, padding: '4px 6px', lineHeight: 1,
+                    }}
+                  >⋯</button>
+                  {menuOpen && (
+                    <>
+                      <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'transparent' }} />
+                      <div style={{
+                        position: 'absolute', top: 'calc(100% + 4px)', right: 0,
+                        background: T.white, border: `1px solid ${T.line}`, borderRadius: 10,
+                        boxShadow: '0 6px 20px rgba(0,0,0,0.10)',
+                        minWidth: 180, zIndex: 100, overflow: 'hidden',
+                      }}>
+                        <button
+                          onClick={() => { setMenuOpen(false); setReportOpen(true); }}
+                          style={{
+                            width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                            borderBottom: `1px solid ${T.line}`,
+                            padding: '11px 14px', fontSize: 13, color: T.error ?? '#A53F2B',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          🚩 Report post
+                        </button>
+                        {onBlockAuthor && (
+                          <button
+                            onClick={() => { setMenuOpen(false); handleBlockAuthor(); }}
+                            disabled={blockBusy}
+                            style={{
+                              width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                              padding: '11px 14px', fontSize: 13,
+                              color: isAuthorBlocked ? T.inkMuted : (T.error ?? '#A53F2B'),
+                              cursor: blockBusy ? 'wait' : 'pointer',
+                              opacity: blockBusy ? 0.6 : 1,
+                            }}
+                          >
+                            🚫 {isAuthorBlocked ? `Unblock ${post.profiles?.display_name?.split(' ')[0] ?? 'user'}` : `Block ${post.profiles?.display_name?.split(' ')[0] ?? 'user'}`}
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             )}
           </div>
 
@@ -210,47 +305,125 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
             </div>
           )}
 
-          <div style={{ fontFamily: T.serif, fontSize: 16, color: T.ink, lineHeight: 1.7, marginBottom: 14, whiteSpace: 'pre-wrap' }}>
-            {bodyExpanded ? post.body : post.body.slice(0, 280) + (post.body.length > 280 ? '…' : '')}
-          </div>
+          {/* Per-kind editorial eyebrow — small uppercase tag above the body
+              so a milestone reads as a milestone before you read the words.
+              Skipped for plain text/share to keep the feed quiet. */}
+          {(() => {
+            const eyebrowFor = {
+              journey_milestone: { label: '✦ A STEP ON THE WAY', color: '#a05870' },
+              verse:             { label: '📖 SCRIPTURE',         color: '#9c5a1f' },
+              question:          { label: '? ASKING',             color: '#3a6b8a' },
+              prayer:            { label: '🙏 A PRAYER',           color: '#5a8064' },
+            }[post.kind];
+            if (!eyebrowFor) return null;
+            return (
+              <div style={{
+                fontSize: 10.5, fontWeight: 700, letterSpacing: '0.14em',
+                color: eyebrowFor.color, marginBottom: 8,
+                fontFamily: T.sans,
+              }}>
+                {eyebrowFor.label}
+              </div>
+            );
+          })()}
+
+          {/* Body — verse posts get pulled-quote treatment so scripture
+              feels like scripture; everything else gets the journal-body
+              presence we set in step 2. */}
+          {post.kind === 'verse' ? (
+            <div style={{
+              position: 'relative', marginBottom: 14,
+              padding: '4px 0 4px 18px',
+              borderLeft: `3px solid ${kindTint('verse').rail}`,
+            }}>
+              <div style={{
+                position: 'absolute', left: -8, top: -6,
+                fontFamily: T.display, fontSize: 36, lineHeight: 1,
+                color: kindTint('verse').rail, opacity: 0.35,
+                fontWeight: 700,
+              }}>“</div>
+              <div style={{
+                fontFamily: T.serif, fontSize: 19, fontStyle: 'italic',
+                color: '#1f1410', lineHeight: 1.55, whiteSpace: 'pre-wrap',
+                letterSpacing: '-0.003em',
+              }}>
+                {bodyExpanded ? post.body : post.body.slice(0, 280) + (post.body.length > 280 ? '…' : '')}
+              </div>
+            </div>
+          ) : (
+            <div style={{
+              fontFamily: T.serif, fontSize: 18.5, color: '#1f1410',
+              lineHeight: 1.6, margin: '6px 0 16px', whiteSpace: 'pre-wrap',
+              letterSpacing: '-0.003em', fontWeight: 400,
+            }}>
+              {bodyExpanded ? post.body : post.body.slice(0, 280) + (post.body.length > 280 ? '…' : '')}
+            </div>
+          )}
 
           {post.body.length > 280 && (
             <button onClick={() => setBodyExpanded(v => !v)}
-              style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 13, cursor: 'pointer', padding: 0, marginBottom: 10 }}>
+              style={{ background: 'none', border: 'none', color: tabText, fontSize: 13, cursor: 'pointer', padding: 0, marginBottom: 10 }}>
               {bodyExpanded ? 'Show less' : 'Read more'}
             </button>
           )}
+          <PostImageGrid urls={post.body_data?.image_urls} />
         </div>
 
-        {/* Reaction pills + Comment button */}
+        {/* Reaction pills + Comment button — filled chiclets so they read
+            as tactile, not as empty placeholders. Active state lights gold. */}
         <div style={{ padding: '10px 18px', borderTop: `1px solid ${T.line}`, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
           {REACTIONS.map((r) => {
             const count  = post.reaction_counts?.[r.kind] ?? 0;
             const active = myReaction === r.kind;
             return (
               <button key={r.kind} onClick={() => onReact(post.id, r.kind, active)} style={{
-                background: active ? 'rgba(196,129,58,0.12)' : 'transparent',
-                border: `1px solid ${active ? T.gold : T.line}`,
+                background: active ? r.activeBg : 'linear-gradient(180deg, #FFFCF4 0%, #F5ECD9 100%)',
+                border: `1px solid ${active ? r.activeBorder : '#D9C9A8'}`,
                 borderRadius: 999, padding: '5px 12px', fontSize: 13,
-                color: active ? T.goldDark : T.inkMuted,
+                color: active ? r.activeText : '#5a4d3a',
                 cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                fontWeight: active ? 700 : 500,
+                fontFamily: r.serifLabel ? T.serif : T.sans,
+                fontStyle: r.serifLabel && active ? 'italic' : 'normal',
+                boxShadow: active
+                  ? `inset 0 1px 0 rgba(255,255,255,0.7), ${r.activeShadow}`
+                  : 'inset 0 1px 0 rgba(255,255,255,0.7), 0 1px 2px rgba(44,24,16,0.05)',
+                transition: 'all 0.15s',
               }}>
-                {r.emoji} <span>{r.label}</span>{count > 0 && <span style={{ fontWeight: 600, color: active ? T.goldDark : T.ink }}>{count}</span>}
+                {r.emoji} <span>{r.label}</span>{count > 0 && <span style={{ fontWeight: 700, color: active ? r.activeText : T.ink, fontStyle: 'normal', fontFamily: T.sans }}>{count}</span>}
               </button>
             );
           })}
           <button onClick={() => setShareOpen(true)} style={{
-            background: 'transparent', border: `1px solid ${T.line}`,
+            background: 'linear-gradient(180deg, #FFFCF4 0%, #F5ECD9 100%)',
+            border: '1px solid #D9C9A8',
             borderRadius: 999, padding: '5px 12px', fontSize: 13,
-            color: T.inkMuted, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+            color: '#5a4d3a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+            fontWeight: 500,
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7), 0 1px 2px rgba(44,24,16,0.05)',
           }}>↗ Share</button>
+          <div style={{ flex: 1 }} />
           <button onClick={() => setCommentsOpen(true)} style={{
             background: 'none', border: 'none', color: T.inkMuted,
-            fontSize: 13, cursor: 'pointer', marginLeft: 'auto',
+            fontSize: 13, cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px',
           }}>
             💬 {localReplies.length > 0 ? localReplies.length : 'Comment'}
           </button>
+          {onSaveToggle && !!currentUserId && (
+            <button
+              onClick={() => onSaveToggle(post.id, isSaved)}
+              title={isSaved ? 'Remove private save' : 'Private save'}
+              style={{
+                background: isSaved ? 'rgba(184,115,58,0.12)' : 'none',
+                border: 'none', cursor: 'pointer', padding: '4px 8px',
+                borderRadius: 999, display: 'flex', alignItems: 'center',
+                color: isSaved ? tabText : T.inkMuted,
+              }}
+            >
+              <Bookmark size={15} strokeWidth={2} fill={isSaved ? tabText : 'none'} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -262,6 +435,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
         >
           <div
             onClick={(e) => e.stopPropagation()}
+            className="full-screen-mobile"
             style={{
               background: T.white, borderRadius: 10,
               width: 'min(660px, 96vw)', height: '85vh',
@@ -288,11 +462,11 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
               {/* Post author */}
               <div style={{ padding: '16px 18px 0' }}>
                 <div style={{ display: 'flex', gap: 11, alignItems: 'center', marginBottom: 12 }}>
-                  <Avatar name={post.profiles?.display_name} avatarConfig={post.profiles?.avatar_config} size={42} />
+                  <Avatar name={post.profiles?.display_name} avatarConfig={post.profiles?.avatar_config} photoUrl={post.profiles?.avatar_url} size={42} />
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 14, color: T.ink }}>{post.profiles?.display_name ?? 'Anonymous'}</div>
                     <div style={{ fontSize: 12, color: T.inkMuted }}>
-                      {[post.profiles?.city, post.profiles?.country].filter(Boolean).join(', ')}
+                      {post.profiles?.country ?? ''}
                       {post.profiles?.tradition ? ` · ${post.profiles.tradition}` : ''}
                       {' · '}{timeAgo(post.created_at)}
                     </div>
@@ -332,7 +506,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                       border: 'none', borderRight: i < REACTIONS.length - 1 ? `1px solid ${T.line}` : 'none',
                       cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                       fontSize: 14, fontWeight: 600,
-                      color: active ? T.goldDark : T.inkSoft,
+                      color: active ? tabText : T.inkSoft,
                     }}>
                       {r.emoji} {r.label}
                     </button>
@@ -357,7 +531,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                 ) : (
                   localReplies.map(r => (
                     <div key={r.id} style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'flex-start' }}>
-                      <Avatar name={r.profiles?.display_name} avatarConfig={r.profiles?.avatar_config} size={34} style={{ flexShrink: 0 }} />
+                      <Avatar name={r.profiles?.display_name} avatarConfig={r.profiles?.avatar_config} photoUrl={r.profiles?.avatar_url} size={34} style={{ flexShrink: 0 }} />
                       <div>
                         <div style={{ background: T.parchment, borderRadius: 16, padding: '9px 13px' }}>
                           <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, marginBottom: 2 }}>
@@ -377,26 +551,152 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
 
             {/* Pinned comment input */}
             {currentUserId && (
-              <div style={{ borderTop: `1px solid ${T.line}`, padding: '12px 18px 16px', display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0, background: T.white }}>
-                <Avatar name={userProfile?.display_name} avatarConfig={userProfile?.avatar_config} size={36} style={{ flexShrink: 0 }} />
-                <div style={{ flex: 1, background: T.parchment, borderRadius: 22, border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', padding: '10px 16px', gap: 8 }}>
-                  <input
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply(); } }}
-                    placeholder="Write a comment…"
-                    autoFocus
-                    style={{ flex: 1, border: 'none', outline: 'none', fontFamily: T.serif, fontSize: 14, color: T.ink, background: 'transparent' }}
-                  />
-                  {replyText.trim() && (
-                    <button onClick={handleReply} disabled={submitting} style={{
-                      background: T.gold, border: 'none', borderRadius: '50%',
-                      width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: T.cream, fontSize: 14, cursor: 'pointer', flexShrink: 0,
-                    }}>↑</button>
-                  )}
+              <div style={{ borderTop: `1px solid ${T.line}`, padding: '10px 16px 14px', flexShrink: 0, background: T.white, position: 'relative' }}>
+                {emojiOpen && (
+                  <>
+                    <div onClick={() => setEmojiOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
+                    <div style={{
+                      position: 'absolute', bottom: 'calc(100% + 4px)', left: 16, right: 16, zIndex: 11,
+                      background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
+                      boxShadow: '0 8px 24px rgba(44,24,16,0.13)', padding: 10,
+                      display: 'grid', gridTemplateColumns: 'repeat(16, 1fr)', gap: 2,
+                    }}>
+                      {['😀','😊','😂','🥹','😍','🥰','😭','😅','🤔','😏','😌','🙃','😇','🤩','😬','🤯',
+                        '🙏','✝️','🕊️','🌿','🌸','🌺','🌻','☀️','🌙','⭐','🔥','💫','✨','🌈','🌊','🍃',
+                        '❤️','🧡','💛','💚','💙','💜','🤍','🫶','👏','🙌','💪','👍','🎉','🫂','💝','🎊',
+                      ].map((e) => (
+                        <button key={e} onClick={() => insertReplyEmoji(e)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '4px 2px', borderRadius: 6 }}
+                          onMouseEnter={(ev) => ev.currentTarget.style.background = T.parchment}
+                          onMouseLeave={(ev) => ev.currentTarget.style.background = 'none'}
+                        >{e}</button>
+                      ))}
+                    </div>
+                  </>
+                )}
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <Avatar name={userProfile?.display_name} avatarConfig={userProfile?.avatar_config} photoUrl={userProfile?.avatar_url} size={36} style={{ flexShrink: 0, marginTop: 2 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ background: T.parchment, borderRadius: 18, border: `1px solid ${T.line}`, padding: '9px 14px' }}>
+                      <input
+                        ref={replyInputRef}
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply(); } }}
+                        placeholder="Write a comment…"
+                        autoFocus
+                        style={{ width: '100%', border: 'none', outline: 'none', fontFamily: T.serif, fontSize: 14, color: T.ink, background: 'transparent' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', marginTop: 6, paddingLeft: 2, gap: 2 }}>
+                      <button onClick={() => setEmojiOpen((v) => !v)} title="Emoji"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 8, color: emojiOpen ? tabText : T.inkSoft, display: 'flex', alignItems: 'center' }}>
+                        <Smile size={20} strokeWidth={1.75} />
+                      </button>
+                      <div style={{ flex: 1 }} />
+                      {replyText.trim() && (
+                        <button onClick={handleReply} disabled={submitting} style={{
+                          background: tabColor, border: 'none', borderRadius: '50%',
+                          width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: T.cream, cursor: 'pointer', flexShrink: 0,
+                        }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {reportOpen && (
+        <div
+          onClick={() => !reportBusy && setReportOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: T.white, borderRadius: 14, padding: '20px 22px',
+              maxWidth: 380, width: '100%', boxShadow: '0 12px 40px rgba(0,0,0,0.25)',
+            }}
+          >
+            {reportDone ? (
+              <>
+                <div style={{ textAlign: 'center', padding: '10px 0' }}>
+                  <div style={{ fontSize: 32, marginBottom: 10 }}>✅</div>
+                  <div style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 600, color: T.ink, marginBottom: 8 }}>Report submitted</div>
+                  <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55 }}>Thanks for helping keep this community safe.</div>
+                </div>
+                <button
+                  onClick={() => { setReportOpen(false); setReportDone(false); setReportType(''); setReportNote(''); }}
+                  style={{ marginTop: 16, width: '100%', background: T.ink, color: T.cream, border: 'none', borderRadius: 999, padding: '9px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                >Done</button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 700, color: T.ink, marginBottom: 8 }}>Report post</div>
+                <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 14 }}>Why are you reporting this?</div>
+                {[
+                  { id: 'spam',           label: 'Spam or scam' },
+                  { id: 'harmful',        label: 'Harmful or dangerous content' },
+                  { id: 'offensive',      label: 'Offensive or inappropriate' },
+                  { id: 'misinformation', label: 'False or misleading information' },
+                  { id: 'other',          label: 'Something else' },
+                ].map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() => setReportType(opt.id)}
+                    style={{
+                      width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 10,
+                      background: reportType === opt.id ? T.parchment : 'transparent',
+                      border: `1px solid ${reportType === opt.id ? tabColor : T.line}`,
+                      borderRadius: 8, padding: '9px 12px', marginBottom: 6,
+                      fontSize: 13, color: T.ink, cursor: 'pointer',
+                    }}
+                  >
+                    <span style={{
+                      width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
+                      border: `2px solid ${reportType === opt.id ? tabColor : T.line}`,
+                      background: reportType === opt.id ? tabColor : 'transparent',
+                    }} />
+                    {opt.label}
+                  </button>
+                ))}
+                {reportType === 'other' && (
+                  <textarea
+                    value={reportNote}
+                    onChange={(e) => setReportNote(e.target.value)}
+                    placeholder="Tell us more (optional)…"
+                    rows={3}
+                    style={{
+                      width: '100%', boxSizing: 'border-box', marginTop: 4,
+                      border: `1px solid ${T.line}`, borderRadius: 8, padding: '9px 12px',
+                      fontFamily: T.serif, fontSize: 13.5, color: T.ink,
+                      background: T.cream, outline: 'none', resize: 'vertical',
+                    }}
+                  />
+                )}
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 14 }}>
+                  <button
+                    onClick={() => setReportOpen(false)}
+                    disabled={reportBusy}
+                    style={{ background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999, padding: '8px 16px', fontSize: 13, color: T.inkSoft, cursor: 'pointer' }}
+                  >Cancel</button>
+                  <button
+                    onClick={submitReport}
+                    disabled={reportBusy || !reportType}
+                    style={{
+                      background: reportType ? (T.error ?? '#A53F2B') : T.line,
+                      color: T.cream, border: 'none', borderRadius: 999,
+                      padding: '8px 18px', fontSize: 13, fontWeight: 600,
+                      cursor: reportBusy || !reportType ? 'not-allowed' : 'pointer',
+                      opacity: reportBusy ? 0.7 : 1,
+                    }}
+                  >{reportBusy ? 'Submitting…' : 'Submit report'}</button>
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -427,7 +727,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
   );
 }
 
-function FeaturedThread({ thread, onRespond }) {
+function FeaturedThread({ thread, onRespond, tabColor = '#B8733A' }) {
   if (!thread) return null;
   return (
     <div style={{
@@ -436,13 +736,13 @@ function FeaturedThread({ thread, onRespond }) {
     }}>
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-        backgroundImage: 'radial-gradient(circle, rgba(196,129,58,0.12) 1px, transparent 1px)',
+        backgroundImage: 'radial-gradient(circle, rgba(184,115,58,0.12) 1px, transparent 1px)',
         backgroundSize: '24px 24px', pointerEvents: 'none',
       }} />
       <div style={{ position: 'relative' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <span style={{
-            background: T.gold, color: T.cream, fontSize: 11, fontWeight: 700,
+            background: tabColor, color: T.cream, fontSize: 11, fontWeight: 700,
             padding: '3px 10px', borderRadius: 999, letterSpacing: '0.06em', textTransform: 'uppercase',
           }}>
             This Week's Thread
@@ -459,7 +759,7 @@ function FeaturedThread({ thread, onRespond }) {
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <button
             onClick={() => onRespond(thread.question)}
-            style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '10px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+            style={{ background: tabColor, color: T.cream, border: 'none', borderRadius: 999, padding: '10px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
           >
             Respond in Chat →
           </button>
@@ -470,7 +770,7 @@ function FeaturedThread({ thread, onRespond }) {
   );
 }
 
-function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile }) {
+function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tabColor = '#B8733A', tabText = '#8E5528' }) {
   const [encOpen,    setEncOpen]    = useState(false);
   const [encs,       setEncs]       = useState(null);
   const [encInput,   setEncInput]   = useState('');
@@ -486,7 +786,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile }) {
       setEncLoading(true);
       const { data } = await supabase
         .from('personal_prayer_encouragements')
-        .select('*, profiles(display_name, avatar_config)')
+        .select('*, profiles(display_name, avatar_config, avatar_url)')
         .eq('prayer_id', prayer.id)
         .order('created_at', { ascending: true });
       setEncs(data ?? []);
@@ -499,7 +799,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile }) {
     const { data } = await supabase
       .from('personal_prayer_encouragements')
       .insert({ prayer_id: prayer.id, user_id: session.user.id, body: encInput.trim() })
-      .select('*, profiles(display_name, avatar_config)')
+      .select('*, profiles(display_name, avatar_config, avatar_url)')
       .single();
     if (data) { setEncs(prev => [...(prev ?? []), data]); setEncCount(c => c + 1); setEncInput(''); }
   }
@@ -509,37 +809,44 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile }) {
       <div style={{
         position: 'relative',
         background: prayer.is_answered
-          ? `linear-gradient(180deg, rgba(196,129,58,0.05), ${T.white})`
-          : `linear-gradient(180deg, ${SEMANTIC.prayer.bg}, ${T.white})`,
-        borderRadius: 16,
-        border: `1px solid ${prayer.is_answered ? T.goldLight : T.line}`,
-        marginBottom: 14, overflow: 'hidden',
+          ? 'linear-gradient(180deg, #FFF8E8 0%, #F8E9C8 100%)'
+          : 'linear-gradient(180deg, #F4F8F0 0%, #E5EFD9 100%)',
+        borderRadius: 14,
+        border: `1px solid ${prayer.is_answered ? 'rgba(154,99,40,0.32)' : 'rgba(90,128,100,0.28)'}`,
+        marginBottom: 22, overflow: 'hidden',
+        boxShadow: prayer.is_answered
+          ? 'inset 0 2px 4px rgba(154,99,40,0.10), inset 0 -1px 0 rgba(255,255,255,0.6), 0 1px 0 rgba(255,253,247,0.9)'
+          : 'inset 0 2px 4px rgba(90,128,100,0.10), inset 0 -1px 0 rgba(255,255,255,0.6), 0 1px 0 rgba(255,253,247,0.9)',
       }}>
         {/* Semantic accent rail — sage for prayer, gold for answered */}
         <div style={{
           position: 'absolute', left: 0, top: 0, bottom: 0,
-          width: 4,
-          background: prayer.is_answered ? T.gold : SEMANTIC.prayer.rail,
+          width: 6,
+          background: prayer.is_answered ? T.gold : kindTint('prayer').rail,
         }} />
         {/* Header */}
         <div style={{ padding: '16px 18px 0' }}>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
-            <button onClick={() => onViewProfile?.(prayer.user_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }}>
-              <Avatar name={prayer.profiles?.display_name} avatarConfig={prayer.profiles?.avatar_config} size={38} />
+            <button onClick={() => onViewProfile?.(prayer.user_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0, lineHeight: 0 }}>
+              <Avatar name={prayer.profiles?.display_name} avatarConfig={prayer.profiles?.avatar_config} photoUrl={prayer.profiles?.avatar_url} size={38} />
             </button>
             <div style={{ flex: 1 }}>
               <button onClick={() => onViewProfile?.(prayer.user_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}>
-                <div style={{ fontWeight: 600, fontSize: 14, color: T.ink }}>{prayer.profiles?.display_name ?? 'Someone'}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 600, fontSize: 14, color: T.ink }}>
+                  {prayer.profiles?.display_name ?? 'Someone'}
+                  {prayer.profiles?.show_flag && (prayer.profiles?.flags ?? []).length > 0 && (
+                    <span style={{ fontSize: 13, lineHeight: 1 }}>{codeToFlag(prayer.profiles.flags[0])}</span>
+                  )}
+                </div>
               </button>
               <div style={{ fontSize: 12, color: T.inkMuted }}>
-                {[prayer.profiles?.city, prayer.profiles?.country].filter(Boolean).join(', ')}
+                {prayer.profiles?.country ?? ''}
                 {prayer.profiles?.tradition ? ` · ${prayer.profiles.tradition}` : ''}
-                {person ? ` · ${person.emoji} ${person.label}` : ''}
                 {' · '}{timeAgo(prayer.created_at)}
               </div>
             </div>
             {prayer.is_answered && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(196,129,58,0.12)', borderRadius: 999, padding: '4px 10px', flexShrink: 0 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(184,115,58,0.12)', borderRadius: 999, padding: '4px 10px', flexShrink: 0 }}>
                 <svg width="11" height="11" viewBox="0 0 34 34">
                   <circle cx="17" cy="17" r="10" fill={T.gold}/>
                   <polyline points="11,17 15,21 23,12" fill="none" stroke="white" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
@@ -554,7 +861,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile }) {
           </div>
 
           {prayer.is_answered && prayer.praise_report && (
-            <div style={{ marginBottom: 14, background: 'rgba(196,129,58,0.07)', borderRadius: 10, padding: '10px 13px', borderLeft: `3px solid ${T.gold}` }}>
+            <div style={{ marginBottom: 14, background: 'rgba(184,115,58,0.07)', borderRadius: 10, padding: '10px 13px', borderLeft: `3px solid ${T.gold}` }}>
               <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 4 }}>Praise Report ✦</div>
               <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: T.inkSoft, lineHeight: 1.6 }}>"{prayer.praise_report}"</div>
             </div>
@@ -601,6 +908,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile }) {
         >
           <div
             onClick={(e) => e.stopPropagation()}
+            className="full-screen-mobile"
             style={{
               background: T.white, borderRadius: 10,
               width: 'min(660px, 96vw)', height: '85vh',
@@ -627,11 +935,16 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile }) {
               {/* Prayer author + body */}
               <div style={{ padding: '16px 18px' }}>
                 <div style={{ display: 'flex', gap: 11, alignItems: 'center', marginBottom: 12 }}>
-                  <Avatar name={prayer.profiles?.display_name} avatarConfig={prayer.profiles?.avatar_config} size={42} />
+                  <Avatar name={prayer.profiles?.display_name} avatarConfig={prayer.profiles?.avatar_config} photoUrl={prayer.profiles?.avatar_url} size={42} />
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: T.ink }}>{prayer.profiles?.display_name ?? 'Someone'}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 600, fontSize: 14, color: T.ink }}>
+                  {prayer.profiles?.display_name ?? 'Someone'}
+                  {prayer.profiles?.show_flag && (prayer.profiles?.flags ?? []).length > 0 && (
+                    <span style={{ fontSize: 13, lineHeight: 1 }}>{codeToFlag(prayer.profiles.flags[0])}</span>
+                  )}
+                </div>
                     <div style={{ fontSize: 12, color: T.inkMuted }}>
-                      {[prayer.profiles?.city, prayer.profiles?.country].filter(Boolean).join(', ')}
+                      {prayer.profiles?.country ?? ''}
                       {prayer.profiles?.tradition ? ` · ${prayer.profiles.tradition}` : ''}
                       {' · '}{timeAgo(prayer.created_at)}
                     </div>
@@ -641,7 +954,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile }) {
                   {prayer.body}
                 </div>
                 {prayer.is_answered && prayer.praise_report && (
-                  <div style={{ marginBottom: 14, background: 'rgba(196,129,58,0.07)', borderRadius: 10, padding: '10px 13px', borderLeft: `3px solid ${T.gold}` }}>
+                  <div style={{ marginBottom: 14, background: 'rgba(184,115,58,0.07)', borderRadius: 10, padding: '10px 13px', borderLeft: `3px solid ${T.gold}` }}>
                     <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 4 }}>Praise Report ✦</div>
                     <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: T.inkSoft, lineHeight: 1.6 }}>"{prayer.praise_report}"</div>
                   </div>
@@ -666,7 +979,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile }) {
                     cursor: isOwn ? 'default' : 'pointer', opacity: isOwn ? 0.4 : 1,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                     fontSize: 14, fontWeight: 600,
-                    color: prayer.my_prayed ? T.goldDark : T.inkSoft,
+                    color: prayer.my_prayed ? tabText : T.inkSoft,
                   }}
                 >
                   🙏 {prayer.my_prayed ? 'Praying' : 'Pray'}
@@ -675,7 +988,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile }) {
                   flex: 1, padding: '10px 4px', background: 'none', border: 'none',
                   borderRight: `1px solid ${T.line}`,
                   cursor: 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  fontSize: 14, fontWeight: 600, color: T.goldDark,
+                  fontSize: 14, fontWeight: 600, color: tabText,
                 }}>
                   💬 Encourage
                 </button>
@@ -702,7 +1015,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile }) {
                 ) : (
                   (encs ?? []).map(enc => (
                     <div key={enc.id} style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'flex-start' }}>
-                      <Avatar name={enc.profiles?.display_name} avatarConfig={enc.profiles?.avatar_config} size={34} style={{ flexShrink: 0 }} />
+                      <Avatar name={enc.profiles?.display_name} avatarConfig={enc.profiles?.avatar_config} photoUrl={enc.profiles?.avatar_url} size={34} style={{ flexShrink: 0 }} />
                       <div>
                         <div style={{ background: T.parchment, borderRadius: 16, padding: '9px 13px' }}>
                           <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, marginBottom: 2 }}>{enc.profiles?.display_name ?? 'Someone'}</div>
@@ -729,7 +1042,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile }) {
                   style={{ flex: 1, border: 'none', outline: 'none', fontFamily: T.serif, fontSize: 14, color: T.ink, background: 'transparent' }}
                 />
                 {encInput.trim() && (
-                  <button onClick={submitEnc} style={{ background: T.gold, border: 'none', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.cream, fontSize: 14, cursor: 'pointer', flexShrink: 0 }}>↑</button>
+                  <button onClick={submitEnc} style={{ background: tabColor, border: 'none', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.cream, fontSize: 14, cursor: 'pointer', flexShrink: 0 }}>↑</button>
                 )}
               </div>
             </div>
@@ -748,125 +1061,55 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile }) {
   );
 }
 
-export function ComposeSheet({ session, profile, onPost, onClose }) {
-  const [body, setBody] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handlePost(e) {
-    e.preventDefault();
-    if (!body.trim() || !session) return;
-    setSubmitting(true);
-    // scope='me' + kind='text' are NOT NULL in posts; the old composer
-    // omitted them and the insert was silently failing for non-pastors.
-    // Privacy is enforced by the RLS policy "Same-church members read
-    // me-scope posts" — no client-side audience picker needed.
-    const { data, error } = await supabase
-      .from('posts')
-      .insert({
-        author_id: session.user.id,
-        scope: 'me',
-        kind: 'text',
-        body: body.trim(),
-        person_type: profile?.person_type ?? null,
-      })
-      .select('*, profiles(display_name, city, country, tradition, person_type, avatar_config), post_comments(id)')
-      .single();
-    setSubmitting(false);
-    if (error) { console.error('Post failed:', error.message); return; }
-    if (data) onPost({ ...data, reaction_counts: {}, my_reaction: null, reply_count: 0 });
-  }
-
-  return (
-    <div
-      onClick={onClose}
-      style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(44,24,16,0.55)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: T.white, borderRadius: '20px 20px 0 0',
-          width: '100%', maxWidth: 540, padding: '20px 20px 36px',
-          boxShadow: '0 -8px 40px rgba(0,0,0,0.15)', animation: 'slideUp 0.2s ease',
-        }}
-      >
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: T.line, margin: '0 auto 18px' }} />
-
-        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 16 }}>
-          <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} size={40} />
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600, fontSize: 14, color: T.ink, marginBottom: 4 }}>{profile?.display_name ?? 'You'}</div>
-            {/* Privacy hint — replaces the old 3-option picker. The visibility
-                is set by RLS, not the author: same-church members can read,
-                everyone else sees the count but can't enter the comments. */}
-            <div style={{
-              fontSize: 11, color: T.inkMuted, fontStyle: 'italic',
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-            }}>
-              👥 Visible to your church family
-            </div>
-          </div>
-        </div>
-
-        <form onSubmit={handlePost}>
-          <textarea
-            autoFocus
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder="A thought, a doubt, a question…"
-            rows={5}
-            style={{
-              width: '100%', border: 'none', outline: 'none', resize: 'none',
-              fontFamily: T.serif, fontSize: 16, lineHeight: 1.7, color: T.ink,
-              background: 'transparent', marginBottom: 16,
-            }}
-          />
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', borderTop: `1px solid ${T.line}`, paddingTop: 14 }}>
-            <button
-              type="submit"
-              disabled={submitting || !body.trim()}
-              style={{
-                background: body.trim() ? `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)` : T.line,
-                color: T.cream, border: 'none', borderRadius: 999,
-                padding: '10px 24px', fontSize: 14, fontWeight: 600,
-                cursor: body.trim() ? 'pointer' : 'not-allowed',
-                transition: 'all 0.15s',
-                boxShadow: body.trim() ? '0 4px 14px rgba(196,129,58,0.3)' : 'none',
-              }}
-            >
-              {submitting ? 'Posting…' : 'Post'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-export default function Community({ session, profile, onClose, onOpenChat, hideHeader, userGroup, onViewProfile, onFindPeople, onInviteFriends }) {
+export default function Community({ session, profile, onClose, onOpenChat, hideHeader, userGroup, onViewProfile, onFindPeople, onInviteFriends, onOpenPrayer, onOpenRead, onOpenBible, onOpenChurch, onOpenSermon, accentColor }) {
+  // Section colour: gold for main Feed, forest green for church community feed
+  const TAB_COLOR = accentColor ?? '#B8733A';
+  const TAB_TEXT  = accentColor ?? '#8E5528'; // slightly darker for text legibility
   const [posts, setPosts] = useState([]);
+  const [sermonItems, setSermonItems] = useState([]);
+  const [pastorMap, setPastorMap] = useState({});
+  const [churchMap, setChurchMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [blockedIds, setBlockedIds] = useState([]);
+  const [savedPostIds, setSavedPostIds] = useState(new Set());
   const [following, setFollowing] = useState(new Set());
   const [featuredThread, setFeaturedThread] = useState(null);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [prayerComposeOpen, setPrayerComposeOpen] = useState(false);
+  const [prayerText, setPrayerText] = useState('');
+  const [prayerSubmitting, setPrayerSubmitting] = useState(false);
   const [feedType, setFeedType] = useState('posts');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [prayers, setPrayers] = useState([]);
   const [prayersLoading, setPrayersLoading] = useState(false);
-  const [questionRevealed, setQuestionRevealed] = useState(() => {
-    try { return localStorage.getItem('theway:dailyQ:revealed') === todayKey(); }
-    catch { return false; }
-  });
-  const revealQuestion = () => {
-    setQuestionRevealed(true);
-    try { localStorage.setItem('theway:dailyQ:revealed', todayKey()); } catch {}
-  };
-
+  const [sponsors, setSponsors] = useState([]);
+  useEffect(() => {
+    supabase.from('sponsored_posts').select('*').eq('is_active', true).order('sort_order')
+      .then(({ data }) => setSponsors(data ?? []));
+  }, []);
+  const [qotd, setQotd] = useState(null);
+  useEffect(() => {
+    if (!profile?.church_id) return;
+    supabase
+      .from('churches')
+      .select('question_of_day, question_of_day_set_at')
+      .eq('id', profile.church_id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.question_of_day) setQotd(data);
+        else setQotd(null);
+      });
+  }, [profile?.church_id]);
   useEffect(() => {
     if (!session?.user?.id) return;
     const uid = session.user.id;
     supabase.from('follows').select('following_id').eq('follower_id', uid)
       .then(({ data }) => setFollowing(new Set(data?.map((f) => f.following_id) ?? [])));
+    supabase.from('blocked_users').select('blocked_id').eq('blocker_id', uid)
+      .then(({ data }) => setBlockedIds((data ?? []).map((r) => r.blocked_id)));
+    supabase.from('saved_posts').select('post_id').eq('user_id', uid)
+      .then(({ data }) => setSavedPostIds(new Set((data ?? []).map((r) => r.post_id))));
     // The friend_requests fetch lived here to power the now-removed
     // audience='friends' filter; with RLS doing privacy gating we no
     // longer need to know who the viewer's friends are at this surface.
@@ -895,23 +1138,63 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
     }
   }
 
+  async function handleSaveToggle(postId, wasSaved) {
+    if (!session?.user?.id) return;
+    if (wasSaved) {
+      await supabase.from('saved_posts').delete().eq('post_id', postId).eq('user_id', session.user.id);
+      setSavedPostIds((prev) => { const s = new Set(prev); s.delete(postId); return s; });
+    } else {
+      await supabase.from('saved_posts').insert({ post_id: postId, user_id: session.user.id });
+      setSavedPostIds((prev) => new Set([...prev, postId]));
+    }
+  }
+
+  async function handleBlockAuthor(authorId, wasBlocked) {
+    if (!session?.user?.id) return;
+    if (wasBlocked) {
+      await supabase.from('blocked_users').delete().eq('blocker_id', session.user.id).eq('blocked_id', authorId);
+      setBlockedIds((prev) => prev.filter((id) => id !== authorId));
+    } else {
+      await supabase.from('blocked_users').insert({ blocker_id: session.user.id, blocked_id: authorId });
+      setBlockedIds((prev) => [...prev, authorId]);
+    }
+  }
+
   const loadPosts = useCallback(async () => {
     setLoading(true);
+    // Disambiguate the FK: post_comments + reactions also link posts→profiles,
+    // so PostgREST refuses the bare `profiles(...)` embed. !author_id pins it
+    // to posts.author_id. Same for post_comments → profiles via author_id.
+    //
+    // visibility='public' filter: Community only shows posts the author
+    // explicitly marked public. 'church' and 'private' are excluded by RLS
+    // for non-authors, but authors would otherwise see their own non-public
+    // posts here too, which isn't what we want for the universal feed.
     let query = supabase
       .from('posts')
-      .select(`*, profiles(display_name, city, country, tradition, person_type, avatar_config), post_comments(id, body, created_at, profiles(display_name, avatar_config))`)
+      .select(`*, profiles!author_id(display_name, city, country, tradition, person_type, avatar_config, avatar_url, show_flag, flags), post_comments(id, body, created_at, profiles!author_id(display_name, avatar_config, avatar_url))`)
+      .eq('visibility', 'public')
       .order('created_at', { ascending: false })
       .limit(60);
     if (filter !== 'all') query = query.eq('person_type', filter);
-    const { data: postData } = await query;
+
+    // Sermon items live in their own tables — feed_items unions them in.
+    // Person-type filter doesn't apply (sermons aren't authored by a persona),
+    // so when a filter is active we drop sermons.
+    const sermonPromise = filter === 'all'
+      ? supabase
+          .from('feed_items')
+          .select('id, author_id, scope_id, body, created_at')
+          .eq('source', 'sermon_item')
+          .order('created_at', { ascending: false })
+          .limit(20)
+      : Promise.resolve({ data: [] });
+
+    const [{ data: postData, error: postErr }, { data: sermonData }] = await Promise.all([query, sermonPromise]);
+    if (postErr) console.error('[Community.loadPosts]', postErr.message);
     if (!postData) { setLoading(false); return; }
 
     const myId = session?.user?.id;
-    // Visibility is now enforced entirely by RLS — see
-    // scripts/2026-05-01-private-comments.sql. The legacy client-side
-    // audience filter (public/private/friends) was removed because no
-    // composer writes audience anymore and RLS already returns only the
-    // posts this viewer is allowed to see.
     const visible = postData;
 
     const postIds = visible.map((p) => p.id);
@@ -927,7 +1210,26 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
       return { ...p, reaction_counts: counts, my_reaction: myReaction, reply_count: p.post_comments?.length ?? 0 };
     });
 
+    // Hydrate pastor profiles + church names for sermon items so the byline
+    // can read "Pastor X · Y Church" without each card re-fetching.
+    const sermons = sermonData ?? [];
+    const pastorIds = [...new Set(sermons.map((s) => s.author_id).filter(Boolean))];
+    const churchIds = [...new Set(sermons.map((s) => s.scope_id).filter(Boolean))];
+    const [{ data: pastors }, { data: churches }] = await Promise.all([
+      pastorIds.length
+        ? supabase.from('profiles').select('id, display_name, avatar_config, avatar_url').in('id', pastorIds)
+        : Promise.resolve({ data: [] }),
+      churchIds.length
+        ? supabase.from('churches').select('id, name').in('id', churchIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+    const pMap = {}; (pastors ?? []).forEach((p) => { pMap[p.id] = p; });
+    const cMap = {}; (churches ?? []).forEach((c) => { cMap[c.id] = c; });
+
     setPosts(enriched);
+    setSermonItems(sermons);
+    setPastorMap(pMap);
+    setChurchMap(cMap);
     setLoading(false);
   }, [filter, session]);
 
@@ -977,7 +1279,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
     const myId = session?.user?.id;
     const { data } = await supabase
       .from('personal_prayers')
-      .select('*, profiles(display_name, city, country, tradition, person_type, avatar_config)')
+      .select('*, profiles(display_name, city, country, tradition, person_type, avatar_config, avatar_url, show_flag, flags)')
       .eq('is_public', true)
       .order('created_at', { ascending: false })
       .limit(60);
@@ -998,6 +1300,28 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
 
   useEffect(() => { if (feedType === 'prayers') loadCommunityPrayers(); }, [feedType, loadCommunityPrayers]);
 
+  async function submitPrayer(e) {
+    e.preventDefault();
+    if (!prayerText.trim() || prayerSubmitting || !session?.user?.id) return;
+    setPrayerSubmitting(true);
+    const { data, error } = await supabase
+      .from('personal_prayers')
+      .insert({ user_id: session.user.id, body: prayerText.trim(), is_public: true })
+      .select('*, profiles(display_name, city, country, tradition, person_type, avatar_config, avatar_url, show_flag, flags)')
+      .single();
+    setPrayerSubmitting(false);
+    if (error) {
+      console.error('[submitPrayer] insert failed', error);
+      alert(`Couldn't post prayer: ${error.message}`);
+      return;
+    }
+    if (data) {
+      setPrayers(prev => [{ ...data, support_count: 0, enc_count: 0, my_prayed: false }, ...prev]);
+      setPrayerText('');
+      setPrayerComposeOpen(false);
+    }
+  }
+
   async function handlePray(prayerId, isPraying) {
     if (!session?.user?.id) return;
     if (isPraying) {
@@ -1008,311 +1332,521 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
     setPrayers(prev => prev.map(p => p.id === prayerId ? { ...p, support_count: p.support_count + (isPraying ? -1 : 1), my_prayed: !isPraying } : p));
   }
 
+  // On desktop the global AppHeader takes 56px — subtract from scene height.
+  const sceneH = hideHeader ? 'calc(100dvh - 56px)' : '100dvh';
+
   return (
-    <div className="scene" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="scene" style={{ height: sceneH, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {!hideHeader && (
         <>
-          {/* App top bar — clean, integrated icon row */}
+          {/* App top bar — deep walnut "leather cover" so the page has an
+              anchor of weight. Gold ✦ glows against it; the daily verse
+              reads as a gold-leaf inscription. The cream feed below becomes
+              "lit content" instead of a flat parchment sheet. */}
           <header style={{
-            padding: '0 12px 0 16px', height: 52, background: T.white,
-            borderBottom: `1px solid ${T.line}`,
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '0 12px 0 16px', height: 56,
+            background: 'linear-gradient(180deg, #2a1a14 0%, #1f1410 100%)',
+            borderBottom: '1px solid #3a261d',
+            boxShadow: '0 4px 14px rgba(20,10,6,0.35), inset 0 -1px 0 rgba(184,115,58,0.18)',
+            display: 'flex', alignItems: 'center', gap: 14,
             position: 'sticky', top: 0, zIndex: 10,
           }}>
-            <div style={{ fontFamily: T.display, fontSize: 21, fontWeight: 600, color: T.ink, letterSpacing: '-0.018em', display: 'flex', alignItems: 'center', gap: 7 }}>
+            <div style={{
+              fontFamily: T.display, fontSize: 21, fontWeight: 600, color: '#f4e9d4',
+              letterSpacing: '-0.018em', display: 'flex', alignItems: 'center', gap: 7,
+              flexShrink: 0,
+              textShadow: '0 1px 0 rgba(0,0,0,0.4)',
+            }}>
               <span style={{
-                color: T.goldDark, fontSize: 17,
-                filter: 'drop-shadow(0 0 8px rgba(196,129,58,0.45))',
+                color: '#e8b563', fontSize: 18,
+                filter: 'drop-shadow(0 0 10px rgba(232,181,99,0.65))',
               }}>✦</span>
-              The Way
+              kinwove
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <button
-                onClick={() => onFindPeople?.()}
-                title="Find people"
-                aria-label="Find people"
-                style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: 'transparent', border: 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', fontSize: 16, color: T.inkSoft,
-                  transition: 'background 0.15s',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = T.parchment; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-              >
-                🔍
-              </button>
-              <button
-                onClick={() => onOpenChat?.()}
-                title="Ask AI"
-                aria-label="Ask AI"
-                style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: 'transparent', border: 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', fontSize: 16, color: T.inkSoft,
-                  transition: 'background 0.15s',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = T.parchment; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-              >
-                💬
-              </button>
-              {profile && (
-                <button
-                  onClick={() => onViewProfile?.(session?.user?.id)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 6, display: 'flex' }}
-                  title="Your profile"
-                  aria-label="Your profile"
-                >
-                  <Avatar name={profile.display_name} avatarConfig={profile.avatar_config} size={32} />
-                </button>
-              )}
-            </div>
-          </header>
-
-          {/* Compact verse — single line, no eyebrow noise */}
-          {(() => {
-            const v = getDailyVerse();
-            return (
-              <div style={{
-                background: T.parchment,
-                borderBottom: `1px solid ${T.line}`,
-                padding: '7px 16px',
-                display: 'flex', alignItems: 'center', gap: 10,
-              }}>
-                <div style={{
-                  flexShrink: 0, fontSize: 11, color: T.gold,
-                  filter: 'drop-shadow(0 0 4px rgba(196,129,58,0.4))',
-                  lineHeight: 1,
-                }}>❉</div>
-                <div style={{
-                  flex: 1, minWidth: 0,
-                  fontFamily: T.serif, fontStyle: 'italic',
-                  fontSize: 12.5, lineHeight: 1.4, color: T.inkSoft,
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  &ldquo;{v.text}&rdquo;{' '}
-                  <span style={{ fontStyle: 'normal', fontWeight: 600, color: T.goldDark }}>— {v.ref}</span>
-                </div>
-                {onInviteFriends && (
-                  <button
-                    onClick={onInviteFriends}
-                    style={{
-                      background: 'transparent', border: 'none',
-                      padding: '2px 4px', flexShrink: 0,
-                      fontSize: 11, fontWeight: 600, color: T.goldDark,
-                      cursor: 'pointer', whiteSpace: 'nowrap',
-                      WebkitTapHighlightColor: 'transparent',
-                    }}
-                  >
-                    ↗ Invite
-                  </button>
-                )}
-              </div>
-            );
-          })()}
-
-          {/* Daily question — sealed envelope that reveals on tap */}
-          {onOpenChat && feedType === 'posts' && (() => {
-            const q = getDailyQuestion();
-            if (!questionRevealed) {
+            {(() => {
+              const v = getDailyVerse();
               return (
                 <button
-                  onClick={revealQuestion}
+                  onClick={() => onOpenBible?.(v.ref)}
+                  title={`Read ${v.ref} in the Bible`}
                   style={{
-                    display: 'block', width: '100%', textAlign: 'left',
-                    background: `linear-gradient(135deg, ${T.parchment} 0%, ${T.parchmentDark} 100%)`,
-                    border: 'none', borderBottom: `1px solid ${T.line}`,
-                    padding: '14px 16px', cursor: 'pointer',
-                    WebkitTapHighlightColor: 'transparent',
-                    position: 'relative', overflow: 'hidden',
+                    flex: 1, minWidth: 0,
+                    display: 'flex', alignItems: 'baseline', gap: 8,
+                    fontFamily: T.serif,
+                    paddingLeft: 12,
+                    borderLeft: '1px solid rgba(232,181,99,0.22)',
+                    overflow: 'hidden',
+                    background: 'none', border: 'none',
+                    cursor: onOpenBible ? 'pointer' : 'default',
+                    textAlign: 'left', padding: '0 0 0 12px',
                   }}
-                  aria-label="Reveal today's question"
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <div className="halo" style={{
-                      flexShrink: 0, width: 38, height: 38, borderRadius: '50%',
-                      background: `linear-gradient(135deg, ${T.gold}, ${T.goldDark})`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: T.cream, fontSize: 16, fontWeight: 700,
-                      boxShadow: '0 2px 8px rgba(196,129,58,0.25)',
-                    }}>✦</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{
-                        fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase',
-                        color: T.goldDark, fontWeight: 700, marginBottom: 2,
-                      }}>
-                        Today's Question
-                      </div>
-                      <div style={{
-                        fontFamily: T.serif, fontSize: 14, fontStyle: 'italic',
-                        color: T.inkSoft, lineHeight: 1.35,
-                      }}>
-                        Tap to reveal
-                      </div>
-                    </div>
-                    <div style={{
-                      flexShrink: 0, fontSize: 12, color: T.goldDark,
-                      fontWeight: 600, letterSpacing: '0.05em',
-                    }}>
-                      Open ▸
-                    </div>
-                  </div>
+                  <span style={{
+                    fontStyle: 'italic', fontSize: 13.5, color: '#e8dcc2',
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                    minWidth: 0, flex: 1,
+                    textShadow: '0 1px 0 rgba(0,0,0,0.3)',
+                  }}>
+                    &ldquo;{v.text}&rdquo;
+                  </span>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, color: '#e8b563',
+                    letterSpacing: '0.06em', flexShrink: 0,
+                    textShadow: '0 1px 0 rgba(0,0,0,0.4)',
+                  }}>
+                    {v.ref} ↗
+                  </span>
                 </button>
               );
-            }
-            return (
-              <button
-                onClick={() => onOpenChat(q)}
-                style={{
-                  display: 'block', width: '100%', textAlign: 'left',
-                  background: T.white, border: 'none',
-                  borderBottom: `1px solid ${T.line}`,
-                  padding: '12px 16px', cursor: 'pointer',
-                  WebkitTapHighlightColor: 'transparent',
-                  animation: 'questionReveal 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase',
-                      color: T.goldDark, fontWeight: 700, marginBottom: 3,
-                    }}>
-                      Today's Question
-                    </div>
-                    <div style={{
-                      fontFamily: T.serif, fontSize: 14.5, lineHeight: 1.4,
-                      color: T.ink, fontWeight: 500,
-                    }}>
-                      {q}
-                    </div>
-                  </div>
-                  <div className="magnet" style={{
-                    flexShrink: 0, width: 34, height: 34, borderRadius: '50%',
-                    background: T.parchment, border: `1px solid ${T.goldLight}`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: T.goldDark, fontSize: 15, fontWeight: 600,
-                  }}>
-                    →
-                  </div>
-                </div>
-              </button>
-            );
-          })()}
+            })()}
+            {/* Reserved space for the 3 mobile FABs (116px + 12 edge gap) */}
+            <div style={{ width: 128, flexShrink: 0 }} aria-hidden="true" />
+          </header>
 
-          {/* Compose box — posts only */}
-          {session && feedType === 'posts' && (
-            <div style={{ background: T.white, padding: '12px 16px', borderBottom: `1px solid ${T.line}` }}>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} size={38} />
-                <button
-                  onClick={() => setComposeOpen(true)}
-                  style={{
-                    flex: 1, textAlign: 'left',
-                    background: T.parchment, border: `1px solid ${T.line}`,
-                    borderRadius: 999, padding: '10px 16px',
-                    color: T.inkMuted, cursor: 'pointer', fontSize: 14,
-                    fontFamily: T.serif,
-                  }}
-                >
-                  A thought, a doubt, a question…
-                </button>
-              </div>
-            </div>
-          )}
         </>
       )}
 
-      {/* Feed type tabs — each tab owns a semantic color */}
-      <div style={{ display: 'flex', background: T.white, borderBottom: `1px solid ${T.line}` }}>
+      {/* Feed type tabs — underline style matching ChurchPage */}
+      <div style={{
+        display: 'flex',
+        background: T.white,
+        borderBottom: `1px solid ${T.line}`,
+      }}>
         {[
-          { id: 'posts',   label: '📝 Posts',   bg: 'rgba(196,129,58,0.10)', rail: T.gold,             text: T.goldDark      },
-          { id: 'prayers', label: '🙏 Prayers', bg: SEMANTIC.prayer.bg,      rail: SEMANTIC.prayer.rail, text: SEMANTIC.prayer.text },
+          { id: 'posts',      label: '📝 Posts'     },
+          { id: 'prayers',    label: '🙏 Prayers'   },
+          { id: 'milestones', label: '✦ Milestones' },
         ].map(t => {
           const isActive = feedType === t.id;
           return (
             <button key={t.id} onClick={() => setFeedType(t.id)} style={{
-              flex: 1, padding: '13px 4px',
-              background: isActive ? t.bg : 'transparent',
+              flex: 1,
+              padding: '11px 4px',
+              background: 'transparent',
               border: 'none',
-              borderBottom: isActive ? `3px solid ${t.rail}` : '3px solid transparent',
-              fontSize: 14, fontWeight: isActive ? 700 : 500,
-              color: isActive ? t.text : T.inkMuted,
+              borderBottom: isActive ? `2px solid ${TAB_COLOR}` : '2px solid transparent',
+              fontSize: 13.5,
+              fontWeight: isActive ? 700 : 500,
+              color: isActive ? TAB_TEXT : T.inkMuted,
               cursor: 'pointer',
-              transition: 'all 0.2s',
             }}>{t.label}</button>
           );
         })}
       </div>
 
-      {/* Person-type filter chips — each persona owns its color when selected */}
-      {feedType === 'posts' && (
-        <div style={{ display: 'flex', gap: 8, padding: '10px 16px', overflowX: 'auto', borderBottom: `1px solid ${T.line}`, background: T.white }}>
-          {[{ id: 'all', label: 'All' }, ...PERSON_TYPES.map((p) => ({ id: p.id, label: `${p.emoji} ${p.label}` }))].map((f) => {
-            const active = filter === f.id;
-            const tint = f.id === 'all' ? null : tintFor(f.id);
-            const activeBg     = tint ? tint.bgChip : T.ink;
-            const activeBorder = tint ? tint.rail   : T.ink;
-            const activeText   = tint ? tint.text   : T.cream;
-            return (
-              <button key={f.id} onClick={() => setFilter(f.id)} style={{
-                background: active ? activeBg : 'transparent',
-                color: active ? activeText : T.inkSoft,
-                border: `1.5px solid ${active ? activeBorder : T.line}`,
-                borderRadius: 999, padding: '6px 14px', fontSize: 13, cursor: 'pointer',
-                whiteSpace: 'nowrap', fontWeight: active ? 700 : 400,
-                flexShrink: 0,
-                transition: 'all 0.15s',
-              }}>
-                {f.label}
+      {/* Persona filter — collapsed behind a toggle so the tabs breathe.
+          Active filter pill is summarized in the toggle label so the user
+          always sees what's filtered without expanding. */}
+      {feedType === 'posts' && (() => {
+        const activePersona = filter === 'all'
+          ? null
+          : PERSON_TYPES.find((p) => p.id === filter);
+        const toggleLabel = activePersona
+          ? `Filter: ${activePersona.emoji} ${activePersona.label}`
+          : 'Filter';
+        const activeTint = activePersona ? tintFor(activePersona.id) : null;
+        return (
+          <div style={{
+            borderBottom: `1px solid ${T.line}`,
+            background: `linear-gradient(180deg, #FBF6EA, ${T.cream})`,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px' }}>
+              <button
+                onClick={() => setFiltersOpen((v) => !v)}
+                style={{
+                  background: activeTint ? activeTint.bgChip : T.white,
+                  color: activeTint ? activeTint.text : T.inkSoft,
+                  border: `1.5px solid ${activeTint ? activeTint.rail : T.line}`,
+                  borderRadius: 999, padding: '6px 14px', fontSize: 13,
+                  cursor: 'pointer', fontWeight: activePersona ? 700 : 500,
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  boxShadow: activeTint
+                    ? `0 2px 8px ${activeTint.rail}30`
+                    : '0 1px 2px rgba(44,24,16,0.05)',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {toggleLabel}
+                <span style={{ fontSize: 11, opacity: 0.7 }}>{filtersOpen ? '▴' : '▾'}</span>
               </button>
-            );
-          })}
-        </div>
-      )}
+              {activePersona && (
+                <button
+                  onClick={() => setFilter('all')}
+                  style={{
+                    background: 'transparent', border: 'none', color: T.inkMuted,
+                    fontSize: 12, cursor: 'pointer', padding: '4px 6px',
+                  }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            {filtersOpen && (
+              <div style={{
+                display: 'flex', gap: 8, padding: '0 16px 12px', overflowX: 'auto',
+              }}>
+                {[{ id: 'all', label: 'All' }, ...PERSON_TYPES.map((p) => ({ id: p.id, label: `${p.emoji} ${p.label}` }))].map((f) => {
+                  const active = filter === f.id;
+                  const tint = f.id === 'all' ? null : tintFor(f.id);
+                  const activeBg     = tint ? tint.bgChip : T.ink;
+                  const activeBorder = tint ? tint.rail   : T.ink;
+                  const activeText   = tint ? tint.text   : T.cream;
+                  return (
+                    <button key={f.id} onClick={() => { setFilter(f.id); if (f.id === 'all') setFiltersOpen(false); }} style={{
+                      background: active ? activeBg : T.white,
+                      color: active ? activeText : T.inkSoft,
+                      border: `1.5px solid ${active ? activeBorder : T.line}`,
+                      borderRadius: 999, padding: '6px 14px', fontSize: 13, cursor: 'pointer',
+                      whiteSpace: 'nowrap', fontWeight: active ? 700 : 500,
+                      flexShrink: 0,
+                      boxShadow: active
+                        ? (tint ? `0 2px 8px ${tint.rail}30` : '0 2px 8px rgba(44,24,16,0.18)')
+                        : '0 1px 2px rgba(44,24,16,0.05)',
+                      transition: 'all 0.15s',
+                    }}>
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 90px' }}>
-        <div style={{ maxWidth: 680, margin: '0 auto' }}>
+        <div style={{ maxWidth: 600, margin: '0 auto' }}>
 
-          {/* ── Posts feed ── */}
-          {feedType === 'posts' && (
-            <>
-              <FeaturedThread thread={featuredThread} onRespond={(q) => onOpenChat?.(q)} />
-              {loading && <div style={{ textAlign: 'center', color: T.inkMuted, padding: 40, fontFamily: T.serif, fontSize: 16 }}>Loading…</div>}
-              {!loading && posts.length === 0 && (
-                <div style={{ textAlign: 'center', padding: 60 }}>
-                  <div style={{ fontFamily: T.display, fontSize: 24, fontWeight: 600, color: T.ink, marginBottom: 10, letterSpacing: '-0.018em', lineHeight: 1.15 }}>Nothing here yet.</div>
-                  <div style={{ fontSize: 15, color: T.inkMuted, lineHeight: 1.6 }}>Be the first to start the conversation.</div>
+          {/* Compose pill — first item in the feed column. Tapping it expands
+              the full composer in place; no modal overlay so the rest of the
+              feed stays visible below. */}
+          {session && feedType === 'posts' && (
+            <div style={{ marginBottom: 16 }}>
+              {!composeOpen ? (
+                <button
+                  onClick={() => setComposeOpen(true)}
+                  style={{
+                    width: '100%', display: 'flex', gap: 12, alignItems: 'center',
+                    background: 'transparent', border: 'none',
+                    cursor: 'pointer', padding: 0, textAlign: 'left',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  <div style={{
+                    borderRadius: '50%',
+                    boxShadow: '0 2px 8px rgba(44,24,16,0.14), 0 0 0 2px rgba(255,255,255,0.95), 0 0 0 3px rgba(184,115,58,0.18)',
+                    flexShrink: 0,
+                  }}>
+                    <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url} size={40} />
+                  </div>
+                  <div style={{
+                    flex: 1, minWidth: 0,
+                    background: 'linear-gradient(180deg, #FFFEFA 0%, #FBF4E3 100%)',
+                    border: '1px solid #C9B98E',
+                    borderRadius: 999, padding: '11px 16px',
+                    fontSize: 14.5, fontFamily: T.serif, fontStyle: 'italic',
+                    color: '#6b5d48',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    boxShadow: 'inset 0 2px 4px rgba(154,99,40,0.10), inset 0 -1px 0 rgba(255,255,255,0.6)',
+                    transition: 'border-color 0.15s, box-shadow 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = TAB_COLOR;
+                    e.currentTarget.style.boxShadow = `inset 0 2px 4px rgba(0,0,0,0.05), 0 2px 10px ${TAB_COLOR}33`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#C9B98E';
+                    e.currentTarget.style.boxShadow = 'inset 0 2px 4px rgba(154,99,40,0.10), inset 0 -1px 0 rgba(255,255,255,0.6)';
+                  }}
+                  >
+                    <span>{getComposePrompt()}</span>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      width: 26, height: 26, marginLeft: 12,
+                      borderRadius: '50%',
+                      background: TAB_COLOR,
+                      color: T.cream, fontSize: 13, fontWeight: 700,
+                      boxShadow: `0 2px 6px ${TAB_COLOR}55`,
+                    }}>✎</span>
+                  </div>
+                </button>
+              ) : (
+                <div style={{
+                  display: 'flex', gap: 12, alignItems: 'flex-start',
+                  background: 'linear-gradient(180deg, #FFFEFA 0%, #FBF4E3 100%)',
+                  border: '1px solid rgba(154,99,40,0.18)',
+                  borderRadius: 14, padding: '14px',
+                  boxShadow: 'inset 0 2px 4px rgba(44,24,16,0.05), inset 0 -1px 0 rgba(255,255,255,0.6)',
+                }}>
+                  <div style={{
+                    borderRadius: '50%',
+                    boxShadow: '0 2px 8px rgba(44,24,16,0.14), 0 0 0 2px rgba(255,255,255,0.95), 0 0 0 3px rgba(184,115,58,0.18)',
+                    flexShrink: 0, marginTop: 2,
+                  }}>
+                    <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url} size={40} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Suspense fallback={<div style={{ padding: 24, textAlign: 'center', color: T.inkMuted, fontFamily: T.serif }}>Loading…</div>}>
+                      <PostComposer
+                        inModal
+                        bare
+                        session={session}
+                        profile={profile}
+                        scope="me"
+                        onPosted={() => { setComposeOpen(false); loadPosts(); }}
+                        onCancel={() => setComposeOpen(false)}
+                      />
+                    </Suspense>
+                  </div>
                 </div>
               )}
-              <div className="stagger-in">
-                {posts.map((p, i) => (
-                  <PostCard
-                    key={p.id}
-                    post={p}
-                    index={Math.min(i, 6)}
-                    session={session}
-                    currentUserId={session?.user?.id}
-                    userProfile={profile}
-                    userGroup={userGroup}
-                    onReact={handleReact}
-                    onReplySubmit={handleReply}
-                    onRepost={handleRepost}
-                    isFollowing={following.has(p.author_id)}
-                    onFollow={handleFollow}
-                    onViewProfile={onViewProfile}
-                  />
-                ))}
-              </div>
-            </>
+            </div>
           )}
+
+          {/* ── Question of the Day banner ── */}
+          {qotd?.question_of_day && feedType === 'posts' && (
+            <div style={{
+              margin: '0 0 16px',
+              padding: '16px 20px',
+              background: 'rgba(184,115,58,0.08)',
+              border: '1px solid rgba(184,115,58,0.25)',
+              borderRadius: 16,
+            }}>
+              <div style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: T.gold, opacity: 0.8, marginBottom: 8, fontWeight: 600 }}>
+                Pastor’s question
+              </div>
+              <div style={{ fontFamily: T.serif, fontSize: 17, color: T.ink, lineHeight: 1.65, fontStyle: 'italic' }}>
+                “{qotd.question_of_day}”
+              </div>
+            </div>
+          )}
+
+          {/* ── Posts feed (excludes milestones + sermons — those have own tabs) ── */}
+          {feedType === 'posts' && (() => {
+            const filtered = posts
+              .filter((p) => p.kind !== 'journey_milestone')
+              .filter((p) => !blockedIds.includes(p.author_id));
+            return (
+              <>
+                {loading && <div style={{ textAlign: 'center', color: T.inkMuted, padding: 40, fontFamily: T.serif, fontSize: 16 }}>Loading…</div>}
+                {!loading && filtered.length === 0 && (
+                  <EmptyState
+                    icon={
+                      <svg width={30} height={30} viewBox="0 0 36 36" fill="none" aria-hidden>
+                        {/* Two connected circles — community */}
+                        <circle cx="13" cy="17" r="7" fill="none" stroke={T.gold} strokeWidth="1.8"/>
+                        <circle cx="23" cy="17" r="7" fill="none" stroke={T.gold} strokeWidth="1.8"/>
+                        <path d="M18 11 Q21 9 24 11" stroke={T.gold} strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.5"/>
+                      </svg>
+                    }
+                    title="Nothing here yet."
+                    body="Be the first to start the conversation."
+                  />
+                )}
+                <div className="stagger-in">
+                  {(() => {
+                    const isFreeUser = !profile?.plan || profile.plan === 'free';
+                    const showAds = isFreeUser && sponsors.length > 0;
+                    return filtered.map((p, i) => (
+                      <Fragment key={`post:${p.id}`}>
+                        <PostCard
+                          post={p}
+                          index={Math.min(i, 6)}
+                          session={session}
+                          currentUserId={session?.user?.id}
+                          userProfile={profile}
+                          userGroup={userGroup}
+                          onReact={handleReact}
+                          onReplySubmit={handleReply}
+                          onRepost={handleRepost}
+                          isFollowing={following.has(p.author_id)}
+                          onFollow={handleFollow}
+                          onViewProfile={onViewProfile}
+                          tabColor={TAB_COLOR}
+                          tabText={TAB_TEXT}
+                          isSaved={savedPostIds.has(p.id)}
+                          onSaveToggle={session ? handleSaveToggle : undefined}
+                          isAuthorBlocked={blockedIds.includes(p.author_id)}
+                          onBlockAuthor={session ? handleBlockAuthor : undefined}
+                        />
+                        {showAds && (i + 1) % 10 === 0 && (
+                          <SponsoredCard
+                            key={`sponsored-${i}`}
+                            {...sponsors[Math.floor(i / 10) % sponsors.length]}
+                          />
+                        )}
+                        {i < filtered.length - 1 && <CardSeparator />}
+                      </Fragment>
+                    ));
+                  })()}
+                </div>
+              </>
+            );
+          })()}
+
+          {/* ── Milestones feed ── */}
+          {feedType === 'milestones' && (() => {
+            const milestones = posts.filter((p) => p.kind === 'journey_milestone');
+            return (
+              <>
+                {/* Milestone composer — pre-selects the ✦ Milestone toggle */}
+                {session && (
+                  <div style={{ marginBottom: 16 }}>
+                    <Suspense fallback={null}>
+                      <PostComposer
+                        session={session}
+                        profile={profile}
+                        defaultMilestone={true}
+                        placeholder="Mark a step on your walk…"
+                        onPosted={(post) => {
+                          setPosts((prev) => [post, ...prev]);
+                        }}
+                      />
+                    </Suspense>
+                  </div>
+                )}
+                {loading && <div style={{ textAlign: 'center', color: T.inkMuted, padding: 40, fontFamily: T.serif, fontSize: 16 }}>Loading…</div>}
+                {!loading && milestones.length === 0 && (
+                  <EmptyState icon="✦" title="No milestones yet." body="Share a step on your faith journey — big or small." />
+                )}
+                <div className="stagger-in">
+                  {milestones.map((p, i) => (
+                    <Fragment key={`post:${p.id}`}>
+                      <PostCard
+                        post={p}
+                        index={Math.min(i, 6)}
+                        session={session}
+                        currentUserId={session?.user?.id}
+                        userProfile={profile}
+                        userGroup={userGroup}
+                        onReact={handleReact}
+                        onReplySubmit={handleReply}
+                        onRepost={handleRepost}
+                        isFollowing={following.has(p.author_id)}
+                        onFollow={handleFollow}
+                        onViewProfile={onViewProfile}
+                        tabColor={TAB_COLOR}
+                        tabText={TAB_TEXT}
+                        isSaved={savedPostIds.has(p.id)}
+                        onSaveToggle={session ? handleSaveToggle : undefined}
+                        isAuthorBlocked={blockedIds.includes(p.author_id)}
+                        onBlockAuthor={session ? handleBlockAuthor : undefined}
+                      />
+                      {i < milestones.length - 1 && <CardSeparator />}
+                    </Fragment>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
 
           {/* ── Prayers feed ── */}
           {feedType === 'prayers' && (
             <>
+              {/* Public prayer composer — writes to personal_prayers with
+                  is_public=true so the feed picks it up. Profile journal stays
+                  private; this is the door to the community feed. */}
+              {session && (
+                <div style={{ marginBottom: 16 }}>
+                  {!prayerComposeOpen ? (
+                    <button
+                      onClick={() => setPrayerComposeOpen(true)}
+                      style={{
+                        width: '100%', display: 'flex', gap: 12, alignItems: 'center',
+                        background: 'transparent', border: 'none',
+                        cursor: 'pointer', padding: 0, textAlign: 'left',
+                        WebkitTapHighlightColor: 'transparent',
+                      }}
+                    >
+                      <div style={{
+                        borderRadius: '50%',
+                        boxShadow: '0 2px 8px rgba(44,24,16,0.14), 0 0 0 2px rgba(255,255,255,0.95), 0 0 0 3px rgba(184,115,58,0.18)',
+                        flexShrink: 0,
+                      }}>
+                        <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url} size={40} />
+                      </div>
+                      <div style={{
+                        flex: 1, minWidth: 0,
+                        background: 'linear-gradient(180deg, #F4F8F0 0%, #E5EFD9 100%)',
+                        border: `1px solid ${SEMANTIC.prayer.line}`,
+                        borderRadius: 999, padding: '11px 16px',
+                        fontSize: 14.5, fontFamily: T.serif, fontStyle: 'italic',
+                        color: '#5a6b58',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        boxShadow: 'inset 0 2px 4px rgba(90,128,100,0.10), inset 0 -1px 0 rgba(255,255,255,0.6)',
+                      }}>
+                        <span>Share a prayer request…</span>
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          width: 26, height: 26, marginLeft: 12,
+                          borderRadius: '50%',
+                          background: SEMANTIC.prayer.rail,
+                          color: T.cream, fontSize: 14,
+                          boxShadow: '0 2px 6px rgba(90,128,100,0.30)',
+                        }}>🙏</span>
+                      </div>
+                    </button>
+                  ) : (
+                    <form onSubmit={submitPrayer} style={{
+                      display: 'flex', gap: 12, alignItems: 'flex-start',
+                      background: 'linear-gradient(180deg, #F4F8F0 0%, #E5EFD9 100%)',
+                      border: `1px solid ${SEMANTIC.prayer.line}`,
+                      borderRadius: 14, padding: '14px',
+                      boxShadow: 'inset 0 2px 4px rgba(90,128,100,0.08), inset 0 -1px 0 rgba(255,255,255,0.6)',
+                    }}>
+                      <div style={{
+                        borderRadius: '50%',
+                        boxShadow: '0 2px 8px rgba(44,24,16,0.14), 0 0 0 2px rgba(255,255,255,0.95), 0 0 0 3px rgba(184,115,58,0.18)',
+                        flexShrink: 0, marginTop: 2,
+                      }}>
+                        <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url} size={40} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <textarea
+                          autoFocus
+                          value={prayerText}
+                          onChange={(e) => setPrayerText(e.target.value)}
+                          placeholder="What are you praying for? The community will stand with you."
+                          rows={3}
+                          style={{
+                            width: '100%', boxSizing: 'border-box', resize: 'none',
+                            background: 'transparent', border: 'none', outline: 'none',
+                            fontFamily: T.serif, fontSize: 15, lineHeight: 1.65,
+                            color: T.ink, padding: 0,
+                          }}
+                        />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+                          <span style={{ fontSize: 11, color: T.inkMuted, fontStyle: 'italic' }}>
+                            🌐 Visible to the community
+                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
+                            <button
+                              type="button"
+                              onClick={() => { setPrayerComposeOpen(false); setPrayerText(''); }}
+                              style={{
+                                background: 'none', border: 'none', color: T.inkMuted,
+                                fontSize: 13, cursor: 'pointer', padding: '6px 10px',
+                              }}
+                            >Cancel</button>
+                            <button
+                              type="submit"
+                              disabled={!prayerText.trim() || prayerSubmitting}
+                              style={{
+                                background: prayerText.trim() ? `linear-gradient(135deg, ${SEMANTIC.prayer.rail} 0%, #4a6b50 100%)` : T.line,
+                                color: T.cream, border: 'none', borderRadius: 999,
+                                padding: '8px 22px', fontSize: 13, fontWeight: 600,
+                                cursor: prayerText.trim() ? 'pointer' : 'not-allowed',
+                              }}
+                            >
+                              {prayerSubmitting ? 'Sharing…' : 'Share prayer'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              )}
               {prayersLoading && <div style={{ textAlign: 'center', color: T.inkMuted, padding: 40, fontFamily: T.serif, fontSize: 16 }}>Loading…</div>}
               {!prayersLoading && prayers.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '60px 20px' }}>
@@ -1336,6 +1870,8 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
                   currentUserId={session?.user?.id}
                   onPray={handlePray}
                   onViewProfile={onViewProfile}
+                  tabColor={TAB_COLOR}
+                  tabText={TAB_TEXT}
                 />
               ))}
             </>
@@ -1343,15 +1879,6 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
 
         </div>
       </div>
-
-      {composeOpen && (
-        <ComposeSheet
-          session={session}
-          profile={profile}
-          onPost={(newPost) => { setPosts((prev) => [newPost, ...prev]); setComposeOpen(false); }}
-          onClose={() => setComposeOpen(false)}
-        />
-      )}
     </div>
   );
 }

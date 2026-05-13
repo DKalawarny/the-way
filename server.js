@@ -9,7 +9,6 @@ import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CACHE_PATH = path.join(__dirname, 'cache.json');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -21,28 +20,6 @@ if (!process.env.ANTHROPIC_API_KEY) {
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-let cache = {};
-try {
-  const raw = await fs.readFile(CACHE_PATH, 'utf8');
-  cache = JSON.parse(raw);
-  console.log(`[the way] cache loaded — ${Object.keys(cache).length} entries`);
-} catch {
-  console.log('[the way] cache empty (no cache.json yet — will create on first save)');
-}
-
-let saveTimer = null;
-function persistCacheSoon() {
-  if (saveTimer) return;
-  saveTimer = setTimeout(async () => {
-    saveTimer = null;
-    try {
-      await fs.writeFile(CACHE_PATH, JSON.stringify(cache, null, 2));
-    } catch (e) {
-      console.error('[the way] cache write failed:', e?.message);
-    }
-  }, 500);
-}
-
 function normalize(text) {
   return text
     .toLowerCase()
@@ -50,10 +27,6 @@ function normalize(text) {
     .replace(/[^\w\s?]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-}
-
-function cacheKey(personType, question) {
-  return `${personType}::${normalize(question)}`;
 }
 
 app.use(cors());
@@ -169,8 +142,99 @@ function safeError(res, err, ctx) {
 }
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, cacheEntries: Object.keys(cache).length });
+  res.json({ ok: true });
 });
+
+// ── Q&A cache (Supabase-backed) + event log ─────────────────────────────────
+// qa_cache: deduped (person_type, question_normalized) → answer.
+// qa_events: append-only log of every chat call.
+// Both use the service role key — RLS forbids client access by design.
+
+async function lookupCachedAnswer(personType, question) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !personType) return null;
+  const normalized = normalize(question);
+  if (!normalized) return null;
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/qa_cache?person_type=eq.${encodeURIComponent(personType)}&question_normalized=eq.${encodeURIComponent(normalized)}&select=id,answer&limit=1`,
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } },
+    );
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return rows[0] ?? null;
+  } catch (e) {
+    console.error('[the way] qa_cache lookup failed:', e?.message);
+    return null;
+  }
+}
+
+async function bumpCacheHit(id) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !id) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/rpc/qa_cache_bump_hit`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ p_id: id }),
+    });
+  } catch (e) {
+    console.error('[the way] qa_cache bump failed:', e?.message);
+  }
+}
+
+async function writeCacheEntry({ personType, question, answer, model }) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !personType) return;
+  const normalized = normalize(question);
+  if (!normalized || !answer) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/qa_cache?on_conflict=person_type,question_normalized`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=ignore-duplicates,return=minimal',
+      },
+      body: JSON.stringify({
+        person_type: personType,
+        question_normalized: normalized,
+        question_raw: question.slice(0, 4000),
+        answer: answer.slice(0, 16000),
+        model_used: model ?? null,
+      }),
+    });
+  } catch (e) {
+    console.error('[the way] qa_cache write failed:', e?.message);
+  }
+}
+
+async function logQaEvent({ personType, question, userId, wasCacheHit, isFirstTurn, model }) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/qa_events`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({
+        person_type: personType ?? null,
+        question: String(question ?? '').slice(0, 4000),
+        user_id: userId ?? null,
+        was_cache_hit: !!wasCacheHit,
+        is_first_turn: !!isFirstTurn,
+        model_used: model ?? null,
+      }),
+    });
+  } catch (e) {
+    console.error('[the way] qa_events insert failed:', e?.message);
+  }
+}
 
 // Voice instructions — personality for each voice character
 const VOICE_INSTRUCTIONS = {
@@ -250,7 +314,7 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
 });
 
 // ── Bible proxy (keeps API key server-side, avoids CORS) ──────────────────────
-app.get('/api/bible/:bibleId/chapters/:chapterId', requireAuth, limitAuthed({ capacity: 60, refillPerSec: 60 / 60 }), async (req, res) => {
+app.get('/api/bible/:bibleId/chapters/:chapterId', optionalAuth, limitEither({ capacity: 60, refillPerSec: 1 }, { capacity: 20, refillPerSec: 20 / 60 }), async (req, res) => {
   const { bibleId, chapterId } = req.params;
   const BIBLE_API_KEY = process.env.VITE_BIBLE_API_KEY;
   if (!BIBLE_API_KEY) return res.status(500).json({ error: 'Missing VITE_BIBLE_API_KEY on server' });
@@ -281,7 +345,7 @@ app.get('/api/bible/:bibleId/chapters/:chapterId', requireAuth, limitAuthed({ ca
 });
 
 // ── Bible verse proxy (for version comparison) ───────────────────────────────
-app.get('/api/bible/:bibleId/verses/:verseId', requireAuth, limitAuthed({ capacity: 60, refillPerSec: 60 / 60 }), async (req, res) => {
+app.get('/api/bible/:bibleId/verses/:verseId', optionalAuth, limitEither({ capacity: 60, refillPerSec: 1 }, { capacity: 20, refillPerSec: 20 / 60 }), async (req, res) => {
   const { bibleId, verseId } = req.params;
   const BIBLE_API_KEY = process.env.VITE_BIBLE_API_KEY;
   if (!BIBLE_API_KEY) return res.status(500).json({ error: 'Missing VITE_BIBLE_API_KEY on server' });
@@ -346,28 +410,42 @@ app.post('/api/chat', optionalAuth, limitEither(
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 
-  // Cache only the first turn of a conversation, where there's a single user message.
+  // Cache lookup is keyed on the latest user message + person type. We only
+  // serve cached answers on first-turn (context-free) requests to avoid
+  // returning stale follow-ups, but every ask is logged to qa_events so the
+  // dataset grows with real usage.
+  const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
   const isFirstTurn = messages.length === 1 && messages[0].role === 'user';
-  const firstQuestion = isFirstTurn ? messages[0].content : null;
-  const key = isFirstTurn && personType ? cacheKey(personType, firstQuestion) : null;
 
-  if (key && cache[key]) {
-    const cached = cache[key];
-    send('cache_hit', { key });
-    // Stream the cached answer in small chunks so the UI feels natural.
-    for (let i = 0; i < cached.length; i += 24) {
-      send('text', { delta: cached.slice(i, i + 24) });
-      await new Promise((r) => setTimeout(r, 12));
+  if (isFirstTurn && personType) {
+    const cached = await lookupCachedAnswer(personType, lastUserMsg);
+    if (cached?.answer) {
+      send('cache_hit', { id: cached.id });
+      for (let i = 0; i < cached.answer.length; i += 24) {
+        send('text', { delta: cached.answer.slice(i, i + 24) });
+        await new Promise((r) => setTimeout(r, 12));
+      }
+      send('done', { stop_reason: 'end_turn', cached: true });
+      res.end();
+      // Fire-and-forget: bump hit count + log event.
+      bumpCacheHit(cached.id);
+      logQaEvent({
+        personType,
+        question: lastUserMsg,
+        userId: req.userId,
+        wasCacheHit: true,
+        isFirstTurn: true,
+        model: 'cache',
+      });
+      return;
     }
-    send('done', { stop_reason: 'end_turn', cached: true });
-    return res.end();
   }
 
   try {
     // Route to smarter model for complex person types or deep conversations
     const isDeep = ['deeper', 'skeptic'].includes(personType);
     const isLongConversation = messages.length > 10;
-    const model = (isDeep || isLongConversation) ? 'claude-sonnet-4-6' : 'claude-haiku-4-5';
+    const model = (isDeep || isLongConversation) ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001';
 
     const trimmed = messages.slice(-8);
     const effectiveSystem = seekingContext
@@ -385,7 +463,7 @@ app.post('/api/chat', optionalAuth, limitEither(
     stream.on('text', (delta) => send('text', { delta }));
     stream.on('error', (err) => {
       console.error('[the way] stream error:', err);
-      send('error', { message: 'stream error' });
+      send('error', { message: err?.message || err?.error?.message || 'stream error' });
     });
 
     const final = await stream.finalMessage();
@@ -394,13 +472,21 @@ app.post('/api/chat', optionalAuth, limitEither(
       .map((b) => b.text)
       .join('');
 
-    if (key && fullText.length > 0) {
-      cache[key] = fullText;
-      persistCacheSoon();
-    }
-
     send('done', { stop_reason: final.stop_reason, usage: final.usage });
     res.end();
+
+    // Persist cache + event after the response is on its way to the client.
+    if (isFirstTurn && personType && fullText.length > 0) {
+      writeCacheEntry({ personType, question: lastUserMsg, answer: fullText, model });
+    }
+    logQaEvent({
+      personType,
+      question: lastUserMsg,
+      userId: req.userId,
+      wasCacheHit: false,
+      isFirstTurn,
+      model,
+    });
   } catch (err) {
     console.error('[the way] api error:', err);
     if (!res.headersSent) {
@@ -413,39 +499,133 @@ app.post('/api/chat', optionalAuth, limitEither(
 });
 
 // ── Sermon → Week Engine: pastor pastes outline, AI drafts the week ─────────
-const SERMON_SYSTEM = `You help a pastor turn one Sunday sermon into a week of daily content for their congregation. Stay grounded in the pastor's outline; don't invent doctrine they didn't preach. Tone: warm, plainspoken, never preachy. Works for both lifelong Christians and people just curious about faith.
+const SERMON_SYSTEM = `You are a ministry content writer helping a pastor extend Sunday's sermon into a week of daily engagement for their congregation.
+
+GROUND RULES
+- Stay tightly grounded in the pastor's outline and the passage they preached. Do not introduce theology, doctrine, or examples they didn't cover.
+- Tone: warm, plain, honest — like a trusted friend who knows the Bible. Never preachy, never motivational-poster, never church-brochure.
+- Banned phrases (never use these): "Let's explore", "As we journey", "Take a moment to", "In your own walk", "How does [X] make you feel?", "What does [X] mean to you personally?", "Let us remember", "May we", "How can we apply this to our daily lives?", "Reflect on a time when".
+
+DAILY QUESTIONS — daily_verse × 7
+Each day publishes one short post to the congregation feed to spark real conversation. These are not devotionals — they are discussion starters. The pastor may keep all 7, trim down to 1–2 per week, or reschedule them — so each item has to stand on its own.
+
+How to plan the 7 — read the outline as a structure, not as raw text:
+  1. Identify the distinct topics, scenes, or theological moves the sermon actually makes. There are usually 3–8 of these (e.g. for a sermon on the prodigal: "the younger son's demand," "the father waiting / running," "the older brother's resentment," "what repentance actually looks like").
+  2. Walk the days in the SAME ORDER the sermon walked them. Day 1 should anchor on the sermon's opening territory; the last day should land on its closing or hardest move.
+  3. Map one question per topic. If the sermon has fewer than 7 topics, write extra questions on the topics that carry the most tension — but each extra question must press on a different angle of that topic (not a paraphrase of the previous one). If the sermon has more than 7 topics, choose the 7 that carry the most weight in the pastor's outline and drop the rest.
+  4. The "scripture" field on each item names that day's topic in 4–7 words (e.g. "Grace before the apology is finished") — this becomes the bold heading above the post and is also how we audit topic coverage.
+
+Quality bar for the closing question (apply these tests before writing it):
+  ✗ BAD — has an obvious answer: "How has God shown you grace this week?" → everyone says yes, discussion ends.
+  ✗ BAD — is actually two questions: "What does this verse mean and how do you apply it?"
+  ✗ BAD — invites only testimony-sharing: "Share a time when you experienced forgiveness." → personal stories but no wrestling with ideas.
+  ✓ GOOD — presses on a tension in the text: "The father in the parable runs toward the son before he finishes his apology. Does that change what repentance actually is?"
+  ✓ GOOD — surfaces a hard implication: "If God's grace is really unconditional, what stops it from being used as an excuse?"
+  ✓ GOOD — challenges an assumption: "We talk about forgiving others, but the passage says nothing about the other person deserving it. Does forgiveness require any response from the one forgiven?"
+
+Each daily must:
+  - Be 2–3 sentences of tight context or reflection that set up the question (concrete and specific — point at a real situation, person, or tension from the text, not a general principle), then one closing question on a new line.
+  - The closing question must be rooted in a specific moment from the topic for that day, have no single obvious answer, and be answerable by both a first-month believer and a 20-year elder without one dominating.
+  - Be one focused sentence per question — no sub-clauses, no "and also".
+  - Day 1: lowest barrier — easy for anyone to respond to. Final day: the most challenging or theologically unsettling of the week.
+  - Do NOT attach a scripture citation unless a verse genuinely adds a new lens. Do NOT repeat the main passage as the topic. Do NOT reuse the same topic on two different days.
+
+GOING DEEPER — going_deeper (write exactly 1, two paragraphs)
+This is for someone who wants to sit alone with the text.
+  Paragraph 1: One piece of historical, cultural, or linguistic context from the original passage that most people in the congregation don't know — something that reframes how you read it.
+  Paragraph 2: One honest, unsettling question the passage raises that the sermon may not have fully resolved. Don't resolve it here either — let it sit.
+
+FOR KIDS — kid_version (write exactly 1)
+A parent reads this aloud to a 6–10 year old. It must do TWO things in this exact order, separated by a blank line:
+  1) A 3–5 sentence kid-friendly retelling of what the sermon was about. Use a real-world analogy a child can picture (a person, a situation, a choice). No abstract theology, no "God is like a light in the darkness" metaphors. Plain words a kid actually uses.
+  2) A blank line, then "Questions to talk about:" on its own line, then 2–3 numbered questions geared for that age range. Questions should be concrete and openable (e.g. "When was a time you wanted to share but didn't?" not "Why is sharing important?"). One short sentence each. No yes/no questions.
 
 Output ONLY valid JSON. Schema:
 {
   "items": [
-    { "kind": "daily_verse",    "day": 1, "scripture": "Romans 8:28", "body": "Short reflection paragraph (3–5 sentences)." },
+    { "kind": "daily_verse",    "day": 1, "scripture": "Topic label (4–7 words)", "body": "2–3 sentence context + closing question." },
     ... days 1 through 7 ...
-    { "kind": "group_question", "body": "An open question for small groups." },
-    ... 3 group questions ...
-    { "kind": "going_deeper",   "body": "A 1–2 paragraph deeper reflection for individual study." },
-    { "kind": "kid_version",    "body": "A 3–5 sentence version a parent could read with a 6–10 year old." }
+    { "kind": "going_deeper",   "body": "Two-paragraph deeper reflection." },
+    { "kind": "kid_version",    "body": "Kid-friendly summary.\\n\\nQuestions to talk about:\\n1. ...\\n2. ...\\n3. ..." }
   ]
 }
 
-No prose outside the JSON. No markdown fences. Begin output with { and end with }.`;
+No prose outside the JSON. No markdown fences. Begin output with { and end with }. Inside any "body" string, escape line breaks as \\n — never use a raw newline inside a JSON string.`;
 
-app.post('/api/sermon/generate', requireAuth, limitAuthed({ capacity: 4, refillPerSec: 4 / 300 }), async (req, res) => {
-  const { title, scripture_ref, summary } = req.body ?? {};
+const VALID_TARGET_KINDS = ['daily_verse', 'going_deeper', 'kid_version'];
+const TARGET_KIND_INSTRUCTIONS = {
+  daily_verse:    'Generate ONLY the 7 daily_verse items (days 1–7) as daily discussion questions. Each must have a topic label in "scripture" and a 2–3 sentence reflection ending in a question in "body". Do not output going_deeper or kid_version.',
+  going_deeper:   'Generate ONLY the 1 going_deeper item. Do not output daily_verse or kid_version.',
+  kid_version:    'Generate ONLY the 1 kid_version item — a kid-friendly retelling of the sermon followed by 2–3 questions geared for kids, in the format described in the system prompt. Do not output daily_verse or going_deeper.',
+};
+
+app.post('/api/sermon/generate', requireAuth, limitAuthed({ capacity: 12, refillPerSec: 12 / 300 }), async (req, res) => {
+  const { title, scripture_ref, summary, targetKind, singleDay, existingItems } = req.body ?? {};
   if (!summary || typeof summary !== 'string' || !summary.trim()) {
     return res.status(400).json({ error: 'summary required' });
   }
   if (summary.length > 16000) return res.status(413).json({ error: 'summary too long' });
   if (title && (typeof title !== 'string' || title.length > 300)) return res.status(413).json({ error: 'title too long' });
   if (scripture_ref && (typeof scripture_ref !== 'string' || scripture_ref.length > 200)) return res.status(413).json({ error: 'scripture_ref too long' });
+  if (targetKind && !VALID_TARGET_KINDS.includes(targetKind)) {
+    return res.status(400).json({ error: 'invalid targetKind' });
+  }
+
+  // Per-card regenerate: replace exactly one daily question. Only valid when
+  // targetKind === 'daily_verse'. existingItems is the rest of the week so
+  // the model can avoid recycling the same topics.
+  const isSingle = targetKind === 'daily_verse' && (singleDay != null || Array.isArray(existingItems));
+  if (isSingle) {
+    if (singleDay != null && (!Number.isInteger(singleDay) || singleDay < 1 || singleDay > 31)) {
+      return res.status(400).json({ error: 'invalid singleDay' });
+    }
+    if (existingItems && !Array.isArray(existingItems)) {
+      return res.status(400).json({ error: 'invalid existingItems' });
+    }
+    if (existingItems && existingItems.length > 30) {
+      return res.status(413).json({ error: 'existingItems too long' });
+    }
+  }
+
+  // When repopulating a single section the user message gets a focused instruction
+  // so the model only outputs what's needed. The parsed results are also filtered
+  // server-side as a safety net.
+  const baseContent = `Title: ${title || '(untitled)'}\nScripture: ${scripture_ref || '(not specified)'}\n\nOutline / notes:\n${summary}`;
+
+  let userContent;
+  if (isSingle) {
+    const otherTopics = (existingItems ?? [])
+      .filter((it) => it && it.day !== singleDay)
+      .map((it) => {
+        const topic = (it.scripture || '').toString().trim() || '(no topic label)';
+        const dayLbl = it.day != null ? `Day ${it.day}` : 'A day';
+        const snippet = (it.body || '').toString().replace(/\s+/g, ' ').trim().slice(0, 140);
+        return `- ${dayLbl} — ${topic}${snippet ? ` — "${snippet}…"` : ''}`;
+      })
+      .join('\n');
+
+    const single = [
+      `⚠ IMPORTANT: Replace ONLY day ${singleDay ?? '(unspecified)'} of the daily questions with one new daily_verse item.`,
+      otherTopics
+        ? `The other days currently cover these topics — DO NOT recycle them and do NOT land on a closing question that asks the same thing in different words:\n${otherTopics}`
+        : `No other days are filled in yet — pick the topic from the sermon that has the most discussion energy.`,
+      `Pick a fresh topic, scene, or theological move from the sermon that the days above don't already cover. Apply the full DAILY QUESTIONS quality bar from the system prompt.`,
+      `Output exactly one item in this exact shape (no other items, no commentary):`,
+      `{ "items": [ { "kind": "daily_verse", "day": ${singleDay ?? 1}, "scripture": "Topic label (4–7 words)", "body": "2–3 sentence context + closing question." } ] }`,
+    ].join('\n\n');
+    userContent = `${baseContent}\n\n${single}`;
+  } else {
+    userContent = targetKind
+      ? `${baseContent}\n\n⚠ IMPORTANT: ${TARGET_KIND_INSTRUCTIONS[targetKind]}`
+      : baseContent;
+  }
+
   try {
     const resp = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 4000,
+      max_tokens: isSingle ? 700 : (targetKind ? 2000 : 5000),
       system: SERMON_SYSTEM,
-      messages: [{
-        role: 'user',
-        content: `Title: ${title || '(untitled)'}\nScripture: ${scripture_ref || '(not specified)'}\n\nOutline / notes:\n${summary}`,
-      }],
+      messages: [{ role: 'user', content: userContent }],
     });
     const text = resp.content
       .filter((b) => b.type === 'text')
@@ -459,17 +639,83 @@ app.post('/api/sermon/generate', requireAuth, limitAuthed({ capacity: 4, refillP
     try {
       parsed = JSON.parse(cleaned);
     } catch (e) {
-      console.error('[the way] sermon JSON parse failed:', cleaned.slice(0, 300));
-      return res.status(500).json({ error: 'Could not parse generated content. Try again.' });
+      // Most common failure: the model slipped a raw newline / tab inside a
+      // string value instead of \n / \t. Try a one-shot repair before giving
+      // up — walk the text, escape control characters that appear inside
+      // double-quoted runs only.
+      try {
+        let repaired = '';
+        let inString = false;
+        let prevBackslash = false;
+        for (const ch of cleaned) {
+          if (inString) {
+            if (ch === '\\' && !prevBackslash) {
+              repaired += ch;
+              prevBackslash = true;
+              continue;
+            }
+            if (ch === '"' && !prevBackslash) {
+              inString = false;
+              repaired += ch;
+            } else if (ch === '\n') repaired += '\\n';
+            else if (ch === '\r') repaired += '\\r';
+            else if (ch === '\t') repaired += '\\t';
+            else repaired += ch;
+            prevBackslash = false;
+          } else {
+            if (ch === '"') inString = true;
+            repaired += ch;
+            prevBackslash = false;
+          }
+        }
+        parsed = JSON.parse(repaired);
+        console.warn('[the way] sermon JSON repaired (escaped raw control chars).');
+      } catch (e2) {
+        console.error('[the way] sermon JSON parse failed:', cleaned.slice(0, 500));
+        return res.status(500).json({ error: 'Could not parse generated content. Try again.' });
+      }
     }
-    res.json({ content: parsed.items ?? [] });
+    let items = parsed.items ?? [];
+    // Drop any retired kinds the model might still emit from old prompt patterns
+    // (group_question was consolidated into daily_verse).
+    items = items.filter((item) => item && item.kind !== 'group_question');
+    // Server-side safety filter: when a section repopulate was requested,
+    // only return items of the requested kind even if the model slipped up.
+    if (targetKind) {
+      items = items.filter((item) => item.kind === targetKind);
+    }
+    // Per-card regenerate: keep exactly one item, prefer the one matching the
+    // requested day, and force its `day` field if the model wandered.
+    if (isSingle) {
+      let chosen = items.find((it) => it && it.day === singleDay);
+      if (!chosen) chosen = items[0];
+      if (chosen) {
+        if (singleDay != null) chosen.day = singleDay;
+        items = [chosen];
+      } else {
+        items = [];
+      }
+    }
+    res.json({ content: items });
   } catch (err) {
-    safeError(res, err, 'sermon/generate');
+    // Surface enough detail to diagnose without leaking secrets. The Anthropic
+    // SDK throws `APIError` subclasses (BadRequestError, RateLimitError, etc.)
+    // that carry `.status` and `.message` — pass those through to the client
+    // so the composer's error banner is actually useful.
+    console.error('[the way] sermon/generate error:', err);
+    if (!res.headersSent) {
+      const status  = typeof err?.status === 'number' ? err.status : 500;
+      const name    = err?.name || 'Error';
+      const msg     = (err?.message || 'sermon generation failed').toString().slice(0, 400);
+      res.status(status >= 400 && status < 600 ? status : 500).json({
+        error: `${name}: ${msg}`,
+      });
+    }
   }
 });
 
 // ── Anonymous Welcome: public AI chat, no auth, theme-classified ────────────
-const ANON_SYSTEM = `You are The Way — a thoughtful, kind, honest companion for someone exploring big questions about life, meaning, and faith. The person you're talking to is anonymous and may be a believer, a skeptic, or just curious. Don't assume. Don't preach. Don't pressure.
+const ANON_SYSTEM = `You are kinwove — a thoughtful, kind, honest companion for someone exploring big questions about life, meaning, and faith. The person you're talking to is anonymous and may be a believer, a skeptic, or just curious. Don't assume. Don't preach. Don't pressure.
 
 Listen first. Answer plainly. When you cite scripture, give context, not just a verse. When you don't know, say so. Treat doubt as a normal part of faith, not a sin. If they want pastoral support, gently point them at the "Talk to someone" option.
 
@@ -517,12 +763,12 @@ app.post('/api/dev/become-pastor', requireAuth, limitAuthed({ capacity: 5, refil
     Prefer: 'return=representation',
   };
   try {
-    // If they already pastor a church, just flip the profile and return it.
-    const existing = await fetch(
-      `${SUPABASE_URL}/rest/v1/churches?pastor_id=eq.${req.userId}&select=id&limit=1`,
+    // If they already own a church via church_roles, reuse it.
+    const existingRole = await fetch(
+      `${SUPABASE_URL}/rest/v1/church_roles?user_id=eq.${req.userId}&is_owner=eq.true&select=church_id&limit=1`,
       { headers },
     ).then((r) => r.json()).catch(() => []);
-    let churchId = Array.isArray(existing) && existing[0]?.id;
+    let churchId = Array.isArray(existingRole) && existingRole[0]?.church_id;
 
     if (!churchId) {
       const insert = await fetch(`${SUPABASE_URL}/rest/v1/churches`, {
@@ -552,23 +798,192 @@ app.post('/api/dev/become-pastor', requireAuth, limitAuthed({ capacity: 5, refil
       churchId = Array.isArray(created) ? created[0]?.id : created?.id;
     }
 
-    const update = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}`,
-      {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({ is_pastor: true, church_id: churchId }),
-      },
-    );
-    if (!update.ok) {
-      const body = await update.text().catch(() => '');
-      console.error('[the way] dev become-pastor profile update failed', update.status, body);
-      return res.status(500).json({ error: 'profile update failed' });
-    }
+    // Ownership lives in church_roles, not on the personal profile.
+    await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}`, {
+        method: 'PATCH', headers,
+        body: JSON.stringify({ church_id: churchId }),
+      }),
+      fetch(`${SUPABASE_URL}/rest/v1/church_roles`, {
+        method: 'POST', headers,
+        body: JSON.stringify({
+          church_id: churchId, user_id: req.userId,
+          role_key: 'owner', role_title: 'Lead Pastor', is_owner: true,
+          can_post_sermons: true, can_post_announcements: true,
+          can_moderate: true, can_view_prayers: true,
+          can_manage_staff: true, can_edit_church: true,
+        }),
+      }),
+    ]);
     res.json({ church_id: churchId });
   } catch (err) {
     safeError(res, err, 'dev-become-pastor');
   }
+});
+
+// ── Church email verification ────────────────────────────────────────────────
+
+const VERIFY_CODE_TTL_MS = 15 * 60 * 1000;
+function generateCode() { return String(Math.floor(100000 + Math.random() * 900000)); }
+
+async function sendVerificationEmail(to, code, churchName) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error('RESEND_API_KEY not set');
+  const from = process.env.RESEND_FROM || 'kinwove <onboarding@resend.dev>';
+  const r = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from,
+      to: [to],
+      subject: 'Your church verification code — kinwove',
+      html: `<div style="font-family:Georgia,serif;max-width:480px;margin:0 auto;padding:40px 24px">
+        <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#B8733A;margin-bottom:24px">kinwove</div>
+        <h1 style="font-size:26px;font-weight:600;color:#2C1810;margin:0 0 14px;letter-spacing:-0.02em">Verify ${churchName}</h1>
+        <p style="font-size:15px;color:#6B5344;line-height:1.65;margin:0 0 28px">Enter this code to verify your church and go live instantly:</p>
+        <div style="background:#FDF8F0;border:1px solid #E8D5BB;border-radius:12px;padding:28px;text-align:center;margin-bottom:28px">
+          <div style="font-size:44px;font-weight:700;letter-spacing:14px;color:#2C1810;font-family:monospace">${code}</div>
+          <div style="font-size:12px;color:#9C7B5E;margin-top:10px">Valid for 15 minutes</div>
+        </div>
+        <p style="font-size:13px;color:#9C7B5E;line-height:1.6">If you didn't request this, ignore this email — no church will be created without the code.</p>
+      </div>`,
+    }),
+  });
+  if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text().catch(() => '')}`);
+}
+
+// Scrape emails from a church website
+app.post('/api/church/scrape-emails', requireAuth, limitAuthed({ capacity: 5, refillPerSec: 5 / 300 }), async (req, res) => {
+  const { website } = req.body ?? {};
+  if (!website || typeof website !== 'string') return res.status(400).json({ error: 'website required' });
+  let url;
+  try { url = new URL(website.startsWith('http') ? website : `https://${website}`); }
+  catch { return res.status(400).json({ error: 'invalid URL' }); }
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    const r = await fetch(url.toString(), { signal: ctrl.signal, headers: { 'User-Agent': 'TheWayVerification/1.0' } });
+    clearTimeout(t);
+    const html = await r.text();
+    const junk = /example\.com|sentry|jquery|schema|\.png|\.gif|\.jpg|\.svg|\.js$|\.css$/i;
+    const emails = [...new Set((html.match(/[\w.+%-]+@[\w.-]+\.[a-z]{2,}/gi) ?? [])
+      .map(e => e.toLowerCase()).filter(e => !junk.test(e)))].slice(0, 8);
+    res.json({ emails });
+  } catch (err) {
+    if (err.name === 'AbortError') return res.json({ emails: [], timeout: true });
+    res.json({ emails: [] });
+  }
+});
+
+// Send a 6-digit code to the chosen email
+app.post('/api/church/send-code', requireAuth, limitAuthed({ capacity: 3, refillPerSec: 3 / 300 }), async (req, res) => {
+  const { application_id, email } = req.body ?? {};
+  if (!application_id || !email) return res.status(400).json({ error: 'application_id and email required' });
+  if (!/^[\w.+%-]+@[\w.-]+\.[a-z]{2,}$/i.test(email)) return res.status(400).json({ error: 'invalid email' });
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' };
+  const appRes = await fetch(`${SUPABASE_URL}/rest/v1/pastor_applications?id=eq.${application_id}&user_id=eq.${req.userId}&select=id,church_name`, { headers: h });
+  const apps = await appRes.json();
+  if (!Array.isArray(apps) || !apps[0]) return res.status(404).json({ error: 'application not found' });
+  const code = generateCode();
+  await fetch(`${SUPABASE_URL}/rest/v1/pastor_applications?id=eq.${application_id}`, {
+    method: 'PATCH', headers: h,
+    body: JSON.stringify({ verify_email: email, verify_code: code, verify_expires_at: new Date(Date.now() + VERIFY_CODE_TTL_MS).toISOString() }),
+  });
+  try {
+    await sendVerificationEmail(email, code, apps[0].church_name);
+    res.json({ sent: true });
+  } catch (err) {
+    console.error('[the way] send-code error:', err.message);
+    res.status(500).json({ error: 'Could not send email. Check RESEND_API_KEY and RESEND_FROM.' });
+  }
+});
+
+// Verify the code → approve instantly
+app.post('/api/church/verify-code', requireAuth, limitAuthed({ capacity: 10, refillPerSec: 10 / 300 }), async (req, res) => {
+  const { application_id, code } = req.body ?? {};
+  if (!application_id || !code) return res.status(400).json({ error: 'application_id and code required' });
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' };
+  const apps = await fetch(`${SUPABASE_URL}/rest/v1/pastor_applications?id=eq.${application_id}&user_id=eq.${req.userId}&select=*`, { headers: h }).then(r => r.json());
+  const appl = Array.isArray(apps) ? apps[0] : null;
+  if (!appl) return res.status(404).json({ error: 'application not found' });
+  if (!appl.verify_code || appl.verify_code !== String(code).trim()) return res.status(400).json({ error: 'Incorrect code — try again.' });
+  if (!appl.verify_expires_at || new Date(appl.verify_expires_at) < new Date()) return res.status(400).json({ error: 'Code expired — request a new one.' });
+  try {
+    const churchRes = await fetch(`${SUPABASE_URL}/rest/v1/churches`, {
+      method: 'POST', headers: h,
+      body: JSON.stringify({
+        name: appl.church_name, denomination: appl.denomination || null,
+        city: appl.city || null, country: appl.country || null,
+        website: appl.website || null, pastor_id: req.userId,
+        verified: true, verify_method: 'email_code',
+        verification_status: 'verified', verification_tier: 'email_code',
+        verified_at: new Date().toISOString(),
+        verification_notes: `Email code verified — ${appl.verify_email}`,
+        is_public: true,
+      }),
+    });
+    if (!churchRes.ok) throw new Error(`church insert ${churchRes.status}`);
+    const created = await churchRes.json();
+    const churchId = Array.isArray(created) ? created[0]?.id : created?.id;
+    await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/pastor_applications?id=eq.${application_id}`, { method: 'PATCH', headers: h, body: JSON.stringify({ status: 'approved', verify_method: 'email_code', reviewed_at: new Date().toISOString() }) }),
+      fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}`, { method: 'PATCH', headers: h, body: JSON.stringify({ church_id: churchId }) }),
+      fetch(`${SUPABASE_URL}/rest/v1/church_roles`, {
+        method: 'POST', headers: h,
+        body: JSON.stringify({
+          church_id: churchId, user_id: req.userId,
+          role_key: 'owner', role_title: appl.pastor_role || 'Lead Pastor', is_owner: true,
+          can_post_sermons: true, can_post_announcements: true,
+          can_moderate: true, can_view_prayers: true,
+          can_manage_staff: true, can_edit_church: true,
+        }),
+      }),
+    ]);
+    res.json({ approved: true, church_id: churchId, verified: true });
+  } catch (err) { safeError(res, err, 'verify-code'); }
+});
+
+// Submit without verification → self-reported church (not in public directory)
+app.post('/api/church/submit-unverified', requireAuth, limitAuthed({ capacity: 2, refillPerSec: 2 / 600 }), async (req, res) => {
+  const { application_id } = req.body ?? {};
+  if (!application_id) return res.status(400).json({ error: 'application_id required' });
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' };
+  const apps = await fetch(`${SUPABASE_URL}/rest/v1/pastor_applications?id=eq.${application_id}&user_id=eq.${req.userId}&select=*`, { headers: h }).then(r => r.json());
+  const appl = Array.isArray(apps) ? apps[0] : null;
+  if (!appl) return res.status(404).json({ error: 'application not found' });
+  try {
+    const churchRes = await fetch(`${SUPABASE_URL}/rest/v1/churches`, {
+      method: 'POST', headers: h,
+      body: JSON.stringify({
+        name: appl.church_name, denomination: appl.denomination || null,
+        city: appl.city || null, country: appl.country || null,
+        website: appl.website || null, pastor_id: req.userId,
+        verified: false, verify_method: 'unverified',
+        verification_status: 'pending', is_public: false,
+      }),
+    });
+    if (!churchRes.ok) throw new Error(`church insert ${churchRes.status}`);
+    const created = await churchRes.json();
+    const churchId = Array.isArray(created) ? created[0]?.id : created?.id;
+    await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/pastor_applications?id=eq.${application_id}`, { method: 'PATCH', headers: h, body: JSON.stringify({ status: 'approved', verify_method: 'unverified', reviewed_at: new Date().toISOString() }) }),
+      fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}`, { method: 'PATCH', headers: h, body: JSON.stringify({ church_id: churchId }) }),
+      fetch(`${SUPABASE_URL}/rest/v1/church_roles`, {
+        method: 'POST', headers: h,
+        body: JSON.stringify({
+          church_id: churchId, user_id: req.userId,
+          role_key: 'owner', role_title: appl.pastor_role || 'Lead Pastor', is_owner: true,
+          can_post_sermons: true, can_post_announcements: true,
+          can_moderate: true, can_view_prayers: true,
+          can_manage_staff: true, can_edit_church: true,
+        }),
+      }),
+    ]);
+    res.json({ approved: true, church_id: churchId, verified: false });
+  } catch (err) { safeError(res, err, 'submit-unverified'); }
 });
 
 // ── Delete own account ──────────────────────────────────────────────────────
@@ -597,6 +1012,38 @@ app.delete('/api/account', requireAuth, limitAuthed({ capacity: 3, refillPerSec:
   } catch (err) {
     safeError(res, err, 'account-delete');
   }
+});
+
+// ── AI feedback: user flags a response as inaccurate ─────────────────────────
+app.post('/api/ai-feedback', optionalAuth, limitEither(
+  { capacity: 20, refillPerSec: 20 / 60 },
+  { capacity: 5,  refillPerSec: 5 / 60 },
+), async (req, res) => {
+  const { message_text } = req.body ?? {};
+  if (typeof message_text !== 'string') {
+    return res.status(400).json({ error: 'message_text required' });
+  }
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    return res.status(200).json({ ok: true }); // silently ignore if not configured
+  }
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/ai_feedback`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({
+        user_id: req.userId ?? null,
+        message_text: message_text.slice(0, 4000),
+      }),
+    });
+  } catch (e) {
+    console.error('[the way] ai-feedback insert error:', e?.message);
+  }
+  res.status(200).json({ ok: true });
 });
 
 app.post('/api/anon/ask', limitAnon({ capacity: 6, refillPerSec: 6 / 300 }), async (req, res) => {
@@ -703,6 +1150,192 @@ app.post('/api/anon/ask', limitAnon({ capacity: 6, refillPerSec: 6 / 300 }), asy
   }
 });
 
+// ── Welcome DM (Tom-from-MySpace style system account) ───────────────────────
+// On new user signup, the client calls POST /api/welcome-dm.
+// We auto-create (once) a "kinwove" system account via the Supabase Admin Auth
+// API, then create a DM conversation + insert the welcome message using the
+// service role key (bypasses RLS so no additional policies needed).
+
+const SYSTEM_EMAIL = 'system-theway@theway.internal';
+let _systemAccountId = process.env.SYSTEM_ACCOUNT_ID ?? null;
+
+async function upsertSystemProfile(id) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify({
+        id,
+        display_name: 'kinwove',
+        // DiceBear illustrated avatar — gold-toned, seed "Faith"
+        avatar_config: { style: 'lorelei', seed: 'Faith', bgColor: 'fef3c7' },
+        person_type: 'believer',
+      }),
+    });
+  } catch (e) {
+    console.error('[the way] system profile upsert error:', e?.message);
+  }
+}
+
+async function getOrCreateSystemAccount() {
+  if (_systemAccountId) return _systemAccountId;
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null;
+
+  // 1. Try env var shortcut (admin can pre-set this)
+  // Already returned above.
+
+  // 2. Look for existing system account by email
+  try {
+    const listR = await fetch(
+      `${SUPABASE_URL}/auth/v1/admin/users?email=${encodeURIComponent(SYSTEM_EMAIL)}&page=1&per_page=1`,
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } },
+    );
+    if (listR.ok) {
+      const payload = await listR.json();
+      const found = Array.isArray(payload?.users) ? payload.users[0] : null;
+      if (found?.id) {
+        _systemAccountId = found.id;
+        await upsertSystemProfile(_systemAccountId);
+        console.log(`[the way] system account found: ${_systemAccountId}`);
+        return _systemAccountId;
+      }
+    }
+  } catch (e) {
+    console.error('[the way] system account lookup error:', e?.message);
+  }
+
+  // 3. Create new auth user for the system account
+  try {
+    const createR = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: SYSTEM_EMAIL,
+        email_confirm: true,
+        user_metadata: { display_name: 'The Way', is_system: true },
+      }),
+    });
+    const data = await createR.json();
+    if (data?.id) {
+      _systemAccountId = data.id;
+      await upsertSystemProfile(_systemAccountId);
+      console.log(`[the way] system account created: ${_systemAccountId}`);
+      return _systemAccountId;
+    }
+    console.error('[the way] system account create failed:', JSON.stringify(data));
+  } catch (e) {
+    console.error('[the way] system account create error:', e?.message);
+  }
+
+  return null;
+}
+
+const WELCOME_MESSAGE = `Hey — welcome to kinwove. 👋
+
+Whatever brought you here — curiosity, doubt, questions you haven't been able to say out loud — you're in the right place.
+
+A few things worth knowing:
+
+✦ **Ask anything.** The AI companion here doesn't dodge hard questions. Faith, suffering, the Bible, whether any of this is even true — it's all fair game.
+
+✦ **You're not alone.** The community feed is full of people at every stage — some lifelong believers, some brand new, some still skeptical. All welcome.
+
+✦ **No pressure.** There's no right pace, no checklist, no performance. Just honest conversation.
+
+If you're not sure where to start, just tap **Ask** (the ✦ in the bottom bar) and type whatever's on your mind. Or explore the Bible reader, the prayer board, or the community — wherever feels right.
+
+Glad you're here.`;
+
+app.post('/api/welcome-dm', requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    return res.status(503).json({ error: 'not configured' });
+  }
+
+  try {
+    const systemId = await getOrCreateSystemAccount();
+    if (!systemId) return res.status(500).json({ error: 'system account unavailable' });
+
+    // Don't send duplicate welcomes — check if a DM conv already exists
+    // PostgREST array containment: cs={"id1","id2"} matches arrays that contain both ids
+    const sorted = [systemId, userId].sort();
+    const arrParam = `{"${sorted.join('","')}"}`;
+    const checkR = await fetch(
+      `${SUPABASE_URL}/rest/v1/dm_conversations?participant_ids=cs.${encodeURIComponent(arrParam)}&select=id&limit=1`,
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } },
+    );
+    if (checkR.ok) {
+      const rows = await checkR.json();
+      if (rows?.length > 0) {
+        // Already sent — idempotent
+        return res.json({ ok: true, conversationId: rows[0].id, alreadySent: true });
+      }
+    }
+
+    // Create the DM conversation
+    const convR = await fetch(`${SUPABASE_URL}/rest/v1/dm_conversations`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation',
+      },
+      body: JSON.stringify({ participant_ids: sorted }),
+    });
+    if (!convR.ok) {
+      const err = await convR.text();
+      console.error('[the way] welcome DM conv create failed:', err);
+      return res.status(500).json({ error: 'could not create conversation' });
+    }
+    const [conv] = await convR.json();
+    const conversationId = conv?.id;
+    if (!conversationId) return res.status(500).json({ error: 'no conversation id' });
+
+    // Insert the welcome message from the system account
+    await fetch(`${SUPABASE_URL}/rest/v1/dm_messages`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({
+        conversation_id: conversationId,
+        sender_id: systemId,
+        body: WELCOME_MESSAGE,
+      }),
+    });
+
+    // Update last_message_at on the conversation so it surfaces first in inbox
+    await fetch(`${SUPABASE_URL}/rest/v1/dm_conversations?id=eq.${conversationId}`, {
+      method: 'PATCH',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({ last_message_at: new Date().toISOString() }),
+    });
+
+    res.json({ ok: true, conversationId });
+  } catch (err) {
+    safeError(res, err, 'welcome-dm');
+  }
+});
+
 // ── SEO: pre-rendered share pages + sitemap ──────────────────────────────────
 
 function escapeHtml(s) {
@@ -770,7 +1403,7 @@ if (process.env.NODE_ENV !== 'development') {
       <article>
         <h1>${escapeHtml(rawTitle)}</h1>
         ${messages.map((m) => `<section><h2>${m.role === 'user' ? 'Question' : 'Answer'}</h2><p>${escapeHtml(m.content)}</p></section>`).join('')}
-        <p><a href="/">Ask your own question on The Way</a></p>
+        <p><a href="/">Ask your own question on kinwove</a></p>
       </article>
     </div>`;
 
@@ -779,7 +1412,7 @@ if (process.env.NODE_ENV !== 'development') {
       const uEsc = escapeHtml(url);
 
       const html = template
-        .replace(/<title>[^<]*<\/title>/, `<title>${tEsc} — The Way</title>`)
+        .replace(/<title>[^<]*<\/title>/, `<title>${tEsc} — kinwove</title>`)
         .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${dEsc}" />`)
         .replace(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${tEsc}" />`)
         .replace(/<meta property="og:description"[^>]*>/, `<meta property="og:description" content="${dEsc}" />`)

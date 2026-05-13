@@ -69,12 +69,12 @@ export default function SeekingIntake({ personType, onComplete, onBack }) {
               onClick={() => pick(option)}
               style={{
                 textAlign: 'left', background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(196,129,58,0.2)', borderRadius: 14,
+                border: '1px solid rgba(184,115,58,0.2)', borderRadius: 14,
                 padding: '16px 20px', cursor: 'pointer', transition: 'all 0.15s ease',
                 color: T.cream, fontFamily: T.serif, fontSize: 15, lineHeight: 1.5,
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(196,129,58,0.1)'; e.currentTarget.style.borderColor = T.gold; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(196,129,58,0.2)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.1)'; e.currentTarget.style.borderColor = T.gold; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(184,115,58,0.2)'; }}
             >
               {option}
             </button>

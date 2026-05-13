@@ -2,15 +2,19 @@ export const T = {
   cream: '#FDF8F0',
   parchment: '#F5ECD9',
   parchmentDark: '#E8DCC0',
-  gold: '#C4813A',
-  goldLight: '#D89B52',
-  goldDark: '#9A6328',
+  gold: '#B8733A',
+  goldLight: '#CC8D52',
+  goldDark: '#8E5528',
   ink: '#2C1810',
   inkSoft: '#4A3828',
   inkMuted: '#7A6B58',
   line: '#D9C9A8',
   white: '#FFFFFF',
   error: '#A53F2B',
+  success: '#2E7A48',        // green — published / done / new-faith states
+  successBg: 'rgba(74,139,90,0.14)',
+  resolvedText: '#2F5547',   // dark teal — approved / resolved / verified labels
+  resolvedBg: 'rgba(63,107,94,0.10)',
   serif: "'Lora', Georgia, serif",
   sans: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
   display: "'Fraunces', Georgia, serif",
@@ -29,7 +33,7 @@ export const SHADOW = {
   warm:    '0 2px 8px rgba(44,24,16,0.06), 0 1px 2px rgba(44,24,16,0.04)',
   lift:    '0 8px 24px rgba(44,24,16,0.10), 0 2px 6px rgba(44,24,16,0.06)',
   candle:  '0 12px 40px rgba(44,24,16,0.14), 0 4px 12px rgba(44,24,16,0.08)',
-  glow:    '0 0 0 1px rgba(196,129,58,0.20), 0 6px 20px rgba(196,129,58,0.18)',
+  glow:    '0 0 0 1px rgba(184,115,58,0.20), 0 6px 20px rgba(184,115,58,0.18)',
 };
 export const MOTION = {
   quick: '0.18s cubic-bezier(0.2, 0.8, 0.2, 1)',
@@ -90,13 +94,13 @@ export const SEMANTIC = {
 // Each persona contributes a soft warm/cool wash so a feed of 10 posts isn't
 // 10 identical rectangles. Backgrounds stay near-white; the accent is the rail.
 export const TYPE_TINTS = {
-  curious:      { bg: 'rgba(196,129,58,0.14)',  bgChip: 'rgba(196,129,58,0.22)', rail: '#C4813A', text: '#9A6328' },
+  curious:      { bg: 'rgba(184,115,58,0.14)',  bgChip: 'rgba(184,115,58,0.22)', rail: '#B8733A', text: '#8E5528' },
   seeking:      { bg: 'rgba(74,123,157,0.16)',  bgChip: 'rgba(74,123,157,0.24)', rail: '#4A7B9D', text: '#2E6A8E' },
   skeptic:      { bg: 'rgba(110,110,120,0.14)', bgChip: 'rgba(110,110,120,0.22)', rail: '#7A6B58', text: '#555' },
   'new-faith':  { bg: 'rgba(74,139,90,0.16)',   bgChip: 'rgba(74,139,90,0.24)', rail: '#4A8B5A', text: '#2E7A48' },
   'heard-things': { bg: 'rgba(120,90,150,0.16)', bgChip: 'rgba(120,90,150,0.24)', rail: '#8E6FB8', text: '#6B3FA0' },
   deeper:       { bg: 'rgba(150,90,40,0.16)',   bgChip: 'rgba(150,90,40,0.24)', rail: '#A66A2A', text: '#7A4F1F' },
-  group:        { bg: 'rgba(196,129,58,0.14)',  bgChip: 'rgba(196,129,58,0.22)', rail: '#C4813A', text: '#9A6328' },
+  group:        { bg: 'rgba(184,115,58,0.14)',  bgChip: 'rgba(184,115,58,0.22)', rail: '#B8733A', text: '#8E5528' },
   'inter-faith':{ bg: 'rgba(45,120,120,0.16)',  bgChip: 'rgba(45,120,120,0.24)', rail: '#3D8C8C', text: '#2A6868' },
   guided:       { bg: 'rgba(180,120,60,0.16)',  bgChip: 'rgba(180,120,60,0.24)', rail: '#B57A3C', text: '#8C5A26' },
 };
@@ -128,8 +132,8 @@ export const globalCss = `
     40% { transform: translateY(-6px); opacity: 1; }
   }
   @keyframes glow {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(196, 129, 58, 0.0); }
-    50% { box-shadow: 0 0 24px 0 rgba(196, 129, 58, 0.25); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(184,115,58, 0.0); }
+    50% { box-shadow: 0 0 24px 0 rgba(184,115,58, 0.25); }
   }
   @keyframes fadeIn {
     from { opacity: 0; }
@@ -153,8 +157,8 @@ export const globalCss = `
   /* Subtle warmth across the page — replaces flat cream with depth */
   .scene {
     background:
-      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(196,129,58,0.10), transparent 70%),
-      radial-gradient(ellipse 60% 40% at 50% 110%, rgba(196,129,58,0.06), transparent 70%),
+      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(184,115,58,0.10), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 50% 110%, rgba(184,115,58,0.06), transparent 70%),
       ${T.cream};
   }
 
@@ -168,7 +172,7 @@ export const globalCss = `
     position: absolute;
     inset: -40%;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(196,129,58,0.22) 0%, rgba(196,129,58,0.06) 40%, transparent 70%);
+    background: radial-gradient(circle, rgba(184,115,58,0.22) 0%, rgba(184,115,58,0.06) 40%, transparent 70%);
     z-index: -1;
     animation: haloPulse 4.5s ease-in-out infinite;
     pointer-events: none;
@@ -195,7 +199,7 @@ export const globalCss = `
   /* The single magnet — primary CTA on a screen */
   .magnet {
     position: relative;
-    box-shadow: 0 6px 20px rgba(196,129,58,0.20), 0 1px 4px rgba(44,24,16,0.08);
+    box-shadow: 0 6px 20px rgba(184,115,58,0.20), 0 1px 4px rgba(44,24,16,0.08);
   }
   .magnet::after {
     content: '';
@@ -203,12 +207,12 @@ export const globalCss = `
     inset: -1px;
     border-radius: inherit;
     pointer-events: none;
-    box-shadow: 0 0 0 0 rgba(196,129,58,0);
+    box-shadow: 0 0 0 0 rgba(184,115,58,0);
     animation: magnetPulse 2.6s ease-in-out infinite;
   }
   @keyframes magnetPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(196,129,58,0.0); }
-    50%      { box-shadow: 0 0 0 6px rgba(196,129,58,0.14); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(184,115,58,0.0); }
+    50%      { box-shadow: 0 0 0 6px rgba(184,115,58,0.14); }
   }
 
   .ref-inline {
@@ -216,7 +220,7 @@ export const globalCss = `
     padding: 1px 6px;
     margin: 0 1px;
     border-radius: 4px;
-    background: rgba(196, 129, 58, 0.12);
+    background: rgba(184,115,58, 0.12);
     color: ${T.goldDark};
     font-weight: 500;
     font-size: 0.92em;
@@ -250,7 +254,7 @@ export const globalCss = `
 
   .texture-bg {
     background-image:
-      radial-gradient(circle, rgba(196,129,58,0.10) 1px, transparent 1px);
+      radial-gradient(circle, rgba(184,115,58,0.10) 1px, transparent 1px);
     background-size: 28px 28px;
   }
 
@@ -350,7 +354,104 @@ export const globalCss = `
   .float-in { animation: floatIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
   @keyframes askPulse {
-    0%, 100% { box-shadow: 0 6px 20px rgba(196,129,58,0.30), 0 0 0 0 rgba(196,129,58,0); }
-    50%      { box-shadow: 0 6px 20px rgba(196,129,58,0.30), 0 0 0 10px rgba(196,129,58,0.12); }
+    0%, 100% { box-shadow: 0 6px 20px rgba(184,115,58,0.30), 0 0 0 0 rgba(184,115,58,0); }
+    50%      { box-shadow: 0 6px 20px rgba(184,115,58,0.30), 0 0 0 10px rgba(184,115,58,0.12); }
+  }
+
+  /* ── Mobile base fixes ─────────────────────────────────────────── */
+  /* iOS Safari zooms the viewport on focus when input font-size < 16px.
+     Clamping to max(16px, 1em) prevents the zoom while preserving theme size. */
+  input, textarea, select { font-size: max(16px, 1em); }
+
+  /* Prevent rubber-band overscroll on iOS — the app is SPA-modal, not a
+     traditional document, so native bounce feels wrong. */
+  html { overscroll-behavior: none; }
+
+  /* Smooth momentum scrolling on iOS for any overflow-y: auto container. */
+  .scroll { -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+
+  /* ── Responsive system ──────────────────────────────────────────── */
+
+  /* Touch-friendly minimum tap target — apply to any interactive element
+     that's smaller than 44px in either dimension. */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Content clearance for fixed bottom nav (mobile/tablet) */
+  .pb-nav {
+    padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* ── Small phones (<480px): tighten editorial display type ── */
+  @media (max-width: 479px) {
+    .editorial-h1 { font-size: clamp(26px, 7.5vw, 36px) !important; }
+    .editorial-h2 { font-size: clamp(20px, 5.5vw, 28px) !important; }
+  }
+
+  /* ── Mobile (<640px): bottom-sheet modals ── */
+  /* Add class="modal-sheet" to a modal's inner panel to slide it up from the
+     bottom on small screens. The outer backdrop can stay as-is (fixed inset-0
+     flex center) — the sheet's position:fixed escapes the flex context. */
+  @media (max-width: 639px) {
+    .modal-sheet {
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      top: auto !important;
+      border-radius: 20px 20px 0 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
+      max-height: 92vh !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      padding-bottom: max(20px, env(safe-area-inset-bottom, 20px)) !important;
+      animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1) both !important;
+    }
+  }
+
+  /* ── Mobile (<640px): full-screen takeover for rich content dialogs ── */
+  /* Use on tall scrollable dialogs (post detail, comment threads) that have
+     their own internal header — these work better as full-screen overlays
+     than bottom sheets. */
+  @media (max-width: 639px) {
+    .full-screen-mobile {
+      position: fixed !important;
+      inset: 0 !important;
+      border-radius: 0 !important;
+      max-width: 100% !important;
+      max-height: 100% !important;
+      height: 100dvh !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+      animation: fadeIn 0.2s ease both !important;
+    }
+  }
+
+  /* ── Church page header responsive right padding ── */
+  /* Reserves space for the fixed top-right action cluster on wide screens;
+     collapses to normal padding on mobile where those buttons float above. */
+  .church-header-right { padding-right: 16px; }
+  @media (min-width: 640px) {
+    .church-header-right { padding-right: 208px; }
+  }
+
+  /* ── Desktop (≥1024px): sidebar nav ── */
+  /* The JS layout shifts content with marginLeft: 240px inline — these
+     classes are helpers for one-off spacing needs inside component trees. */
+  @media (min-width: 1024px) {
+    /* Ensure no accidental content hides behind the sidebar */
+    .sidebar-clear { margin-left: 240px; }
+
+    /* Slightly larger body text on wide screens for reading comfort */
+    body { font-size: 16px; }
   }
 `;
+

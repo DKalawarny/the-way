@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { ArrowLeft, Check } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
 import HomeFound from './HomeFound.jsx';
+import FlagPicker from './FlagPicker.jsx';
 
 const TRADITIONS = [
   'Still Discovering',
@@ -72,6 +74,9 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
     what_brought: existing?.what_brought ?? '',
     looking_for: existing?.looking_for ?? [],
     tts_voice: existing?.tts_voice ?? 'onyx',
+    flags: existing?.flags ?? [],
+    show_flag: existing?.show_flag ?? false,
+    preferred_language: existing?.preferred_language ?? (navigator.language?.split('-')[0] ?? 'en'),
   });
 
   const [prevTradition] = useState(existing?.tradition ?? 'Still Discovering');
@@ -135,8 +140,8 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
       }}>
         <div style={{ maxWidth: 560, margin: '0 auto' }}>
           {onCancel && (
-            <button onClick={onCancel} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 20 }}>
-              ← Back
+            <button onClick={onCancel} style={{ background: 'none', border: 'none', color: T.goldDark, cursor: 'pointer', padding: 0, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 5, fontSize: 14 }}>
+              <ArrowLeft size={15} strokeWidth={2} /> Back
             </button>
           )}
           <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 10 }}>
@@ -178,6 +183,49 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
               </Field>
             </div>
 
+            <Field label="Your countries (up to 2)">
+              <FlagPicker value={form.flags} onChange={(v) => set('flags', v)} />
+              {form.flags.length > 0 && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, cursor: 'pointer' }}>
+                  <div
+                    onClick={() => set('show_flag', !form.show_flag)}
+                    style={{
+                      width: 36, height: 20, borderRadius: 999, flexShrink: 0,
+                      background: form.show_flag ? T.goldDark : T.line,
+                      position: 'relative', transition: 'background 0.18s',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{
+                      position: 'absolute', top: 2, left: form.show_flag ? 18 : 2,
+                      width: 16, height: 16, borderRadius: '50%',
+                      background: '#fff', transition: 'left 0.18s',
+                    }} />
+                  </div>
+                  <span style={{ fontSize: 13, color: T.inkSoft }}>
+                    Show my flag next to my name on posts
+                  </span>
+                </label>
+              )}
+            </Field>
+
+            <Field label="Preferred language">
+              <select style={select} value={form.preferred_language} onChange={(e) => set('preferred_language', e.target.value)}>
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="pt">Português</option>
+                <option value="de">Deutsch</option>
+                <option value="ko">한국어</option>
+                <option value="zh">中文</option>
+                <option value="hi">हिन्दी</option>
+                <option value="sw">Kiswahili</option>
+                <option value="yo">Yorùbá</option>
+                <option value="ig">Igbo</option>
+                <option value="ha">Hausa</option>
+              </select>
+            </Field>
+
             <Field label="How do you think of yourself right now?">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 {PERSON_TYPES.map((p) => (
@@ -190,7 +238,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
                       padding: '10px 14px',
                       borderRadius: 10,
                       border: `1px solid ${form.person_type === p.id ? T.gold : T.line}`,
-                      background: form.person_type === p.id ? 'rgba(196,129,58,0.08)' : T.white,
+                      background: form.person_type === p.id ? 'rgba(184,115,58,0.08)' : T.white,
                       cursor: 'pointer',
                       fontSize: 13,
                       color: T.ink,
@@ -259,7 +307,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
                         padding: '12px 14px',
                         borderRadius: 12,
                         border: `1.5px solid ${active ? T.gold : T.line}`,
-                        background: active ? 'rgba(196,129,58,0.08)' : T.white,
+                        background: active ? 'rgba(184,115,58,0.08)' : T.white,
                         cursor: 'pointer',
                         textAlign: 'left',
                         transition: 'all 0.15s',
@@ -269,7 +317,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
                       <div style={{ fontSize: 15, fontWeight: 700, color: T.ink, marginBottom: 4 }}>{v.label}</div>
                       <div style={{ fontSize: 11, color: T.inkMuted, lineHeight: 1.4 }}>{v.desc}</div>
                       {active && (
-                        <div style={{ marginTop: 6, fontSize: 11, color: T.goldDark, fontWeight: 600 }}>✓ selected</div>
+                        <div style={{ marginTop: 6, fontSize: 11, color: T.goldDark, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><Check size={11} strokeWidth={2.5} /> selected</div>
                       )}
                     </button>
                   );

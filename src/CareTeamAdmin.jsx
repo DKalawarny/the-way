@@ -37,7 +37,7 @@ function MemberRow({ member, onEdit, onToggleActive, onRemove }) {
       display: 'flex', alignItems: 'center', gap: 12,
       opacity: member.is_active ? 1 : 0.6,
     }}>
-      <Avatar name={member.profile?.display_name} avatarConfig={member.profile?.avatar_config} size={42} />
+      <Avatar name={member.profile?.display_name} avatarConfig={member.profile?.avatar_config} photoUrl={member.profile?.avatar_url} size={42} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 600, fontSize: 15, color: T.ink }}>{member.profile?.display_name ?? '—'}</div>
         <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 4 }}>{member.role_label}</div>
@@ -45,7 +45,7 @@ function MemberRow({ member, onEdit, onToggleActive, onRemove }) {
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
             {member.specialty_tags.map((t) => (
               <span key={t} style={{
-                fontSize: 10, color: T.goldDark, background: 'rgba(196,129,58,0.10)',
+                fontSize: 10, color: T.goldDark, background: 'rgba(184,115,58,0.10)',
                 borderRadius: 999, padding: '2px 8px',
               }}>{t}</span>
             ))}
@@ -84,7 +84,7 @@ function MemberForm({ initial, onSave, onCancel, saving }) {
     setSearching(true);
     const { data } = await supabase
       .from('profiles')
-      .select('id, display_name, avatar_config, city, country')
+      .select('id, display_name, avatar_config, avatar_url, city, country')
       .ilike('display_name', `%${searchQuery.trim()}%`)
       .limit(8);
     setSearchResults(data ?? []);
@@ -129,10 +129,10 @@ function MemberForm({ initial, onSave, onCancel, saving }) {
               {searchResults.map((p) => (
                 <button key={p.id} onClick={() => setPickedUser(p)} style={{
                   display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left',
-                  padding: '8px 12px', background: pickedUser?.id === p.id ? 'rgba(196,129,58,0.08)' : 'transparent',
+                  padding: '8px 12px', background: pickedUser?.id === p.id ? 'rgba(184,115,58,0.08)' : 'transparent',
                   border: 'none', borderBottom: `1px solid ${T.line}`, cursor: 'pointer',
                 }}>
-                  <Avatar name={p.display_name} avatarConfig={p.avatar_config} size={28} />
+                  <Avatar name={p.display_name} avatarConfig={p.avatar_config} photoUrl={p.avatar_url} size={28} />
                   <div style={{ fontSize: 13, color: T.ink }}>{p.display_name}</div>
                 </button>
               ))}
@@ -143,7 +143,7 @@ function MemberForm({ initial, onSave, onCancel, saving }) {
               display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14,
               padding: '8px 12px', background: T.parchment, borderRadius: 10,
             }}>
-              <Avatar name={pickedUser.display_name} avatarConfig={pickedUser.avatar_config} size={28} />
+              <Avatar name={pickedUser.display_name} avatarConfig={pickedUser.avatar_config} photoUrl={pickedUser.avatar_url} size={28} />
               <div style={{ fontSize: 13, color: T.ink, flex: 1 }}>{pickedUser.display_name}</div>
               <button onClick={() => setPickedUser(null)} style={{
                 background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer',
@@ -233,7 +233,7 @@ export default function CareTeamAdmin({ session, churchId, onBack, embedded = fa
     setLoading(true);
     supabase
       .from('care_team_members')
-      .select('*, profile:profiles!user_id(id, display_name, avatar_config)')
+      .select('*, profile:profiles!user_id(id, display_name, avatar_config, avatar_url)')
       .eq('church_id', churchId)
       .order('created_at', { ascending: true })
       .then(({ data }) => {
@@ -249,7 +249,7 @@ export default function CareTeamAdmin({ session, churchId, onBack, embedded = fa
         .from('care_team_members')
         .update({ role_label, specialty_tags, bio })
         .eq('id', editing.id)
-        .select('*, profile:profiles!user_id(id, display_name, avatar_config)')
+        .select('*, profile:profiles!user_id(id, display_name, avatar_config, avatar_url)')
         .single();
       if (data) setMembers((m) => m.map((x) => x.id === data.id ? data : x));
     } else {
@@ -259,7 +259,7 @@ export default function CareTeamAdmin({ session, churchId, onBack, embedded = fa
           church_id: churchId, user_id: user.id,
           role_label, specialty_tags, bio, is_active: true,
         })
-        .select('*, profile:profiles!user_id(id, display_name, avatar_config)')
+        .select('*, profile:profiles!user_id(id, display_name, avatar_config, avatar_url)')
         .single();
       if (data) setMembers((m) => [...m, data]);
     }
@@ -272,7 +272,7 @@ export default function CareTeamAdmin({ session, churchId, onBack, embedded = fa
       .from('care_team_members')
       .update({ is_active: !member.is_active })
       .eq('id', member.id)
-      .select('*, profile:profiles!user_id(id, display_name, avatar_config)')
+      .select('*, profile:profiles!user_id(id, display_name, avatar_config, avatar_url)')
       .single();
     if (data) setMembers((m) => m.map((x) => x.id === data.id ? data : x));
   }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import CareConversation from './CareConversation.jsx';
@@ -216,8 +217,9 @@ export default function CareTeamInbox({ session, profile, churchId, onBack }) {
       {showCovenant && <CovenantModal onAccept={handleAcceptCovenant} onDecline={onBack} />}
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
         <button onClick={onBack} style={{
-          background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 14,
-        }}>← Back</button>
+          background: 'none', border: 'none', color: T.goldDark, cursor: 'pointer', padding: 0, marginBottom: 14,
+          display: 'flex', alignItems: 'center', gap: 5, fontSize: 14,
+        }}><ArrowLeft size={15} strokeWidth={2} /> Back</button>
 
         <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 8 }}>
           Care Team

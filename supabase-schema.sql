@@ -391,6 +391,23 @@ create table if not exists public.churches (
 alter table public.churches add column if not exists service_info   text;
 alter table public.churches add column if not exists street_address text;
 
+-- Featured walk — see scripts/2026-05-01-featured-walk.sql
+alter table public.churches
+  add column if not exists featured_walk_id uuid
+    references public.walks(id) on delete set null;
+
+-- Hide-from-profile flag — see scripts/2026-05-01-hide-from-profile.sql
+alter table public.posts
+  add column if not exists hide_from_profile boolean not null default false;
+
+-- Per-post audience picker — see scripts/2026-05-02-post-visibility.sql
+alter table public.posts
+  add column if not exists visibility text not null default 'public';
+alter table public.posts drop constraint if exists posts_visibility_check;
+alter table public.posts add  constraint posts_visibility_check
+  check (visibility in ('public','church','private'));
+create index if not exists posts_visibility_idx on public.posts (visibility);
+
 create table if not exists public.pastor_applications (
   id            uuid primary key default gen_random_uuid(),
   user_id       uuid references public.profiles(id) on delete cascade,
@@ -560,7 +577,7 @@ begin
       'Authorization', 'Bearer ' || api_key
     ),
     body    := jsonb_build_object(
-      'from',    'The Way <onboarding@resend.dev>',
+      'from',    'kinwove <onboarding@resend.dev>',
       'to',      jsonb_build_array(admin_email),
       'subject', subject,
       'html',    html_body
@@ -1275,6 +1292,7 @@ create or replace view public.feed_items
     p.kind,
     coalesce(p.body_data, '{}'::jsonb) || jsonb_build_object('text', p.body) as body,
     p.is_anonymous,
+    p.hide_from_profile,
     p.created_at
   from public.posts p
 
@@ -1290,6 +1308,7 @@ create or replace view public.feed_items
     'prayer'::text                as kind,
     jsonb_build_object('text', pr.body, 'prayer_count', pr.prayer_count) as body,
     pr.is_anonymous,
+    false                         as hide_from_profile,
     pr.created_at
   from public.prayers pr
   where pr.is_public = true
@@ -1313,6 +1332,7 @@ create or replace view public.feed_items
       'scripture',   sc.scripture
     ) as body,
     false                         as is_anonymous,
+    false                         as hide_from_profile,
     sc.created_at
   from public.sermon_content sc
   join public.sermons s on s.id = sc.sermon_id

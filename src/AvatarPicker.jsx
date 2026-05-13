@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { T } from './theme.js';
+import { uploadProfileImage } from './supabase.js';
 
 export const AVATAR_STYLES = [
   { id: 'lorelei',            label: 'Portrait',    preview: 'Ruth' },
@@ -31,16 +32,48 @@ export function avatarUrl({ style = 'lorelei', seed = 'friend', bgColor = 'fdf8f
   return `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=${bgColor}&radius=50`;
 }
 
-export default function AvatarPicker({ current, onSave, onCancel }) {
+export default function AvatarPicker({ current, currentPhotoUrl, userId, onSave, onCancel }) {
+  const [mode, setMode] = useState(currentPhotoUrl ? 'photo' : 'illustrated');
   const [style, setStyle] = useState(current?.style ?? 'lorelei');
   const [seed, setSeed] = useState(current?.seed ?? 'Grace');
   const [bgColor, setBgColor] = useState(current?.bgColor ?? 'fdf8f0');
   const [seedPage, setSeedPage] = useState(0);
+  const [photoUrl, setPhotoUrl] = useState(currentPhotoUrl ?? null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+  const fileInputRef = useRef(null);
 
   const visibleSeeds = SEEDS.slice(seedPage * 8, seedPage * 8 + 8);
   const hasMore = (seedPage + 1) * 8 < SEEDS.length;
 
-  const preview = avatarUrl({ style, seed, bgColor });
+  const preview = mode === 'photo' && photoUrl
+    ? photoUrl
+    : avatarUrl({ style, seed, bgColor });
+
+  async function handlePhotoPick(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !userId) return;
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const url = await uploadProfileImage(file, userId, 'avatar');
+      setPhotoUrl(url);
+      setMode('photo');
+    } catch (err) {
+      setUploadError(err?.message ?? String(err));
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function handleSave() {
+    if (mode === 'photo' && photoUrl) {
+      onSave({ photoUrl, config: null });
+    } else {
+      onSave({ photoUrl: null, config: { style, seed, bgColor } });
+    }
+  }
 
   return (
     <div style={{
@@ -84,13 +117,68 @@ export default function AvatarPicker({ current, onSave, onCancel }) {
             alt="preview"
             width={110}
             height={110}
-            style={{ borderRadius: '50%', border: `3px solid ${T.gold}`, background: `#${bgColor}` }}
+            style={{ borderRadius: '50%', border: `3px solid ${T.gold}`, background: `#${bgColor}`, objectFit: 'cover' }}
           />
         </div>
 
         <div style={{ padding: 24 }}>
 
+          {/* Mode tabs */}
+          <div style={{ display: 'flex', gap: 6, background: T.parchment, padding: 4, borderRadius: 999, marginBottom: 22 }}>
+            <button onClick={() => setMode('illustrated')} style={{
+              flex: 1, background: mode === 'illustrated' ? T.white : 'transparent',
+              border: 'none', borderRadius: 999, padding: '8px 10px', fontSize: 12.5,
+              fontWeight: mode === 'illustrated' ? 600 : 400,
+              color: mode === 'illustrated' ? T.ink : T.inkMuted, cursor: 'pointer',
+              boxShadow: mode === 'illustrated' ? `0 1px 3px rgba(0,0,0,0.06)` : 'none',
+            }}>
+              Illustrated
+            </button>
+            <button onClick={() => setMode('photo')} style={{
+              flex: 1, background: mode === 'photo' ? T.white : 'transparent',
+              border: 'none', borderRadius: 999, padding: '8px 10px', fontSize: 12.5,
+              fontWeight: mode === 'photo' ? 600 : 400,
+              color: mode === 'photo' ? T.ink : T.inkMuted, cursor: 'pointer',
+              boxShadow: mode === 'photo' ? `0 1px 3px rgba(0,0,0,0.06)` : 'none',
+            }}>
+              Photo
+            </button>
+          </div>
+
+          {mode === 'photo' && (
+            <div style={{ marginBottom: 22 }}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handlePhotoPick}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading || !userId}
+                style={{
+                  width: '100%', background: T.white, border: `1px dashed ${T.line}`,
+                  borderRadius: 12, padding: '16px 14px', fontSize: 13.5, color: T.inkSoft,
+                  cursor: uploading ? 'wait' : 'pointer',
+                }}>
+                {uploading ? 'Uploading…' : photoUrl ? '📷 Replace photo' : '📷 Upload a photo'}
+              </button>
+              {uploadError && (
+                <div style={{ fontSize: 12, color: '#A0341A', marginTop: 8 }}>{uploadError}</div>
+              )}
+              {photoUrl && (
+                <button
+                  onClick={() => { setPhotoUrl(null); setMode('illustrated'); }}
+                  style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer', marginTop: 8, padding: 0 }}>
+                  Remove photo
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Style picker */}
+          {mode === 'illustrated' && (<>
           <div style={{ marginBottom: 22 }}>
             <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.inkMuted, marginBottom: 10 }}>
               Style
@@ -108,7 +196,7 @@ export default function AvatarPicker({ current, onSave, onCancel }) {
                     padding: '10px 8px',
                     borderRadius: 12,
                     border: `2px solid ${style === s.id ? T.gold : T.line}`,
-                    background: style === s.id ? 'rgba(196,129,58,0.08)' : T.white,
+                    background: style === s.id ? 'rgba(184,115,58,0.08)' : T.white,
                     cursor: 'pointer',
                   }}
                 >
@@ -192,11 +280,13 @@ export default function AvatarPicker({ current, onSave, onCancel }) {
               ))}
             </div>
           </div>
+          </>)}
 
           {/* Actions */}
           <div style={{ display: 'flex', gap: 10 }}>
             <button
-              onClick={() => onSave({ style, seed, bgColor })}
+              onClick={handleSave}
+              disabled={mode === 'photo' && !photoUrl}
               style={{
                 flex: 1,
                 background: T.ink,
@@ -206,7 +296,8 @@ export default function AvatarPicker({ current, onSave, onCancel }) {
                 padding: '13px 20px',
                 fontSize: 15,
                 fontWeight: 600,
-                cursor: 'pointer',
+                cursor: mode === 'photo' && !photoUrl ? 'not-allowed' : 'pointer',
+                opacity: mode === 'photo' && !photoUrl ? 0.5 : 1,
               }}
             >
               Save avatar

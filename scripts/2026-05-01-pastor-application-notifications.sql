@@ -164,7 +164,7 @@ begin
       'Authorization', 'Bearer ' || api_key
     ),
     body    := jsonb_build_object(
-      'from',    'The Way <onboarding@resend.dev>',
+      'from',    'kinwove <onboarding@resend.dev>',
       'to',      jsonb_build_array(admin_email),
       'subject', subject,
       'html',    html_body

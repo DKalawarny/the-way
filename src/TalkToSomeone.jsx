@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Lock, ArrowLeft, Check } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { Avatar } from './ProfilePage.jsx';
@@ -31,11 +32,11 @@ const TOPICS = [
 function PrivacyHeader() {
   return (
     <div style={{
-      background: 'rgba(196,129,58,0.06)', border: `1px solid ${T.goldLight}`,
+      background: 'rgba(184,115,58,0.06)', border: `1px solid ${T.goldLight}`,
       borderRadius: 12, padding: '12px 14px', marginBottom: 18,
       fontSize: 12.5, color: T.inkSoft, lineHeight: 1.55, display: 'flex', gap: 10,
     }}>
-      <div style={{ color: T.goldDark, fontSize: 14, lineHeight: 1 }}>🔒</div>
+      <div style={{ color: T.goldDark, lineHeight: 1 }}><Lock size={14} strokeWidth={2} /></div>
       <div>
         <strong style={{ color: T.ink }}>Private.</strong> Whoever you talk to — only the two of you see it. Your pastor cannot read these conversations. You choose who, and whether to share your name.
       </div>
@@ -48,12 +49,12 @@ function PersonRow({ person, picked, onPick }) {
   return (
     <button onClick={() => onPick(person)} style={{
       display: 'block', width: '100%', textAlign: 'left',
-      background: picked ? 'rgba(196,129,58,0.08)' : T.white,
+      background: picked ? 'rgba(184,115,58,0.08)' : T.white,
       border: `1px solid ${picked ? T.gold : T.line}`,
       borderRadius: 14, padding: '12px 14px', cursor: 'pointer', marginBottom: 8,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Avatar name={person.profile?.display_name} avatarConfig={person.profile?.avatar_config} size={38} />
+        <Avatar name={person.profile?.display_name} avatarConfig={person.profile?.avatar_config} photoUrl={person.profile?.avatar_url} size={38} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>{person.profile?.display_name ?? '—'}</div>
           <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: tags.length ? 4 : 0 }}>{person.role_label}</div>
@@ -61,14 +62,14 @@ function PersonRow({ person, picked, onPick }) {
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
               {tags.map((t) => (
                 <span key={t} style={{
-                  fontSize: 10.5, color: T.goldDark, background: 'rgba(196,129,58,0.10)',
+                  fontSize: 10.5, color: T.goldDark, background: 'rgba(184,115,58,0.10)',
                   borderRadius: 999, padding: '2px 8px',
                 }}>{SPECIALTY_LABEL[t] ?? t}</span>
               ))}
             </div>
           )}
         </div>
-        {picked && <div style={{ color: T.gold, fontSize: 18 }}>✓</div>}
+        {picked && <div style={{ color: T.gold }}><Check size={18} strokeWidth={2.5} /></div>}
       </div>
     </button>
   );
@@ -77,6 +78,8 @@ function PersonRow({ person, picked, onPick }) {
 export default function TalkToSomeone({ session, profile, churchId, onBack }) {
   const [careTeam, setCareTeam] = useState([]);
   const [churchName, setChurchName] = useState(null);
+  const [pastorFallback, setPastorFallback] = useState(null);
+  const [isCurrentUserPastor, setIsCurrentUserPastor] = useState(false);
   const [loading, setLoading] = useState(true);
   const [routingMode, setRoutingMode] = useState('anyone');  // 'anyone' | 'person'
   const [selectedPerson, setSelectedPerson] = useState(null);
@@ -91,18 +94,30 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
     Promise.all([
       supabase
         .from('care_team_members')
-        .select('*, profile:profiles!user_id(id, display_name, avatar_config)')
+        .select('*, profile:profiles!user_id(id, display_name, avatar_config, avatar_url)')
         .eq('church_id', churchId)
         .eq('is_active', true)
         .order('created_at', { ascending: true }),
       supabase
         .from('churches')
-        .select('name')
+        .select('name, pastor_id')
         .eq('id', churchId)
         .maybeSingle(),
-    ]).then(([{ data: members }, { data: church }]) => {
-      setCareTeam(members ?? []);
+    ]).then(async ([{ data: members }, { data: church }]) => {
+      // Filter out the current user — pastors/care team members shouldn't see themselves
+      const filtered = (members ?? []).filter(m => m.user_id !== session?.user?.id);
+      setCareTeam(filtered);
       setChurchName(church?.name ?? null);
+      setIsCurrentUserPastor(!!church?.pastor_id && church.pastor_id === session?.user?.id);
+      if (filtered.length === 0 && church?.pastor_id) {
+        const { data: pastor } = await supabase
+          .from('profiles')
+          .select('id, display_name, avatar_config, avatar_url')
+          .eq('id', church.pastor_id)
+          .maybeSingle();
+        // Only set the pastor fallback if it's not the current user
+        if (pastor && pastor.id !== session?.user?.id) setPastorFallback(pastor);
+      }
       setLoading(false);
     });
   }, [churchId]);
@@ -117,16 +132,17 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
     setSelectedPerson(p);
   }
 
-  async function handleStart() {
+  async function handleStart(overridePerson) {
     if (!session?.user?.id || !churchId) return;
     setCreating(true);
+    const person = overridePerson ?? selectedPerson;
     const payload = {
       church_id: churchId,
       requester_id: session.user.id,
-      care_member_id: routingMode === 'person' ? selectedPerson.user_id : null,
+      care_member_id: person ? person.user_id : null,
       topic: topic || null,
       is_anonymous: isAnonymous,
-      status: routingMode === 'person' ? 'claimed' : 'open',
+      status: person ? 'claimed' : 'open',
     };
     const { data, error } = await supabase
       .from('care_conversations')
@@ -157,8 +173,9 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
     <div style={{ minHeight: '100vh', background: T.cream, padding: '32px 20px 80px', overflowY: 'auto' }}>
       <div style={{ maxWidth: 560, margin: '0 auto' }}>
         <button onClick={onBack} style={{
-          background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 14,
-        }}>← Back</button>
+          background: 'none', border: 'none', color: T.goldDark, cursor: 'pointer', padding: 0, marginBottom: 14,
+          display: 'flex', alignItems: 'center', gap: 5, fontSize: 14,
+        }}><ArrowLeft size={15} strokeWidth={2} /> Back</button>
 
         <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 8 }}>
           Ask someone
@@ -176,12 +193,48 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
           <div style={{ color: T.inkMuted, fontFamily: T.serif, textAlign: 'center', padding: 30 }}>Loading…</div>
         ) : careTeam.length === 0 ? (
           <div style={{
-            background: T.white, border: `1px dashed ${T.line}`, borderRadius: 14,
-            padding: '32px 20px', textAlign: 'center',
-            color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.65,
+            background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
+            padding: '24px 20px', textAlign: 'center',
+            color: T.inkMuted, fontFamily: T.serif, lineHeight: 1.65,
           }}>
-            This church hasn't set up a care team yet.<br />
-            Try reaching out to your pastor directly.
+            {pastorFallback ? (
+              <>
+                <Avatar name={pastorFallback.display_name} avatarConfig={pastorFallback.avatar_config} photoUrl={pastorFallback.avatar_url} size={48} />
+                <div style={{ marginTop: 10, fontWeight: 600, fontSize: 15, color: T.ink, fontFamily: 'inherit' }}>
+                  {pastorFallback.display_name}
+                </div>
+                <div style={{ fontSize: 13, color: T.inkMuted, marginBottom: 16 }}>Pastor</div>
+                <button
+                  disabled={creating}
+                  onClick={() => {
+                    const person = { user_id: pastorFallback.id, profile: pastorFallback, role_label: 'Pastor', specialty_tags: [] };
+                    setRoutingMode('person');
+                    setSelectedPerson(person);
+                    handleStart(person);
+                  }}
+                  style={{
+                    background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+                    padding: '10px 22px', fontSize: 13.5, fontWeight: 600,
+                    cursor: creating ? 'not-allowed' : 'pointer', opacity: creating ? 0.6 : 1,
+                  }}
+                >{creating ? 'Opening…' : 'Talk to your pastor →'}</button>
+              </>
+            ) : isCurrentUserPastor ? (
+              <div style={{ fontFamily: T.serif }}>
+                <div style={{ fontSize: 26, marginBottom: 10 }}>☎</div>
+                <div style={{ fontWeight: 600, fontSize: 15, color: T.ink, marginBottom: 6 }}>
+                  This is how members reach you
+                </div>
+                <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.65 }}>
+                  Members who tap "Talk to someone" get connected with your care team — or you directly if no care team is set up. Add care team members in People → Roles to share the load.
+                </div>
+              </div>
+            ) : (
+              <span style={{ fontStyle: 'italic' }}>
+                This church hasn't set up a care team yet.<br />
+                Try reaching out to your pastor directly.
+              </span>
+            )}
           </div>
         ) : (
           <>
@@ -207,7 +260,7 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
 
             <button onClick={pickAnyone} style={{
               display: 'block', width: '100%', textAlign: 'left',
-              background: routingMode === 'anyone' ? 'rgba(196,129,58,0.08)' : T.white,
+              background: routingMode === 'anyone' ? 'rgba(184,115,58,0.08)' : T.white,
               border: `1px solid ${routingMode === 'anyone' ? T.gold : T.line}`,
               borderRadius: 14, padding: '12px 14px', cursor: 'pointer', marginBottom: 8,
             }}>
@@ -223,7 +276,7 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
                     First person from the care team picks it up.
                   </div>
                 </div>
-                {routingMode === 'anyone' && <div style={{ color: T.gold, fontSize: 18 }}>✓</div>}
+                {routingMode === 'anyone' && <div style={{ color: T.gold }}><Check size={18} strokeWidth={2.5} /></div>}
               </div>
             </button>
 

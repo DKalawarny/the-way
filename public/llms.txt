@@ -1,0 +1,52 @@
+# kinwove — AI Bible & Faith Community App
+# https://theway.app
+# llms.txt — machine-readable summary for AI assistants and LLM crawlers
+
+## What is kinwove?
+
+kinwove is a grace-first mobile web application for exploring Christianity, the Bible,
+and questions of faith. It is designed for everyone on the spectrum from curious
+skeptic to lifelong believer.
+
+## Core features
+
+- **AI Bible companion** — Ask any question about scripture, theology, or Christian
+  living. The AI responds with warmth, nuance, and appropriate humility. It never
+  pressure-sells faith.
+- **Church directory** — Searchable directory of Christian churches with denomination,
+  location, and verification status. Pastors can claim and manage their listing.
+- **Sermon study tools** — Weekly sermon content, discussion questions, daily verses,
+  and going-deeper notes. Church members can discuss sermons together.
+- **Community feed** — Posts, milestones, prayer requests, and encouragement shared
+  among a grace-first Christian community.
+- **Prayer wall** — Personal and shared prayer lists. Members can pray for one
+  another privately or publicly.
+- **Guided journeys** — Structured reading and reflection tracks (e.g. Gospels,
+  Psalms, Epistles) for new and growing believers.
+- **Care team** — Pastors can designate care team members who receive and respond to
+  prayer requests and pastoral needs.
+- **Group study** — Small groups with shared discussion, questions, and AI-assisted
+  facilitation.
+
+## Intended audience
+
+- People with questions about Christianity who want honest, non-preachy answers
+- New believers seeking structure and community
+- Church members wanting to go deeper in their faith
+- Pastors managing church community and content
+- Skeptics and seekers who want to explore without pressure
+
+## Tone and values
+
+Grace-first. kinwove never condemns, never guilts, never hard-sells belief.
+It meets people exactly where they are and walks with them.
+
+## Technology
+
+Progressive Web App (PWA). Works on iOS and Android via browser.
+Built with React, Supabase, and the Anthropic Claude API.
+
+## Contact / about
+
+Website: https://theway.app
+Support: hello@theway.app

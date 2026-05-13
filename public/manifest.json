@@ -1,12 +1,15 @@
 {
-  "name": "The Way",
-  "short_name": "The Way",
-  "description": "Scripture, explored with grace",
+  "name": "kinwove — AI Bible & Faith Community",
+  "short_name": "kinwove",
+  "description": "AI-powered Bible study, church community, and faith exploration. Ask any question about scripture — grace-first answers for believers, skeptics, and everyone in between.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#2C1810",
+  "background_color": "#FDF8F0",
   "theme_color": "#2C1810",
   "orientation": "portrait",
+  "categories": ["lifestyle", "education", "social", "books"],
+  "lang": "en",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -19,6 +22,30 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/og-image.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "label": "kinwove — AI Bible & Faith Community"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Ask a question",
+      "short_name": "Ask",
+      "description": "Start a new conversation with the AI Bible companion",
+      "url": "/?action=ask",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Church directory",
+      "short_name": "Churches",
+      "description": "Find and explore churches near you",
+      "url": "/?action=churches",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }

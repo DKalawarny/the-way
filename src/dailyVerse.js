@@ -1,0 +1,48 @@
+export const DAILY_VERSES = [
+  { text: 'Come to me, all you who are weary and burdened, and I will give you rest.', ref: 'Matthew 11:28' },
+  { text: 'The Lord is my shepherd; I shall not want.', ref: 'Psalm 23:1' },
+  { text: 'Be still, and know that I am God.', ref: 'Psalm 46:10' },
+  { text: 'Cast all your anxiety on him, because he cares for you.', ref: '1 Peter 5:7' },
+  { text: 'Trust in the Lord with all your heart, and lean not on your own understanding.', ref: 'Proverbs 3:5' },
+  { text: 'For I know the plans I have for you — plans to prosper you and not to harm you, plans to give you hope and a future.', ref: 'Jeremiah 29:11' },
+  { text: 'And we know that in all things God works for the good of those who love him.', ref: 'Romans 8:28' },
+  { text: 'Those who hope in the Lord will renew their strength. They will soar on wings like eagles.', ref: 'Isaiah 40:31' },
+  { text: 'His mercies are new every morning; great is your faithfulness.', ref: 'Lamentations 3:22–23' },
+  { text: 'I am the way, the truth, and the life.', ref: 'John 14:6' },
+  { text: 'Do not be anxious about anything, but in every situation, by prayer and petition, present your requests to God.', ref: 'Philippians 4:6' },
+  { text: 'The peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.', ref: 'Philippians 4:7' },
+  { text: 'If God is for us, who can be against us?', ref: 'Romans 8:31' },
+  { text: 'Be strong and courageous. Do not be afraid; the Lord your God will be with you wherever you go.', ref: 'Joshua 1:9' },
+  { text: 'For God so loved the world that he gave his one and only Son.', ref: 'John 3:16' },
+  { text: 'Therefore, if anyone is in Christ, the new creation has come: the old has gone, the new is here.', ref: '2 Corinthians 5:17' },
+  { text: 'For we walk by faith, not by sight.', ref: '2 Corinthians 5:7' },
+  { text: 'The Lord is my light and my salvation — whom shall I fear?', ref: 'Psalm 27:1' },
+  { text: 'Delight yourself in the Lord, and he will give you the desires of your heart.', ref: 'Psalm 37:4' },
+  { text: 'Weeping may stay for the night, but rejoicing comes in the morning.', ref: 'Psalm 30:5' },
+  { text: 'Your word is a lamp for my feet, a light on my path.', ref: 'Psalm 119:105' },
+  { text: 'He heals the brokenhearted and binds up their wounds.', ref: 'Psalm 147:3' },
+  { text: 'Ask and it will be given to you; seek and you will find; knock and the door will be opened.', ref: 'Matthew 7:7' },
+  { text: 'Love is patient, love is kind. It does not envy, it does not boast.', ref: '1 Corinthians 13:4' },
+  { text: 'Above all, love each other deeply, because love covers over a multitude of sins.', ref: '1 Peter 4:8' },
+  { text: 'Now faith is confidence in what we hope for and assurance about what we do not see.', ref: 'Hebrews 11:1' },
+  { text: 'I have told you these things, so that in me you may have peace. Take heart — I have overcome the world.', ref: 'John 16:33' },
+  { text: 'There is now no condemnation for those who are in Christ Jesus.', ref: 'Romans 8:1' },
+  { text: 'For by grace you have been saved through faith — and this is not your own doing; it is the gift of God.', ref: 'Ephesians 2:8' },
+  { text: 'I sought the Lord, and he answered me; he delivered me from all my fears.', ref: 'Psalm 34:4' },
+  { text: 'The Lord is close to the brokenhearted and saves those who are crushed in spirit.', ref: 'Psalm 34:18' },
+  { text: 'Surely your goodness and love will follow me all the days of my life.', ref: 'Psalm 23:6' },
+  { text: 'He has made everything beautiful in its time.', ref: 'Ecclesiastes 3:11' },
+  { text: 'Let us not become weary in doing good, for at the proper time we will reap a harvest if we do not give up.', ref: 'Galatians 6:9' },
+  { text: 'The Lord your God is with you, the Mighty Warrior who saves.', ref: 'Zephaniah 3:17' },
+  { text: 'Blessed are the pure in heart, for they will see God.', ref: 'Matthew 5:8' },
+  { text: 'Greater love has no one than this: to lay down one\u2019s life for one\u2019s friends.', ref: 'John 15:13' },
+  { text: 'Cast your cares on the Lord and he will sustain you.', ref: 'Psalm 55:22' },
+  { text: 'He gives strength to the weary and increases the power of the weak.', ref: 'Isaiah 40:29' },
+  { text: 'I can do all things through Christ who strengthens me.', ref: 'Philippians 4:13' },
+];
+
+export function getDailyVerse() {
+  const d = new Date();
+  const dayKey = d.getFullYear() * 366 + d.getMonth() * 31 + d.getDate();
+  return DAILY_VERSES[dayKey % DAILY_VERSES.length];
+}

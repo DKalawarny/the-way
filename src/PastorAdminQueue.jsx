@@ -130,7 +130,7 @@ export default function PastorAdminQueue({ session, profile, onClose }) {
       if (ids.length) {
         const { data: profs } = await supabase
           .from('profiles')
-          .select('id, display_name, avatar_config')
+          .select('id, display_name, avatar_config, avatar_url')
           .in('id', ids);
         if (cancelled) return;
         const pm = {};
@@ -160,7 +160,7 @@ export default function PastorAdminQueue({ session, profile, onClose }) {
 
   if (!profile?.is_admin) {
     return (
-      <div className="scene" style={{ minHeight: '100vh', padding: '40px 20px' }}>
+      <div className="scene" style={{ minHeight: '100vh', padding: '40px 20px 80px' }}>
         <div style={{ maxWidth: 520, margin: '0 auto' }}>
           <button onClick={onClose} style={{
             background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 18,
@@ -257,8 +257,8 @@ function ApplicationCard({ app, applicantProfile, onCopyApprove, onCopyReject })
   const reg  = REG_LOOKUPS[app.registration_country] ?? REG_LOOKUPS.OTHER;
 
   const statusTone = {
-    pending:  { bg: 'rgba(196,129,58,0.10)', fg: T.goldDark, label: 'PENDING' },
-    approved: { bg: 'rgba(63,107,94,0.10)',  fg: '#2F5547',  label: 'APPROVED' },
+    pending:  { bg: 'rgba(184,115,58,0.10)', fg: T.goldDark, label: 'PENDING' },
+    approved: { bg: T.resolvedBg,  fg: T.resolvedText,  label: 'APPROVED' },
     rejected: { bg: 'rgba(180,60,60,0.10)',  fg: '#9A3A3A',  label: 'REJECTED' },
   }[app.status] ?? { bg: T.cream, fg: T.inkSoft, label: app.status?.toUpperCase() };
 
@@ -278,7 +278,7 @@ function ApplicationCard({ app, applicantProfile, onCopyApprove, onCopyReject })
         {app.verification_method && app.verification_method !== 'manual' && (
           <span style={{
             fontSize: 11, fontWeight: 700, letterSpacing: 1,
-            color: '#2F5547', background: 'rgba(63,107,94,0.10)',
+            color: T.resolvedText, background: T.resolvedBg,
             padding: '3px 9px', borderRadius: 999,
           }}>
             ✦ AUTO ({app.verification_method})

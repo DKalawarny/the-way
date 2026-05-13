@@ -18,13 +18,13 @@ import { T, SEMANTIC } from './theme.js';
 // the same Badge component everywhere.
 export const ROLE_PRESETS = [
   { key: 'pastor',  label: 'Pastor',      emoji: '✦',
-    palette: { bg: 'rgba(196,129,58,0.22)', text: T.goldDark, line: T.gold },
+    palette: { bg: 'rgba(184,115,58,0.22)', text: T.goldDark, line: T.gold },
     blurb: 'The pastor of this church.' },
   { key: 'elder',   label: 'Elder',       emoji: '◆',
     palette: { bg: 'rgba(110,90,140,0.18)', text: '#5A3F8C', line: 'rgba(110,90,140,0.55)' },
     blurb: 'Spiritual oversight — extra moderation gets shown to elders.' },
   { key: 'staff',   label: 'Staff',       emoji: '✚',
-    palette: { bg: 'rgba(196,129,58,0.14)', text: T.goldDark, line: T.goldLight },
+    palette: { bg: 'rgba(184,115,58,0.14)', text: T.goldDark, line: T.goldLight },
     blurb: 'Generic staff badge — for trusted leaders without a more specific role.' },
   { key: 'care',    label: 'Care team',   emoji: '☎', palette: SEMANTIC.care,
     blurb: "They'll show up in the care inbox and members can reach them." },

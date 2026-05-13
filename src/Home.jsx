@@ -118,12 +118,12 @@ export default function Home({
               borderRadius: RADIUS.xl,
               padding: `${SPACE[5]}px ${SPACE[5]}px`,
               marginBottom: SPACE[5],
-              boxShadow: '0 8px 28px rgba(196,129,58,0.18)',
+              boxShadow: '0 8px 28px rgba(184,115,58,0.18)',
             }}
           >
             <div style={{
               position: 'absolute', top: -30, right: -30, width: 120, height: 120,
-              background: 'radial-gradient(circle, rgba(196,129,58,0.28), transparent 70%)',
+              background: 'radial-gradient(circle, rgba(184,115,58,0.28), transparent 70%)',
               pointerEvents: 'none',
             }} />
             <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.gold, fontWeight: 700, marginBottom: 8 }}>
@@ -156,7 +156,7 @@ export default function Home({
         }}>
           <div style={{
             position: 'absolute', top: -20, right: -20, width: 140, height: 140,
-            background: 'radial-gradient(circle, rgba(196,129,58,0.18), transparent 70%)',
+            background: 'radial-gradient(circle, rgba(184,115,58,0.18), transparent 70%)',
             pointerEvents: 'none',
           }} />
           <div className="section-eyebrow" style={{ marginBottom: SPACE[3] }}>✦ Today's verse</div>
@@ -290,7 +290,7 @@ export default function Home({
 
 function DoorCard({ i, tone, eyebrow, title, blurb, onClick }) {
   const palette = tone === 'scripture'
-    ? { bg: 'rgba(196,129,58,0.10)', rail: T.gold, eyebrow: T.goldDark }
+    ? { bg: 'rgba(184,115,58,0.10)', rail: T.gold, eyebrow: T.goldDark }
     : tone === 'connection'
       ? { bg: SEMANTIC.connection.bg, rail: SEMANTIC.connection.rail, eyebrow: SEMANTIC.connection.text }
       : { bg: SEMANTIC.prayer.bg, rail: SEMANTIC.prayer.rail, eyebrow: SEMANTIC.prayer.text };

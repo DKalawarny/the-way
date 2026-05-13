@@ -18,7 +18,7 @@ const CATEGORY_LABEL = {
 function PrivacyNote() {
   return (
     <div style={{
-      background: 'rgba(196,129,58,0.06)', border: `1px solid ${T.goldLight}`,
+      background: 'rgba(184,115,58,0.06)', border: `1px solid ${T.goldLight}`,
       borderRadius: 12, padding: '12px 14px', marginBottom: 16,
       fontSize: 12.5, color: T.inkSoft, lineHeight: 1.55, display: 'flex', gap: 10,
     }}>
@@ -231,7 +231,7 @@ function WalkOverview({ walk, progress, steps, onStart, onResume, onOpenDay, onB
               style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 width: '100%', textAlign: 'left',
-                background: isCurrent ? 'rgba(196,129,58,0.08)' : 'transparent',
+                background: isCurrent ? 'rgba(184,115,58,0.08)' : 'transparent',
                 border: 'none', borderTop: i === 0 ? 'none' : `1px solid ${T.line}`,
                 padding: '12px 16px', cursor: (locked || !step) ? 'default' : 'pointer',
                 opacity: !step ? 0.45 : 1,
@@ -306,7 +306,7 @@ function WalkDay({ walk, step, progress, day, onAdvance, onPrev, onNext, onBack,
 
       {step.scripture_ref && (
         <div style={{
-          background: 'rgba(196,129,58,0.06)', borderLeft: `4px solid ${T.gold}`,
+          background: 'rgba(184,115,58,0.06)', borderLeft: `4px solid ${T.gold}`,
           borderRadius: 10, padding: '14px 18px', marginBottom: 18,
         }}>
           <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 6 }}>

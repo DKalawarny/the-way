@@ -1,10 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { T } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
 import { trialStatus } from './trial.js';
-import { supabase } from './supabase.js';
+import { supabase, uploadProfileImage, directProfileUpdate } from './supabase.js';
 import AvatarPicker, { avatarUrl } from './AvatarPicker.jsx';
 import ShareSheet from './ShareSheet.jsx';
+
+const BANNER_PRESETS = [
+  { key: 'parchment', label: 'Parchment', bg: `linear-gradient(135deg, #f5ede0 0%, rgba(184,115,58,0.35) 60%, rgba(139,90,43,0.2) 100%)` },
+  { key: 'forest',    label: 'Forest',    bg: 'linear-gradient(135deg, #1a2e1a 0%, #2d4a2d 55%, #3d6b3d 100%)' },
+  { key: 'night',     label: 'Night',     bg: 'linear-gradient(135deg, #0d1b2e 0%, #1a3050 55%, #2a4570 100%)' },
+  { key: 'clay',      label: 'Clay',      bg: 'linear-gradient(135deg, #8b4513 0%, #a0522d 55%, #cd853f 100%)' },
+  { key: 'plum',      label: 'Plum',      bg: 'linear-gradient(135deg, #2d0a2d 0%, #4a1542 55%, #6b2564 100%)' },
+  { key: 'sea',       label: 'Sea',       bg: 'linear-gradient(135deg, #0a2d2d 0%, #0f4a4a 55%, #1a6b6b 100%)' },
+  { key: 'slate',     label: 'Slate',     bg: 'linear-gradient(135deg, #1c1c2e 0%, #2e2e4a 55%, #3d3d6b 100%)' },
+  { key: 'rose',      label: 'Rose',      bg: 'linear-gradient(135deg, #2e0a0a 0%, #501515 55%, #7a2525 100%)' },
+];
+
+function bannerBackground(profile, posOverride) {
+  if (profile?.banner_url) {
+    const pos = posOverride ?? profile?.banner_position ?? 50;
+    return `url(${profile.banner_url}) center ${pos}% / cover no-repeat`;
+  }
+  const preset = BANNER_PRESETS.find((p) => p.key === profile?.banner_preset);
+  return preset?.bg ?? BANNER_PRESETS[0].bg;
+}
 
 const TRADITION_COLORS = {
   'Catholic': '#8B1A1A',
@@ -23,10 +43,14 @@ const TRADITION_COLORS = {
   'Still Discovering': T.goldDark,
 };
 
-export function Avatar({ name, avatarConfig, size = 48, style = {} }) {
-  const url = avatarConfig
-    ? avatarUrl(avatarConfig)
-    : avatarUrl({ style: 'lorelei', seed: name || 'friend', bgColor: 'fdf8f0' });
+export { BANNER_PRESETS, bannerBackground };
+
+export function Avatar({ name, avatarConfig, photoUrl, size = 48, style = {} }) {
+  const url = photoUrl
+    ? photoUrl
+    : avatarConfig
+      ? avatarUrl(avatarConfig)
+      : avatarUrl({ style: 'lorelei', seed: name || 'friend', bgColor: 'fdf8f0' });
   return (
     <img
       src={url}
@@ -34,10 +58,12 @@ export function Avatar({ name, avatarConfig, size = 48, style = {} }) {
       width={size}
       height={size}
       style={{
+        display: 'block',
         borderRadius: '50%',
         border: `2px solid ${T.line}`,
         background: T.parchment,
         flexShrink: 0,
+        objectFit: 'cover',
         ...style,
       }}
     />
@@ -86,6 +112,9 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
   const [posts, setPosts] = useState([]);
   const [following, setFollowing] = useState([]);
   const [stats, setStats] = useState({ posts: 0, following: 0, followers: 0 });
+  const [bannerError, setBannerError] = useState(null);
+  const [bannerPickerOpen, setBannerPickerOpen] = useState(false);
+  const [avatarLightbox, setAvatarLightbox] = useState(false);
 
   useEffect(() => {
     if (!session) return;
@@ -104,7 +133,7 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
         const ids = data.map((f) => f.following_id);
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, display_name, avatar_config')
+          .select('id, display_name, avatar_config, avatar_url')
           .in('id', ids);
         setFollowing(profiles ?? []);
       });
@@ -115,16 +144,28 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
       .then(({ data }) => setPosts(data ?? []));
   }, [session]);
 
-  async function saveAvatar(config) {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ avatar_config: config })
-      .eq('id', session.user.id);
-    if (!error) {
+  async function saveAvatar({ photoUrl, config }) {
+    const updates = { avatar_url: photoUrl ?? null };
+    if (config) updates.avatar_config = config;
+    try {
+      await directProfileUpdate(session.user.id, updates);
       setPickingAvatar(false);
-      onProfileUpdate?.({ ...profile, avatar_config: config });
+      onProfileUpdate?.({ ...profile, ...updates });
+    } catch (err) {
+      console.error('saveAvatar failed:', err.message);
     }
   }
+
+  async function savePreset(key) {
+    if (!session?.user?.id) return;
+    setBannerError(null);
+    try {
+      await directProfileUpdate(session.user.id, { banner_preset: key, banner_url: null });
+      onProfileUpdate?.({ ...profile, banner_preset: key, banner_url: null });
+      setBannerPickerOpen(false);
+    } catch (err) { setBannerError(err.message); }
+  }
+
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -137,6 +178,8 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
       {pickingAvatar && (
         <AvatarPicker
           current={profile?.avatar_config}
+          currentPhotoUrl={profile?.avatar_url}
+          userId={session?.user?.id}
           onSave={saveAvatar}
           onCancel={() => setPickingAvatar(false)}
         />
@@ -165,29 +208,91 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
             marginBottom: 16,
           }}>
             {/* Banner */}
-            <div style={{
-              height: 110,
-              background: `linear-gradient(135deg, #f5ede0 0%, rgba(196,129,58,0.25) 60%, rgba(139,90,43,0.15) 100%)`,
-              position: 'relative',
-            }} />
+            <div style={{ position: 'relative' }}>
+              {/* Banner image / gradient */}
+              <div
+                style={{
+                  height: 110,
+                  background: bannerBackground(profile),
+                  transition: 'height 0.2s ease',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                <button
+                  onClick={() => setBannerPickerOpen((v) => !v)}
+                  style={{
+                    position: 'absolute', top: 10, right: 10,
+                    background: 'rgba(44,24,16,0.55)', color: T.cream,
+                    border: 'none', borderRadius: 999, padding: '6px 12px',
+                    fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                    backdropFilter: 'blur(4px)',
+                  }}
+                >
+                  🎨 Banner colour
+                </button>
+                {bannerError && (
+                  <div style={{
+                    position: 'absolute', bottom: 8, left: 12, right: 12,
+                    background: 'rgba(220,53,69,0.92)', color: '#fff',
+                    borderRadius: 8, padding: '5px 10px', fontSize: 12, textAlign: 'center',
+                  }}>
+                    {bannerError}
+                  </div>
+                )}
+              </div>
+
+              {/* Colour picker panel */}
+              {bannerPickerOpen && (
+                <div style={{ background: T.white, borderBottom: `1px solid ${T.line}`, padding: '14px 16px' }}>
+                  <div style={{ fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 10 }}>
+                    Choose a colour
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {BANNER_PRESETS.map((p) => {
+                      const active = profile?.banner_preset === p.key;
+                      return (
+                        <button
+                          key={p.key}
+                          onClick={() => savePreset(p.key)}
+                          title={p.label}
+                          style={{
+                            width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                            background: p.bg, border: active ? `2.5px solid ${T.goldDark}` : '2px solid transparent',
+                            cursor: 'pointer', boxShadow: active ? `0 0 0 2px ${T.goldLight}` : 'none',
+                            transition: 'border 0.12s',
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>{/* end outer banner wrapper */}
 
             {/* Avatar overlapping banner */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: -50, paddingBottom: 20 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: bannerPickerOpen ? 12 : -50, paddingBottom: 20 }}>
               <div style={{ position: 'relative', marginBottom: 12 }}>
-                <Avatar
-                  name={profile?.display_name}
-                  avatarConfig={profile?.avatar_config}
-                  size={96}
-                  style={{ border: `4px solid ${T.white}`, boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}
-                />
+                <div
+                  onClick={() => (profile?.avatar_url || profile?.avatar_config) && setAvatarLightbox(true)}
+                  style={{ cursor: (profile?.avatar_url || profile?.avatar_config) ? 'zoom-in' : 'default', display: 'inline-block' }}
+                >
+                  <Avatar
+                    name={profile?.display_name}
+                    avatarConfig={profile?.avatar_config}
+                    photoUrl={profile?.avatar_url}
+                    size={112}
+                    style={{ border: `4px solid ${T.white}`, boxShadow: '0 4px 24px rgba(0,0,0,0.14)' }}
+                  />
+                </div>
                 <button
                   onClick={() => setPickingAvatar(true)}
                   style={{
                     position: 'absolute',
-                    bottom: 2,
-                    right: 2,
-                    width: 28,
-                    height: 28,
+                    bottom: 4,
+                    right: 4,
+                    width: 30,
+                    height: 30,
                     borderRadius: '50%',
                     background: T.ink,
                     color: T.cream,
@@ -203,6 +308,51 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
                   ✏️
                 </button>
               </div>
+
+              {/* Avatar lightbox */}
+              {avatarLightbox && (
+                <div
+                  onClick={() => setAvatarLightbox(false)}
+                  style={{
+                    position: 'fixed', inset: 0, zIndex: 9999,
+                    background: 'rgba(0,0,0,0.82)',
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', gap: 20,
+                  }}
+                >
+                  <Avatar
+                    name={profile?.display_name}
+                    avatarConfig={profile?.avatar_config}
+                    photoUrl={profile?.avatar_url}
+                    size={280}
+                    style={{ border: `4px solid ${T.white}`, boxShadow: '0 8px 48px rgba(0,0,0,0.5)', pointerEvents: 'none' }}
+                  />
+                  {profile?.avatar_url && (
+                    <a
+                      href={profile.avatar_url}
+                      download="profile-photo.jpg"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        background: 'rgba(255,255,255,0.15)',
+                        color: '#fff',
+                        border: '1.5px solid rgba(255,255,255,0.35)',
+                        borderRadius: 999,
+                        padding: '10px 24px',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                        backdropFilter: 'blur(8px)',
+                        letterSpacing: '0.01em',
+                      }}
+                    >
+                      💾 Save photo
+                    </a>
+                  )}
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: -8 }}>
+                    Tap anywhere to close
+                  </div>
+                </div>
+              )}
 
               <div style={{ fontFamily: T.display, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 4 }}>
                 {profile?.display_name ?? 'Friend'}
@@ -300,7 +450,7 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
           {/* Trial status */}
           {trial.active && (
             <div style={{
-              background: 'rgba(196,129,58,0.08)',
+              background: 'rgba(184,115,58,0.08)',
               border: `1px solid ${T.goldLight}`,
               borderRadius: 14,
               padding: '14px 18px',
@@ -364,7 +514,7 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
               <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 4 }}>
                 {following.map((f) => (
                   <div key={f.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                    <Avatar name={f.display_name} avatarConfig={f.avatar_config} size={48} />
+                    <Avatar name={f.display_name} avatarConfig={f.avatar_config} photoUrl={f.avatar_url} size={48} />
                     <div style={{ fontSize: 11, color: T.inkSoft, textAlign: 'center', maxWidth: 56, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {f.display_name}
                     </div>
@@ -418,7 +568,7 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
 
       {shareOpen && (
         <ShareSheet
-          body={`Find me on The Way${profile?.display_name ? ` — I'm ${profile.display_name}` : ''}.`}
+          body={`Find me on kinwove${profile?.display_name ? ` — I'm ${profile.display_name}` : ''}.`}
           intro="Real questions about faith, doubt, and the Bible — for believers, doubters, and everyone in between."
           title="Share your profile"
           onClose={() => setShareOpen(false)}

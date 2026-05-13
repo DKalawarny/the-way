@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import PostCard from './PostCard.jsx';
+import SponsoredCard from './SponsoredCard.jsx';
 
 const PAGE_SIZE = 20;
 
@@ -15,15 +16,17 @@ function parseSource(source) {
   return { scope: null, scopeId: null, authorId: null };
 }
 
-export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessage, onOpenSermon }) {
+export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessage, onOpenSermon, userPlan, blockedUserIds = [] }) {
   const { scope, scopeId, authorId } = parseSource(source);
 
   const [items, setItems]         = useState([]);
+  const [sponsors, setSponsors]   = useState([]);
   const [loading, setLoading]     = useState(true);
   const [authorMap, setAuthorMap] = useState({});      // { uid: { display_name, avatar_config } }
   const [churchMap, setChurchMap] = useState({});      // { cid: { name, ... } }
   const [rolesByUser, setRolesByUser] = useState({});  // { uid: [role rows] } per visible church scope
   const [commentCounts, setCommentCounts] = useState({}); // { post_id: n }
+  const [savedPostIds, setSavedPostIds] = useState(new Set());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -34,8 +37,13 @@ export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessa
       .limit(PAGE_SIZE);
 
     if (scope === 'me' && authorId) {
-      // The author's profile feed: their 'me' posts + their public prayers.
-      q = q.eq('scope', 'me').eq('author_id', authorId);
+      // The author's profile feed: their me-scoped posts + public prayers,
+      // PLUS their church-scoped posts (unless they hid those individually).
+      // The author can hide a specific church post from this feed via the
+      // PostCard kebab; default is visible.
+      q = q
+        .eq('author_id', authorId)
+        .or(`scope.eq.me,and(scope.eq.church,hide_from_profile.eq.false)`);
     } else if (scope === 'church' && scopeId) {
       q = q.eq('scope', 'church').eq('scope_id', scopeId);
     } else if (scope === 'group' && scopeId) {
@@ -47,6 +55,9 @@ export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessa
     const rows = data ?? [];
     setItems(rows);
 
+    supabase.from('sponsored_posts').select('*').eq('is_active', true).order('sort_order')
+      .then(({ data }) => setSponsors(data ?? []));
+
     // Hydrate author profiles + church names
     const authorIds = [...new Set(rows.filter((r) => !r.is_anonymous).map((r) => r.author_id).filter(Boolean))];
     const churchIds = [...new Set(rows.filter((r) => r.scope === 'church').map((r) => r.scope_id).filter(Boolean))];
@@ -54,7 +65,7 @@ export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessa
     if (authorIds.length) {
       const { data: profs } = await supabase
         .from('profiles')
-        .select('id, display_name, avatar_config')
+        .select('id, display_name, avatar_config, avatar_url')
         .in('id', authorIds);
       const map = {};
       (profs ?? []).forEach((p) => { map[p.id] = p; });
@@ -120,6 +131,17 @@ export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessa
 
   useEffect(() => { load(); }, [load, refreshKey]);
 
+  useEffect(() => {
+    if (!sessionUserId) return;
+    supabase
+      .from('saved_posts')
+      .select('post_id')
+      .eq('user_id', sessionUserId)
+      .then(({ data }) => {
+        setSavedPostIds(new Set((data ?? []).map((r) => r.post_id)));
+      });
+  }, [sessionUserId]);
+
   if (loading) {
     return (
       <div style={{ color: T.inkMuted, fontFamily: T.serif, textAlign: 'center', padding: 40 }}>
@@ -140,22 +162,65 @@ export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessa
     );
   }
 
+  const showAds = (userPlan === 'free' || !userPlan) && sponsors.length > 0;
+
+  const visibleItems = blockedUserIds.length
+    ? items.filter((item) => !blockedUserIds.includes(item.author_id))
+    : items;
+
+  if (visibleItems.length === 0) {
+    return (
+      <div style={{
+        background: T.white, border: `1px dashed ${T.line}`, borderRadius: 14,
+        padding: '32px 20px', textAlign: 'center',
+        color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.65,
+      }}>
+        {emptyMessage ?? 'Nothing here yet.'}
+      </div>
+    );
+  }
+
   return (
     <>
-      {items.map((item) => (
-        <PostCard
-          key={`${item.source}:${item.id}`}
-          item={item}
-          authorProfile={authorMap[item.author_id]}
-          authorRoles={rolesByUser[item.author_id]}
-          churchInfo={churchMap[item.scope_id]}
-          sessionUserId={sessionUserId}
-          authorMap={authorMap}
-          rolesByUser={rolesByUser}
-          commentCount={commentCounts[item.id] ?? 0}
-          onOpenSermon={onOpenSermon}
-        />
-      ))}
+      {visibleItems.map((item, index) => {
+        const card = (
+            <PostCard
+              key={`${item.source}:${item.id}`}
+              item={item}
+              authorProfile={authorMap[item.author_id]}
+              authorRoles={rolesByUser[item.author_id]}
+              churchInfo={churchMap[item.scope_id]}
+              sessionUserId={sessionUserId}
+              authorMap={authorMap}
+              rolesByUser={rolesByUser}
+              commentCount={commentCounts[item.id] ?? 0}
+              onOpenSermon={onOpenSermon}
+              isSaved={savedPostIds.has(item.id)}
+              onSaveToggle={async (postId, wasSaved) => {
+                if (wasSaved) {
+                  await supabase.from('saved_posts').delete().eq('user_id', sessionUserId).eq('post_id', postId);
+                  setSavedPostIds((prev) => { const s = new Set(prev); s.delete(postId); return s; });
+                } else {
+                  await supabase.from('saved_posts').insert({ user_id: sessionUserId, post_id: postId });
+                  setSavedPostIds((prev) => new Set([...prev, postId]));
+                }
+              }}
+            />
+          );
+
+        // Inject a sponsored card after every 10th item (index 9, 19, 29…)
+        if (showAds && (index + 1) % 10 === 0) {
+          const sponsor = sponsors[Math.floor(index / 10) % sponsors.length];
+          return (
+            <div key={`${item.source}:${item.id}:wrapper`}>
+              {card}
+              <SponsoredCard key={`sponsored-${index}`} {...sponsor} />
+            </div>
+          );
+        }
+
+        return card;
+      })}
     </>
   );
 }

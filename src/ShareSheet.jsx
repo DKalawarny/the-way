@@ -5,7 +5,7 @@ export default function ShareSheet({
   body,
   url,
   title,
-  intro = '— shared from The Way',
+  intro = '— shared from kinwove',
   previewBody,
   customActions = [],
   onClose,
@@ -92,11 +92,11 @@ export default function ShareSheet({
 
   async function handleNativeShare() {
     try {
-      await navigator.share({ title: title ?? 'The Way', text: shareText, url: shareUrl });
+      await navigator.share({ title: title ?? 'kinwove', text: shareText, url: shareUrl });
       dismiss();
     } catch (e) {
       if (e.name !== 'AbortError') {
-        window.open(`mailto:?subject=${encodeURIComponent(title ?? 'From The Way')}&body=${encodeURIComponent(fullText)}`);
+        window.open(`mailto:?subject=${encodeURIComponent(title ?? 'From kinwove')}&body=${encodeURIComponent(fullText)}`);
       }
     }
   }

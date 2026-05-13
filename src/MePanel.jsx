@@ -1,12 +1,19 @@
-import { useEffect, useState } from 'react';
-import { supabase } from './supabase.js';
+import { useEffect, useRef, useState } from 'react';
+import { Smile } from 'lucide-react';
+import SwipeableSheet from './SwipeableSheet.jsx';
+import { supabase, uploadPostImage, uploadProfileImage, directProfileUpdate } from './supabase.js';
 import { T, SEMANTIC } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
-import { Avatar } from './ProfilePage.jsx';
+import { Avatar, BANNER_PRESETS, bannerBackground } from './ProfilePage.jsx';
 import AvatarPicker from './AvatarPicker.jsx';
+import { VISIBILITY_OPTIONS } from './PostComposer.jsx';
+import PostImageGrid from './PostImageGrid.jsx';
 // Shared with UserProfile — same constants, same helpers, same church card.
 // PRAYER_REACTIONS stays local because it's only used here (the prayer tab).
 import { REACTIONS, TYPE_COLORS, timeAgo, loadChurchContext, ChurchAttendsCard } from './profileShared.jsx';
+import EmptyState from './EmptyState.jsx';
+import { codeToFlag } from './countries.js';
+import { useAiUsage, PLAN_LIMITS } from './useAiUsage.js';
 
 const PRAYER_REACTIONS = [
   { kind: 'praying',  emoji: '🙏', label: 'Praying',  semantic: 'prayer'     },
@@ -16,14 +23,68 @@ const PRAYER_REACTIONS = [
   { kind: 'strength', emoji: '💪', label: 'Strength' },
 ];
 
-function ProfilePost({ post, session, profile, onReact, churchCtx }) {
+function ProfilePost({ post, session, profile, onReact, churchCtx, onDelete }) {
   const [expanded,     setExpanded]     = useState(false);
   const [sheetOpen,    setSheetOpen]    = useState(false);
   const [replies,      setReplies]      = useState(null);
   const [replyInput,   setReplyInput]   = useState('');
   const [replyLoading, setReplyLoading] = useState(false);
+  const [emojiOpen,    setEmojiOpen]    = useState(false);
+  const replyInputRef = useRef(null);
+
+  function insertReplyEmoji(emoji) {
+    const el = replyInputRef.current;
+    const start = el?.selectionStart ?? replyInput.length;
+    const end   = el?.selectionEnd   ?? replyInput.length;
+    const next  = replyInput.slice(0, start) + emoji + replyInput.slice(end);
+    setReplyInput(next);
+    setEmojiOpen(false);
+    requestAnimationFrame(() => {
+      el?.focus();
+      const pos = start + [...emoji].length;
+      el?.setSelectionRange(pos, pos);
+    });
+  }
+  const [menuOpen,           setMenuOpen]           = useState(false);
+  const [editing,            setEditing]            = useState(false);
+  const [editText,           setEditText]           = useState('');
+  const [editBusy,           setEditBusy]           = useState(false);
+  const [localBody,          setLocalBody]          = useState(null);
+  const [confirmingDelete,   setConfirmingDelete]   = useState(false);
+  const [deleteBusy,         setDeleteBusy]         = useState(false);
+
+  const isOwn = !!session?.user?.id && session.user.id === post.author_id;
+  const displayBody = localBody ?? post.body;
 
   const replyCount = replies ? replies.length : (post.reply_count ?? 0);
+
+  function startEdit() {
+    setEditText(displayBody ?? '');
+    setEditing(true);
+    setMenuOpen(false);
+  }
+
+  async function saveEdit() {
+    const next = editText.trim();
+    if (!next || editBusy) return;
+    setEditBusy(true);
+    const { error } = await supabase.from('posts').update({ body: next }).eq('id', post.id);
+    setEditBusy(false);
+    if (error) { console.error('edit failed', error.message); return; }
+    setLocalBody(next);
+    setEditing(false);
+  }
+
+  async function deletePost() {
+    if (deleteBusy) return;
+    setDeleteBusy(true);
+    const { error } = await supabase.from('posts').delete().eq('id', post.id);
+    setDeleteBusy(false);
+    setConfirmingDelete(false);
+    setMenuOpen(false);
+    if (error) { console.error('delete failed', error.message); return; }
+    onDelete?.(post.id);
+  }
 
   async function openSheet() {
     setSheetOpen(true);
@@ -34,7 +95,7 @@ function ProfilePost({ post, session, profile, onReact, churchCtx }) {
       // post's church family, so callers outside that boundary see [].
       const { data } = await supabase
         .from('post_comments')
-        .select('*, profiles(display_name, avatar_config)')
+        .select('*, profiles(display_name, avatar_config, avatar_url)')
         .eq('post_id', post.id)
         .order('created_at', { ascending: true });
       setReplies(data ?? []);
@@ -47,23 +108,114 @@ function ProfilePost({ post, session, profile, onReact, churchCtx }) {
     const { data } = await supabase
       .from('post_comments')
       .insert({ post_id: post.id, author_id: session.user.id, body: replyInput.trim() })
-      .select('*, profiles(display_name, avatar_config)')
+      .select('*, profiles(display_name, avatar_config, avatar_url)')
       .single();
     if (data) { setReplies(prev => [...(prev ?? []), data]); setReplyInput(''); }
   }
 
   return (
     <>
-      <div style={{ background: T.white, borderRadius: 16, border: `1px solid ${T.line}`, marginBottom: 12, overflow: 'hidden' }}>
+      <div style={{ background: T.white, borderRadius: 14, border: `1px solid ${T.line}`, marginBottom: 12, overflow: 'hidden' }}>
         <div style={{ padding: '14px 18px' }}>
-          <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 10 }}>{timeAgo(post.created_at)}</div>
-          <div style={{ fontFamily: T.serif, fontSize: 16, color: T.ink, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
-            {expanded ? post.body : post.body.slice(0, 300) + (post.body.length > 300 ? '…' : '')}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ fontSize: 12, color: T.inkMuted }}>{timeAgo(post.created_at)}</div>
+            {isOwn && (
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+                  aria-label="Post options"
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    fontSize: 18, color: T.inkMuted, padding: '4px 8px', lineHeight: 1,
+                  }}
+                >⋯</button>
+                {menuOpen && (
+                  <>
+                    <div
+                      onClick={() => setMenuOpen(false)}
+                      style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'transparent' }}
+                    />
+                    <div
+                      style={{
+                        position: 'absolute', top: 'calc(100% + 4px)', right: 0,
+                        background: T.white, border: `1px solid ${T.line}`, borderRadius: 10,
+                        boxShadow: '0 6px 20px rgba(0,0,0,0.10)',
+                        minWidth: 180, zIndex: 100, overflow: 'hidden',
+                      }}
+                    >
+                      <button
+                        onClick={startEdit}
+                        style={{
+                          width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                          padding: '10px 14px', fontSize: 13, color: T.ink, cursor: 'pointer',
+                        }}
+                      >
+                        Edit post
+                      </button>
+                      <button
+                        onClick={() => { setMenuOpen(false); setConfirmingDelete(true); }}
+                        style={{
+                          width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                          padding: '10px 14px', fontSize: 13, color: T.error ?? '#A53F2B', cursor: 'pointer',
+                        }}
+                      >
+                        Delete post
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
-          {post.body.length > 300 && (
-            <button onClick={() => setExpanded((v) => !v)} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 13, cursor: 'pointer', padding: '6px 0 0', display: 'block' }}>
-              {expanded ? 'Show less' : 'Read more'}
-            </button>
+          {editing ? (
+            <div>
+              <textarea
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                autoFocus
+                rows={4}
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 12px',
+                  fontFamily: T.serif, fontSize: 15.5, lineHeight: 1.65,
+                  color: T.ink, background: T.cream, outline: 'none', resize: 'vertical',
+                }}
+              />
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+                <button
+                  onClick={() => setEditing(false)}
+                  disabled={editBusy}
+                  style={{
+                    background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
+                    padding: '6px 14px', fontSize: 13, color: T.inkSoft, cursor: 'pointer',
+                  }}
+                >Cancel</button>
+                <button
+                  onClick={saveEdit}
+                  disabled={editBusy || !editText.trim()}
+                  style={{
+                    background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+                    padding: '6px 16px', fontSize: 13, fontWeight: 600,
+                    cursor: editBusy || !editText.trim() ? 'not-allowed' : 'pointer',
+                    opacity: editBusy || !editText.trim() ? 0.5 : 1,
+                  }}
+                >{editBusy ? 'Saving…' : 'Save'}</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {displayBody && (
+                <div style={{ fontFamily: T.serif, fontSize: 16, color: T.ink, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
+                  {expanded ? displayBody : (displayBody?.slice(0, 300) + ((displayBody?.length ?? 0) > 300 ? '…' : ''))}
+                </div>
+              )}
+              {(displayBody?.length ?? 0) > 300 && (
+                <button onClick={() => setExpanded((v) => !v)} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 13, cursor: 'pointer', padding: '6px 0 0', display: 'block' }}>
+                  {expanded ? 'Show less' : 'Read more'}
+                </button>
+              )}
+              <PostImageGrid urls={post.body_data?.image_urls} />
+            </>
           )}
         </div>
         <div style={{ padding: '8px 18px', borderTop: `1px solid ${T.line}`, display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -72,7 +224,7 @@ function ProfilePost({ post, session, profile, onReact, churchCtx }) {
             const active = post.my_reaction === r.kind;
             return (
               <button key={r.kind} onClick={() => session && onReact(post.id, r.kind, active)} style={{
-                background: active ? 'rgba(196,129,58,0.12)' : 'transparent',
+                background: active ? 'rgba(184,115,58,0.12)' : 'transparent',
                 border: `1px solid ${active ? T.gold : T.line}`,
                 borderRadius: 999, padding: '5px 11px', fontSize: 12,
                 color: active ? T.goldDark : T.inkMuted, cursor: 'pointer',
@@ -92,6 +244,48 @@ function ProfilePost({ post, session, profile, onReact, churchCtx }) {
         </div>
       </div>
 
+      {confirmingDelete && (
+        <div
+          onClick={() => !deleteBusy && setConfirmingDelete(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+        >
+          <SwipeableSheet
+            canDismiss={!deleteBusy}
+            onDismiss={() => setConfirmingDelete(false)}
+            style={{
+              background: T.white, borderRadius: 14, padding: '20px 22px',
+              maxWidth: 380, width: '100%', boxShadow: '0 12px 40px rgba(0,0,0,0.25)',
+            }}
+          >
+            <div style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 700, color: T.ink, marginBottom: 8 }}>
+              Delete this post?
+            </div>
+            <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 16 }}>
+              This can't be undone. Reactions and comments on this post will also be removed.
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setConfirmingDelete(false)}
+                disabled={deleteBusy}
+                style={{
+                  background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
+                  padding: '8px 16px', fontSize: 13, color: T.inkSoft, cursor: 'pointer',
+                }}
+              >Cancel</button>
+              <button
+                onClick={deletePost}
+                disabled={deleteBusy}
+                style={{
+                  background: T.error ?? '#A53F2B', color: T.cream, border: 'none', borderRadius: 999,
+                  padding: '8px 18px', fontSize: 13, fontWeight: 600,
+                  cursor: deleteBusy ? 'wait' : 'pointer', opacity: deleteBusy ? 0.7 : 1,
+                }}
+              >{deleteBusy ? 'Deleting…' : 'Delete'}</button>
+            </div>
+          </SwipeableSheet>
+        </div>
+      )}
+
       {/* Facebook-style centered post dialog */}
       {sheetOpen && (
         <div
@@ -100,6 +294,7 @@ function ProfilePost({ post, session, profile, onReact, churchCtx }) {
         >
           <div
             onClick={(e) => e.stopPropagation()}
+            className="full-screen-mobile"
             style={{
               background: T.white, borderRadius: 10,
               width: 'min(660px, 96vw)', height: '85vh',
@@ -126,9 +321,14 @@ function ProfilePost({ post, session, profile, onReact, churchCtx }) {
               {/* Post author + full body */}
               <div style={{ padding: '16px 18px' }}>
                 <div style={{ display: 'flex', gap: 11, alignItems: 'center', marginBottom: 12 }}>
-                  <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} size={42} />
+                  <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url} size={42} />
                   <div>
-                    <div style={{ fontWeight: 600, fontSize: 14, color: T.ink }}>{profile?.display_name ?? 'You'}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 600, fontSize: 14, color: T.ink }}>
+                      {profile?.display_name ?? 'You'}
+                      {profile?.show_flag && (profile?.flags ?? []).length > 0 && (
+                        <span style={{ fontSize: 13, lineHeight: 1 }}>{codeToFlag(profile.flags[0])}</span>
+                      )}
+                    </div>
                     <div style={{ fontSize: 12, color: T.inkMuted }}>{timeAgo(post.created_at)}</div>
                   </div>
                 </div>
@@ -172,7 +372,7 @@ function ProfilePost({ post, session, profile, onReact, churchCtx }) {
                 ) : (
                   (replies ?? []).map(reply => (
                     <div key={reply.id} style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'flex-start' }}>
-                      <Avatar name={reply.profiles?.display_name} avatarConfig={reply.profiles?.avatar_config} size={34} style={{ flexShrink: 0 }} />
+                      <Avatar name={reply.profiles?.display_name} avatarConfig={reply.profiles?.avatar_config} photoUrl={reply.profiles?.avatar_url} size={34} style={{ flexShrink: 0 }} />
                       <div>
                         <div style={{ background: T.parchment, borderRadius: 16, padding: '9px 13px' }}>
                           <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, marginBottom: 2 }}>{reply.profiles?.display_name ?? 'Someone'}</div>
@@ -187,35 +387,62 @@ function ProfilePost({ post, session, profile, onReact, churchCtx }) {
             </div>
 
             {/* Pinned comment input */}
-            <div style={{ borderTop: `1px solid ${T.line}`, padding: '12px 18px 16px', flexShrink: 0, background: T.white }}>
-              {/* Privacy hint — matches the composer's tone (search MePanel
-                  for "Visible to" near submitPost). Reads from RLS context:
-                  comments are post_comments rows, and the table's RLS only
-                  permits inserts/reads inside the parent post's church
-                  family — see scripts/2026-05-01-private-comments.sql. */}
+            <div style={{ borderTop: `1px solid ${T.line}`, padding: '10px 16px 14px', flexShrink: 0, background: T.white, position: 'relative' }}>
+              {emojiOpen && (
+                <>
+                  <div onClick={() => setEmojiOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
+                  <div style={{
+                    position: 'absolute', bottom: 'calc(100% + 4px)', left: 16, right: 16, zIndex: 11,
+                    background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
+                    boxShadow: '0 8px 24px rgba(44,24,16,0.13)', padding: 10,
+                    display: 'grid', gridTemplateColumns: 'repeat(16, 1fr)', gap: 2,
+                  }}>
+                    {['😀','😊','😂','🥹','😍','🥰','😭','😅','🤔','😏','😌','🙃','😇','🤩','😬','🤯',
+                      '🙏','✝️','🕊️','🌿','🌸','🌺','🌻','☀️','🌙','⭐','🔥','💫','✨','🌈','🌊','🍃',
+                      '❤️','🧡','💛','💚','💙','💜','🤍','🫶','👏','🙌','💪','👍','🎉','🫂','💝','🎊',
+                    ].map((e) => (
+                      <button key={e} onClick={() => insertReplyEmoji(e)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '4px 2px', borderRadius: 6 }}
+                        onMouseEnter={(ev) => ev.currentTarget.style.background = T.parchment}
+                        onMouseLeave={(ev) => ev.currentTarget.style.background = 'none'}
+                      >{e}</button>
+                    ))}
+                  </div>
+                </>
+              )}
               <div style={{ fontSize: 11, color: T.inkMuted, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                 {churchCtx?.church
                   ? <>👥 Visible to {churchCtx.church.name} family</>
                   : <>🔒 Visible only to you (join a church to share)</>}
               </div>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} size={36} style={{ flexShrink: 0 }} />
-                <div style={{ flex: 1, background: T.parchment, borderRadius: 22, border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', padding: '10px 16px', gap: 8 }}>
-                  <input
-                    value={replyInput}
-                    onChange={(e) => setReplyInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitReply(); } }}
-                    placeholder="Write a comment…"
-                    autoFocus
-                    style={{ flex: 1, border: 'none', outline: 'none', fontFamily: T.serif, fontSize: 14, color: T.ink, background: 'transparent' }}
-                  />
-                  {replyInput.trim() && (
-                    <button onClick={submitReply} style={{
-                      background: T.gold, border: 'none', borderRadius: '50%',
-                      width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: T.cream, fontSize: 14, cursor: 'pointer', flexShrink: 0,
-                    }}>↑</button>
-                  )}
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url} size={36} style={{ flexShrink: 0, marginTop: 2 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ background: T.parchment, borderRadius: 18, border: `1px solid ${T.line}`, padding: '9px 14px' }}>
+                    <input
+                      ref={replyInputRef}
+                      value={replyInput}
+                      onChange={(e) => setReplyInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitReply(); } }}
+                      placeholder="Write a comment…"
+                      autoFocus
+                      style={{ width: '100%', border: 'none', outline: 'none', fontFamily: T.serif, fontSize: 14, color: T.ink, background: 'transparent' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', marginTop: 6, paddingLeft: 2, gap: 2 }}>
+                    <button onClick={() => setEmojiOpen((v) => !v)} title="Emoji"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 8, color: emojiOpen ? T.goldDark : T.inkSoft, display: 'flex', alignItems: 'center' }}>
+                      <Smile size={20} strokeWidth={1.75} />
+                    </button>
+                    <div style={{ flex: 1 }} />
+                    {replyInput.trim() && (
+                      <button onClick={submitReply} style={{
+                        background: T.gold, border: 'none', borderRadius: '50%',
+                        width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: T.cream, cursor: 'pointer', flexShrink: 0,
+                      }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -226,7 +453,128 @@ function ProfilePost({ post, session, profile, onReact, churchCtx }) {
   );
 }
 
-export default function MePanel({ session, profile, onClose, onEditProfile, onSignOut, onDeleteAccount, onOpenBoard, onOpenHistory, onProfileUpdate, onOpenChat, onViewProfile, onFindPeople, onInviteFriends, onFindChurches, onApplyAsPastor, onOpenPastorAdminQueue, onOpenChurch, onOpenSermon, onOpenWalks, onOpenTalkToSomeone, onOpenCareInbox, onOpenPastorDashboard, hasCareTeamRole, hasPastoredChurch }) {
+// ── Plan & AI usage card ───────────────────────────────────────────────────────
+const PLAN_LABELS = {
+  free:          { label: 'Free',       color: T.inkMuted },
+  premium:       { label: 'Premium',    color: '#8a5a20'  },
+  premium_plus:  { label: 'Premium+',   color: T.goldDark },
+  church_pro:    { label: 'Church Pro', color: '#4a1542'  },
+};
+
+function PlanCard({ plan, aiUsage, session }) {
+  const meta      = PLAN_LABELS[plan] ?? PLAN_LABELS.free;
+  const cfg       = PLAN_LIMITS[plan]  ?? PLAN_LIMITS.free;
+  const pct       = cfg.limit > 0 ? Math.min(100, Math.round((aiUsage.used / (cfg.limit + aiUsage.topup)) * 100)) : 0;
+  const isMonthly = cfg.period === 'monthly';
+  const isPaid    = plan !== 'free';
+  const [openingPortal, setOpeningPortal] = useState(false);
+
+  async function openPortal() {
+    if (!session?.user) return;
+    setOpeningPortal(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal-session`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            user_id: session.user.id,
+            return_url: window.location.origin,
+          }),
+        }
+      );
+      const { url } = await res.json();
+      if (url) window.location.href = url;
+    } catch {
+      window.open('mailto:support@theway.app?subject=Manage%20my%20subscription');
+    } finally {
+      setOpeningPortal(false);
+    }
+  }
+
+  return (
+    <div style={{
+      margin: '0 14px 16px',
+      padding: '14px 16px',
+      background: T.parchment,
+      border: `1px solid ${T.line}`,
+      borderRadius: 14,
+    }}>
+      {/* Header row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: T.inkMuted }}>Plan</span>
+          <span style={{
+            fontSize: 11.5, fontWeight: 700, letterSpacing: '0.05em',
+            color: meta.color, textTransform: 'uppercase',
+            background: `${meta.color}18`, borderRadius: 999,
+            padding: '2px 8px',
+          }}>{meta.label}</span>
+        </div>
+
+        {isPaid ? (
+          <button
+            onClick={openPortal}
+            disabled={openingPortal}
+            style={{
+              background: 'none', border: `1px solid ${T.line}`,
+              borderRadius: 999, padding: '4px 10px',
+              fontSize: 11.5, fontWeight: 600, color: T.inkSoft,
+              cursor: openingPortal ? 'wait' : 'pointer',
+              opacity: openingPortal ? 0.6 : 1,
+              transition: 'border-color 0.15s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = T.gold)}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = T.line)}
+          >
+            {openingPortal ? 'Opening…' : 'Manage subscription'}
+          </button>
+        ) : (
+          <a
+            href="/?upgrade=1"
+            style={{ fontSize: 12, fontWeight: 600, color: T.goldDark, textDecoration: 'none' }}
+          >
+            Upgrade →
+          </a>
+        )}
+      </div>
+
+      {/* Usage bar */}
+      {!aiUsage.loading && (
+        <>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: T.inkMuted, marginBottom: 5 }}>
+            <span>AI messages {isMonthly ? 'this month' : 'total'}</span>
+            <span style={{ fontWeight: 600, color: aiUsage.atLimit ? '#A53F2B' : T.ink }}>
+              {aiUsage.used} / {cfg.limit + aiUsage.topup}
+            </span>
+          </div>
+          <div style={{ height: 5, background: T.line, borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%',
+              width: `${pct}%`,
+              background: aiUsage.atLimit
+                ? '#A53F2B'
+                : `linear-gradient(90deg, ${T.gold}, #c47020)`,
+              borderRadius: 3,
+              transition: 'width 0.4s ease',
+            }} />
+          </div>
+          {isMonthly && (
+            <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 5 }}>
+              Resets at the start of next billing cycle
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+export default function MePanel({ session, profile, onClose, onEditProfile, onSignOut, onDeleteAccount, onOpenBoard, onOpenHistory, onProfileUpdate, onOpenChat, onViewProfile, onFindPeople, onInviteFriends, onFindChurches, onApplyAsPastor, onOpenPastorAdminQueue, onOpenChurchDisputesQueue, onOpenChurch, onOpenSermon, onOpenWalks, onOpenTalkToSomeone, onOpenCareInbox, onOpenMessages, onOpenPastorDashboard, hasCareTeamRole, hasPastoredChurch }) {
   const [posts, setPosts] = useState([]);
   const [stats, setStats] = useState({ posts: 0, following: 0, followers: 0 });
   const [followingList, setFollowingList] = useState([]);
@@ -235,15 +583,26 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
   const [tab, setTab] = useState('posts');
   const [loading, setLoading] = useState(true);
   const [pickingAvatar, setPickingAvatar] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [avatarLightbox, setAvatarLightbox] = useState(false);
+  const [bannerError, setBannerError] = useState(null);
+  const [bannerPickerOpen, setBannerPickerOpen] = useState(false);
   const [composeActive, setComposeActive] = useState(false);
   const [composeBody, setComposeBody] = useState('');
   const [composeSubmitting, setComposeSubmitting] = useState(false);
+  const [composeVisibility, setComposeVisibility] = useState('public');
+  // milestone toggle — see PostComposer for the same pattern. Tags the post
+  // as kind='journey_milestone' so it's findable when the Journey tab lands.
+  const [composeIsMilestone, setComposeIsMilestone] = useState(false);
+  const [composeAudienceMenuOpen, setComposeAudienceMenuOpen] = useState(false);
+  const [composeImageDrafts, setComposeImageDrafts] = useState([]);
+  const composeFileInputRef = useRef(null);
+  const composeTextRef = useRef(null);
+  const MAX_IMAGES_PER_POST = 4;
   const [prayers, setPrayers] = useState([]);
   const [prayerText, setPrayerText] = useState('');
   const [prayerSubmitting, setPrayerSubmitting] = useState(false);
   const [prayersLoaded, setPrayersLoaded] = useState(false);
-  const [newPrayerIsPublic, setNewPrayerIsPublic] = useState(true);
+  const [prayerComposeOpen, setPrayerComposeOpen] = useState(false);
   const [praiseTarget,      setPraiseTarget]      = useState(null);
   const [praiseText,        setPraiseText]        = useState('');
   const [supportMap,        setSupportMap]        = useState({});   // { prayerId: count }
@@ -254,10 +613,12 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
   const [reactionMap,       setReactionMap]       = useState({});   // { prayerId: { kind: count } }
   const [myReactionMap,     setMyReactionMap]     = useState({});   // { prayerId: kind | null }
   const [menuPrayerId,      setMenuPrayerId]      = useState(null); // which card's ⋯ menu is open
-  const [settingsOpen,      setSettingsOpen]      = useState(false);
+  const [savedPosts,        setSavedPosts]        = useState([]);
+  const [savedLoaded,       setSavedLoaded]       = useState(false);
   // Your church + this week's sermon, for the ChurchAttendsCard above the
   // tabs. Same shape as UserProfile — see profileShared.jsx#loadChurchContext.
   const [churchCtx, setChurchCtx] = useState({ church: null, sermon: null, memberCount: 0 });
+  const aiUsage = useAiUsage(session?.user?.id, profile?.plan ?? 'free');
 
   useEffect(() => {
     let cancelled = false;
@@ -269,25 +630,63 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
   }, [profile?.church_id]);
 
   async function submitPost() {
-    if (!composeBody.trim() || !session || composeSubmitting) return;
+    if ((!composeBody.trim() && composeImageDrafts.length === 0) || !session || composeSubmitting) return;
     setComposeSubmitting(true);
-    // scope='me' + kind='text' are required by the posts table NOT NULL
-    // constraints (added in the unified-feed migration). Privacy is enforced
-    // by the RLS policy "Same-church members read me-scope posts".
+    let imageUrls = [];
+    try {
+      for (const draft of composeImageDrafts) {
+        const url = await uploadPostImage(draft.file, session.user.id);
+        imageUrls.push(url);
+      }
+    } catch (e) {
+      setComposeSubmitting(false);
+      console.error('Image upload failed:', e.message ?? e);
+      return;
+    }
+    const bodyData = imageUrls.length ? { image_urls: imageUrls } : {};
     const { data, error } = await supabase.from('posts').insert({
       author_id: session.user.id,
       scope: 'me',
-      kind: 'text',
+      kind: composeIsMilestone ? 'journey_milestone' : 'text',
       body: composeBody.trim(),
+      body_data: bodyData,
       person_type: profile?.person_type ?? null,
-    }).select('*, profiles(display_name, city, country, tradition, person_type, avatar_config), post_comments(id)').single();
+      visibility: composeVisibility,
+    }).select('*, profiles!author_id(display_name, city, country, tradition, person_type, avatar_config, avatar_url, show_flag, flags), post_comments(id)').single();
     setComposeSubmitting(false);
     if (error) { console.error('Post failed:', error.message); return; }
     if (data) {
       setPosts((prev) => [{ ...data, reaction_counts: {}, my_reaction: null, reply_count: 0 }, ...prev]);
       setComposeBody('');
       setComposeActive(false);
+      setComposeVisibility('public');
+      setComposeAudienceMenuOpen(false);
+      setComposeIsMilestone(false);
+      composeImageDrafts.forEach((d) => URL.revokeObjectURL(d.previewUrl));
+      setComposeImageDrafts([]);
     }
+  }
+
+  function pickComposeImages(eventFiles) {
+    const incoming = Array.from(eventFiles ?? []);
+    if (!incoming.length) return;
+    const slotsLeft = MAX_IMAGES_PER_POST - composeImageDrafts.length;
+    if (slotsLeft <= 0) return;
+    const accepted = incoming.slice(0, slotsLeft).filter((f) => f.type.startsWith('image/'));
+    if (!accepted.length) return;
+    setComposeImageDrafts((prev) => [
+      ...prev,
+      ...accepted.map((file) => ({ file, previewUrl: URL.createObjectURL(file) })),
+    ]);
+  }
+
+  function removeComposeImageDraft(idx) {
+    setComposeImageDrafts((prev) => {
+      const next = prev.slice();
+      const [removed] = next.splice(idx, 1);
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      return next;
+    });
   }
   async function loadPrayers() {
     if (prayersLoaded || !session?.user?.id) return;
@@ -387,17 +786,16 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
     e.preventDefault();
     if (!prayerText.trim() || prayerSubmitting) return;
     setPrayerSubmitting(true);
-    const { data } = await supabase.from('personal_prayers').insert({
-      user_id: session.user.id, body: prayerText.trim(), is_public: newPrayerIsPublic,
+    const { data, error } = await supabase.from('personal_prayers').insert({
+      user_id: session.user.id, body: prayerText.trim(), is_public: false,
     }).select().single();
     setPrayerSubmitting(false);
-    if (data) { setPrayers((prev) => [data, ...prev]); setPrayerText(''); setNewPrayerIsPublic(true); }
-  }
-
-  async function togglePrayerPublic(p) {
-    const is_public = !p.is_public;
-    await supabase.from('personal_prayers').update({ is_public }).eq('id', p.id);
-    setPrayers((prev) => prev.map((x) => x.id === p.id ? { ...x, is_public } : x));
+    if (error) {
+      console.error('[addPrayer] insert failed', error);
+      alert(`Couldn't save prayer: ${error.message}`);
+      return;
+    }
+    if (data) { setPrayers((prev) => [data, ...prev]); setPrayerText(''); setPrayerComposeOpen(false); }
   }
 
   function handlePrayerAnswerButton(p) {
@@ -443,7 +841,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
       .then(async ({ data }) => {
         if (!data?.length) return;
         const { data: profiles } = await supabase
-          .from('profiles').select('id, display_name, avatar_config, person_type, tradition')
+          .from('profiles').select('id, display_name, avatar_config, avatar_url, person_type, tradition')
           .in('id', data.map((f) => f.following_id));
         setFollowingList(profiles ?? []);
       });
@@ -466,13 +864,13 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
 
     if (friendIds.length) {
       const { data: fp } = await supabase.from('profiles')
-        .select('id, display_name, avatar_config, person_type, tradition')
+        .select('id, display_name, avatar_config, avatar_url, person_type, tradition')
         .in('id', friendIds);
       setFriendsList(fp ?? []);
     }
     if (pendingIds.length) {
       const { data: pp } = await supabase.from('profiles')
-        .select('id, display_name, avatar_config, person_type, tradition')
+        .select('id, display_name, avatar_config, avatar_url, person_type, tradition')
         .in('id', pendingIds.map((p) => p.senderId));
       setPendingRequests((pp ?? []).map((p) => ({
         ...p, reqId: pendingIds.find((r) => r.senderId === p.id)?.reqId,
@@ -482,7 +880,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
 
   async function acceptFriend(reqId, senderId) {
     await supabase.from('friend_requests').update({ status: 'accepted' }).eq('id', reqId);
-    const { data } = await supabase.from('profiles').select('id, display_name, avatar_config, person_type, tradition').eq('id', senderId).single();
+    const { data } = await supabase.from('profiles').select('id, display_name, avatar_config, avatar_url, person_type, tradition').eq('id', senderId).single();
     if (data) setFriendsList((prev) => [...prev, data]);
     setPendingRequests((prev) => prev.filter((r) => r.reqId !== reqId));
   }
@@ -498,6 +896,35 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
       .delete()
       .or(`and(sender_id.eq.${uid},receiver_id.eq.${friendId}),and(sender_id.eq.${friendId},receiver_id.eq.${uid})`);
     setFriendsList((prev) => prev.filter((f) => f.id !== friendId));
+  }
+
+  async function loadSaved() {
+    if (savedLoaded || !session?.user?.id) return;
+    const { data: saves } = await supabase
+      .from('saved_posts')
+      .select('post_id, created_at')
+      .eq('user_id', session.user.id)
+      .order('created_at', { ascending: false });
+    if (!saves?.length) { setSavedLoaded(true); return; }
+    const postIds = saves.map((s) => s.post_id);
+    const { data: feedRows } = await supabase
+      .from('feed_items')
+      .select('*')
+      .in('id', postIds);
+    const rows = feedRows ?? [];
+    const authorIds = [...new Set(rows.map((p) => p.author_id).filter(Boolean))];
+    let authorMap = {};
+    if (authorIds.length) {
+      const { data: profs } = await supabase
+        .from('profiles')
+        .select('id, display_name, avatar_config, avatar_url')
+        .in('id', authorIds);
+      for (const p of profs ?? []) authorMap[p.id] = p;
+    }
+    // Preserve save order from the saved_posts query
+    const ordered = postIds.map((id) => rows.find((r) => r.id === id)).filter(Boolean);
+    setSavedPosts(ordered.map((p) => ({ ...p, authorProfile: authorMap[p.author_id] })));
+    setSavedLoaded(true);
   }
 
   async function loadPosts(uid) {
@@ -521,184 +948,195 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
     loadPosts(session.user.id);
   }
 
-  async function saveAvatar(config) {
-    const { error } = await supabase.from('profiles').update({ avatar_config: config }).eq('id', session.user.id);
-    if (!error) { setPickingAvatar(false); onProfileUpdate?.({ ...profile, avatar_config: config }); }
+  async function saveAvatar({ photoUrl, config }) {
+    const updates = { avatar_url: photoUrl ?? null };
+    if (config) updates.avatar_config = config;
+    try {
+      await directProfileUpdate(session.user.id, updates);
+      setPickingAvatar(false);
+      onProfileUpdate?.({ ...profile, ...updates });
+    } catch (err) {
+      console.error('saveAvatar failed:', err.message);
+    }
   }
+
+  async function savePreset(key) {
+    if (!session?.user?.id) return;
+    setBannerError(null);
+    try {
+      await directProfileUpdate(session.user.id, { banner_preset: key, banner_url: null });
+      onProfileUpdate?.({ ...profile, banner_preset: key, banner_url: null });
+      setBannerPickerOpen(false);
+    } catch (err) { setBannerError(err.message); }
+  }
+
 
   return (
     <>
-      {pickingAvatar && <AvatarPicker current={profile?.avatar_config} onSave={saveAvatar} onCancel={() => setPickingAvatar(false)} />}
-
-      {settingsOpen && (
-        <div
-          onClick={() => setSettingsOpen(false)}
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(44,24,16,0.55)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 305, padding: 20,
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: T.cream, borderRadius: 18, maxWidth: 420, width: '100%',
-              border: `1px solid ${T.line}`, overflow: 'hidden',
-            }}
-          >
-            <div style={{ padding: '20px 24px 12px', borderBottom: `1px solid ${T.line}` }}>
-              <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 4 }}>
-                Account
-              </div>
-              <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em' }}>
-                Settings
-              </div>
-            </div>
-            {[
-              { label: '◎  Edit profile',  onClick: () => { setSettingsOpen(false); onEditProfile(); } },
-              { label: 'Sign out',          onClick: () => { setSettingsOpen(false); onSignOut(); }, danger: true },
-              ...(onDeleteAccount ? [{ label: 'Delete account', onClick: () => { setSettingsOpen(false); onDeleteAccount(); }, danger: true }] : []),
-            ].map((item, i, arr) => (
-              <button
-                key={item.label}
-                onClick={item.onClick}
-                style={{
-                  width: '100%', textAlign: 'left', background: 'none', border: 'none',
-                  padding: '16px 24px', fontSize: 15,
-                  color: item.danger ? '#c0392b' : T.ink, cursor: 'pointer',
-                  borderBottom: i < arr.length - 1 ? `1px solid ${T.line}` : 'none',
-                  fontFamily: 'inherit',
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
-            <button
-              onClick={() => setSettingsOpen(false)}
-              style={{
-                width: '100%', textAlign: 'center', background: T.parchment, border: 'none',
-                padding: '14px 24px', fontSize: 14, color: T.inkMuted, cursor: 'pointer',
-                borderTop: `1px solid ${T.line}`, fontFamily: 'inherit',
-              }}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
-
-      {menuOpen && (
-        <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 299 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{
-            position: 'absolute', top: 56, right: 12,
-            background: T.white, borderRadius: 14, border: `1px solid ${T.line}`,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.14)', overflow: 'hidden', minWidth: 200, zIndex: 300,
-          }}>
-            {[
-              { label: '⊞  Your board',        onClick: () => { setMenuOpen(false); onOpenBoard(); } },
-              { label: '◷  Chat history',       onClick: () => { setMenuOpen(false); onOpenHistory(); } },
-              ...(onOpenWalks ? [{ label: '✶  Journeys',  onClick: () => { setMenuOpen(false); onOpenWalks(); } }] : []),
-              ...(onInviteFriends ? [{ label: '↗  Invite friends',  onClick: () => { setMenuOpen(false); onInviteFriends(); } }] : []),
-              ...(profile?.church_id && onOpenChurch ? [{ label: '⛪  My church',     onClick: () => { setMenuOpen(false); onOpenChurch(profile.church_id); } }] : []),
-              ...(profile?.church_id && onOpenTalkToSomeone ? [{ label: '☎  Ask someone',  onClick: () => { setMenuOpen(false); onOpenTalkToSomeone(); } }] : []),
-              ...(hasCareTeamRole && onOpenCareInbox ? [{ label: '✉  Conversations',  onClick: () => { setMenuOpen(false); onOpenCareInbox(); } }] : []),
-              ...(hasPastoredChurch && onOpenPastorDashboard ? [{ label: '⛪  Manage your church',  onClick: () => { setMenuOpen(false); onOpenPastorDashboard(); } }] : []),
-              ...(onFindChurches ? [{ label: '🔍  Find a church',     onClick: () => { setMenuOpen(false); onFindChurches(); } }] : []),
-              ...(onApplyAsPastor && !profile?.is_pastor ? [{ label: '✦  Apply as a pastor', onClick: () => { setMenuOpen(false); onApplyAsPastor(); } }] : []),
-              ...(onOpenPastorAdminQueue ? [{ label: '🛡  Pastor applications (admin)', onClick: () => { setMenuOpen(false); onOpenPastorAdminQueue(); } }] : []),
-              { label: '⚙  Settings',           onClick: () => { setMenuOpen(false); setSettingsOpen(true); } },
-            ].map((item, i, arr) => (
-              <button key={item.label} onClick={item.onClick} style={{
-                width: '100%', textAlign: 'left', background: 'none', border: 'none',
-                padding: '13px 18px', fontSize: 14,
-                color: item.danger ? '#c0392b' : T.ink, cursor: 'pointer',
-                borderBottom: i < arr.length - 1 ? `1px solid ${T.line}` : 'none',
-              }}>
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
+      {pickingAvatar && (
+        <AvatarPicker
+          current={profile?.avatar_config}
+          currentPhotoUrl={profile?.avatar_url}
+          userId={session?.user?.id}
+          onSave={saveAvatar}
+          onCancel={() => setPickingAvatar(false)}
+        />
       )}
 
       <div className="scene" style={{ minHeight: '100vh', paddingBottom: 80 }}>
 
-        {/* Sticky header */}
+        {/* Sticky header — walnut "leather cover" matches Community so the
+            app reads as one editorial work. Gold back arrow + ivory title. */}
         <div style={{
-          position: 'sticky', top: 0, zIndex: 10, height: 52,
-          padding: '0 12px', background: T.white, borderBottom: `1px solid ${T.line}`,
+          position: 'sticky', top: 0, zIndex: 10, height: 56,
+          padding: '0 12px',
+          background: 'linear-gradient(180deg, #2a1a14 0%, #1f1410 100%)',
+          borderBottom: '1px solid #3a261d',
+          boxShadow: '0 4px 14px rgba(20,10,6,0.35), inset 0 -1px 0 rgba(184,115,58,0.18)',
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
           <button onClick={onClose} style={{
-            background: 'none', border: 'none', color: T.goldDark,
-            fontSize: 18, cursor: 'pointer', width: 36, height: 36, borderRadius: 10,
+            background: 'transparent', border: 'none', color: '#e8b563',
+            fontSize: 20, cursor: 'pointer', width: 36, height: 36, borderRadius: 10,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             transition: 'background 0.15s',
+            textShadow: '0 1px 0 rgba(0,0,0,0.4)',
           }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = T.parchment)}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(232,181,99,0.1)')}
             onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
             aria-label="Back"
           >←</button>
-          <div className="editorial-h2" style={{
+          <div style={{
             flex: 1, textAlign: 'center',
-            fontSize: 16,
+            fontFamily: T.display, fontSize: 17, fontWeight: 600,
+            color: '#f4e9d4', letterSpacing: '-0.01em',
             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            textShadow: '0 1px 0 rgba(0,0,0,0.4)',
           }}>
             {profile?.display_name ?? 'Profile'}
           </div>
-          <button onClick={() => setMenuOpen((v) => !v)} style={{
-            background: 'none', border: 'none', color: T.inkMuted,
-            fontSize: 22, cursor: 'pointer', width: 36, height: 36, borderRadius: 10,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            lineHeight: 1, transition: 'background 0.15s',
-          }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = T.parchment)}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-            aria-label="Menu"
-          >⋮</button>
+          {/* Right slot reserved — global FAB cluster (bell + search + ⋮)
+              floats here from App.jsx. */}
+          <div style={{ width: 204 }} aria-hidden="true" />
         </div>
 
-        {/* Hero cover — warm parchment-to-gold band */}
+        {/* Hero cover */}
         <div style={{ background: T.white, marginBottom: 10 }}>
-          <div style={{
-            height: 108,
-            background: `linear-gradient(135deg, ${T.parchment} 0%, ${T.parchmentDark} 45%, rgba(216,155,82,0.55) 100%)`,
-            position: 'relative', overflow: 'hidden',
-          }}>
+          <div style={{ position: 'relative' }}>
+            {/* Banner strip */}
             <div style={{
-              position: 'absolute', inset: 0,
-              backgroundImage: 'radial-gradient(circle, rgba(196,129,58,0.18) 1px, transparent 1px)',
-              backgroundSize: '22px 22px',
-              maskImage: 'radial-gradient(ellipse 80% 80% at 50% 50%, #000 30%, transparent 75%)',
-            }} />
+              height: 108, background: bannerBackground(profile),
+              position: 'relative', overflow: 'hidden',
+            }}>
+              <button onClick={() => setBannerPickerOpen((v) => !v)} style={{
+                position: 'absolute', top: 10, right: 10,
+                background: 'rgba(44,24,16,0.55)', color: T.cream,
+                border: 'none', borderRadius: 999, padding: '6px 12px',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                backdropFilter: 'blur(4px)',
+              }}>
+                🎨 Banner colour
+              </button>
+              {bannerError && (
+                <div style={{ position: 'absolute', bottom: 8, left: 12, right: 12, background: 'rgba(220,53,69,0.92)', color: '#fff', borderRadius: 8, padding: '5px 10px', fontSize: 12, textAlign: 'center' }}>
+                  {bannerError}
+                </div>
+              )}
+            </div>
+            {/* Colour picker panel */}
+            {bannerPickerOpen && (
+              <div style={{ background: T.white, borderBottom: `1px solid ${T.line}`, padding: '14px 16px' }}>
+                <div style={{ fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 10 }}>Choose a colour</div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {BANNER_PRESETS.map((p) => {
+                    const active = profile?.banner_preset === p.key;
+                    return (
+                      <button key={p.key} onClick={() => savePreset(p.key)} title={p.label} style={{
+                        width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                        background: p.bg, border: active ? `2.5px solid ${T.goldDark}` : '2px solid transparent',
+                        cursor: 'pointer', boxShadow: active ? `0 0 0 2px ${T.goldLight}` : 'none',
+                      }} />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={{ padding: '0 20px 22px' }}>
             {/* Avatar row */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: -50, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: bannerPickerOpen ? 16 : -50, marginBottom: 16 }}>
               <div style={{ position: 'relative' }}>
-                <div style={{
-                  borderRadius: '50%', padding: 4,
-                  background: `linear-gradient(135deg, ${T.gold}, #e8a050, ${T.gold})`,
-                  display: 'inline-block',
-                  boxShadow: '0 4px 20px rgba(196,129,58,0.35)',
-                }}>
+                <div
+                  onClick={() => (profile?.avatar_url || profile?.avatar_config) && setAvatarLightbox(true)}
+                  style={{
+                    borderRadius: '50%', padding: 4,
+                    background: `linear-gradient(135deg, ${T.gold}, #e8a050, ${T.gold})`,
+                    display: 'inline-block',
+                    boxShadow: '0 4px 20px rgba(184,115,58,0.35)',
+                    cursor: (profile?.avatar_url || profile?.avatar_config) ? 'zoom-in' : 'default',
+                  }}
+                >
                   <Avatar
                     name={profile?.display_name}
-                    avatarConfig={profile?.avatar_config}
-                    size={84}
+                    avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url}
+                    size={108}
                     style={{ border: `3px solid ${T.white}`, display: 'block' }}
                   />
                 </div>
                 <button onClick={() => setPickingAvatar(true)} style={{
                   position: 'absolute', bottom: 4, right: 4,
-                  width: 26, height: 26, borderRadius: '50%',
+                  width: 30, height: 30, borderRadius: '50%',
                   background: T.ink, color: T.cream, border: `2px solid ${T.white}`,
-                  fontSize: 10, cursor: 'pointer',
+                  fontSize: 12, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }} title="Change photo">✏</button>
               </div>
+
+              {/* Avatar lightbox */}
+              {avatarLightbox && (
+                <div
+                  onClick={() => setAvatarLightbox(false)}
+                  style={{
+                    position: 'fixed', inset: 0, zIndex: 9999,
+                    background: 'rgba(0,0,0,0.82)',
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', gap: 20,
+                  }}
+                >
+                  <Avatar
+                    name={profile?.display_name}
+                    avatarConfig={profile?.avatar_config}
+                    photoUrl={profile?.avatar_url}
+                    size={280}
+                    style={{ border: `4px solid ${T.white}`, boxShadow: '0 8px 48px rgba(0,0,0,0.5)', pointerEvents: 'none' }}
+                  />
+                  {profile?.avatar_url && (
+                    <a
+                      href={profile.avatar_url}
+                      download="profile-photo.jpg"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        background: 'rgba(255,255,255,0.15)',
+                        color: '#fff',
+                        border: '1.5px solid rgba(255,255,255,0.35)',
+                        borderRadius: 999,
+                        padding: '10px 24px',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                        backdropFilter: 'blur(8px)',
+                        letterSpacing: '0.01em',
+                      }}
+                    >
+                      💾 Save photo
+                    </a>
+                  )}
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: -8 }}>
+                    Tap anywhere to close
+                  </div>
+                </div>
+              )}
 
               <div style={{ display: 'flex', gap: 8, paddingBottom: 4 }}>
                 <button onClick={onEditProfile} style={{
@@ -739,7 +1177,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                 fontFamily: T.serif, fontSize: 15, color: T.inkSoft,
                 fontStyle: 'italic', lineHeight: 1.65, marginBottom: 16,
                 padding: '12px 14px',
-                background: 'rgba(196,129,58,0.05)',
+                background: 'rgba(184,115,58,0.05)',
                 borderLeft: `3px solid ${T.gold}`,
                 borderRadius: '0 10px 10px 0',
               }}>
@@ -755,47 +1193,27 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
               </button>
             )}
 
-            {/* Stats */}
-            <div style={{ display: 'flex', gap: 24, paddingTop: 14, borderTop: `1px solid ${T.line}` }}>
+            {/* Stats — frontispiece-style: display numerals + gold-leaf small caps */}
+            <div style={{
+              display: 'flex', gap: 28, paddingTop: 14,
+              borderTop: '1px solid rgba(154,99,40,0.20)',
+            }}>
               {[
                 { value: stats.posts, label: 'Posts' },
                 { value: stats.following, label: 'Following' },
                 { value: stats.followers, label: 'Followers' },
               ].map((s) => (
                 <div key={s.label} style={{ cursor: 'default' }}>
-                  <span className="editorial-h2" style={{ fontSize: 20, marginRight: 5 }}>{s.value}</span>
-                  <span style={{ fontSize: 11, color: T.inkMuted, fontWeight: 600, letterSpacing: 0.6, textTransform: 'uppercase' }}>{s.label}</span>
+                  <span className="editorial-h2" style={{ fontSize: 20, marginRight: 6 }}>{s.value}</span>
+                  <span style={{
+                    fontSize: 10.5, color: T.goldDark, fontWeight: 700,
+                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                  }}>{s.label}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
-
-        {/* AI Chat CTA — slim pill */}
-        {onOpenChat && (
-          <div style={{ padding: '0 14px 12px' }}>
-            <button
-              onClick={() => onOpenChat('Take me deeper into what I\'ve been exploring. What do you think my next step should be?')}
-              className="lift"
-              style={{
-                width: '100%', background: T.white,
-                color: T.ink, border: `1px solid ${T.line}`, borderRadius: 999,
-                padding: '8px 14px 8px 8px', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 10,
-                textAlign: 'left',
-              }}
-            >
-              <div style={{
-                width: 30, height: 30, borderRadius: '50%',
-                background: `linear-gradient(135deg, ${T.gold}, #e8a050)`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 14, color: T.cream, flexShrink: 0,
-              }}>✦</div>
-              <div style={{ fontSize: 13.5, fontWeight: 600, color: T.ink }}>Continue with AI</div>
-              <div style={{ marginLeft: 'auto', fontSize: 14, color: T.goldDark }}>→</div>
-            </button>
-          </div>
-        )}
 
         {/* Your church — same component UserProfile uses on others' pages.
             Renders nothing if you haven't joined a church yet. Self-mode shows
@@ -812,187 +1230,409 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
           />
         </div>
 
-        {/* Tabs */}
-        <div style={{ background: T.white, display: 'flex', borderBottom: `1px solid ${T.line}`, marginBottom: 12 }}>
+
+        {/* ── Plan & AI usage card ──────────────────────────────────────────── */}
+        <PlanCard plan={profile?.plan ?? 'free'} aiUsage={aiUsage} session={session} />
+
+        {/* Tabs — underline style matching ChurchPage, navy accent for Personal */}
+        <div style={{
+          display: 'flex',
+          background: T.white,
+          borderBottom: `1px solid ${T.line}`,
+          marginBottom: 12,
+          overflowX: 'auto',
+        }}>
           {[
-            { id: 'posts',     label: `Posts (${stats.posts})` },
-            { id: 'prayers',   label: 'Prayers' },
-            { id: 'friends',   label: `Friends${pendingRequests.length ? ` · ${pendingRequests.length} 🔴` : ` (${friendsList.length})`}` },
-            { id: 'following', label: `Following (${stats.following})` },
-            { id: 'about',     label: 'About' },
-          ].map((t) => (
-            <button key={t.id} onClick={() => { setTab(t.id); if (t.id === 'prayers') loadPrayers(); }} style={{
-              flex: 1, padding: '13px 4px',
-              background: 'none', border: 'none',
-              borderBottom: tab === t.id ? `3px solid ${T.ink}` : '3px solid transparent',
-              fontSize: 13, fontWeight: tab === t.id ? 600 : 400,
-              color: tab === t.id ? T.ink : T.inkMuted,
-              cursor: 'pointer', whiteSpace: 'nowrap',
-            }}>
-              {t.label}
-            </button>
-          ))}
+            { id: 'posts',     label: `📝 Posts (${stats.posts})` },
+            { id: 'prayers',   label: '🙏 Prayers'                },
+            { id: 'saved',     label: '🔒 Private saves'           },
+            { id: 'friends',   label: `✦ Friends${pendingRequests.length ? ` · ${pendingRequests.length} 🔴` : ` (${friendsList.length})`}` },
+            { id: 'following', label: `↗ Following (${stats.following})` },
+            { id: 'about',     label: '◎ About'                   },
+          ].map((t) => {
+            const isActive = tab === t.id;
+            return (
+              <button key={t.id} onClick={() => { setTab(t.id); if (t.id === 'prayers') loadPrayers(); if (t.id === 'saved') loadSaved(); }} style={{
+                flex: 1,
+                padding: '11px 8px',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: isActive ? '2px solid #1a3050' : '2px solid transparent',
+                fontSize: 13,
+                fontWeight: isActive ? 700 : 500,
+                color: isActive ? '#1a3050' : T.inkMuted,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}>
+                {t.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Posts tab */}
         {tab === 'posts' && (
-          <div style={{ padding: '0 14px' }}>
-            {/* Inline composer */}
+          <div style={{ padding: '0 14px', maxWidth: 620, margin: '0 auto' }}>
+            {/* Compose pill — matches Community language. Collapsed shows a
+                gold-ringed avatar + parchment pill; tapping expands the full
+                editor inline on a warm engraved card. */}
+            <div style={{ marginBottom: 16 }}>
+            {!composeActive ? (
+              <button
+                onClick={() => { setComposeActive(true); requestAnimationFrame(() => composeTextRef.current?.focus()); }}
+                style={{
+                  width: '100%', display: 'flex', gap: 12, alignItems: 'center',
+                  background: 'transparent', border: 'none',
+                  cursor: 'pointer', padding: 0, textAlign: 'left',
+                  WebkitTapHighlightColor: 'transparent',
+                }}
+              >
+                <div style={{
+                  borderRadius: '50%',
+                  boxShadow: '0 2px 8px rgba(44,24,16,0.14), 0 0 0 2px rgba(255,255,255,0.95), 0 0 0 3px rgba(184,115,58,0.18)',
+                  flexShrink: 0,
+                }}>
+                  <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url} size={40} />
+                </div>
+                <div style={{
+                  flex: 1, minWidth: 0,
+                  background: 'linear-gradient(180deg, #FFFEFA 0%, #FBF4E3 100%)',
+                  border: '1px solid #C9B98E',
+                  borderRadius: 999, padding: '11px 16px',
+                  fontSize: 14.5, fontFamily: T.serif, fontStyle: 'italic',
+                  color: '#6b5d48',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  boxShadow: 'inset 0 2px 4px rgba(154,99,40,0.10), inset 0 -1px 0 rgba(255,255,255,0.6)',
+                }}>
+                  <span>A thought, a doubt, a question…</span>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    width: 26, height: 26, marginLeft: 12,
+                    borderRadius: '50%',
+                    background: `linear-gradient(135deg, ${T.goldLight}, ${T.goldDark})`,
+                    color: T.cream, fontSize: 13, fontWeight: 700,
+                    boxShadow: '0 2px 6px rgba(184,115,58,0.35)',
+                  }}>✎</span>
+                </div>
+              </button>
+            ) : (
             <div style={{
-              background: T.white, border: `1px solid ${composeActive ? T.gold : T.line}`,
-              borderRadius: 16, padding: '14px 16px', marginBottom: 16,
-              transition: 'border-color 0.15s, box-shadow 0.15s',
-              boxShadow: composeActive ? '0 2px 16px rgba(196,129,58,0.12)' : 'none',
+              display: 'flex', gap: 12, alignItems: 'flex-start',
+              background: 'linear-gradient(180deg, #FFFEFA 0%, #FBF4E3 100%)',
+              border: '1px solid rgba(154,99,40,0.18)',
+              borderRadius: 14, padding: '14px',
+              boxShadow: 'inset 0 2px 4px rgba(44,24,16,0.05), inset 0 -1px 0 rgba(255,255,255,0.6)',
             }}>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} size={36} />
-                <div style={{ flex: 1 }}>
+                <div style={{
+                  borderRadius: '50%',
+                  boxShadow: '0 2px 8px rgba(44,24,16,0.14), 0 0 0 2px rgba(255,255,255,0.95), 0 0 0 3px rgba(184,115,58,0.18)',
+                  flexShrink: 0, marginTop: 2,
+                }}>
+                  <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url} size={40} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <textarea
+                    ref={composeTextRef}
+                    autoFocus
                     value={composeBody}
                     onChange={(e) => setComposeBody(e.target.value)}
-                    onFocus={() => setComposeActive(true)}
-                    placeholder="A thought, a doubt, a question…"
-                    rows={composeActive ? 4 : 1}
+                    placeholder={composeIsMilestone
+                      ? 'A step on your walk — e.g. "Got baptized today at Westside Church"'
+                      : 'A thought, a doubt, a question…'}
+                    rows={4}
                     style={{
                       width: '100%', boxSizing: 'border-box',
-                      border: 'none', outline: 'none', resize: 'none',
+                      border: 'none', outline: 'none', resize: 'vertical',
                       fontFamily: T.serif, fontSize: 15, lineHeight: 1.65,
                       color: T.ink, background: 'transparent',
                       transition: 'all 0.2s',
-                      overflow: composeActive ? 'auto' : 'hidden',
+                      overflow: 'auto',
                     }}
                   />
+                  {composeActive && composeImageDrafts.length > 0 && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 8, marginTop: 10 }}>
+                      {composeImageDrafts.map((d, i) => (
+                        <div key={d.previewUrl} style={{
+                          position: 'relative', paddingBottom: '100%', borderRadius: 10,
+                          overflow: 'hidden', background: T.parchment,
+                        }}>
+                          <img src={d.previewUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <button
+                            type="button"
+                            onClick={() => removeComposeImageDraft(i)}
+                            aria-label="Remove image"
+                            style={{
+                              position: 'absolute', top: 6, right: 6,
+                              width: 24, height: 24, borderRadius: '50%',
+                              background: 'rgba(0,0,0,0.55)', color: T.cream,
+                              border: 'none', cursor: 'pointer', fontSize: 14, lineHeight: 1,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}
+                          >×</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {composeActive && (
+                    <input
+                      ref={composeFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      style={{ display: 'none' }}
+                      onChange={(e) => { pickComposeImages(e.target.files); e.target.value = ''; }}
+                    />
+                  )}
                   {composeActive && (
                     <div style={{ marginTop: 10, borderTop: `1px solid ${T.line}`, paddingTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                      {/* Audience hint — privacy is set by RLS, not by the
-                          author. Posts here are scope='me' and visible to
-                          same-church members. The old 3-option picker was
-                          driving a column that doesn't exist. */}
-                      <div style={{
-                        fontSize: 11, color: T.inkMuted, fontStyle: 'italic',
-                        display: 'inline-flex', alignItems: 'center', gap: 5,
-                      }}>
-                        {churchCtx.church
-                          ? <>👥 Visible to {churchCtx.church.name} family</>
-                          : <>🔒 Visible only to you (join a church to share)</>}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => composeFileInputRef.current?.click()}
+                        disabled={composeImageDrafts.length >= MAX_IMAGES_PER_POST}
+                        title={composeImageDrafts.length >= MAX_IMAGES_PER_POST ? `Up to ${MAX_IMAGES_PER_POST} images` : 'Add photo'}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                          background: T.cream, border: `1px solid ${T.line}`, borderRadius: 999,
+                          padding: '6px 10px', fontSize: 12.5, color: T.inkSoft,
+                          cursor: composeImageDrafts.length >= MAX_IMAGES_PER_POST ? 'not-allowed' : 'pointer',
+                          opacity: composeImageDrafts.length >= MAX_IMAGES_PER_POST ? 0.5 : 1,
+                        }}
+                      >
+                        📷 Photo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setComposeIsMilestone((v) => !v)}
+                        title="Mark this as a step on your walk — baptism, first read-through, joining a group, etc."
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: 6,
+                          background: composeIsMilestone ? 'rgba(184,115,58,0.14)' : T.cream,
+                          border: `1px solid ${composeIsMilestone ? T.gold : T.line}`,
+                          borderRadius: 999, padding: '6px 10px', fontSize: 12.5,
+                          color: composeIsMilestone ? T.goldDark : T.inkSoft,
+                          fontWeight: composeIsMilestone ? 600 : 400, cursor: 'pointer',
+                        }}
+                      >
+                        ✦ Milestone
+                      </button>
+                      <div style={{ position: 'relative' }}>
+                        <button
+                          type="button"
+                          onClick={() => setComposeAudienceMenuOpen((v) => !v)}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 6,
+                            background: T.cream, border: `1px solid ${T.line}`, borderRadius: 999,
+                            padding: '6px 10px', fontSize: 12.5, color: T.inkSoft, cursor: 'pointer',
+                          }}
+                        >
+                          <span>{VISIBILITY_OPTIONS.find((v) => v.id === composeVisibility)?.emoji}</span>
+                          {VISIBILITY_OPTIONS.find((v) => v.id === composeVisibility)?.label}
+                          <span style={{ fontSize: 10, color: T.inkMuted }}>▾</span>
+                        </button>
+                        {composeAudienceMenuOpen && (
+                          <div style={{
+                            position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, zIndex: 10,
+                            background: T.white, border: `1px solid ${T.line}`, borderRadius: 12,
+                            boxShadow: '0 6px 20px rgba(44,24,16,0.12)', padding: 6, minWidth: 240,
+                          }}>
+                            {VISIBILITY_OPTIONS.map((v) => (
+                              <button
+                                key={v.id}
+                                type="button"
+                                onClick={() => { setComposeVisibility(v.id); setComposeAudienceMenuOpen(false); }}
+                                style={{
+                                  width: '100%', textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: 10,
+                                  background: composeVisibility === v.id ? T.parchment : 'transparent', border: 'none',
+                                  borderRadius: 8, padding: '8px 10px', cursor: 'pointer',
+                                }}
+                              >
+                                <span style={{ fontSize: 16, lineHeight: '20px' }}>{v.emoji}</span>
+                                <span style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{v.label}</div>
+                                  <div style={{ fontSize: 11.5, color: T.inkMuted, marginTop: 2 }}>{v.desc}</div>
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button
-                          onClick={() => { setComposeActive(false); setComposeBody(''); }}
+                          onClick={() => {
+                            setComposeActive(false); setComposeBody(''); setComposeVisibility('public'); setComposeAudienceMenuOpen(false); setComposeIsMilestone(false);
+                            composeImageDrafts.forEach((d) => { try { URL.revokeObjectURL(d.previewUrl); } catch {} });
+                            setComposeImageDrafts([]);
+                          }}
                           style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 13, cursor: 'pointer', padding: '6px 10px' }}
                         >
                           Cancel
                         </button>
-                        <button
-                          onClick={submitPost}
-                          disabled={!composeBody.trim() || composeSubmitting}
-                          style={{
-                            background: composeBody.trim() ? `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)` : T.line,
-                            color: T.cream, border: 'none', borderRadius: 999,
-                            padding: '8px 22px', fontSize: 13, fontWeight: 600,
-                            cursor: composeBody.trim() ? 'pointer' : 'not-allowed',
-                            transition: 'all 0.15s',
-                            boxShadow: composeBody.trim() ? '0 3px 12px rgba(196,129,58,0.3)' : 'none',
-                          }}
-                        >
-                          {composeSubmitting ? 'Posting…' : 'Post'}
-                        </button>
+                        {(() => {
+                          const canPost = (composeBody.trim().length > 0 || composeImageDrafts.length > 0) && !composeSubmitting;
+                          return (
+                            <button
+                              onClick={submitPost}
+                              disabled={!canPost}
+                              style={{
+                                background: canPost ? `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)` : T.line,
+                                color: T.cream, border: 'none', borderRadius: 999,
+                                padding: '8px 22px', fontSize: 13, fontWeight: 600,
+                                cursor: canPost ? 'pointer' : 'not-allowed',
+                                transition: 'all 0.15s',
+                                boxShadow: canPost ? '0 3px 12px rgba(184,115,58,0.3)' : 'none',
+                              }}
+                            >
+                              {composeSubmitting ? 'Posting…' : 'Post'}
+                            </button>
+                          );
+                        })()}
                       </div>
                     </div>
                   )}
                 </div>
               </div>
+            )}
             </div>
             {loading && <div style={{ textAlign: 'center', padding: 40, color: T.inkMuted, fontFamily: T.serif }}>Loading…</div>}
             {!loading && posts.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                <div style={{ fontFamily: T.serif, fontSize: 20, color: T.ink, marginBottom: 10 }}>Nothing shared yet.</div>
-                <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.6 }}>Thoughts, verses, questions — post anything.</div>
-              </div>
+              <EmptyState compact title="Nothing shared yet." body="Thoughts, verses, questions — post anything." />
             )}
-            {posts.map((p) => <ProfilePost key={p.id} post={p} session={session} profile={profile} onReact={handleReact} churchCtx={churchCtx} />)}
+            {posts.map((p) => (
+              <ProfilePost
+                key={p.id}
+                post={p}
+                session={session}
+                profile={profile}
+                onReact={handleReact}
+                churchCtx={churchCtx}
+                onDelete={(id) => {
+                  setPosts((prev) => prev.filter((x) => x.id !== id));
+                  setStats((s) => ({ ...s, posts: Math.max(0, s.posts - 1) }));
+                }}
+              />
+            ))}
           </div>
         )}
 
         {/* Prayers tab */}
         {tab === 'prayers' && (
-          <div style={{ padding: '0 14px' }}>
+          <div style={{ padding: '0 14px', maxWidth: 620, margin: '0 auto' }}>
 
-            {/* Compose box — FB "What's on your mind?" style */}
-            <form onSubmit={addPrayer} style={{ marginBottom: 14 }}>
-              <div style={{
-                background: T.white, borderRadius: 14, overflow: 'hidden',
-                border: `1px solid ${T.line}`, boxShadow: '0 1px 3px rgba(44,24,16,0.06)',
-                transition: 'border-color 0.15s',
-              }}>
-                <div style={{ display: 'flex', gap: 10, padding: '12px 14px 10px', alignItems: 'flex-start' }}>
-                  <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} size={38} style={{ flexShrink: 0 }} />
-                  <textarea
-                    value={prayerText}
-                    onChange={(e) => setPrayerText(e.target.value)}
-                    placeholder="What are you bringing to God today?"
-                    rows={prayerText ? 3 : 2}
-                    style={{
-                      flex: 1, border: 'none', outline: 'none', resize: 'none',
-                      fontFamily: T.serif, fontSize: 15, lineHeight: 1.65,
-                      color: T.ink, background: 'transparent', paddingTop: 6,
-                    }}
-                    onFocus={(e) => (e.currentTarget.parentElement.parentElement.style.borderColor = T.gold)}
-                    onBlur={(e) => (e.currentTarget.parentElement.parentElement.style.borderColor = T.line)}
-                  />
-                </div>
-                <div style={{ borderTop: `1px solid ${T.line}`, padding: '8px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                  <div style={{ display: 'flex', background: T.parchment, borderRadius: 999, padding: 3, gap: 2 }}>
-                    <button type="button" onClick={() => setNewPrayerIsPublic(false)} style={{
-                      background: !newPrayerIsPublic ? T.white : 'transparent',
-                      border: 'none', borderRadius: 999, padding: '4px 11px', fontSize: 11,
-                      color: !newPrayerIsPublic ? T.ink : T.inkMuted,
-                      cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
-                      fontWeight: !newPrayerIsPublic ? 600 : 400,
-                      boxShadow: !newPrayerIsPublic ? '0 1px 3px rgba(44,24,16,0.12)' : 'none',
-                      transition: 'all 0.15s',
-                    }}>🔒 Private</button>
-                    <button type="button" onClick={() => setNewPrayerIsPublic(true)} style={{
-                      background: newPrayerIsPublic ? 'rgba(196,129,58,0.18)' : 'transparent',
-                      border: 'none', borderRadius: 999, padding: '4px 11px', fontSize: 11,
-                      color: newPrayerIsPublic ? T.goldDark : T.inkMuted,
-                      cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
-                      fontWeight: newPrayerIsPublic ? 600 : 400,
-                      transition: 'all 0.15s',
-                    }}>🌐 Public</button>
-                  </div>
-                  <button type="submit" disabled={!prayerText.trim() || prayerSubmitting} style={{
-                    background: prayerText.trim() ? `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)` : T.line,
-                    color: T.cream, border: 'none', borderRadius: 999,
-                    padding: '8px 22px', fontSize: 13, fontWeight: 600,
-                    cursor: prayerText.trim() ? 'pointer' : 'not-allowed',
-                    transition: 'all 0.15s',
+            {/* Prayer compose — pill collapses to sage-tinted input, expands inline */}
+            <div style={{ marginBottom: 14 }}>
+              {!prayerComposeOpen ? (
+                <button
+                  onClick={() => setPrayerComposeOpen(true)}
+                  style={{
+                    width: '100%', display: 'flex', gap: 12, alignItems: 'center',
+                    background: 'transparent', border: 'none',
+                    cursor: 'pointer', padding: 0, textAlign: 'left',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  <div style={{
+                    borderRadius: '50%',
+                    boxShadow: '0 2px 8px rgba(44,24,16,0.14), 0 0 0 2px rgba(255,255,255,0.95), 0 0 0 3px rgba(90,128,100,0.22)',
+                    flexShrink: 0,
                   }}>
-                    {prayerSubmitting ? 'Adding…' : 'Pray'}
-                  </button>
-                </div>
-              </div>
-            </form>
+                    <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url} size={40} />
+                  </div>
+                  <div style={{
+                    flex: 1, minWidth: 0,
+                    background: 'linear-gradient(180deg, #F4F8F0 0%, #E5EFD9 100%)',
+                    border: `1px solid ${SEMANTIC.prayer.line}`,
+                    borderRadius: 999, padding: '11px 16px',
+                    fontSize: 14.5, fontFamily: T.serif, fontStyle: 'italic',
+                    color: '#5a6b58',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    boxShadow: 'inset 0 2px 4px rgba(90,128,100,0.10), inset 0 -1px 0 rgba(255,255,255,0.6)',
+                  }}>
+                    <span>What are you bringing to God today?</span>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      width: 26, height: 26, marginLeft: 12,
+                      borderRadius: '50%',
+                      background: SEMANTIC.prayer.rail,
+                      color: T.cream, fontSize: 14,
+                      boxShadow: '0 2px 6px rgba(90,128,100,0.30)',
+                    }}>🙏</span>
+                  </div>
+                </button>
+              ) : (
+                <form onSubmit={addPrayer} style={{
+                  display: 'flex', gap: 12, alignItems: 'flex-start',
+                  background: 'linear-gradient(180deg, #F4F8F0 0%, #E5EFD9 100%)',
+                  border: `1px solid ${SEMANTIC.prayer.line}`,
+                  borderRadius: 14, padding: '14px',
+                  boxShadow: 'inset 0 2px 4px rgba(90,128,100,0.08), inset 0 -1px 0 rgba(255,255,255,0.6)',
+                }}>
+                  <div style={{
+                    borderRadius: '50%',
+                    boxShadow: '0 2px 8px rgba(44,24,16,0.14), 0 0 0 2px rgba(255,255,255,0.95), 0 0 0 3px rgba(90,128,100,0.22)',
+                    flexShrink: 0, marginTop: 2,
+                  }}>
+                    <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url} size={40} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <textarea
+                      autoFocus
+                      value={prayerText}
+                      onChange={(e) => setPrayerText(e.target.value)}
+                      placeholder="What are you bringing to God today?"
+                      rows={4}
+                      style={{
+                        width: '100%', boxSizing: 'border-box',
+                        border: 'none', outline: 'none', resize: 'vertical',
+                        fontFamily: T.serif, fontSize: 15, lineHeight: 1.65,
+                        color: T.ink, background: 'transparent',
+                      }}
+                    />
+                    <div style={{ marginTop: 10, borderTop: `1px solid rgba(90,128,100,0.2)`, paddingTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <span style={{ fontSize: 11, color: '#5a7a5a', fontStyle: 'italic' }}>🔒 Private — only you can see this. Never shared, sold, or used for AI training.</span>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          type="button"
+                          onClick={() => { setPrayerComposeOpen(false); setPrayerText(''); }}
+                          style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 13, cursor: 'pointer', padding: '6px 10px' }}
+                        >Cancel</button>
+                        <button
+                          type="submit"
+                          disabled={!prayerText.trim() || prayerSubmitting}
+                          style={{
+                            background: prayerText.trim() ? `linear-gradient(135deg, ${SEMANTIC.prayer.rail} 0%, #4a6b50 100%)` : T.line,
+                            color: T.cream, border: 'none', borderRadius: 999,
+                            padding: '8px 22px', fontSize: 13, fontWeight: 600,
+                            cursor: prayerText.trim() ? 'pointer' : 'not-allowed',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          {prayerSubmitting ? 'Adding…' : 'Pray'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              )}
+            </div>
 
             {prayers.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: T.inkMuted, fontFamily: T.serif, fontSize: 16 }}>
-                Your prayer list is empty.
-                <div style={{ fontSize: 13, marginTop: 6 }}>Add your first prayer above.</div>
-              </div>
+              <EmptyState compact icon="🕯️" title="Your prayer list is empty." body="Add your first prayer above — just between you and God." />
             )}
 
             {prayers.map((p) => (
               <div key={p.id} style={{
                 background: T.white,
                 border: `1px solid ${p.is_answered ? T.goldLight : T.line}`,
-                borderRadius: 16, marginBottom: 12, overflow: 'hidden',
+                borderRadius: 14, marginBottom: 12, overflow: 'hidden',
               }}>
 
                 {/* ── Header: timestamp · privacy · answered pill · ⋯ menu ── */}
                 <div style={{ padding: '14px 18px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     {p.is_answered && (
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(196,129,58,0.12)', borderRadius: 999, padding: '2px 8px' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'rgba(184,115,58,0.12)', borderRadius: 999, padding: '2px 8px' }}>
                         <svg width="11" height="11" viewBox="0 0 34 34">
                           <circle cx="17" cy="17" r="10" fill={T.gold}/>
                           <polyline points="11,17 15,21 23,12" fill="none" stroke="white" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1001,14 +1641,6 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                       </div>
                     )}
                     <span style={{ fontSize: 12, color: T.inkMuted }}>{timeAgo(p.created_at)}</span>
-                    <span style={{ fontSize: 11, color: T.inkMuted }}>·</span>
-                    <span style={{ fontSize: 12, color: T.inkMuted }}>{p.is_public ? '🌐 Public' : '🔒 Only me'}</span>
-                    {p.is_public && (supportMap[p.id] ?? 0) > 0 && (
-                      <>
-                        <span style={{ fontSize: 11, color: T.inkMuted }}>·</span>
-                        <span style={{ fontSize: 12, color: T.inkMuted }}>🙏 {supportMap[p.id]} praying</span>
-                      </>
-                    )}
                   </div>
                   {/* ⋯ options menu */}
                   <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -1027,13 +1659,12 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                         }}>
                           {[
                             { label: p.is_answered ? '○  Mark unanswered' : '✦  Mark answered', onClick: () => { setMenuPrayerId(null); handlePrayerAnswerButton(p); } },
-                            { label: p.is_public   ? '🔒  Make private'   : '🌐  Make public',  onClick: () => { setMenuPrayerId(null); togglePrayerPublic(p); } },
                             { label: 'Remove prayer', danger: true, onClick: () => { setMenuPrayerId(null); removePrayer(p.id); } },
                           ].map((item, i, arr) => (
                             <button key={item.label} onClick={item.onClick} style={{
                               width: '100%', textAlign: 'left', background: 'none', border: 'none',
                               padding: '11px 16px', fontSize: 13,
-                              color: item.danger ? '#c0392b' : T.ink, cursor: 'pointer',
+                              color: item.danger ? T.error : T.ink, cursor: 'pointer',
                               borderBottom: i < arr.length - 1 ? `1px solid ${T.line}` : 'none',
                             }}>{item.label}</button>
                           ))}
@@ -1050,7 +1681,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
 
                 {/* ── Praise report ── */}
                 {p.is_answered && p.praise_report && (
-                  <div style={{ margin: '0 18px 14px', background: 'rgba(196,129,58,0.07)', borderRadius: 10, padding: '10px 13px', borderLeft: `3px solid ${T.gold}` }}>
+                  <div style={{ margin: '0 18px 14px', background: 'rgba(184,115,58,0.07)', borderRadius: 10, padding: '10px 13px', borderLeft: `3px solid ${T.gold}` }}>
                     <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 4 }}>Praise Report ✦</div>
                     <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: T.inkSoft, lineHeight: 1.6 }}>"{p.praise_report}"</div>
                   </div>
@@ -1062,7 +1693,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                     const count = (reactionMap[p.id] ?? {})[r.kind] ?? 0;
                     const active = myReactionMap[p.id] === r.kind;
                     const sem = r.semantic ? SEMANTIC[r.semantic] : null;
-                    const activeBg     = sem ? sem.bgActive    : 'rgba(196,129,58,0.12)';
+                    const activeBg     = sem ? sem.bgActive    : 'rgba(184,115,58,0.12)';
                     const activeBorder = sem ? sem.line        : T.gold;
                     const activeText   = sem ? sem.text        : T.goldDark;
                     return (
@@ -1119,7 +1750,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                       ))
                     )}
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4 }}>
-                      <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} size={28} style={{ flexShrink: 0 }} />
+                      <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url} size={28} style={{ flexShrink: 0 }} />
                       <div style={{ flex: 1, background: T.white, borderRadius: 20, border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', padding: '6px 12px', gap: 8 }}>
                         <input
                           value={encInputMap[p.id] ?? ''}
@@ -1145,8 +1776,9 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                 onClick={() => setPraiseTarget(null)}
               >
                 <div onClick={e => e.stopPropagation()} style={{
-                  background: T.ink, border: '1px solid rgba(196,129,58,0.3)', borderRadius: 20,
+                  background: T.cream, border: `1px solid ${T.line}`, borderRadius: 20,
                   padding: '28px 24px', width: '100%', maxWidth: 420, marginBottom: 20,
+                  boxShadow: '0 18px 50px rgba(44,24,16,0.18)',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                     <svg width="30" height="30" viewBox="0 0 34 34" style={{ flexShrink: 0, animation: 'badgePop 0.55s cubic-bezier(0.34,1.56,0.64,1) both' }}>
@@ -1162,27 +1794,27 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                       <ellipse cx="15" cy="13.5" rx="4" ry="2" fill="rgba(255,255,255,0.22)"/>
                       <polyline points="11,17 15,21 23,12" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    <div style={{ fontFamily: T.display, fontSize: 19, color: T.cream, fontWeight: 600, letterSpacing: '-0.012em' }}>Prayer Answered!</div>
+                    <div style={{ fontFamily: T.display, fontSize: 19, color: T.ink, fontWeight: 600, letterSpacing: '-0.012em' }}>Prayer Answered!</div>
                   </div>
-                  <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: 'rgba(253,248,240,0.4)', marginBottom: 18, lineHeight: 1.6 }}>
+                  <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: T.inkMuted, marginBottom: 18, lineHeight: 1.6 }}>
                     "{praiseTarget.body}"
                   </div>
-                  <div style={{ fontSize: 12, color: 'rgba(253,248,240,0.55)', marginBottom: 10 }}>
-                    Want to share what happened? <span style={{ color: 'rgba(253,248,240,0.3)' }}>(optional)</span>
+                  <div style={{ fontSize: 12, color: T.inkSoft, marginBottom: 10 }}>
+                    Want to share what happened? <span style={{ color: '#9B8C73' }}>(optional)</span>
                   </div>
                   <textarea
                     value={praiseText} onChange={e => setPraiseText(e.target.value.slice(0, 200))}
                     placeholder="Share your testimony…" rows={3} autoFocus
                     style={{
                       width: '100%', boxSizing: 'border-box', resize: 'none',
-                      background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(196,129,58,0.2)',
-                      borderRadius: 10, padding: '11px 14px', fontSize: 14, color: T.cream,
+                      background: T.white, border: `1px solid ${T.line}`,
+                      borderRadius: 10, padding: '11px 14px', fontSize: 14, color: T.ink,
                       fontFamily: T.serif, outline: 'none', lineHeight: 1.6, marginBottom: 4,
                     }}
                     onFocus={e => (e.currentTarget.style.borderColor = T.gold)}
-                    onBlur={e => (e.currentTarget.style.borderColor = 'rgba(196,129,58,0.2)')}
+                    onBlur={e => (e.currentTarget.style.borderColor = T.line)}
                   />
-                  <div style={{ fontSize: 10, color: 'rgba(253,248,240,0.28)', textAlign: 'right', marginBottom: 16 }}>{praiseText.length}/200</div>
+                  <div style={{ fontSize: 10, color: '#B0A28A', textAlign: 'right', marginBottom: 16 }}>{praiseText.length}/200</div>
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button onClick={() => applyPrayerAnswered(praiseTarget, true, praiseText)} style={{
                       background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
@@ -1190,7 +1822,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                     }}>
                       {praiseText.trim() ? 'Save testimony' : 'Mark answered'}
                     </button>
-                    <button onClick={() => setPraiseTarget(null)} style={{ background: 'none', border: 'none', color: 'rgba(253,248,240,0.35)', fontSize: 13, cursor: 'pointer' }}>
+                    <button onClick={() => setPraiseTarget(null)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 13, cursor: 'pointer' }}>
                       Cancel
                     </button>
                   </div>
@@ -1214,7 +1846,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                 fontSize: 14, color: T.goldDark, fontWeight: 600,
                 transition: 'background 0.15s',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(196,129,58,0.08)')}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(184,115,58,0.08)')}
               onMouseLeave={(e) => (e.currentTarget.style.background = T.parchment)}
             >
               🔍 Find people
@@ -1235,7 +1867,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                       display: 'flex', alignItems: 'center', gap: 14,
                     }}>
                       <button onClick={() => onViewProfile?.(req.id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                        <Avatar name={req.display_name} avatarConfig={req.avatar_config} size={46} />
+                        <Avatar name={req.display_name} avatarConfig={req.avatar_config} photoUrl={req.avatar_url} size={46} />
                       </button>
                       <div style={{ flex: 1 }}>
                         <button onClick={() => onViewProfile?.(req.id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}>
@@ -1265,17 +1897,13 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
 
             {/* Friends list */}
             {friendsList.length === 0 && pendingRequests.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                <div style={{ fontSize: 36, marginBottom: 10 }}>👥</div>
-                <div style={{ fontFamily: T.serif, fontSize: 20, color: T.ink, marginBottom: 8 }}>No friends yet.</div>
-                <div style={{ fontSize: 14, color: T.inkMuted, marginBottom: 20, lineHeight: 1.6 }}>Search for people by name and send them a friend request.</div>
-                <button
-                  onClick={() => onFindPeople?.()}
-                  style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '11px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
-                >
-                  Find people →
-                </button>
-              </div>
+              <EmptyState
+                compact
+                icon="👥"
+                title="No friends yet."
+                body="Search for people by name and send them a friend request."
+                cta={{ label: 'Find people →', onClick: () => onFindPeople?.() }}
+              />
             )}
             {friendsList.length > 0 && (
               <>
@@ -1294,7 +1922,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                       display: 'flex', alignItems: 'center', gap: 14,
                     }}>
                       <button onClick={() => onViewProfile?.(f.id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14, flex: 1, textAlign: 'left' }}>
-                        <Avatar name={f.display_name} avatarConfig={f.avatar_config} size={46} />
+                        <Avatar name={f.display_name} avatarConfig={f.avatar_config} photoUrl={f.avatar_url} size={46} />
                         <div style={{ flex: 1 }}>
                           <div style={{ fontWeight: 600, fontSize: 15, color: T.ink, marginBottom: 4 }}>{f.display_name}</div>
                           {fp && (
@@ -1322,10 +1950,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
         {tab === 'following' && (
           <div style={{ padding: '0 14px' }}>
             {followingList.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                <div style={{ fontFamily: T.serif, fontSize: 20, color: T.ink, marginBottom: 10 }}>Not following anyone yet.</div>
-                <div style={{ fontSize: 14, color: T.inkMuted }}>Follow people from the community feed.</div>
-              </div>
+              <EmptyState compact title="Not following anyone yet." body="Follow people from the community feed." />
             )}
             {followingList.map((f) => {
               const fp = PERSON_TYPES.find((p) => p.id === f.person_type);
@@ -1344,7 +1969,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; }}
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.line; }}
                 >
-                  <Avatar name={f.display_name} avatarConfig={f.avatar_config} size={48} />
+                  <Avatar name={f.display_name} avatarConfig={f.avatar_config} photoUrl={f.avatar_url} size={48} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, fontSize: 15, color: T.ink, marginBottom: 4 }}>{f.display_name}</div>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -1401,6 +2026,72 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Saved tab */}
+        {tab === 'saved' && (
+          <div style={{ padding: '0 14px', maxWidth: 620, margin: '0 auto' }}>
+            {!savedLoaded ? (
+              <div style={{ padding: 40, textAlign: 'center', color: T.inkMuted, fontFamily: T.serif }}>Loading…</div>
+            ) : savedPosts.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '50px 24px', background: T.white, borderRadius: 14, border: `1px solid ${T.line}` }}>
+                <div style={{ fontSize: 32, marginBottom: 10 }}>🔖</div>
+                <div style={{ fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.ink, marginBottom: 8 }}>No private saves yet.</div>
+                <div style={{ fontSize: 13, color: T.inkMuted, lineHeight: 1.55 }}>
+                  Tap the bookmark icon on any post to privately save it here. Only you can see this.
+                </div>
+              </div>
+            ) : savedPosts.map((post) => {
+              const authorName = post.authorProfile?.display_name ?? 'Someone';
+              const bodyText = post.body?.text ?? '';
+              return (
+                <div key={post.id} style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '14px 16px', marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{
+                        width: 28, height: 28, borderRadius: '50%',
+                        background: T.parchment, color: T.goldDark,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 11, fontWeight: 700, flexShrink: 0,
+                      }}>
+                        {(authorName[0] ?? '·').toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 13.5, fontWeight: 600, color: T.ink, lineHeight: 1.2 }}>{authorName}</div>
+                        <div style={{ fontSize: 11, color: T.inkMuted }}>{timeAgo(post.created_at)}</div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        await supabase.from('saved_posts').delete().eq('user_id', session.user.id).eq('post_id', post.id);
+                        setSavedPosts((prev) => prev.filter((p) => p.id !== post.id));
+                      }}
+                      title="Unsave"
+                      style={{
+                        background: 'none', border: `1px solid ${T.line}`, borderRadius: 999,
+                        padding: '5px 10px', fontSize: 12, color: T.inkMuted,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                      }}
+                    >🔒 Remove</button>
+                  </div>
+                  {bodyText && (
+                    <div style={{
+                      fontFamily: T.serif, fontSize: 15, lineHeight: 1.65, color: T.ink,
+                      overflow: 'hidden', display: '-webkit-box',
+                      WebkitLineClamp: 4, WebkitBoxOrient: 'vertical',
+                    }}>
+                      {bodyText}
+                    </div>
+                  )}
+                  {post.body?.scripture_ref && (
+                    <div style={{ fontSize: 12.5, color: T.goldDark, fontStyle: 'italic', marginTop: 4 }}>
+                      {post.body.scripture_ref}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

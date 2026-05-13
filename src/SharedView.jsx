@@ -55,7 +55,7 @@ export default function SharedView({ shareId, onBegin }) {
       {/* Header */}
       <header style={{ padding: '16px 24px', background: T.white, borderBottom: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>The Way</div>
+          <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 500, color: T.ink, letterSpacing: '-0.025em' }}>kinwove</div>
           {person && (
             <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2 }}>{person.emoji} {person.label}</div>
           )}
@@ -119,13 +119,13 @@ export default function SharedView({ shareId, onBegin }) {
 
       {/* CTA */}
       <div style={{ background: T.ink, padding: '48px 24px 56px' }}>
-        <div style={{ height: 1, background: `linear-gradient(90deg, transparent, rgba(196,129,58,0.4), transparent)`, marginBottom: 40 }} />
+        <div style={{ height: 1, background: `linear-gradient(90deg, transparent, rgba(184,115,58,0.4), transparent)`, marginBottom: 40 }} />
         <div style={{ maxWidth: 640, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 8 }}>
             Ask your own question.
           </div>
           <div style={{ fontSize: 14, color: 'rgba(253,248,240,0.45)', lineHeight: 1.7, marginBottom: 32 }}>
-            No account needed. The Way is for anyone honest enough to ask.
+            No account needed. kinwove is for anyone honest enough to ask.
           </div>
           <GuestQuestion onSignUp={onBegin} />
         </div>
@@ -136,7 +136,7 @@ export default function SharedView({ shareId, onBegin }) {
           body={data.title || 'A conversation about faith, doubt, and the Bible.'}
           url={typeof window !== 'undefined' ? window.location.href : ''}
           title="Share this conversation"
-          intro="Read this thread on The Way"
+          intro="Read this thread on kinwove"
           onClose={() => setShareOpen(false)}
         />
       )}

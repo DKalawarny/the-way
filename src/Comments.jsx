@@ -1,9 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Smile } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { BadgeList } from './Badge.jsx';
 import { relativeTime } from './time.js';
 import { useUiKit, TextButton } from './uikit.jsx';
+import { codeToFlag } from './countries.js';
+
+const EMOJIS = [
+  '😀','😊','😂','🥹','😍','🥰','😭','😅','🤔','😏','😌','🙃','😇','🤩','😬','🤯',
+  '🙏','✝️','🕊️','🌿','🌸','🌺','🌻','☀️','🌙','⭐','🔥','💫','✨','🌈','🌊','🍃',
+  '❤️','🧡','💛','💚','💙','💜','🤍','🫶','👏','🙌','💪','👍','🎉','🫂','💝','🎊',
+];
 
 /**
  * Inline comments block — renders directly inside a PostCard, Facebook-style.
@@ -17,7 +25,24 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
   const [busy, setBusy]         = useState(false);
   const [profMap, setProfMap]   = useState({});
   const [rolesMap, setRolesMap] = useState({});
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const textareaRef = useRef(null);
   const { showToast, askConfirm, ui: uikitUi } = useUiKit();
+
+  function insertEmoji(emoji) {
+    const el = textareaRef.current;
+    if (!el) { setText((t) => t + emoji); setEmojiOpen(false); return; }
+    const start = el.selectionStart;
+    const end   = el.selectionEnd;
+    const next  = text.slice(0, start) + emoji + text.slice(end);
+    setText(next);
+    setEmojiOpen(false);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + [...emoji].length;
+      el.setSelectionRange(pos, pos);
+    });
+  }
 
   // Only church-scoped posts have role badges to show.
   const churchScopeId = item.scope === 'church' ? item.scope_id : null;
@@ -41,7 +66,7 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
       if (missing.length) {
         const { data: profs } = await supabase
           .from('profiles')
-          .select('id, display_name')
+          .select('id, display_name, flags, show_flag')
           .in('id', missing);
         (profs ?? []).forEach((p) => { extra[p.id] = p; });
       }
@@ -127,6 +152,9 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{name}</span>
+                  {!c.is_anonymous && profMap?.[c.author_id]?.show_flag && (profMap[c.author_id]?.flags ?? []).length > 0 && (
+                    <span style={{ fontSize: 13, lineHeight: 1 }}>{codeToFlag(profMap[c.author_id].flags[0])}</span>
+                  )}
                   {!c.is_anonymous && rolesMap?.[c.author_id]?.length > 0 && (
                     <BadgeList roles={rolesMap[c.author_id]} />
                   )}
@@ -146,8 +174,35 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
       )}
 
       {/* Inline composer */}
-      <div>
+      <div style={{ position: 'relative' }}>
+        {emojiOpen && (
+          <>
+            <div onClick={() => setEmojiOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
+            <div style={{
+              position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, zIndex: 11,
+              background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
+              boxShadow: '0 8px 24px rgba(44,24,16,0.13)', padding: 10,
+              display: 'grid', gridTemplateColumns: 'repeat(16, 1fr)', gap: 2,
+              width: 'min(100%, 380px)',
+            }}>
+              {EMOJIS.map((e) => (
+                <button
+                  key={e}
+                  onClick={() => insertEmoji(e)}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    fontSize: 20, lineHeight: 1, padding: '4px 2px', borderRadius: 6,
+                    transition: 'background 0.1s',
+                  }}
+                  onMouseEnter={(el) => el.currentTarget.style.background = T.parchment}
+                  onMouseLeave={(el) => el.currentTarget.style.background = 'none'}
+                >{e}</button>
+              ))}
+            </div>
+          </>
+        )}
         <textarea
+          ref={textareaRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
@@ -171,6 +226,16 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
             Anonymously
           </label>
           <div style={{ flex: 1 }} />
+          <button
+            onClick={() => setEmojiOpen((v) => !v)}
+            title="Add emoji"
+            style={{
+              border: `1px solid ${emojiOpen ? T.gold : T.line}`, borderRadius: 999,
+              width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', color: emojiOpen ? T.goldDark : T.inkSoft,
+              background: emojiOpen ? T.parchment : 'transparent',
+            }}
+          ><Smile size={16} strokeWidth={1.75} /></button>
           <button
             onClick={submit}
             disabled={busy || !text.trim()}
