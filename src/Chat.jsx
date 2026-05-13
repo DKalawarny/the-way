@@ -1715,10 +1715,12 @@ export default function Chat({
             }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: T.goldDark, marginBottom: 3 }}>
-                  You're asking deep questions
+                  Your questions are getting deeper
                 </div>
                 <div style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.5 }}>
-                  Individual Pro gives you access to our most powerful AI — better equipped for theology, doubt, and the hard stuff. $9.99/mo.
+                  {(profile?.plan ?? 'free') === 'free'
+                    ? 'Get deeper responses with Individual. $4.99/mo.'
+                    : 'Get deeper responses with Individual Pro. $9.99/mo.'}
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
