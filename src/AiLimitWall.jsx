@@ -66,7 +66,7 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
       });
       if (url) window.location.href = url;
     } catch {
-      window.open(`mailto:hello@theway.app?subject=Upgrade%20to%20${pricePlan}`);
+      window.open(`mailto:hello@kinwove.com?subject=Upgrade%20to%20${pricePlan}`);
     } finally {
       setUpgrading(null);
     }
@@ -84,7 +84,7 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
       });
       if (url) window.location.href = url;
     } catch {
-      window.open('mailto:hello@theway.app?subject=AI%20Top-up');
+      window.open('mailto:hello@kinwove.com?subject=AI%20Top-up');
     } finally {
       setUpgrading(null);
     }
@@ -122,8 +122,8 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
             borderRadius: 14, padding: '16px 20px', width: '100%', maxWidth: 320,
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <PriceRow label="Premium" price="$7.99/mo" detail="150 AI messages/month" />
-              <PriceRow label="Premium+" price="$14.99/mo" detail="500 AI messages/month" highlight />
+              <PriceRow label="Individual" price="$4.99/mo" detail="200 msgs/mo · Haiku + Sonnet AI" />
+              <PriceRow label="Individual Pro" price="$9.99/mo" detail="150 msgs/mo · all 3 AI models" highlight />
             </div>
           </div>
 

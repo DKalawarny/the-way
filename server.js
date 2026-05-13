@@ -442,10 +442,33 @@ app.post('/api/chat', optionalAuth, limitEither(
   }
 
   try {
-    // Route to smarter model for complex person types or deep conversations
+    // Model routing — tier controls ceiling, complexity controls selection within tier.
+    // Free: Haiku only. Individual: Haiku|Sonnet. Pro: Haiku|Sonnet|Opus.
+    const plan = req.body?.plan ?? 'free';
     const isDeep = ['deeper', 'skeptic'].includes(personType);
     const isLongConversation = messages.length > 10;
-    const model = (isDeep || isLongConversation) ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001';
+    const isVeryLong = messages.length > 20;
+    const lastMsg = lastUserMsg ?? '';
+    const deepKeywords = /\b(free will|theodicy|suffering|evil|trinity|predestination|salvation|atonement|resurrection|eschatology|hermeneutic|reconcil|contradict|hypocri|doubt|deconstruct|faith crisis|why would god|how can god)\b/i;
+    const isDeepTheology = deepKeywords.test(lastMsg) || lastMsg.length > 200;
+
+    let model;
+    if (plan === 'premium_plus') {
+      // Pro tier: full range
+      model = (isDeepTheology || isVeryLong)
+        ? 'claude-opus-4-7'
+        : (isDeep || isLongConversation)
+          ? 'claude-sonnet-4-6'
+          : 'claude-haiku-4-5-20251001';
+    } else if (plan === 'premium') {
+      // Individual tier: Haiku or Sonnet
+      model = (isDeep || isLongConversation || isDeepTheology)
+        ? 'claude-sonnet-4-6'
+        : 'claude-haiku-4-5-20251001';
+    } else {
+      // Free: Haiku only
+      model = 'claude-haiku-4-5-20251001';
+    }
 
     const trimmed = messages.slice(-8);
     const effectiveSystem = seekingContext

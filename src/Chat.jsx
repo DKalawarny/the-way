@@ -1071,7 +1071,7 @@ export default function Chat({
       const res = await authedFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ system, messages: next, personType, seekingContext }),
+        body: JSON.stringify({ system, messages: next, personType, seekingContext, plan: profile?.plan ?? 'free' }),
       });
 
       if (!res.ok || !res.body) {
