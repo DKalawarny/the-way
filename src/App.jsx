@@ -1748,13 +1748,16 @@ export default function App() {
     return () => listener.subscription.unsubscribe();
   }, [initialChurchId, initialAnonChurchId]);
 
-  // ?stripe_success=1 — re-fetch profile after returning from Stripe checkout
-  // so the plan updates immediately without a manual refresh.
+  // ?stripe_success=1 — poll for profile update after returning from Stripe.
+  // Webhook can take 2-8s to process; try at 2s, 5s, and 10s.
   useEffect(() => {
     if (!stripeSuccess || !session?.user?.id) return;
-    const timer = setTimeout(() => loadProfile(session.user.id), 1500);
     window.history.replaceState({}, '', window.location.pathname);
-    return () => clearTimeout(timer);
+    const uid = session.user.id;
+    const t1 = setTimeout(() => loadProfile(uid), 2000);
+    const t2 = setTimeout(() => loadProfile(uid), 5000);
+    const t3 = setTimeout(() => loadProfile(uid), 10000);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [stripeSuccess, session?.user?.id]);
 
   // ?join=CODE deep link: auto-attempt the join once session + complete profile is ready.
