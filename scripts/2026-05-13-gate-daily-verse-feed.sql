@@ -10,7 +10,8 @@
 -- kinds (going_deeper, kid_version, legacy group_question) are unaffected.
 -- ============================================================================
 
-create or replace view public.feed_items
+drop view if exists public.feed_items;
+create view public.feed_items
   with (security_invoker = true) as
   select
     p.id,

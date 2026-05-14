@@ -11,8 +11,10 @@ const supabase = createClient(
 );
 
 const PRICE_MAP: Record<string, string | undefined> = {
-  premium:       Deno.env.get('STRIPE_PRICE_PREMIUM'),
-  premium_plus:  Deno.env.get('STRIPE_PRICE_PREMIUM_PLUS'),
+  premium:      Deno.env.get('STRIPE_PRICE_INDIVIDUAL'),
+  premium_plus: Deno.env.get('STRIPE_PRICE_INDIVIDUAL_PRO'),
+  church_base:  Deno.env.get('STRIPE_PRICE_CHURCH_BASE'),
+  church_pro:   Deno.env.get('STRIPE_PRICE_CHURCH_PRO'),
 };
 
 const CORS = {
@@ -44,7 +46,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Look up existing stripe_customer_id from profiles
     const { data: profile } = await supabase
       .from('profiles')
       .select('stripe_customer_id')
@@ -54,16 +55,12 @@ Deno.serve(async (req) => {
     let customerId: string | undefined = profile?.stripe_customer_id ?? undefined;
 
     if (!customerId) {
-      // Create a new Stripe customer and store the ID
       const customer = await stripe.customers.create({
         email: user_email,
         metadata: { supabase_user_id: user_id },
       });
       customerId = customer.id;
-      await supabase
-        .from('profiles')
-        .update({ stripe_customer_id: customerId })
-        .eq('id', user_id);
+      await supabase.from('profiles').update({ stripe_customer_id: customerId }).eq('id', user_id);
     }
 
     const session = await stripe.checkout.sessions.create({

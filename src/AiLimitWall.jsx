@@ -122,8 +122,8 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
             borderRadius: 14, padding: '16px 20px', width: '100%', maxWidth: 320,
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <PriceRow label="Individual" price="$4.99/mo" detail="200 msgs/mo · Haiku + Sonnet AI" />
-              <PriceRow label="Individual Pro" price="$9.99/mo" detail="150 msgs/mo · all 3 AI models" highlight />
+              <PriceRow label="Individual" price="$6.99 CAD/mo" detail="200 msgs/mo · Haiku + Sonnet AI" />
+              <PriceRow label="Individual Pro" price="$13.99 CAD/mo" detail="150 msgs/mo · all 3 AI models" highlight />
             </div>
           </div>
 

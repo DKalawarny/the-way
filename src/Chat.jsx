@@ -1719,8 +1719,8 @@ export default function Chat({
                 </div>
                 <div style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.5 }}>
                   {(profile?.plan ?? 'free') === 'free'
-                    ? 'Get deeper responses with Individual. $4.99/mo.'
-                    : 'Get deeper responses with Individual Pro. $9.99/mo.'}
+                    ? 'Get deeper responses with Individual. $6.99 CAD/mo.'
+                    : 'Get deeper responses with Individual Pro. $13.99 CAD/mo.'}
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
