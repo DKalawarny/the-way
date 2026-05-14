@@ -1515,6 +1515,7 @@ export default function App() {
   const [referralRef] = useState(() => new URLSearchParams(window.location.search).get('ref'));
   const [initialAnonChurchId] = useState(() => new URLSearchParams(window.location.search).get('anon'));
   const [initialJoinCode, setInitialJoinCode] = useState(() => new URLSearchParams(window.location.search).get('join'));
+  const [stripeSuccess] = useState(() => new URLSearchParams(window.location.search).get('stripe_success') === '1');
   const [joinResult, setJoinResult] = useState(null); // { ok: bool, message: string, churchName? }
   const [careTeamRecord, setCareTeamRecord] = useState(null);
   const [pastorChurchId, setPastorChurchId] = useState(null);
@@ -1746,6 +1747,15 @@ export default function App() {
     });
     return () => listener.subscription.unsubscribe();
   }, [initialChurchId, initialAnonChurchId]);
+
+  // ?stripe_success=1 — re-fetch profile after returning from Stripe checkout
+  // so the plan updates immediately without a manual refresh.
+  useEffect(() => {
+    if (!stripeSuccess || !session?.user?.id) return;
+    const timer = setTimeout(() => loadProfile(session.user.id), 1500);
+    window.history.replaceState({}, '', window.location.pathname);
+    return () => clearTimeout(timer);
+  }, [stripeSuccess, session?.user?.id]);
 
   // ?join=CODE deep link: auto-attempt the join once session + complete profile is ready.
   useEffect(() => {
