@@ -471,14 +471,11 @@ app.post('/api/chat', optionalAuth, limitEither(
     }
 
     const trimmed = messages.slice(-8);
-    const effectiveSystem = seekingContext
-      ? system + `\n\n── WHAT THIS PERSON SHARED ABOUT THEMSELVES ──\n${seekingContext}\n\nUse this to meet them exactly where they are. Don't reference these answers directly unless they bring them up — just let them inform how you respond.`
-      : system;
 
     const stream = client.messages.stream({
       model,
       max_tokens: 2048,
-      system: effectiveSystem,
+      system,   // seekingContext already appended by getSystemPrompt() on the client
       messages: trimmed,
     });
     req.on('close', () => stream.controller?.abort?.());
