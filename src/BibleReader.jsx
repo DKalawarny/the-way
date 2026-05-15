@@ -1819,21 +1819,35 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
   return (
     <div style={{ height: 'calc(100vh - 62px)', background: C.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
-      <div style={{ background: C.bg, borderBottom: `1px solid ${C.border}`, padding: '0 208px 0 16px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, zIndex: 20 }}>
+      <div style={{ background: C.bg, borderBottom: `1px solid ${C.border}`, padding: '0 12px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, zIndex: 20 }}>
         {/* Back to chapters */}
         <button
           onClick={() => { setChapBook(book); setView('chapters'); }}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: C.verse, fontSize: 14, fontWeight: 600 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: C.verse, fontSize: 14, fontWeight: 600, flexShrink: 0 }}
         >
-          <ArrowLeft size={15} strokeWidth={2} /> {book.name}
+          <ArrowLeft size={15} strokeWidth={2} /> {isDesktop ? book.name : 'Back'}
         </button>
 
-        {/* Chapter nav */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <button onClick={() => goChapter(chNum - 1)} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 999, width: 30, height: 30, cursor: 'pointer', color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={16} strokeWidth={2} /></button>
-          <span style={{ fontSize: 14, fontWeight: 600, color: C.text, minWidth: 28, textAlign: 'center' }}>{chNum}</span>
-          <button onClick={() => goChapter(chNum + 1)} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 999, width: 30, height: 30, cursor: 'pointer', color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={16} strokeWidth={2} /></button>
-        </div>
+        {/* Center: tappable book+chapter title (mobile) or chapter nav (desktop) */}
+        {isDesktop ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button onClick={() => goChapter(chNum - 1)} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 999, width: 30, height: 30, cursor: 'pointer', color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={16} strokeWidth={2} /></button>
+            <span style={{ fontSize: 14, fontWeight: 600, color: C.text, minWidth: 28, textAlign: 'center' }}>{chNum}</span>
+            <button onClick={() => goChapter(chNum + 1)} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 999, width: 30, height: 30, cursor: 'pointer', color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={16} strokeWidth={2} /></button>
+          </div>
+        ) : (
+          <button
+            onClick={() => { setChapBook(book); setView('chapters'); }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'center', padding: '4px 8px' }}
+          >
+            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: C.muted, fontWeight: 700, lineHeight: 1 }}>
+              {VERSIONS.find((v) => v.id === bibleId)?.abbr}
+            </div>
+            <div style={{ fontFamily: T.display, fontSize: 16, fontWeight: 600, color: C.text, letterSpacing: '-0.01em', lineHeight: 1.2, marginTop: 2 }}>
+              {book.name} {chNum}
+            </div>
+          </button>
+        )}
 
         {/* Right controls */}
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -1875,7 +1889,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
       {/* Body */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Reading area */}
-        <div ref={readAreaRef} style={{ flex: 1, overflowY: 'auto', padding: isDesktop ? '32px 40px 120px' : '24px 20px 140px' }}>
+        <div ref={readAreaRef} style={{ flex: 1, overflowY: 'auto', padding: isDesktop ? '32px 40px 120px' : '24px 20px 200px' }}>
           <div style={{ maxWidth: '65ch', margin: '0 auto' }}>
             <div style={{ fontFamily: T.serif, fontSize: 13, letterSpacing: 3, textTransform: 'uppercase', color: C.verse, fontWeight: 600, marginBottom: 24 }}>
               {book.name} · Chapter {chNum}
@@ -2010,6 +2024,72 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
           </div>
         </div>
       )}
+
+      {/* Mobile bottom chapter nav — sits above the main bottom nav */}
+      {!isDesktop && (() => {
+        const idx = ALL_BOOKS.findIndex((b) => b.id === bookId);
+        const hasPrev = chNum > 1 || idx > 0;
+        const hasNext = chNum < book.ch || idx < ALL_BOOKS.length - 1;
+        const prevLabel = chNum > 1
+          ? `Ch ${chNum - 1}`
+          : idx > 0 ? ALL_BOOKS[idx - 1].name : '';
+        const nextLabel = chNum < book.ch
+          ? `Ch ${chNum + 1}`
+          : idx < ALL_BOOKS.length - 1 ? ALL_BOOKS[idx + 1].name : '';
+        return (
+          <div style={{
+            position: 'fixed',
+            bottom: 'calc(62px + env(safe-area-inset-bottom, 0px))',
+            left: 0, right: 0,
+            height: 58,
+            zIndex: 50,
+            display: 'flex',
+            alignItems: 'stretch',
+            background: dark ? '#1A0E07' : '#F5EDD8',
+            borderTop: `1px solid ${C.border}`,
+          }}>
+            <button
+              onClick={() => { if (hasPrev) goChapter(chNum - 1); }}
+              disabled={!hasPrev}
+              style={{
+                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                background: 'none', border: 'none', cursor: hasPrev ? 'pointer' : 'default',
+                color: hasPrev ? C.verse : C.muted, fontSize: 13, fontWeight: 600,
+                borderRight: `1px solid ${C.border}`,
+                opacity: hasPrev ? 1 : 0.35,
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              <ChevronLeft size={20} strokeWidth={2.5} />
+              <span style={{ maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prevLabel}</span>
+            </button>
+
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              padding: '0 16px', flexShrink: 0,
+            }}>
+              <span style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: C.muted, fontWeight: 700, lineHeight: 1 }}>Chapter</span>
+              <span style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: C.text, lineHeight: 1.2 }}>{chNum} <span style={{ fontSize: 12, fontWeight: 400, color: C.muted }}>/ {book.ch}</span></span>
+            </div>
+
+            <button
+              onClick={() => { if (hasNext) goChapter(chNum + 1); }}
+              disabled={!hasNext}
+              style={{
+                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                background: 'none', border: 'none', cursor: hasNext ? 'pointer' : 'default',
+                color: hasNext ? C.verse : C.muted, fontSize: 13, fontWeight: 600,
+                borderLeft: `1px solid ${C.border}`,
+                opacity: hasNext ? 1 : 0.35,
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              <span style={{ maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nextLabel}</span>
+              <ChevronRight size={20} strokeWidth={2.5} />
+            </button>
+          </div>
+        );
+      })()}
 
       {BadgeToast}
       {BookDoneToast}
