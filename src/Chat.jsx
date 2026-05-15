@@ -1875,7 +1875,7 @@ export default function Chat({
           />
           {micSupported && (
             <button
-              onClick={toggleMic}
+              onClick={() => toggleMic(input)}
               title={micListening ? 'Stop listening' : 'Speak your question'}
               style={{
                 background: micListening ? 'rgba(220,38,38,0.1)' : 'transparent',

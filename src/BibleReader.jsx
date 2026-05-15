@@ -1799,7 +1799,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
               />
               {micSupported && (
                 <button
-                  onClick={toggleMic}
+                  onClick={() => toggleMic(chatInput)}
                   title={micListening ? 'Stop listening' : 'Speak your question'}
                   style={{
                     width: 28, height: 28, borderRadius: '50%', border: 'none', flexShrink: 0,
