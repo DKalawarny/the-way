@@ -63,6 +63,7 @@ export default function Auth({ onAuth, onBack }) {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleDevLogin() {
     setLoading(true);
@@ -181,15 +182,28 @@ export default function Auth({ onAuth, onBack }) {
             />
           </Field>
           <Field label="Password">
-            <input
-              style={input}
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={mode === 'signup' ? 'At least 8 characters' : ''}
-              minLength={8}
-              required
-            />
+            <div style={{ position: 'relative' }}>
+              <input
+                style={{ ...input, paddingRight: 44 }}
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={mode === 'signup' ? 'At least 8 characters' : ''}
+                minLength={8}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(v => !v)}
+                style={{
+                  position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontSize: 12, color: T.inkMuted, padding: '2px 4px',
+                }}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </Field>
 
           {error && (
