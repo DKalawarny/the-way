@@ -1,191 +1,311 @@
 import { T } from './theme.js';
 import { PRO_PRICE, UPGRADE_EMAIL } from './usePlan.js';
 
-/* ── Trial banner shown at top of ChurchAdmin while trial is active ── */
+const subject = encodeURIComponent('kinwove — Church Pro upgrade');
+const body    = encodeURIComponent('Hi, I would like to upgrade my church to kinwove Pro.');
+const href    = `mailto:${UPGRADE_EMAIL}?subject=${subject}&body=${body}`;
+
+/* ── Trial banner ────────────────────────────────────────────────────────────
+   Shown at the top of ChurchAdmin while the trial is active.
+   Designed to be noticed without nagging — progress bar communicates urgency
+   visually, copy frames it around the congregation (not the product).
+── */
 export function TrialBanner({ daysLeft }) {
   const urgent  = daysLeft <= 7;
-  const subject = encodeURIComponent('kinwove — Church Pro upgrade');
-  const body    = encodeURIComponent('Hi, I would like to upgrade my church to kinwove Pro.');
-  const href    = `mailto:${UPGRADE_EMAIL}?subject=${subject}&body=${body}`;
+  const trialDays = 30;
+  const pct     = Math.max(0, Math.min(100, ((trialDays - daysLeft) / trialDays) * 100));
+
+  const bg      = urgent
+    ? 'linear-gradient(135deg, rgba(165,63,43,0.1) 0%, rgba(184,115,58,0.08) 100%)'
+    : 'linear-gradient(135deg, rgba(184,115,58,0.1) 0%, rgba(184,115,58,0.05) 100%)';
+  const borderColor = urgent ? 'rgba(165,63,43,0.35)' : 'rgba(184,115,58,0.3)';
+  const accentColor = urgent ? '#A53F2B' : T.gold;
+
+  const dayLabel = daysLeft === 0
+    ? 'Trial ends today'
+    : daysLeft === 1
+      ? '1 day left in your trial'
+      : `${daysLeft} days left in your free trial`;
 
   return (
     <div style={{
-      background : urgent ? 'rgba(165,63,43,0.07)' : 'rgba(184,115,58,0.06)',
-      border     : `1px solid ${urgent ? '#A53F2B55' : T.goldLight}`,
-      borderRadius: 10, padding: '10px 16px', marginBottom: 20,
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-      flexWrap: 'wrap',
+      background: bg,
+      border: `1px solid ${borderColor}`,
+      borderRadius: 14,
+      padding: '16px 18px',
+      marginBottom: 24,
+      position: 'relative',
+      overflow: 'hidden',
     }}>
-      <div style={{ fontSize: 13, color: T.ink, lineHeight: 1.45 }}>
-        <strong style={{ color: urgent ? '#A53F2B' : T.goldDark }}>
-          {daysLeft === 0
-            ? 'Your free trial ends today.'
-            : `Free trial · ${daysLeft} day${daysLeft === 1 ? '' : 's'} left.`}
-        </strong>
-        {' '}Your first month is on us — upgrade before it ends to keep all pastor tools.
+      {/* Subtle left accent bar */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, bottom: 0, width: 3,
+        background: `linear-gradient(180deg, ${accentColor} 0%, rgba(184,115,58,0.3) 100%)`,
+        borderRadius: '14px 0 0 14px',
+      }} />
+
+      <div style={{ paddingLeft: 10 }}>
+        {/* Top row: label + CTA */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
+          <div>
+            <div style={{
+              fontSize: 12, letterSpacing: 1.6, textTransform: 'uppercase',
+              fontWeight: 700, color: accentColor, marginBottom: 3,
+            }}>
+              {dayLabel}
+            </div>
+            <div style={{ fontSize: 13.5, color: T.ink, lineHeight: 1.5, maxWidth: 340 }}>
+              {urgent
+                ? "Your congregation's tools are about to go offline. Keep them running — upgrade before your trial ends."
+                : 'Your first 30 days are on us. Upgrade anytime to keep your pastor tools and congregation features running.'}
+            </div>
+          </div>
+
+          <a
+            href={href}
+            style={{
+              background: urgent
+                ? 'linear-gradient(135deg, #A53F2B 0%, #7d2e1e 100%)'
+                : `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
+              color: '#FDF8EE',
+              borderRadius: 999,
+              padding: '9px 20px',
+              fontSize: 13,
+              fontWeight: 600,
+              textDecoration: 'none',
+              flexShrink: 0,
+              display: 'inline-block',
+              boxShadow: urgent
+                ? '0 3px 12px rgba(165,63,43,0.3)'
+                : '0 3px 12px rgba(184,115,58,0.3)',
+              letterSpacing: '-0.01em',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {urgent ? 'Upgrade now' : `Keep my tools · ${PRO_PRICE}`}
+          </a>
+        </div>
+
+        {/* Progress bar: shows how much of the trial has elapsed */}
+        <div style={{
+          height: 4, borderRadius: 2,
+          background: 'rgba(44,24,16,0.08)',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            height: '100%',
+            width: `${pct}%`,
+            borderRadius: 2,
+            background: urgent
+              ? 'linear-gradient(90deg, #A53F2B, rgba(184,115,58,0.7))'
+              : `linear-gradient(90deg, ${T.gold}, rgba(184,115,58,0.5))`,
+            transition: 'width 0.4s ease',
+          }} />
+        </div>
       </div>
-      <a
-        href={href}
-        style={{
-          background  : urgent ? '#A53F2B' : T.ink,
-          color       : T.cream,
-          borderRadius: 999,
-          padding     : '7px 18px',
-          fontSize    : 13,
-          fontWeight  : 600,
-          textDecoration: 'none',
-          flexShrink  : 0,
-          display     : 'inline-block',
-        }}
-      >
-        Upgrade → {PRO_PRICE}
-      </a>
     </div>
   );
 }
 
-/* ── Full-screen upgrade wall shown when trial has expired ── */
+/* ── UpgradeWall ─────────────────────────────────────────────────────────────
+   Full-page shown when trial has expired. Two-panel card design:
+   dark editorial header (mission/emotional) → light pricing section (rational).
+   CTA is gold and prominent. Copy frames around the congregation, not the plan.
+── */
 export function UpgradeWall({ onBack }) {
-  const subject = encodeURIComponent('kinwove — Church Pro upgrade');
-  const body    = encodeURIComponent('Hi, I would like to upgrade my church to kinwove Pro.');
-  const href    = `mailto:${UPGRADE_EMAIL}?subject=${subject}&body=${body}`;
-
   const features = [
-    'Full pastor dashboard & analytics',
-    'AI-powered sermon composer',
-    'Care team management',
-    'Walk announcements & custom journeys',
-    'Unlimited church members',
+    { icon: '📊', text: 'Pastor dashboard & congregation insights' },
+    { icon: '✍️', text: 'AI sermon composer — draft a full sermon in minutes' },
+    { icon: '🤝', text: 'Care team — follow up personally with your flock' },
+    { icon: '🗺️', text: 'Custom discipleship journeys & walk announcements' },
+    { icon: '👥', text: 'Unlimited church members & congregation feed' },
   ];
 
   return (
     <div style={{
-      minHeight : '100vh',
-      background: T.cream,
-      display   : 'flex',
+      minHeight: '100vh',
+      background: `linear-gradient(180deg, #1A0E07 0%, #2C1810 40%, ${T.cream} 100%)`,
+      display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding   : '40px 20px',
+      padding: '40px 20px 60px',
     }}>
       <div style={{
-        maxWidth    : 440,
-        width       : '100%',
-        background  : T.white,
-        border      : `1px solid ${T.line}`,
-        borderRadius: 20,
-        padding     : '36px 32px',
-        textAlign   : 'center',
+        maxWidth: 460,
+        width: '100%',
       }}>
-        {/* Icon */}
+
+        {/* ── Dark hero card ── */}
         <div style={{
-          width: 56, height: 56, borderRadius: '50%',
-          background: T.parchment, border: `1px solid ${T.goldLight}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 26, margin: '0 auto 20px',
-        }}>✦</div>
-
-        <h2 style={{
-          fontFamily  : T.display,
-          fontSize    : 26,
-          fontWeight  : 600,
-          color       : T.ink,
-          margin      : '0 0 10px',
-          letterSpacing: '-0.02em',
-          lineHeight  : 1.2,
+          background: 'linear-gradient(150deg, #1E1008 0%, #2C1810 60%, #1A0E07 100%)',
+          borderRadius: '20px 20px 0 0',
+          padding: '36px 32px 32px',
+          textAlign: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+          border: '1px solid rgba(184,115,58,0.2)',
+          borderBottom: 'none',
         }}>
-          Your free trial has ended
-        </h2>
+          {/* Decorative gold rings */}
+          <div style={{ position: 'absolute', top: -50, right: -50, width: 160, height: 160, borderRadius: '50%', border: '1px solid rgba(184,115,58,0.1)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', top: -25, right: -25, width: 100, height: 100, borderRadius: '50%', border: '1px solid rgba(184,115,58,0.08)', pointerEvents: 'none' }} />
 
-        <p style={{
-          color     : T.inkSoft,
-          fontSize  : 14,
-          lineHeight: 1.65,
-          margin    : '0 0 26px',
-        }}>
-          Upgrade to keep access to your pastor dashboard, sermon tools,
-          care team, and everything your congregation relies on.
-        </p>
-
-        {/* Pricing card */}
-        <div style={{
-          background  : T.parchment,
-          border      : `1px solid ${T.goldLight}`,
-          borderRadius: 14,
-          padding     : '20px 22px',
-          marginBottom: 22,
-          textAlign   : 'left',
-        }}>
+          {/* Gold top accent */}
           <div style={{
-            fontSize     : 11,
-            letterSpacing: 1.8,
-            textTransform: 'uppercase',
-            color        : T.goldDark,
-            fontWeight   : 700,
-            marginBottom : 8,
+            position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+            background: `linear-gradient(90deg, transparent 0%, ${T.gold} 40%, rgba(184,115,58,0.4) 100%)`,
+          }} />
+
+          {/* Icon */}
+          <div style={{
+            width: 60, height: 60, borderRadius: '50%',
+            background: 'rgba(184,115,58,0.15)',
+            border: '1px solid rgba(184,115,58,0.35)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 22px',
+            boxShadow: '0 0 32px rgba(184,115,58,0.2)',
+          }}>
+            <span style={{ fontSize: 26, filter: 'drop-shadow(0 0 8px rgba(184,115,58,0.6))' }}>✦</span>
+          </div>
+
+          <div style={{
+            fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase',
+            color: 'rgba(184,115,58,0.7)', fontWeight: 700, marginBottom: 12,
           }}>
             Church Pro
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 4 }}>
-            <span style={{ fontFamily: T.display, fontSize: 38, fontWeight: 700, color: T.ink, letterSpacing: '-0.03em' }}>
-              $19
-            </span>
-            <span style={{ fontSize: 15, color: T.inkSoft }}>/mo per church</span>
-          </div>
-          <div style={{ fontSize: 12.5, color: T.inkMuted, marginBottom: 16 }}>Cancel any time</div>
+          <h2 style={{
+            fontFamily: T.display,
+            fontSize: 30,
+            fontWeight: 600,
+            color: 'rgba(253,248,240,0.95)',
+            margin: '0 0 14px',
+            letterSpacing: '-0.025em',
+            lineHeight: 1.15,
+          }}>
+            Your congregation<br />is still here.
+          </h2>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <p style={{
+            fontFamily: "'Lora', Georgia, serif",
+            fontSize: 15,
+            color: 'rgba(253,248,240,0.55)',
+            lineHeight: 1.7,
+            margin: 0,
+          }}>
+            Your free month is up — but the people depending on your tools aren't going anywhere.
+            Upgrade to keep your dashboard, care team, sermon tools, and congregation running.
+          </p>
+        </div>
+
+        {/* ── Light pricing card ── */}
+        <div style={{
+          background: T.white,
+          border: '1px solid rgba(184,115,58,0.18)',
+          borderTop: 'none',
+          borderRadius: '0 0 20px 20px',
+          padding: '28px 32px 32px',
+        }}>
+          {/* Price */}
+          <div style={{
+            display: 'flex', alignItems: 'baseline', gap: 6,
+            marginBottom: 4,
+          }}>
+            <span style={{
+              fontFamily: T.display, fontSize: 44, fontWeight: 700,
+              color: T.ink, letterSpacing: '-0.04em', lineHeight: 1,
+            }}>$19</span>
+            <span style={{ fontSize: 15, color: T.inkSoft, paddingBottom: 4 }}>/month per church</span>
+          </div>
+          <div style={{
+            fontSize: 12, color: T.inkMuted,
+            marginBottom: 22, letterSpacing: 0.2,
+          }}>
+            Cancel any time. No contracts. No lock-in.
+          </div>
+
+          {/* Features */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 26 }}>
             {features.map((f) => (
-              <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 9, fontSize: 13, color: T.ink }}>
-                <span style={{ color: T.gold, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✓</span>
-                {f}
+              <div key={f.text} style={{
+                display: 'flex', alignItems: 'flex-start', gap: 11,
+                padding: '10px 14px',
+                background: 'rgba(184,115,58,0.04)',
+                border: '1px solid rgba(184,115,58,0.1)',
+                borderRadius: 10,
+              }}>
+                <span style={{ fontSize: 17, flexShrink: 0, lineHeight: 1.4 }}>{f.icon}</span>
+                <span style={{ fontSize: 13.5, color: T.ink, lineHeight: 1.5 }}>{f.text}</span>
               </div>
             ))}
           </div>
+
+          {/* CTA */}
+          <a
+            href={href}
+            style={{
+              display: 'block',
+              width: '100%',
+              background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
+              color: '#FDF8EE',
+              border: 'none',
+              borderRadius: 999,
+              padding: '16px 20px',
+              fontSize: 16,
+              fontWeight: 600,
+              cursor: 'pointer',
+              textDecoration: 'none',
+              boxSizing: 'border-box',
+              textAlign: 'center',
+              boxShadow: '0 6px 24px rgba(184,115,58,0.4)',
+              letterSpacing: '-0.01em',
+              marginBottom: 8,
+            }}
+          >
+            Keep my church active → {PRO_PRICE}
+          </a>
+
+          {/* Reassurance */}
+          <div style={{
+            textAlign: 'center',
+            fontSize: 12,
+            color: T.inkMuted,
+            lineHeight: 1.6,
+            marginBottom: 16,
+          }}>
+            We'll confirm by email. Usually live within minutes.
+          </div>
+
+          <button
+            onClick={onBack}
+            style={{
+              width: '100%',
+              background: 'none',
+              color: T.inkMuted,
+              border: 'none',
+              padding: '8px',
+              fontSize: 13,
+              cursor: 'pointer',
+              letterSpacing: 0.1,
+            }}
+          >
+            ← Go back
+          </button>
         </div>
 
-        <a
-          href={href}
-          style={{
-            display     : 'block',
-            width       : '100%',
-            background  : T.ink,
-            color       : T.cream,
-            border      : 'none',
-            borderRadius: 999,
-            padding     : '14px 20px',
-            fontSize    : 15,
-            fontWeight  : 600,
-            cursor      : 'pointer',
-            marginBottom: 10,
-            textDecoration: 'none',
-            boxSizing   : 'border-box',
-            textAlign   : 'center',
-          }}
-        >
-          Upgrade now → {PRO_PRICE}
-        </a>
-
-        <button
-          onClick={onBack}
-          style={{
-            width     : '100%',
-            background: 'none',
-            color     : T.inkMuted,
-            border    : 'none',
-            padding   : '8px',
-            fontSize  : 13,
-            cursor    : 'pointer',
-          }}
-        >
-          ← Go back
-        </button>
+        {/* Support note */}
+        <p style={{
+          marginTop: 18, fontSize: 12, color: 'rgba(253,248,240,0.45)',
+          textAlign: 'center', lineHeight: 1.6,
+        }}>
+          Questions?{' '}
+          <a href={`mailto:${UPGRADE_EMAIL}`} style={{ color: 'rgba(184,115,58,0.8)', textDecoration: 'none' }}>
+            {UPGRADE_EMAIL}
+          </a>
+        </p>
       </div>
-
-      <p style={{ marginTop: 20, fontSize: 12, color: T.inkMuted, textAlign: 'center', lineHeight: 1.6 }}>
-        Questions? Email <a href={`mailto:${UPGRADE_EMAIL}`} style={{ color: T.goldDark }}>{UPGRADE_EMAIL}</a>
-      </p>
     </div>
   );
 }
