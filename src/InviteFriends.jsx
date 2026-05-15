@@ -227,7 +227,7 @@ export default function InviteFriends({ onClose, profile }) {
       }}>
         <button onClick={onClose} style={{
           background: 'none', border: 'none', color: T.inkSoft,
-          fontSize: 14, cursor: 'pointer', padding: 0,
+          fontSize: 14, cursor: 'pointer', padding: '10px 12px 10px 0', minHeight: 44, display: 'flex', alignItems: 'center',
         }}>
           ← Back
         </button>

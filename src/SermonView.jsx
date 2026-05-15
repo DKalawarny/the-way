@@ -78,7 +78,8 @@ export default function SermonView({ session, profile, sermonId, onBack, chromel
       <div className="scene" style={{ minHeight: '100vh', padding: '40px 20px 80px' }}>
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
           <button onClick={onBack} style={{
-            background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 18,
+            background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer',
+            padding: '10px 0', marginBottom: 8, minHeight: 44, display: 'flex', alignItems: 'center',
           }}>← Back</button>
           <div style={{ fontFamily: T.serif, fontSize: 18, color: T.inkMuted }}>Sermon not found.</div>
         </div>
@@ -116,7 +117,8 @@ export default function SermonView({ session, profile, sermonId, onBack, chromel
           display: 'flex', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10,
         }}>
           <button onClick={onBack} style={{
-            background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: '6px 4px',
+            background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer',
+            padding: '0 12px', minHeight: 44, display: 'flex', alignItems: 'center',
           }}>← Back</button>
           <div style={{ marginLeft: 'auto', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700 }}>
             This week

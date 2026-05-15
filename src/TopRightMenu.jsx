@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   MoreVertical, LayoutGrid, Clock, UserPlus, Phone, Inbox,
   Building2, Star, ShieldCheck, Flag, UserCog,
-  LogOut, Trash2, Megaphone, HelpCircle,
+  LogOut, Trash2, Megaphone, HelpCircle, Users, Search,
 } from 'lucide-react';
 import { T } from './theme.js';
 
@@ -41,10 +41,11 @@ export default function TopRightMenu({
     return () => window.removeEventListener('keydown', onEsc);
   }, [open]);
 
-  // Find people / Find a church now have a dedicated FAB — removed from here
   const items = [
     onOpenBoard        && { icon: LayoutGrid,   label: 'Your board',          onClick: onOpenBoard },
     onOpenHistory      && { icon: Clock,         label: 'Chat history',        onClick: onOpenHistory },
+    onFindPeople       && { icon: Users,         label: 'Find people',         onClick: onFindPeople },
+    onFindChurches     && { icon: Search,        label: 'Find a church',       onClick: onFindChurches },
     onInviteFriends    && { icon: UserPlus,      label: 'Invite friends',      onClick: onInviteFriends },
     profile?.church_id && onOpenTalkToSomeone && { icon: Phone,      label: 'Ask someone',         onClick: onOpenTalkToSomeone },
     hasCareTeamRole    && onOpenCareInbox     && { icon: Inbox,      label: 'Conversations',       onClick: onOpenCareInbox },

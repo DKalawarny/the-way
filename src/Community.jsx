@@ -1399,8 +1399,8 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
                 </button>
               );
             })()}
-            {/* Reserved space for the 3 mobile FABs (116px + 12 edge gap) */}
-            <div style={{ width: 128, flexShrink: 0 }} aria-hidden="true" />
+            {/* Reserved space for the mobile FABs: 3 buttons × 44px + 2 gaps × 8px + 12px edge = 164px */}
+            <div style={{ width: 164, flexShrink: 0 }} aria-hidden="true" />
           </header>
 
         </>

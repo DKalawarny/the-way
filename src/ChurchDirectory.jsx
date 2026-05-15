@@ -48,7 +48,7 @@ export default function ChurchDirectory({ session, profile, onBack, onOpenChurch
         borderBottom: `1px solid ${T.line}`,
         display: 'flex', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10,
       }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: '6px 4px' }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: '0 12px', minHeight: 44, display: 'flex', alignItems: 'center' }}>
           ← Back
         </button>
         <div style={{ marginLeft: 12, fontFamily: T.display, fontSize: 20, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>

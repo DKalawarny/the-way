@@ -35,6 +35,9 @@ export default function FindButton({
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
+  // On mobile these options live in the ⋮ TopRightMenu to avoid 4-FAB overflow
+  if (!isDesktop) return null;
+
   const right = isDesktop
     ? rightOffset + 12 + 2 * (44 + 8)   // 116
     : rightOffset + 12 + 3 * (44 + 8);  // 168

@@ -429,9 +429,9 @@ export default function ChurchPage({
             <button onClick={onBack} style={{
               background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(253,248,240,0.15)',
               backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-              borderRadius: 999, padding: '6px 14px 6px 10px',
+              borderRadius: 999, padding: '10px 16px 10px 12px',
               color: 'rgba(253,248,240,0.85)', cursor: 'pointer', outline: 'none',
-              display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, fontFamily: T.sans,
+              display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, fontFamily: T.sans, minHeight: 44,
             }}>
               <ArrowLeft size={14} strokeWidth={2} /> Back
             </button>
