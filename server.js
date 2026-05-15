@@ -236,19 +236,11 @@ async function logQaEvent({ personType, question, userId, wasCacheHit, isFirstTu
   }
 }
 
-// Voice instructions — sent to gpt-4o-mini-tts which supports expressive narration
+// Voice instructions — kept short and specific for gpt-4o-mini-tts
 const VOICE_INSTRUCTIONS = {
-  onyx: `You are a deep, warm male narrator — think Morgan Freeman reading scripture aloud. \
-Speak clearly and deliberately, every word fully formed and easy to understand. \
-Pace is steady and unhurried. Tone is rich and grounded, never shouted or rushed. \
-Convey quiet authority and earned wisdom. No radio-announcer energy — calm, clear, and real.`,
-  nova: `You are a soft, gentle woman reading scripture aloud — calm and soothing, like a quiet prayer. \
-Speak slowly and clearly, with a hushed warmth. Every word is kind and unhurried. \
-Tone is tender and peaceful — like a mother reading to a child before bed. \
-Never flat, never bright or perky. Just soft, clear, and deeply caring.`,
-  shimmer: `You are a soft, gentle woman reading scripture aloud — calm and soothing, like a quiet prayer. \
-Speak slowly and clearly, with a hushed warmth. Every word is kind and unhurried. \
-Tone is tender and peaceful. Never flat, never bright or perky. Just soft, clear, and deeply caring.`,
+  onyx:    'Speak like Morgan Freeman. Slow, deep, warm, and crystal clear. Let each sentence breathe. Calm and unhurried.',
+  nova:    'Speak very softly and gently — a hushed, tender voice, like a quiet prayer. Slow, warm, and peaceful. Never bright or energetic.',
+  shimmer: 'Speak very softly and gently — a hushed, tender voice, like a quiet prayer. Slow, warm, and peaceful. Never bright or energetic.',
 };
 
 // ── Text-to-Speech (OpenAI TTS API) ──────────────────────────────────────────
@@ -278,6 +270,7 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
     .trim()
     .slice(0, 4096);
 
+  console.log(`[tts] voice=${voice} model=gpt-4o-mini-tts len=${cleaned.length} hasInstructions=${!!VOICE_INSTRUCTIONS[voice]}`);
   try {
     const oaiRes = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
