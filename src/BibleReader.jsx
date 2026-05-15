@@ -1543,7 +1543,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                   role="button"
                   tabIndex={0}
                   style={{
-                    height: 68, borderRadius: 12, border: `2px solid`,
+                    height: 68, borderRadius: 12, border: `2px solid`, position: 'relative',
                     borderColor: isCurrent ? T.gold : isRead ? 'rgba(184,115,58,0.4)' : C.cardBorder,
                     background: isRead
                       ? `linear-gradient(135deg, rgba(184,115,58,0.18) 0%, rgba(184,115,58,0.08) 100%)`
@@ -1558,19 +1558,24 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                   <span style={{ fontSize: 16, color: isRead || isCurrent ? C.verse : C.text, fontWeight: 700, lineHeight: 1 }}>
                     {isRead ? `✓ ${n}` : n}
                   </span>
+                  <span style={{ fontSize: 10, color: C.muted, fontWeight: 500, lineHeight: 1, whiteSpace: 'nowrap' }}>
+                    {vc ? `${n}:1–${n}:${vc}` : ''}
+                  </span>
+                  {/* Verse picker — small explicit button in top-right corner, well away from the main tap area */}
                   {vc && (
                     <button
                       onClick={(e) => { e.stopPropagation(); setTileVersePickerFor({ ch: n, vc }); }}
-                      title="Pick a verse"
+                      title="Jump to a verse"
                       style={{
-                        background: 'transparent', border: 'none', padding: 0, margin: 0,
-                        fontSize: 10, color: C.muted, fontWeight: 500, lineHeight: 1,
-                        cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted',
-                        textUnderlineOffset: 2, whiteSpace: 'nowrap',
+                        position: 'absolute', top: 4, right: 4,
+                        width: 20, height: 20,
+                        background: 'transparent', border: `1px solid ${C.border}`,
+                        borderRadius: 4, cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 9, color: C.muted, lineHeight: 1,
+                        WebkitTapHighlightColor: 'transparent',
                       }}
-                    >
-                      {n}:1–{n}:{vc} ▾
-                    </button>
+                    >≡</button>
                   )}
                 </div>
               );
