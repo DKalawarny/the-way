@@ -778,6 +778,18 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
   );
 }
 
+const CHAT_LIGHT = {
+  bg: T.cream, text: T.ink, muted: T.inkMuted, textSoft: T.inkSoft,
+  border: T.line, headerBg: T.white, footerBg: T.white,
+  card: T.parchment, inputBg: T.cream,
+};
+const CHAT_DARK = {
+  bg: '#0E0906', text: 'rgba(253,248,240,0.92)', muted: 'rgba(253,248,240,0.45)',
+  textSoft: 'rgba(253,248,240,0.6)', border: 'rgba(184,115,58,0.2)',
+  headerBg: '#1A0E07', footerBg: '#120A05',
+  card: 'rgba(255,255,255,0.06)', inputBg: 'rgba(255,255,255,0.07)',
+};
+
 export default function Chat({
   personType,
   seekingContext,
@@ -814,6 +826,10 @@ export default function Chat({
   onSetPersonType,
   seededFromNote,
 }) {
+  const [dark, setDark] = useState(() => localStorage.getItem('chat_dark') === '1');
+  const C = dark ? CHAT_DARK : CHAT_LIGHT;
+  function toggleDark() { setDark((d) => { localStorage.setItem('chat_dark', d ? '0' : '1'); return !d; }); }
+
   const [messages, setMessages] = useState(initialMessages ?? []);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -1178,7 +1194,7 @@ export default function Chat({
       style={{
         height: panelMode ? 'calc(100vh - 62px)' : undefined,
         minHeight: panelMode ? undefined : '100vh',
-        background: T.cream,
+        background: C.bg,
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
@@ -1189,8 +1205,8 @@ export default function Chat({
           padding: '12px 16px',
           background: panelMode
             ? 'linear-gradient(180deg, #2a1a14 0%, #1f1410 100%)'
-            : T.white,
-          borderBottom: panelMode ? '1px solid #3a261d' : `1px solid ${T.line}`,
+            : C.headerBg,
+          borderBottom: panelMode ? '1px solid #3a261d' : `1px solid ${C.border}`,
           boxShadow: panelMode ? 'inset 0 -1px 0 rgba(184,115,58,0.18)' : 'none',
           display: 'flex',
           justifyContent: 'space-between',
@@ -1208,7 +1224,7 @@ export default function Chat({
           {!panelMode && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
               <span style={{ color: T.gold, fontSize: 16, lineHeight: 1, filter: 'drop-shadow(0 0 6px rgba(184,115,58,0.45))' }}>✦</span>
-              <span style={{ fontFamily: T.display, fontSize: 21, fontWeight: 500, color: T.ink, letterSpacing: '-0.025em' }}>kinwove</span>
+              <span style={{ fontFamily: T.display, fontSize: 21, fontWeight: 500, color: C.text, letterSpacing: '-0.025em' }}>kinwove</span>
             </div>
           )}
           <div style={{ position: 'relative' }}>
@@ -1217,10 +1233,10 @@ export default function Chat({
               style={{
                 background: modePickerOpen
                   ? 'rgba(184,115,58,0.22)'
-                  : (panelMode ? 'rgba(255,255,255,0.08)' : T.parchment),
-                border: `1px solid ${modePickerOpen ? T.gold : (panelMode ? 'rgba(184,115,58,0.35)' : T.line)}`,
+                  : (panelMode ? 'rgba(255,255,255,0.08)' : C.card),
+                border: `1px solid ${modePickerOpen ? T.gold : (panelMode ? 'rgba(184,115,58,0.35)' : C.border)}`,
                 borderRadius: 999, padding: '4px 12px',
-                fontSize: 12, color: panelMode ? '#e8b563' : (modePickerOpen ? T.goldDark : T.inkSoft),
+                fontSize: 12, color: panelMode ? '#e8b563' : (modePickerOpen ? T.goldDark : C.textSoft),
                 cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
                 transition: 'all 0.15s',
               }}
@@ -1288,8 +1304,8 @@ export default function Chat({
               onClick={() => setMenuOpen((v) => !v)}
               style={{
                 background: menuOpen ? 'rgba(184,115,58,0.18)' : (panelMode ? 'rgba(255,255,255,0.08)' : 'transparent'),
-                border: `1px solid ${menuOpen ? T.gold : (panelMode ? 'rgba(184,115,58,0.35)' : T.line)}`,
-                color: panelMode ? 'rgba(253,248,240,0.75)' : T.inkSoft, borderRadius: 999,
+                border: `1px solid ${menuOpen ? T.gold : (panelMode ? 'rgba(184,115,58,0.35)' : C.border)}`,
+                color: panelMode ? 'rgba(253,248,240,0.75)' : C.textSoft, borderRadius: 999,
                 padding: '6px 12px', fontSize: 16, cursor: 'pointer',
                 lineHeight: 1,
               }}
@@ -1307,14 +1323,25 @@ export default function Chat({
             {menuOpen && (
               <div style={{
                 position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-                background: T.white, border: `1px solid ${T.line}`,
-                borderRadius: 14, boxShadow: '0 8px 32px rgba(44,24,16,0.14)',
+                background: C.headerBg, border: `1px solid ${C.border}`,
+                borderRadius: 14, boxShadow: '0 8px 32px rgba(44,24,16,0.18)',
                 overflow: 'hidden', minWidth: 200, zIndex: 200,
               }}>
+                <button onClick={() => { toggleDark(); setMenuOpen(false); }} style={{
+                  width: '100%', textAlign: 'left', background: 'none',
+                  border: 'none', borderBottom: `1px solid ${C.border}`,
+                  padding: '12px 16px', fontSize: 14, color: C.text,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 15 }}>{dark ? '☀' : '🌙'}</span>
+                    <span>{dark ? 'Light mode' : 'Dark mode'}</span>
+                  </span>
+                </button>
                 <button onClick={() => { setMenuOpen(false); onNewConversation?.(); }} style={{
                   width: '100%', textAlign: 'left', background: 'none',
-                  border: 'none', borderBottom: `1px solid ${T.line}`,
-                  padding: '12px 16px', fontSize: 14, color: T.ink,
+                  border: 'none', borderBottom: `1px solid ${C.border}`,
+                  padding: '12px 16px', fontSize: 14, color: C.text,
                   cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
                 }}>
                   <span style={{ fontSize: 15 }}>✦</span><span style={{ fontWeight: 600 }}>New conversation</span>
@@ -1322,8 +1349,8 @@ export default function Chat({
                 {messages.length > 0 && (
                   <button onClick={() => { setMenuOpen(false); setShareContent({ text: formatConversation(messages, conversationTitle), label: 'Share conversation', rawMessages: messages, convTitle: conversationTitle }); }} style={{
                     width: '100%', textAlign: 'left', background: 'none',
-                    border: 'none', borderBottom: `1px solid ${T.line}`,
-                    padding: '12px 16px', fontSize: 14, color: T.ink,
+                    border: 'none', borderBottom: `1px solid ${C.border}`,
+                    padding: '12px 16px', fontSize: 14, color: C.text,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
                   }}>
                     <span style={{ fontSize: 13 }}>↗</span><span>Share conversation</span>
@@ -1332,7 +1359,7 @@ export default function Chat({
                 <button onClick={() => { setMenuOpen(false); onOpenHistory(); }} style={{
                   width: '100%', textAlign: 'left', background: 'none',
                   border: 'none', padding: '12px 16px', fontSize: 14,
-                  color: T.ink, cursor: 'pointer',
+                  color: C.text, cursor: 'pointer',
                   display: 'flex', alignItems: 'center', gap: 10,
                 }}>
                   <span style={{ fontSize: 13 }}>◷</span><span>Conversation history</span>
@@ -1408,7 +1435,7 @@ export default function Chat({
                   <button onClick={endStudySession} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer', padding: 0 }}>End session</button>
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <div style={{ flex: 1, fontFamily: 'monospace', fontSize: 11, background: T.white, border: `1px solid ${T.line}`, borderRadius: 8, padding: '6px 10px', color: T.inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ flex: 1, fontFamily: 'monospace', fontSize: 11, background: C.inputBg, border: `1px solid ${C.border}`, borderRadius: 8, padding: '6px 10px', color: C.textSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {sessionLink}
                   </div>
                   <button onClick={copySessionLink} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
@@ -1417,11 +1444,11 @@ export default function Chat({
                 </div>
               </div>
             ) : (
-              <div style={{ background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 12, padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
                 <span style={{ fontSize: 20 }}>👥</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>Group Study mode</div>
-                  <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2 }}>Start a live session your group can follow along</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>Group Study mode</div>
+                  <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>Start a live session your group can follow along</div>
                 </div>
                 <button onClick={startStudySession} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                   Start session
@@ -1442,15 +1469,15 @@ export default function Chat({
               }}
             >
               <PersonTypeWelcome personType={personType} />
-              <div style={{ fontFamily: T.serif, fontSize: 26, color: T.ink, marginBottom: 8, fontWeight: 500, letterSpacing: '-0.01em' }}>
+              <div style={{ fontFamily: T.serif, fontSize: 26, color: C.text, marginBottom: 8, fontWeight: 500, letterSpacing: '-0.01em' }}>
                 Take your time.
               </div>
-              <div style={{ fontSize: 14.5, color: T.inkMuted, lineHeight: 1.55, maxWidth: 360, marginBottom: 22 }}>
+              <div style={{ fontSize: 14.5, color: C.muted, lineHeight: 1.55, maxWidth: 360, marginBottom: 22 }}>
                 Ask anything — a question, a doubt, a verse you want to understand.
               </div>
               <div style={{
                 fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase',
-                color: T.inkMuted, fontWeight: 700, marginBottom: 10,
+                color: C.muted, fontWeight: 700, marginBottom: 10,
               }}>
                 Or start here
               </div>
@@ -1464,21 +1491,21 @@ export default function Chat({
                     onClick={() => send(s)}
                     style={{
                       width: '100%', textAlign: 'left',
-                      background: T.parchment, border: `1px solid ${T.line}`,
+                      background: C.card, border: `1px solid ${C.border}`,
                       borderRadius: 14, padding: '13px 16px',
-                      fontSize: 14, color: T.ink, fontFamily: T.serif,
+                      fontSize: 14, color: C.text, fontFamily: T.serif,
                       cursor: 'pointer', lineHeight: 1.45,
                       transition: 'border-color 0.15s, background 0.15s, box-shadow 0.15s',
                       display: 'flex', alignItems: 'flex-start', gap: 10,
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.borderColor = T.gold;
-                      e.currentTarget.style.background = 'rgba(184,115,58,0.07)';
+                      e.currentTarget.style.background = 'rgba(184,115,58,0.12)';
                       e.currentTarget.style.boxShadow = '0 2px 8px rgba(44,24,16,0.06)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = T.line;
-                      e.currentTarget.style.background = T.parchment;
+                      e.currentTarget.style.borderColor = C.border;
+                      e.currentTarget.style.background = C.card;
                       e.currentTarget.style.boxShadow = 'none';
                     }}
                   >
@@ -1549,7 +1576,7 @@ export default function Chat({
                   style={{
                     maxWidth: m.role === 'user' ? '80%' : '100%',
                     background: m.role === 'user' ? T.gold : 'transparent',
-                    color: m.role === 'user' ? T.cream : T.ink,
+                    color: m.role === 'user' ? T.cream : C.text,
                     padding: m.role === 'user' ? '12px 18px' : '4px 0',
                     borderRadius: m.role === 'user' ? 18 : 0,
                     fontFamily: m.role === 'user' ? T.sans : T.serif,
@@ -1577,7 +1604,7 @@ export default function Chat({
                         border: 'none',
                         padding: '4px 8px',
                         cursor: saved ? 'default' : 'pointer',
-                        color: saved ? T.gold : T.inkMuted,
+                        color: saved ? T.gold : C.muted,
                         fontSize: 12,
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -1595,7 +1622,7 @@ export default function Chat({
                         border: 'none',
                         padding: '4px 8px',
                         cursor: 'pointer',
-                        color: T.inkMuted,
+                        color: C.muted,
                         fontSize: 12,
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -1612,12 +1639,12 @@ export default function Chat({
                         style={{
                           background: 'transparent', border: 'none',
                           padding: '4px 8px', cursor: 'pointer',
-                          color: T.inkMuted, fontSize: 12,
+                          color: C.muted, fontSize: 12,
                           display: 'inline-flex', alignItems: 'center', gap: 5,
                           transition: 'color 0.2s',
                         }}
                         onMouseEnter={(e) => { e.currentTarget.style.color = '#c05050'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.color = T.inkMuted; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = C.muted; }}
                       >
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>
@@ -1625,7 +1652,7 @@ export default function Chat({
                         Flag
                       </button>
                     ) : (
-                      <span style={{ padding: '4px 8px', fontSize: 12, color: T.inkMuted }}>Flagged</span>
+                      <span style={{ padding: '4px 8px', fontSize: 12, color: C.muted }}>Flagged</span>
                     )}
                     <button
                       onClick={async () => {
@@ -1641,7 +1668,7 @@ export default function Chat({
                         border: 'none',
                         padding: '4px 8px',
                         cursor: 'pointer',
-                        color: copiedIdx === i ? T.gold : T.inkMuted,
+                        color: copiedIdx === i ? T.gold : C.muted,
                         fontSize: 12,
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -1665,7 +1692,7 @@ export default function Chat({
                           border: 'none',
                           padding: '4px 8px',
                           cursor: 'pointer',
-                          color: speakingId === i ? T.gold : T.inkMuted,
+                          color: speakingId === i ? T.gold : C.muted,
                           fontSize: 12,
                           display: 'inline-flex',
                           alignItems: 'center',
@@ -1753,8 +1780,8 @@ export default function Chat({
               style={{
                 marginTop: 14,
                 padding: 14,
-                border: `1px solid ${T.line}`,
-                background: '#fff4ea',
+                border: `1px solid ${C.border}`,
+                background: dark ? 'rgba(184,115,58,0.1)' : '#fff4ea',
                 borderRadius: 10,
                 fontSize: 14,
                 color: T.error,
@@ -1776,8 +1803,8 @@ export default function Chat({
 
       <div
         style={{
-          borderTop: `1px solid ${T.line}`,
-          background: T.white,
+          borderTop: `1px solid ${C.border}`,
+          background: C.footerBg,
           padding: panelMode
             ? `12px 16px max(14px, env(safe-area-inset-bottom, 14px))`
             : '14px 20px 76px',
@@ -1808,24 +1835,24 @@ export default function Chat({
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    background: T.parchment,
-                    border: `1px solid ${T.line}`,
+                    background: C.card,
+                    border: `1px solid ${C.border}`,
                     borderRadius: 999,
                     padding: '7px 14px',
                     fontSize: 13,
-                    color: T.inkSoft,
+                    color: C.textSoft,
                     cursor: 'pointer',
                     transition: 'border-color 0.15s, color 0.15s, background 0.15s',
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = T.gold;
                     e.currentTarget.style.color = T.goldDark;
-                    e.currentTarget.style.background = 'rgba(184,115,58,0.07)';
+                    e.currentTarget.style.background = 'rgba(184,115,58,0.12)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = T.line;
-                    e.currentTarget.style.color = T.inkSoft;
-                    e.currentTarget.style.background = T.parchment;
+                    e.currentTarget.style.borderColor = C.border;
+                    e.currentTarget.style.color = C.textSoft;
+                    e.currentTarget.style.background = C.card;
                   }}
                 >
                   {s}
@@ -1859,19 +1886,19 @@ export default function Chat({
             style={{
               flex: 1,
               resize: 'none',
-              border: `1px solid ${T.line}`,
+              border: `1px solid ${C.border}`,
               borderRadius: 18,
               padding: '12px 16px',
               fontSize: 15,
               lineHeight: 1.5,
-              background: T.cream,
-              color: T.ink,
+              background: C.inputBg,
+              color: C.text,
               outline: 'none',
               fontFamily: T.sans,
               maxHeight: 200,
             }}
             onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
-            onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
+            onBlur={(e) => (e.currentTarget.style.borderColor = C.border)}
           />
           {micSupported && (
             <button
@@ -1879,8 +1906,8 @@ export default function Chat({
               title={micListening ? 'Stop listening' : 'Speak your question'}
               style={{
                 background: micListening ? 'rgba(220,38,38,0.1)' : 'transparent',
-                border: `1px solid ${micListening ? 'rgba(220,38,38,0.4)' : T.line}`,
-                color: micListening ? '#dc2626' : T.inkMuted,
+                border: `1px solid ${micListening ? 'rgba(220,38,38,0.4)' : C.border}`,
+                color: micListening ? '#dc2626' : C.muted,
                 borderRadius: 999, width: 42, height: 42, flexShrink: 0,
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.15s',
@@ -1918,7 +1945,7 @@ export default function Chat({
               maxWidth: 720,
               margin: '8px auto 0',
               fontSize: 11,
-              color: T.inkMuted,
+              color: C.muted,
               textAlign: 'center',
             }}
           >
