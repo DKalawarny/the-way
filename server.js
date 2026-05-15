@@ -236,11 +236,19 @@ async function logQaEvent({ personType, question, userId, wasCacheHit, isFirstTu
   }
 }
 
+// Map profile voice names → actual OpenAI voices.
+// 'fable' is OpenAI's naturally British-accented male voice.
+// 'shimmer' is softer and more expressive than 'nova' for the female role.
+const VOICE_MAP = {
+  onyx:    'fable',
+  nova:    'shimmer',
+  shimmer: 'shimmer',
+};
+
 // Voice instructions — kept short and specific for gpt-4o-mini-tts
 const VOICE_INSTRUCTIONS = {
-  onyx:    'You are David Attenborough reading scripture. Speak in Received Pronunciation British English — deep, resonant, and unhurried. Let pauses breathe. Warm authority, never rushed.',
-  nova:    'You are Emma Thompson reading a letter aloud. Speak in warm, expressive Received Pronunciation British English. Natural pitch rises and falls — tender and emotionally present, like you genuinely mean every word.',
-  shimmer: 'You are Emma Thompson reading a letter aloud. Speak in warm, expressive Received Pronunciation British English. Natural pitch rises and falls — tender and emotionally present, like you genuinely mean every word.',
+  fable:   'Deep, warm, and unhurried. Let each sentence breathe. Calm, resonant authority.',
+  shimmer: 'Soft, gentle, and expressive. Natural warmth and tenderness. Let the words mean something.',
 };
 
 // ── Text-to-Speech (OpenAI TTS API) ──────────────────────────────────────────
@@ -270,8 +278,9 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
     .trim()
     .slice(0, 4096);
 
-  const instr = VOICE_INSTRUCTIONS[voice];
-  console.log(`[tts] voice=${voice} len=${cleaned.length} instructions="${instr?.slice(0, 60) ?? 'none'}"`);
+  const oaiVoice = VOICE_MAP[voice] ?? voice;
+  const instr    = VOICE_INSTRUCTIONS[oaiVoice];
+  console.log(`[tts] profile=${voice} oaiVoice=${oaiVoice} len=${cleaned.length}`);
   try {
     const oaiRes = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
@@ -280,10 +289,10 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini-tts',  // supports instructions + far more natural than tts-1-hd
+        model: 'gpt-4o-mini-tts',
         input: cleaned,
-        voice,
-        instructions: VOICE_INSTRUCTIONS[voice] ?? undefined,
+        voice: oaiVoice,
+        instructions: instr ?? undefined,
         response_format: 'mp3',
         speed: 0.92,               // slightly slower for clarity and warmth
       }),
