@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import { testamentOf } from './bibleRefUtils.js';
 
+// Matches: (Book Ch:v) parenthesised refs, **Book Ch:v** bold refs, and extended/historical tags
 const REF_REGEX =
-  /(\([1-3]?\s?[A-Za-z][A-Za-z ]+\s\d+:\d+(?:[–\-]\d+)?(?:,\s*[A-Za-z]+)?\)|\[Extended Canon[^\]]*\]|\[Historical Text[^\]]*\])/g;
+  /(\*\*[1-3]?\s?[A-Za-z][A-Za-z ]+\s\d+:\d+(?:[–\-]\d+)?\*\*|\([1-3]?\s?[A-Za-z][A-Za-z ]+\s\d+:\d+(?:[–\-]\d+)?(?:,\s*[A-Za-z]+)?\)|\[Extended Canon[^\]]*\]|\[Historical Text[^\]]*\])/g;
 
 // Lines/paragraphs that start with these are paraphrase markers —
 // styled differently so readers know they are summaries, not direct quotes.
@@ -35,10 +36,13 @@ export default function MsgText({ text, onRefClick, refStatus }) {
       while ((m = re.exec(para)) !== null) {
         if (m.index > last) parts.push({ t: 'text', v: para.slice(last, m.index) });
         const v = m[0];
+        const isBold = v.startsWith('**');
         let kind = 'ref-inline';
         if (v.startsWith('[Extended')) kind = 'ref-inline ref-extended';
         else if (v.startsWith('[Historical')) kind = 'ref-inline ref-historical';
-        parts.push({ t: 'ref', v, kind });
+        // For bold refs strip the ** so we have the bare "Book Ch:v" for display + lookup
+        const display = isBold ? v.slice(2, -2) : v;
+        parts.push({ t: 'ref', v, display, isBold, kind });
         last = m.index + v.length;
       }
       if (last < para.length) parts.push({ t: 'text', v: para.slice(last) });
@@ -54,13 +58,14 @@ export default function MsgText({ text, onRefClick, refStatus }) {
             const status = refStatus?.get(p.v);
             const isCanonical = !p.v.startsWith('[');
             const clickable = !!onRefClick && isCanonical;
-            const testament = isCanonical ? testamentOf(p.v) : null;
+            const testament = isCanonical ? testamentOf(p.display) : null;
             const isNT = testament === 'NT';
             return (
               <span
                 key={i}
                 className={p.kind}
                 style={{
+                  fontWeight: p.isBold ? 700 : undefined,
                   cursor: clickable ? 'pointer' : undefined,
                   borderBottom: status === 'ok'
                     ? '1.5px solid rgba(80,160,80,0.55)'
@@ -78,7 +83,7 @@ export default function MsgText({ text, onRefClick, refStatus }) {
                 }
                 onClick={clickable ? () => onRefClick(p.v) : undefined}
               >
-                {p.v}
+                {p.display}
                 {testament && (
                   <span style={{
                     display: 'inline-block',
