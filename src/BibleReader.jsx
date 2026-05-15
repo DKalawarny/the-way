@@ -1028,7 +1028,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
         {VERSIONS.find((v) => v.id === bibleId)?.abbr} ▾
       </button>
       {showVersions && (
-        <div style={{ position: 'absolute', top: '110%', right: 0, background: dark ? '#1A0E07' : T.white, border: `1px solid ${C.border}`, borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', overflow: 'hidden', zIndex: 50, minWidth: 210 }}>
+        <div style={{ position: 'absolute', top: '110%', right: 'auto', left: 0, background: dark ? '#1A0E07' : T.white, border: `1px solid ${C.border}`, borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', overflow: 'hidden', zIndex: 50, minWidth: 210, maxWidth: 'calc(100vw - 24px)' }}>
           {VERSIONS.map((v) => (
             <button key={v.id} onClick={() => { setBibleId(v.id); setShowVersions(false); }} style={{
               width: '100%', textAlign: 'left', background: bibleId === v.id ? 'rgba(184,115,58,0.1)' : 'transparent',
@@ -1178,7 +1178,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
     <div style={{ minHeight: '100vh', background: C.bg, fontFamily: T.sans, paddingBottom: 'calc(62px + env(safe-area-inset-bottom, 0px))' }}>
       {/* Header */}
       <div style={{ position: 'sticky', top: 0, zIndex: 20, background: C.bg, borderBottom: `1px solid ${C.border}`, paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        <div style={{ padding: '0 208px 0 20px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ padding: '0 164px 0 20px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: C.text, letterSpacing: '-0.012em' }}>Read</span>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {VersionPicker}
@@ -1499,7 +1499,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
       <div style={{ minHeight: '100vh', background: C.bg, fontFamily: T.sans, paddingBottom: 'calc(62px + env(safe-area-inset-bottom, 0px))' }}>
         {/* Header */}
         <div style={{ position: 'sticky', top: 0, zIndex: 20, background: C.bg, borderBottom: `1px solid ${C.border}`, paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-          <div style={{ padding: '0 208px 0 20px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ padding: '0 164px 0 20px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button onClick={() => setView('home')} style={{ background: 'none', border: 'none', color: C.verse, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
             <ArrowLeft size={15} strokeWidth={2} /> Books
           </button>

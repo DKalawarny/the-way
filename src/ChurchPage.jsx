@@ -362,7 +362,7 @@ export default function ChurchPage({
   }
 
   return (
-    <div className="scene" style={{ minHeight: '100vh', paddingBottom: 80 }}>
+    <div className="scene" style={{ minHeight: '100vh', paddingBottom: 80, paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       {uikitUi}
 
       {/* Visitor-view banner — when an owner/member lands on their own church
@@ -424,7 +424,9 @@ export default function ChurchPage({
           <div style={{
             position: 'absolute', top: 0, left: 0, right: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '13px 16px', zIndex: 2,
+            paddingTop: 13, paddingBottom: 13, paddingLeft: 16,
+            paddingRight: 172,
+            zIndex: 2,
           }}>
             <button onClick={onBack} style={{
               background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(253,248,240,0.15)',
