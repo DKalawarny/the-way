@@ -118,6 +118,7 @@ export const globalCss = `
     color: ${T.ink};
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
   }
   button { font-family: inherit; cursor: pointer; }
   input, textarea { font-family: inherit; }

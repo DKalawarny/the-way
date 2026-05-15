@@ -352,7 +352,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
               }}>“</div>
               <div style={{
                 fontFamily: T.serif, fontSize: 19, fontStyle: 'italic',
-                color: '#1f1410', lineHeight: 1.55, whiteSpace: 'pre-wrap',
+                color: '#1f1410', lineHeight: 1.55, whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word',
                 letterSpacing: '-0.003em',
               }}>
                 {bodyExpanded ? post.body : post.body.slice(0, 280) + (post.body.length > 280 ? '…' : '')}
@@ -361,7 +361,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
           ) : (
             <div style={{
               fontFamily: T.serif, fontSize: 18.5, color: '#1f1410',
-              lineHeight: 1.6, margin: '6px 0 16px', whiteSpace: 'pre-wrap',
+              lineHeight: 1.6, margin: '6px 0 16px', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word',
               letterSpacing: '-0.003em', fontWeight: 400,
             }}>
               {bodyExpanded ? post.body : post.body.slice(0, 280) + (post.body.length > 280 ? '…' : '')}
@@ -593,6 +593,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply(); } }}
                         placeholder="Write a comment…"
                         autoFocus
+                        onFocus={(e) => { setTimeout(() => e.target.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 350); }}
                         style={{ width: '100%', border: 'none', outline: 'none', fontFamily: T.serif, fontSize: 14, color: T.ink, background: 'transparent' }}
                       />
                     </div>
