@@ -73,6 +73,22 @@ const BOOK_CODES = {
   revelation: 'REV', rev: 'REV', revelations: 'REV', apocalypse: 'REV',
 };
 
+const NT_CODES = new Set([
+  'MAT','MRK','LUK','JHN','ACT','ROM','1CO','2CO','GAL','EPH',
+  'PHP','COL','1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS',
+  '1PE','2PE','1JN','2JN','3JN','JUD','REV',
+]);
+
+/** Returns 'NT', 'OT', or null for a raw ref string like "(Matthew 5:1)" */
+export function testamentOf(raw) {
+  const cleaned = raw.replace(/^[\[(]|[\])]$/g, '').trim();
+  const m = cleaned.match(/^([1-3]?\s?[A-Za-z][A-Za-z ]+?)\s+\d/);
+  if (!m) return null;
+  const code = BOOK_CODES[m[1].trim().toLowerCase().replace(/\s+/g, ' ')];
+  if (!code) return null;
+  return NT_CODES.has(code) ? 'NT' : 'OT';
+}
+
 // KJV — always available via api.bible, used as the validation target
 export const VALIDATION_BIBLE_ID = 'de4e12af7f28f599-02';
 

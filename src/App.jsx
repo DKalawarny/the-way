@@ -706,10 +706,11 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
       {/* ── Bottom tab bar ─────────────────────────────────── */}
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
-        height: 62, background: T.white, borderTop: `1px solid ${T.line}`,
+        background: T.white, borderTop: `1px solid ${T.line}`,
         boxShadow: '0 -2px 12px rgba(44,24,16,0.05)',
         display: 'flex', alignItems: 'center', zIndex: 100,
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        minHeight: 62,
       }}>
         <button onClick={onGoHome} style={tabStyle('home')}>
           {activeRail('home')}
@@ -2275,6 +2276,7 @@ export default function App() {
         paddingRight: isDocked ? chatPanelWidth : 0,
         marginLeft: isDesktop && showNav ? SIDEBAR_W : 0,
         paddingTop: isDesktop && showNav ? HEADER_H : 0,
+        paddingBottom: !isDesktop && showNav ? 'calc(62px + env(safe-area-inset-bottom, 0px))' : 0,
         transition: isResizingRef.current ? 'none' : 'padding-right 0.28s ease, margin-left 0.28s ease',
       }}>
       {stage === 'landing' && (

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { testamentOf } from './bibleRefUtils.js';
 
 const REF_REGEX =
   /(\([1-3]?\s?[A-Za-z][A-Za-z ]+\s\d+:\d+(?:[–\-]\d+)?(?:,\s*[A-Za-z]+)?\)|\[Extended Canon[^\]]*\]|\[Historical Text[^\]]*\])/g;
@@ -53,6 +54,8 @@ export default function MsgText({ text, onRefClick, refStatus }) {
             const status = refStatus?.get(p.v);
             const isCanonical = !p.v.startsWith('[');
             const clickable = !!onRefClick && isCanonical;
+            const testament = isCanonical ? testamentOf(p.v) : null;
+            const isNT = testament === 'NT';
             return (
               <span
                 key={i}
@@ -76,6 +79,25 @@ export default function MsgText({ text, onRefClick, refStatus }) {
                 onClick={clickable ? () => onRefClick(p.v) : undefined}
               >
                 {p.v}
+                {testament && (
+                  <span style={{
+                    display: 'inline-block',
+                    fontSize: 8.5,
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
+                    fontFamily: 'system-ui, sans-serif',
+                    color: isNT ? '#3a6b8a' : '#8E5528',
+                    background: isNT ? 'rgba(58,107,138,0.10)' : 'rgba(142,85,40,0.10)',
+                    borderRadius: 3,
+                    padding: '1px 3px',
+                    marginLeft: 3,
+                    verticalAlign: 'middle',
+                    lineHeight: 1.4,
+                    userSelect: 'none',
+                  }}>
+                    {testament}
+                  </span>
+                )}
                 {status === 'ok' && (
                   <sup style={{ fontSize: '0.7em', color: 'rgba(60,140,60,0.85)', marginLeft: 1 }}>✓</sup>
                 )}

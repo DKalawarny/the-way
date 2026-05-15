@@ -1206,8 +1206,9 @@ export default function Chat({
             </button>
           )}
           {!panelMode && (
-            <div style={{ fontFamily: T.display, fontSize: 24, fontWeight: 500, color: T.ink, letterSpacing: '-0.025em' }}>
-              kinwove
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
+              <span style={{ color: T.gold, fontSize: 16, lineHeight: 1, filter: 'drop-shadow(0 0 6px rgba(184,115,58,0.45))' }}>✦</span>
+              <span style={{ fontFamily: T.display, fontSize: 21, fontWeight: 500, color: T.ink, letterSpacing: '-0.025em' }}>kinwove</span>
             </div>
           )}
           <div style={{ position: 'relative' }}>

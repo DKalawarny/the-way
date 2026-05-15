@@ -9,28 +9,29 @@ import { authedFetch } from './supabase.js';
  * useTextToSpeech({ voice: 'onyx' })
  * speak(id, text) — tap same id again to stop.
  */
-// Per-voice audio shaping applied client-side via Web Audio API
+// Light client-side shaping — gpt-4o-mini-tts is already expressive/warm,
+// so we only add a gentle touch rather than heavy post-processing.
 const VOICE_SHAPE = {
   onyx: {
-    playbackRate: 0.88,   // lowers pitch ~2 semitones — deep narrator quality
-    bassFreq: 180,
-    bassGain: 9,          // boost low end for richness
-    presenceFreq: 2800,
-    presenceGain: -2,     // roll off harshness slightly
+    playbackRate: 1.0,    // model handles pacing; don't distort pitch
+    bassFreq: 160,
+    bassGain: 3,          // slight warmth boost, not heavy
+    presenceFreq: 3500,
+    presenceGain: -1,
   },
   nova: {
-    playbackRate: 0.88,
-    bassFreq: 220,
-    bassGain: 6,
-    presenceFreq: 4000,
-    presenceGain: -3,
+    playbackRate: 1.0,
+    bassFreq: 200,
+    bassGain: 2,
+    presenceFreq: 4500,
+    presenceGain: -1,
   },
   shimmer: {
-    playbackRate: 0.88,   // measured, unhurried
-    bassFreq: 220,
-    bassGain: 6,          // warmth and body
+    playbackRate: 1.0,
+    bassFreq: 200,
+    bassGain: 2,
     presenceFreq: 4000,
-    presenceGain: -3,     // soften any harshness
+    presenceGain: -1,
   },
 };
 

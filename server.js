@@ -236,14 +236,14 @@ async function logQaEvent({ personType, question, userId, wasCacheHit, isFirstTu
   }
 }
 
-// Voice instructions — personality for each voice character
+// Voice instructions — sent to gpt-4o-mini-tts which supports expressive narration
 const VOICE_INSTRUCTIONS = {
-  onyx: `You are James — a warm, deep, gravelly narrator with the energy and soul of Morgan Freeman.
-You read with weight and wonder, like every word matters. Unhurried but alive.
-Never flat or robotic. Let pauses breathe. Speak like you've lived what you're reading.`,
-  shimmer: `You are Grace — a warm, clear, and gently energetic narrator.
-You read like a trusted friend sharing something meaningful over coffee.
-Present and alive, never monotone. Let the emotion in the words come through naturally.`,
+  onyx: `Speak like Morgan Freeman narrating a documentary — deep, warm, unhurried, and gravelly. \
+Every word carries weight. Let pauses breathe. Pace is slow and deliberate, never flat or robotic. \
+Convey quiet wonder and earned wisdom. No cheerfulness, no announcer energy — just soul.`,
+  shimmer: `Speak like a warm, clear, and grounded woman reading aloud to a close friend. \
+Gentle but present — not soft to the point of sleepy. Pace is calm and measured. \
+Convey sincerity and care. Never monotone, never performative. Just real.`,
 };
 
 // ── Text-to-Speech (OpenAI TTS API) ──────────────────────────────────────────
@@ -281,11 +281,12 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'tts-1-hd',
+        model: 'gpt-4o-mini-tts',  // supports instructions + far more natural than tts-1-hd
         input: cleaned,
         voice,
+        instructions: VOICE_INSTRUCTIONS[voice] ?? undefined,
         response_format: 'mp3',
-        speed: 1.0,            // we'll slow down client-side for pitch effect
+        speed: 0.95,               // just slightly slower — the model handles expressiveness
       }),
     });
 
