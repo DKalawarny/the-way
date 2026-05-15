@@ -1818,17 +1818,23 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
 
   return (
     <div style={{ height: 'calc(100vh - 62px)', background: C.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* Header */}
-      <div style={{ background: C.bg, borderBottom: `1px solid ${C.border}`, padding: '0 12px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, zIndex: 20 }}>
+      {/* Bible sub-header — sits directly below the global app header */}
+      <div style={{
+        background: C.bg, borderBottom: `1px solid ${C.border}`,
+        padding: '0 14px',
+        height: isDesktop ? 52 : 50,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexShrink: 0, zIndex: 20,
+      }}>
         {/* Back to chapters */}
         <button
           onClick={() => { setChapBook(book); setView('chapters'); }}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, color: C.verse, fontSize: 14, fontWeight: 600, flexShrink: 0 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: C.verse, fontSize: 13, fontWeight: 600, flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}
         >
-          <ArrowLeft size={15} strokeWidth={2} /> {isDesktop ? book.name : 'Back'}
+          <ArrowLeft size={15} strokeWidth={2} /> {book.name}
         </button>
 
-        {/* Center: tappable book+chapter title (mobile) or chapter nav (desktop) */}
+        {/* Center: book + chapter (desktop keeps chapter nav; mobile just shows title) */}
         {isDesktop ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button onClick={() => goChapter(chNum - 1)} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 999, width: 30, height: 30, cursor: 'pointer', color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={16} strokeWidth={2} /></button>
@@ -1836,22 +1842,18 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
             <button onClick={() => goChapter(chNum + 1)} style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 999, width: 30, height: 30, cursor: 'pointer', color: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={16} strokeWidth={2} /></button>
           </div>
         ) : (
-          <button
-            onClick={() => { setChapBook(book); setView('chapters'); }}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', textAlign: 'center', padding: '4px 8px' }}
-          >
-            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: C.muted, fontWeight: 700, lineHeight: 1 }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: C.text, letterSpacing: '-0.01em', lineHeight: 1.15 }}>
+              Chapter {chNum}
+            </div>
+            <div style={{ fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: C.muted, fontWeight: 600, lineHeight: 1, marginTop: 1 }}>
               {VERSIONS.find((v) => v.id === bibleId)?.abbr}
             </div>
-            <div style={{ fontFamily: T.display, fontSize: 16, fontWeight: 600, color: C.text, letterSpacing: '-0.01em', lineHeight: 1.2, marginTop: 2 }}>
-              {book.name} {chNum}
-            </div>
-          </button>
+          </div>
         )}
 
         {/* Right controls */}
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          {/* Commentary label — desktop only, shown when panel is open */}
           {chatOpen && isDesktop && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: dark ? 'rgba(26,14,7,0.9)' : '#F0E3C4', border: `1px solid ${dark ? 'rgba(184,115,58,0.25)' : 'rgba(184,115,58,0.35)'}`, borderRadius: 10, padding: '0 6px 0 10px', height: 34 }}>
               <div>
@@ -1861,28 +1863,26 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
               <button onClick={() => setChatOpen(false)} style={{ background: 'none', border: 'none', color: dark ? C.muted : 'rgba(101,64,24,0.6)', cursor: 'pointer', padding: '4px 6px', borderRadius: 6, display: 'flex', alignItems: 'center' }}><X size={14} strokeWidth={2} /></button>
             </div>
           )}
-          <span style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: 1, marginRight: 2 }}>
-            {VERSIONS.find((v) => v.id === bibleId)?.abbr}
-          </span>
+          {isDesktop && (
+            <span style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: 1, marginRight: 2 }}>
+              {VERSIONS.find((v) => v.id === bibleId)?.abbr}
+            </span>
+          )}
           {DarkToggle}
-          {/* Chat toggle — always visible */}
           <button
             onClick={() => { setChatOpen((o) => !o); setTimeout(() => chatInputRef.current?.focus(), 300); }}
             style={{
               width: 34, height: 34, borderRadius: '50%', cursor: 'pointer',
-              background: chatOpen
-                ? `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`
-                : C.inputBg,
+              background: chatOpen ? `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)` : C.inputBg,
               border: `1px solid ${chatOpen ? 'transparent' : C.border}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 15, color: chatOpen ? T.cream : C.verse,
               boxShadow: chatOpen ? '0 2px 10px rgba(184,115,58,0.4)' : 'none',
               transition: 'all 0.18s',
+              WebkitTapHighlightColor: 'transparent',
             }}
             title={chatOpen ? 'Close chat' : 'Ask about this chapter'}
-          >
-            ✦
-          </button>
+          >✦</button>
         </div>
       </div>
 
