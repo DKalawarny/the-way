@@ -3,6 +3,91 @@ import { T } from './theme.js';
 import { TOPUP_MESSAGES, TOPUP_PRICE, PLAN_LIMITS } from './useAiUsage.js';
 import { supabase } from './supabase.js';
 
+// ── Promo code redemption ─────────────────────────────────────────────────────
+export function PromoCodeInput({ onSuccess }) {
+  const [code, setCode]       = useState('');
+  const [status, setStatus]   = useState(null); // null | 'loading' | 'ok' | string (error)
+  const [open, setOpen]       = useState(false);
+
+  async function handleRedeem() {
+    const trimmed = code.trim().toUpperCase();
+    if (!trimmed) return;
+    setStatus('loading');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) { setStatus('Sign in to redeem a code.'); return; }
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/redeem-promo`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ code: trimmed, user_id: session.user.id }),
+        }
+      );
+      const json = await res.json();
+      if (json.success) {
+        setStatus('ok');
+        onSuccess?.();
+      } else {
+        setStatus(json.error ?? 'Something went wrong.');
+      }
+    } catch {
+      setStatus('Something went wrong. Try again.');
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: T.inkMuted, textDecoration: 'underline', padding: 0 }}
+      >
+        Have a promo code?
+      </button>
+    );
+  }
+
+  return (
+    <div style={{ width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          value={code}
+          onChange={e => setCode(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleRedeem()}
+          placeholder="KINWOVE-FRIENDS"
+          autoFocus
+          style={{
+            flex: 1, padding: '10px 12px', borderRadius: 8,
+            border: `1px solid ${T.line}`, fontSize: 13,
+            fontFamily: 'monospace', background: T.white, color: T.ink,
+            outline: 'none',
+          }}
+        />
+        <button
+          onClick={handleRedeem}
+          disabled={status === 'loading'}
+          style={{
+            padding: '10px 16px', borderRadius: 8, border: 'none',
+            background: T.ink, color: T.cream, fontSize: 13, fontWeight: 600,
+            cursor: status === 'loading' ? 'wait' : 'pointer',
+            opacity: status === 'loading' ? 0.7 : 1,
+          }}
+        >
+          {status === 'loading' ? '…' : 'Apply'}
+        </button>
+      </div>
+      {status && status !== 'loading' && (
+        <div style={{ fontSize: 12, color: status === 'ok' ? '#2d7a2d' : '#A53F2B', textAlign: 'center' }}>
+          {status === 'ok' ? '✓ Code applied! 3 months of Individual unlocked.' : status}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Compute the current billing period string (matches useAiUsage logic)
 function currentPeriod(plan) {
   const cfg = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
@@ -139,6 +224,8 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
           >
             {upgrading === 'premium' ? 'Redirecting\u2026' : 'Upgrade now \u2192'}
           </button>
+
+          <PromoCodeInput onSuccess={() => window.location.reload()} />
         </>
       ) : (
         // ── Paid user hit monthly cap — offer top-up ─────────────────────────
