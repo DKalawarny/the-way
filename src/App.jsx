@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
+import { useEffect, useMemo, useRef, useState, lazy, Suspense, Component } from 'react';
 import { T, globalCss } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
 
@@ -13,6 +13,43 @@ function ScreenLoader() {
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
+}
+
+class PageErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e) { return { error: e }; }
+  render() {
+    const { error } = this.state;
+    if (!error) return this.props.children;
+    const isChunkError = /failed to fetch dynamically imported module|loading chunk|loading css chunk/i.test(error.message ?? '');
+    return (
+      <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
+        <span style={{ color: T.gold, fontSize: 22 }}>✦</span>
+        <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink }}>
+          {isChunkError ? 'New version available' : 'Something went wrong'}
+        </div>
+        <div style={{ fontSize: 14, color: T.inkSoft, textAlign: 'center', maxWidth: 320, lineHeight: 1.6 }}>
+          {isChunkError
+            ? 'A new version of kinwove was deployed. Reload the page to get it.'
+            : error.message}
+        </div>
+        <button
+          onClick={() => window.location.reload()}
+          style={{ background: T.ink, color: T.cream, border: 'none', borderRadius: 999, padding: '12px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+        >
+          Reload
+        </button>
+        {!isChunkError && (
+          <button
+            onClick={() => this.setState({ error: null })}
+            style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 13, cursor: 'pointer', padding: '4px 8px' }}
+          >
+            Try again
+          </button>
+        )}
+      </div>
+    );
+  }
 }
 
 import { supabase, authedFetch } from './supabase.js';
@@ -2271,6 +2308,7 @@ export default function App() {
       )}
 
       {/* ── Main stage ─────────────────────────────────────────────── */}
+      <PageErrorBoundary>
       <Suspense fallback={<ScreenLoader />}>
       <div style={{
         paddingRight: isDocked ? chatPanelWidth : 0,
@@ -2830,6 +2868,7 @@ export default function App() {
         />
       )}
       </Suspense>
+      </PageErrorBoundary>
       {joinResult && (
         <div
           onClick={() => setJoinResult(null)}
