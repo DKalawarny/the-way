@@ -201,10 +201,22 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
     const voices = window.speechSynthesis.getVoices();
     const en = voices.filter((v) => v.lang.startsWith('en'));
     if (!en.length) return null;
+    const wantMale = voice === 'onyx';
+    if (wantMale) {
+      // Prefer natural-sounding male voices — iOS: Aaron, Eddy, Daniel, Gordon, James, Tom; Android: Google UK English Male
+      return (
+        en.find((v) => /\b(aaron|eddy|daniel|gordon|james|tom|rishi)\b/i.test(v.name)) ||
+        en.find((v) => /male/i.test(v.name)) ||
+        en.find((v) => /google.*english/i.test(v.name) && /uk|en-gb/i.test(v.name + v.lang)) ||
+        en.find((v) => /enhanced|premium/i.test(v.name) && !/samantha|karen|moira|victoria|tessa|fiona/i.test(v.name)) ||
+        en[0]
+      );
+    }
+    // Female — prefer enhanced/premium, then named female voices
     return (
       en.find((v) => /enhanced|premium|neural/i.test(v.name)) ||
       en.find((v) => /google/i.test(v.name) && v.lang === 'en-US') ||
-      en.find((v) => /^(samantha|karen|daniel|moira)/i.test(v.name)) ||
+      en.find((v) => /^(samantha|karen|moira|victoria|tessa|fiona)/i.test(v.name)) ||
       en.find((v) => v.lang === 'en-US') ||
       en[0]
     );
