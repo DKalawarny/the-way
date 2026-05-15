@@ -1299,7 +1299,7 @@ function MobileHeader({ onOpenBible }) {
       borderBottom: '1px solid #3a261d',
       boxShadow: '0 4px 14px rgba(20,10,6,0.35), inset 0 -1px 0 rgba(184,115,58,0.18)',
       display: 'flex', alignItems: 'center',
-      padding: '0 56px 0 16px', // right: room for TopRightMenu FAB
+      padding: '0 164px 0 16px', // right: room for 3 FABs (3×44 + 2×8 gaps + 12px edge)
       gap: 12,
     }}>
       <div style={{
