@@ -44,10 +44,11 @@ export default function ChurchDirectory({ session, profile, onBack, onOpenChurch
   return (
     <div style={{ minHeight: '100vh', background: T.cream, paddingBottom: 80 }}>
       <header style={{
-        padding: '0 16px', height: 56, background: T.white,
-        borderBottom: `1px solid ${T.line}`,
-        display: 'flex', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10,
+        background: T.white, borderBottom: `1px solid ${T.line}`,
+        position: 'sticky', top: 0, zIndex: 10,
+        paddingTop: 'env(safe-area-inset-top, 0px)',
       }}>
+        <div style={{ padding: '0 16px', height: 56, display: 'flex', alignItems: 'center' }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: '0 12px', minHeight: 44, display: 'flex', alignItems: 'center' }}>
           ← Back
         </button>
@@ -57,13 +58,14 @@ export default function ChurchDirectory({ session, profile, onBack, onOpenChurch
         {/* Push pastor CTA away from the fixed FAB cluster (bell + messages + search + menu ≈ 200px from right) */}
         {onApply && (
           <button onClick={onApply} style={{
-            marginLeft: 'auto', marginRight: 208, background: T.parchment, border: `1px solid ${T.line}`,
+            marginLeft: 'auto', marginRight: 164, background: T.parchment, border: `1px solid ${T.line}`,
             borderRadius: 999, padding: '6px 14px', fontSize: 13, color: T.goldDark, fontWeight: 600, cursor: 'pointer',
             flexShrink: 0,
           }}>
             ✦ I'm a pastor
           </button>
         )}
+        </div>
       </header>
 
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '20px 16px' }}>

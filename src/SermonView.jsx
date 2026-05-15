@@ -112,16 +112,18 @@ export default function SermonView({ session, profile, sermonId, onBack, chromel
       {/* Top bar — hidden when wrapped in ChurchModeShell (shell owns nav). */}
       {!chromeless && (
         <header style={{
-          padding: '0 16px', height: 56, background: T.white,
-          borderBottom: `1px solid ${T.line}`,
-          display: 'flex', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10,
+          background: T.white, borderBottom: `1px solid ${T.line}`,
+          position: 'sticky', top: 0, zIndex: 10,
+          paddingTop: 'env(safe-area-inset-top, 0px)',
         }}>
+          <div style={{ padding: '0 16px', height: 56, display: 'flex', alignItems: 'center' }}>
           <button onClick={onBack} style={{
             background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer',
             padding: '0 12px', minHeight: 44, display: 'flex', alignItems: 'center',
           }}>← Back</button>
           <div style={{ marginLeft: 'auto', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700 }}>
             This week
+          </div>
           </div>
         </header>
       )}

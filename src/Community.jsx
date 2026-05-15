@@ -137,6 +137,14 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
   const [reportDone,     setReportDone]     = useState(false);
   const [blockBusy,      setBlockBusy]      = useState(false);
   const replyInputRef = useRef(null);
+  const commentScrollRef = useRef(null);
+
+  // Scroll to bottom of comments list when modal opens so the input is in view
+  useEffect(() => {
+    if (commentsOpen && commentScrollRef.current) {
+      commentScrollRef.current.scrollTop = commentScrollRef.current.scrollHeight;
+    }
+  }, [commentsOpen]);
 
   function insertReplyEmoji(emoji) {
     const el = replyInputRef.current;
@@ -458,7 +466,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
             </div>
 
             {/* Scrollable post + comments */}
-            <div className="scroll" style={{ flex: 1, overflowY: 'auto' }}>
+            <div ref={commentScrollRef} className="scroll" style={{ flex: 1, overflowY: 'auto' }}>
               {/* Post author */}
               <div style={{ padding: '16px 18px 0' }}>
                 <div style={{ display: 'flex', gap: 11, alignItems: 'center', marginBottom: 12 }}>
@@ -559,14 +567,14 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                       position: 'absolute', bottom: 'calc(100% + 4px)', left: 16, right: 16, zIndex: 11,
                       background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
                       boxShadow: '0 8px 24px rgba(44,24,16,0.13)', padding: 10,
-                      display: 'grid', gridTemplateColumns: 'repeat(16, 1fr)', gap: 2,
+                      display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 4,
                     }}>
                       {['😀','😊','😂','🥹','😍','🥰','😭','😅','🤔','😏','😌','🙃','😇','🤩','😬','🤯',
                         '🙏','✝️','🕊️','🌿','🌸','🌺','🌻','☀️','🌙','⭐','🔥','💫','✨','🌈','🌊','🍃',
                         '❤️','🧡','💛','💚','💙','💜','🤍','🫶','👏','🙌','💪','👍','🎉','🫂','💝','🎊',
                       ].map((e) => (
                         <button key={e} onClick={() => insertReplyEmoji(e)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '4px 2px', borderRadius: 6 }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 24, lineHeight: 1, padding: '6px 4px', borderRadius: 8, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                           onMouseEnter={(ev) => ev.currentTarget.style.background = T.parchment}
                           onMouseLeave={(ev) => ev.currentTarget.style.background = 'none'}
                         >{e}</button>
@@ -1344,13 +1352,13 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
               reads as a gold-leaf inscription. The cream feed below becomes
               "lit content" instead of a flat parchment sheet. */}
           <header style={{
-            padding: '0 12px 0 16px', height: 56,
             background: 'linear-gradient(180deg, #2a1a14 0%, #1f1410 100%)',
             borderBottom: '1px solid #3a261d',
             boxShadow: '0 4px 14px rgba(20,10,6,0.35), inset 0 -1px 0 rgba(184,115,58,0.18)',
-            display: 'flex', alignItems: 'center', gap: 14,
             position: 'sticky', top: 0, zIndex: 10,
+            paddingTop: 'env(safe-area-inset-top, 0px)',
           }}>
+            <div style={{ padding: '0 12px 0 16px', height: 56, display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{
               fontFamily: T.display, fontSize: 21, fontWeight: 600, color: '#f4e9d4',
               letterSpacing: '-0.018em', display: 'flex', alignItems: 'center', gap: 7,
@@ -1401,6 +1409,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
             })()}
             {/* Reserved space for the mobile FABs: 3 buttons × 44px + 2 gaps × 8px + 12px edge = 164px */}
             <div style={{ width: 164, flexShrink: 0 }} aria-hidden="true" />
+            </div>
           </header>
 
         </>

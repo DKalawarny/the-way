@@ -988,13 +988,12 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
         {/* Sticky header — walnut "leather cover" matches Community so the
             app reads as one editorial work. Gold back arrow + ivory title. */}
         <div style={{
-          position: 'sticky', top: 0, zIndex: 10, height: 56,
-          padding: '0 12px',
+          position: 'sticky', top: 0, zIndex: 10,
           background: 'linear-gradient(180deg, #2a1a14 0%, #1f1410 100%)',
           borderBottom: '1px solid #3a261d',
           boxShadow: '0 4px 14px rgba(20,10,6,0.35), inset 0 -1px 0 rgba(184,115,58,0.18)',
-          display: 'flex', alignItems: 'center', gap: 8,
-        }}>
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+        }}><div style={{ height: 56, padding: '0 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
           <button onClick={onClose} style={{
             background: 'transparent', border: 'none', color: '#e8b563',
             fontSize: 20, cursor: 'pointer', width: 36, height: 36, borderRadius: 10,
@@ -1018,7 +1017,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
           {/* Right slot reserved — global FAB cluster (bell + search + ⋮)
               floats here from App.jsx. */}
           <div style={{ width: 204 }} aria-hidden="true" />
-        </div>
+        </div></div>
 
         {/* Hero cover */}
         <div style={{ background: T.white, marginBottom: 10 }}>
