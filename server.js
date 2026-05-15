@@ -270,7 +270,8 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
     .trim()
     .slice(0, 4096);
 
-  console.log(`[tts] voice=${voice} model=gpt-4o-mini-tts len=${cleaned.length} hasInstructions=${!!VOICE_INSTRUCTIONS[voice]}`);
+  const instr = VOICE_INSTRUCTIONS[voice];
+  console.log(`[tts] voice=${voice} len=${cleaned.length} instructions="${instr?.slice(0, 60) ?? 'none'}"`);
   try {
     const oaiRes = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
