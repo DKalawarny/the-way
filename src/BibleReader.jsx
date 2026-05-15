@@ -1886,21 +1886,21 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
               {VERSIONS.find((v) => v.id === bibleId)?.abbr}
             </span>
           )}
-          {DarkToggle}
-          <button
-            onClick={() => { setChatOpen((o) => !o); setTimeout(() => chatInputRef.current?.focus(), 300); }}
-            style={{
-              width: 34, height: 34, borderRadius: '50%', cursor: 'pointer',
-              background: chatOpen ? `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)` : C.inputBg,
-              border: `1px solid ${chatOpen ? 'transparent' : C.border}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 15, color: chatOpen ? T.cream : C.verse,
-              boxShadow: chatOpen ? '0 2px 10px rgba(184,115,58,0.4)' : 'none',
-              transition: 'all 0.18s',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-            title={chatOpen ? 'Close chat' : 'Ask about this chapter'}
-          >✦</button>
+          {!chatOpen && (
+            <button
+              onClick={() => { setChatOpen(true); setTimeout(() => chatInputRef.current?.focus(), 300); }}
+              style={{
+                width: 34, height: 34, borderRadius: '50%', cursor: 'pointer',
+                background: C.inputBg,
+                border: `1px solid ${C.border}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 15, color: C.verse,
+                transition: 'all 0.18s',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+              title="Ask about this chapter"
+            >✦</button>
+          )}
         </div>
       </div>
 
