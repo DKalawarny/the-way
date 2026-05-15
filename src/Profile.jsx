@@ -249,7 +249,13 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
             </Field>
 
             <Field label="Country" hint={form.flags.length < 2 ? 'Add a second if you have dual citizenship' : undefined}>
-              <FlagPicker value={form.flags} onChange={(v) => set('flags', v)} />
+              <FlagPicker
+                value={form.flags}
+                onChange={(v) => {
+                  set('flags', v);
+                  if (v.length > 0 && form.flags.length === 0) set('show_flag', true);
+                }}
+              />
             </Field>
 
             {form.flags.length > 0 && (

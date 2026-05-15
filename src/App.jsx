@@ -109,6 +109,7 @@ import { getJourneyProgress, advanceJourneyProgress } from './journeys.js';
 import { usePlan } from './usePlan.js';
 import { UpgradeWall } from './PlanGate.jsx';
 import FeatureTour, { isTourDone } from './FeatureTour.jsx';
+import CoachMark, { incrementLoginCount } from './CoachMark.jsx';
 
 function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorIntent, pastorChurchId, referralRef }) {
   // Deep-link: ?q=encoded+question pre-populates the guest question box
@@ -1821,9 +1822,10 @@ export default function App() {
         setStage('church');
       }
     });
-    const { data: listener } = supabase.auth.onAuthStateChange((_e, s) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       if (s) {
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') incrementLoginCount();
         loadProfile(s.user.id);
         if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); }
         else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); }
@@ -2983,12 +2985,14 @@ export default function App() {
           />
         )
       ) : (
-        <BottomNav
-          stage={stage}
-          authStage={authStage}
-          session={session}
-          profile={profile}
-          chatOpen={chatPanelOpen}
+        <>
+          {showNav && !chatPanelOpen && <CoachMark />}
+          <BottomNav
+            stage={stage}
+            authStage={authStage}
+            session={session}
+            profile={profile}
+            chatOpen={chatPanelOpen}
           onGoHome={() => { setViewingUserId(null); setStage('home'); }}
           onGoChurch={() => {
             setViewingUserId(null);
@@ -3001,6 +3005,7 @@ export default function App() {
           onGoMe={() => { setViewingUserId(null); setStage('me'); }}
           onToggleChat={() => chatPanelOpen ? closeChatPanel() : (currentConvId ? setChatPanelOpen(true) : (startChatFromProfile(), setChatPanelOpen(true)))}
         />
+        </>
       )}
       {showTopRight && (
         <TopRightMenu
