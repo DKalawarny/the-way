@@ -237,18 +237,16 @@ async function logQaEvent({ personType, question, userId, wasCacheHit, isFirstTu
 }
 
 // Map profile voice names → actual OpenAI voices.
-// 'fable' is OpenAI's naturally British-accented male voice.
-// 'shimmer' is softer and more expressive than 'nova' for the female role.
 const VOICE_MAP = {
-  onyx:    'fable',
-  nova:    'shimmer',
-  shimmer: 'shimmer',
+  onyx:    'fable',   // fable = naturally British male
+  nova:    'nova',    // nova = clearly feminine, warm
+  shimmer: 'nova',
 };
 
 // Voice instructions — kept short and specific for gpt-4o-mini-tts
 const VOICE_INSTRUCTIONS = {
-  fable:   'Deep, warm, and unhurried. Let each sentence breathe. Calm, resonant authority.',
-  shimmer: 'Soft, gentle, and expressive. Natural warmth and tenderness. Let the words mean something.',
+  fable: 'An elderly, distinguished British man — wise, measured, and deeply calm. Like a grandfather reading aloud. Slow, resonant, and unhurried. Let every sentence land with quiet weight.',
+  nova:  'A warm, gentle woman — soft-spoken, kind, and tender. Speak slowly and quietly, like comforting a friend. Light and feminine, never flat or rushed.',
 };
 
 // ── Text-to-Speech (OpenAI TTS API) ──────────────────────────────────────────
