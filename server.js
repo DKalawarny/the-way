@@ -238,9 +238,9 @@ async function logQaEvent({ personType, question, userId, wasCacheHit, isFirstTu
 
 // Voice instructions — kept short and specific for gpt-4o-mini-tts
 const VOICE_INSTRUCTIONS = {
-  onyx:    'Speak like Morgan Freeman. Slow, deep, warm, and crystal clear. Let each sentence breathe. Calm and unhurried.',
-  nova:    'Speak very softly and gently — a hushed, tender voice, like a quiet prayer. Slow, warm, and peaceful. Never bright or energetic.',
-  shimmer: 'Speak very softly and gently — a hushed, tender voice, like a quiet prayer. Slow, warm, and peaceful. Never bright or energetic.',
+  onyx:    'Speak with a warm, rich British English accent — deep, measured, and authoritative, like a BBC narrator reading scripture. Let the weight of each sentence land. Unhurried, resonant, trustworthy.',
+  nova:    'Speak with a soft, warm British English accent — gentle and expressive, with natural rises and falls in pitch that bring the words to life. Like a kind woman reading a bedtime story: tender, lilting, emotionally present. Never flat or robotic.',
+  shimmer: 'Speak with a soft, warm British English accent — gentle and expressive, with natural rises and falls in pitch that bring the words to life. Like a kind woman reading a bedtime story: tender, lilting, emotionally present. Never flat or robotic.',
 };
 
 // ── Text-to-Speech (OpenAI TTS API) ──────────────────────────────────────────
