@@ -1177,7 +1177,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
   if (view === 'home') return (
     <div style={{ minHeight: '100vh', background: C.bg, fontFamily: T.sans, paddingBottom: 'calc(62px + env(safe-area-inset-bottom, 0px))' }}>
       {/* Header */}
-      <div style={{ position: 'sticky', top: 0, zIndex: 20, background: C.bg, borderBottom: `1px solid ${C.border}`, paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+      <div style={{ position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 20, background: C.bg, borderBottom: `1px solid ${C.border}` }}>
         <div style={{ padding: '0 164px 0 20px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <span style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: C.text, letterSpacing: '-0.012em' }}>Read</span>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -1498,7 +1498,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
     return (
       <div style={{ minHeight: '100vh', background: C.bg, fontFamily: T.sans, paddingBottom: 'calc(62px + env(safe-area-inset-bottom, 0px))' }}>
         {/* Header */}
-        <div style={{ position: 'sticky', top: 0, zIndex: 20, background: C.bg, borderBottom: `1px solid ${C.border}`, paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <div style={{ position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 20, background: C.bg, borderBottom: `1px solid ${C.border}` }}>
           <div style={{ padding: '0 164px 0 20px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button onClick={() => setView('home')} style={{ background: 'none', border: 'none', color: C.verse, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
             <ArrowLeft size={15} strokeWidth={2} /> Books

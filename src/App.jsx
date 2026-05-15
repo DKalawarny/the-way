@@ -1284,6 +1284,60 @@ function AppHeader({ onOpenBible }) {
   );
 }
 
+// ── Mobile global top header ────────────────────────────────────────────────
+// Mirrors AppHeader but for mobile — same dark walnut bar, ✦ kinwove, daily
+// verse. Shown on every page when logged in so the brand is always anchored.
+function MobileHeader({ onOpenBible }) {
+  const verse = getDailyVerse();
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 'env(safe-area-inset-top, 0px)',
+      left: 0, right: 0,
+      height: 56, zIndex: 110,
+      background: 'linear-gradient(180deg, #2a1a14 0%, #1f1410 100%)',
+      borderBottom: '1px solid #3a261d',
+      boxShadow: '0 4px 14px rgba(20,10,6,0.35), inset 0 -1px 0 rgba(184,115,58,0.18)',
+      display: 'flex', alignItems: 'center',
+      padding: '0 56px 0 16px', // right: room for TopRightMenu FAB
+      gap: 12,
+    }}>
+      <div style={{
+        fontFamily: T.display, fontSize: 20, fontWeight: 500, color: '#f4e9d4',
+        letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 7,
+        flexShrink: 0,
+      }}>
+        <span style={{ color: '#e8b563', fontSize: 16, filter: 'drop-shadow(0 0 8px rgba(232,181,99,0.6))' }}>✦</span>
+        kinwove
+      </div>
+      <button
+        onClick={() => onOpenBible?.(verse.ref)}
+        title={`Read ${verse.ref}`}
+        style={{
+          flex: 1, minWidth: 0,
+          display: 'flex', alignItems: 'baseline', gap: 7,
+          background: 'none', border: 'none',
+          paddingLeft: 12,
+          borderLeft: '1px solid rgba(232,181,99,0.22)',
+          cursor: onOpenBible ? 'pointer' : 'default',
+          textAlign: 'left', overflow: 'hidden',
+        }}
+      >
+        <span style={{
+          fontFamily: T.serif, fontStyle: 'italic', fontSize: 12.5, color: '#e8dcc2',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          minWidth: 0, flex: 1,
+        }}>
+          &ldquo;{verse.text}&rdquo;
+        </span>
+        <span style={{ fontSize: 10.5, fontWeight: 700, color: '#e8b563', letterSpacing: '0.06em', flexShrink: 0 }}>
+          {verse.ref} ↗
+        </span>
+      </button>
+    </div>
+  );
+}
+
 // ── Desktop sidebar nav ─────────────────────────────────────────────────────
 // Mirrors BottomNav's 5 tabs but rendered vertically on screens ≥1024px.
 // Includes a Settings item at the bottom that replaces the ⋮ FAB.
@@ -2302,9 +2356,11 @@ export default function App() {
     <>
       <style>{globalCss}</style>
 
-      {/* ── Global dark header (desktop only) ──────────────────────── */}
-      {isDesktop && showNav && (
-        <AppHeader onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }} />
+      {/* ── Global dark header (all devices when logged in) ─────────── */}
+      {showNav && (
+        isDesktop
+          ? <AppHeader onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }} />
+          : <MobileHeader onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }} />
       )}
 
       {/* ── Main stage ─────────────────────────────────────────────── */}
@@ -2313,9 +2369,10 @@ export default function App() {
       <div style={{
         paddingRight: isDocked ? chatPanelWidth : 0,
         marginLeft: isDesktop && showNav ? SIDEBAR_W : 0,
-        paddingTop: isDesktop && showNav ? HEADER_H : 0,
+        paddingTop: showNav ? (isDesktop ? HEADER_H : `calc(${HEADER_H}px + env(safe-area-inset-top, 0px))`) : 0,
         paddingBottom: !isDesktop && showNav ? 'calc(62px + env(safe-area-inset-bottom, 0px))' : 0,
         transition: isResizingRef.current ? 'none' : 'padding-right 0.28s ease, margin-left 0.28s ease',
+        '--global-header-h': showNav ? `${HEADER_H}px` : '0px',
       }}>
       {stage === 'landing' && (
         <Landing
@@ -2337,7 +2394,7 @@ export default function App() {
           session={session}
           profile={profile}
           userGroup={userGroup}
-          hideHeader={isDesktop && showNav}
+          hideHeader={showNav}
           onClose={() => goBack('home')}
           onOpenChat={(q) => { if (!currentConvId) startChatFromProfile(); if (q) setPrefilledInput(q); setChatPanelOpen(true); }}
           onViewProfile={(uid) => uid === session.user.id ? setStage('me') : setViewingUserId(uid)}
@@ -2385,7 +2442,7 @@ export default function App() {
           profile={profile}
           userGroup={userGroup}
           accentColor="#6b2438"
-          hideHeader={isDesktop && showNav}
+          hideHeader={showNav}
           onClose={() => goBack('home')}
           onOpenChat={(q) => { if (!currentConvId) startChatFromProfile(); if (q) setPrefilledInput(q); setChatPanelOpen(true); }}
           onViewProfile={(uid) => uid === session.user.id ? setStage('me') : setViewingUserId(uid)}

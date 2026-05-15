@@ -540,7 +540,7 @@ export default function ChurchPage({
       </div>
 
       <div style={{
-        position: 'sticky', top: chromeless ? 0 : 56, zIndex: 5,
+        position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 5,
         background: T.white,
         borderBottom: `1px solid ${T.line}`,
         display: 'flex',
