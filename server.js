@@ -238,9 +238,9 @@ async function logQaEvent({ personType, question, userId, wasCacheHit, isFirstTu
 
 // Voice instructions — kept short and specific for gpt-4o-mini-tts
 const VOICE_INSTRUCTIONS = {
-  onyx:    'Speak with a warm, rich British English accent — deep, measured, and authoritative, like a BBC narrator reading scripture. Let the weight of each sentence land. Unhurried, resonant, trustworthy.',
-  nova:    'Speak with a soft, warm British English accent — gentle and expressive, with natural rises and falls in pitch that bring the words to life. Like a kind woman reading a bedtime story: tender, lilting, emotionally present. Never flat or robotic.',
-  shimmer: 'Speak with a soft, warm British English accent — gentle and expressive, with natural rises and falls in pitch that bring the words to life. Like a kind woman reading a bedtime story: tender, lilting, emotionally present. Never flat or robotic.',
+  onyx:    'You are David Attenborough reading scripture. Speak in Received Pronunciation British English — deep, resonant, and unhurried. Let pauses breathe. Warm authority, never rushed.',
+  nova:    'You are Emma Thompson reading a letter aloud. Speak in warm, expressive Received Pronunciation British English. Natural pitch rises and falls — tender and emotionally present, like you genuinely mean every word.',
+  shimmer: 'You are Emma Thompson reading a letter aloud. Speak in warm, expressive Received Pronunciation British English. Natural pitch rises and falls — tender and emotionally present, like you genuinely mean every word.',
 };
 
 // ── Text-to-Speech (OpenAI TTS API) ──────────────────────────────────────────
