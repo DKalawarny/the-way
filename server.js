@@ -238,12 +238,17 @@ async function logQaEvent({ personType, question, userId, wasCacheHit, isFirstTu
 
 // Voice instructions — sent to gpt-4o-mini-tts which supports expressive narration
 const VOICE_INSTRUCTIONS = {
-  onyx: `Speak like Morgan Freeman narrating a documentary — deep, warm, unhurried, and gravelly. \
-Every word carries weight. Let pauses breathe. Pace is slow and deliberate, never flat or robotic. \
-Convey quiet wonder and earned wisdom. No cheerfulness, no announcer energy — just soul.`,
-  shimmer: `Speak like a warm, clear, and grounded woman reading aloud to a close friend. \
-Gentle but present — not soft to the point of sleepy. Pace is calm and measured. \
-Convey sincerity and care. Never monotone, never performative. Just real.`,
+  onyx: `You are a deep, warm male narrator — think Morgan Freeman reading scripture aloud. \
+Speak clearly and deliberately, every word fully formed and easy to understand. \
+Pace is steady and unhurried. Tone is rich and grounded, never shouted or rushed. \
+Convey quiet authority and earned wisdom. No radio-announcer energy — calm, clear, and real.`,
+  nova: `You are a soft, gentle woman reading scripture aloud — calm and soothing, like a quiet prayer. \
+Speak slowly and clearly, with a hushed warmth. Every word is kind and unhurried. \
+Tone is tender and peaceful — like a mother reading to a child before bed. \
+Never flat, never bright or perky. Just soft, clear, and deeply caring.`,
+  shimmer: `You are a soft, gentle woman reading scripture aloud — calm and soothing, like a quiet prayer. \
+Speak slowly and clearly, with a hushed warmth. Every word is kind and unhurried. \
+Tone is tender and peaceful. Never flat, never bright or perky. Just soft, clear, and deeply caring.`,
 };
 
 // ── Text-to-Speech (OpenAI TTS API) ──────────────────────────────────────────
@@ -286,7 +291,7 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
         voice,
         instructions: VOICE_INSTRUCTIONS[voice] ?? undefined,
         response_format: 'mp3',
-        speed: 0.95,               // just slightly slower — the model handles expressiveness
+        speed: 0.92,               // slightly slower for clarity and warmth
       }),
     });
 

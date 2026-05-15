@@ -294,7 +294,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
               <div style={{ display: 'flex', gap: 10 }}>
                 {[
                   { id: 'onyx', label: 'James', gender: 'Male', desc: 'Deep, rich, and unhurried — like a wise elder reading scripture' },
-                  { id: 'shimmer', label: 'Grace', gender: 'Female', desc: 'Warm, expressive, and clear — like a trusted friend' },
+                  { id: 'nova', label: 'Grace', gender: 'Female', desc: 'Soft, gentle, and soothing — like a quiet prayer' },
                 ].map((v) => {
                   const active = form.tts_voice === v.id;
                   return (
