@@ -694,6 +694,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const [showVersions, setShowVersions] = useState(false);
   const [versePickerOpen, setVersePickerOpen] = useState(false);
   const [highlightVerse, setHighlightVerse] = useState(null);
+  const [tileVersePickerFor, setTileVersePickerFor] = useState(null); // chapter number whose tile picker is open
   const [pendingVerseScroll, setPendingVerseScroll] = useState(null);
   const [completed, setCompleted] = useState(() => {
     try { return new Set(JSON.parse(localStorage.getItem('rdr_done') ?? '[]')); }
@@ -1558,15 +1559,66 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                     {isRead ? `✓ ${n}` : n}
                   </span>
                   {vc && (
-                    <span style={{ fontSize: 10, color: C.muted, fontWeight: 500, lineHeight: 1, whiteSpace: 'nowrap' }}>
-                      {n}:1–{n}:{vc}
-                    </span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setTileVersePickerFor({ ch: n, vc }); }}
+                      title="Pick a verse"
+                      style={{
+                        background: 'transparent', border: 'none', padding: 0, margin: 0,
+                        fontSize: 10, color: C.muted, fontWeight: 500, lineHeight: 1,
+                        cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted',
+                        textUnderlineOffset: 2, whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {n}:1–{n}:{vc} ▾
+                    </button>
                   )}
                 </div>
               );
             })}
           </div>
 
+          {tileVersePickerFor && (
+            <div
+              onClick={() => setTileVersePickerFor(null)}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="modal-sheet"
+                style={{
+                  background: C.card, color: C.text, borderRadius: 16, border: `1px solid ${C.border}`,
+                  maxWidth: 460, width: '100%', maxHeight: '80vh', overflowY: 'auto',
+                  padding: '18px 20px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                  <div style={{ fontFamily: T.display, fontSize: 16, fontWeight: 600, color: C.text }}>
+                    {cb.name} {tileVersePickerFor.ch} · pick a verse
+                  </div>
+                  <button onClick={() => setTileVersePickerFor(null)} style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 4 }}><X size={16} strokeWidth={2} /></button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(58px, 1fr))', gap: 6 }}>
+                  {Array.from({ length: tileVersePickerFor.vc }, (_, i) => i + 1).map((vn) => (
+                    <button
+                      key={vn}
+                      onClick={() => {
+                        const ch = tileVersePickerFor.ch;
+                        setTileVersePickerFor(null);
+                        openChapter(cb, ch, vn);
+                      }}
+                      style={{
+                        background: 'transparent', border: `1px solid ${C.cardBorder}`,
+                        borderRadius: 8, padding: '7px 4px', fontSize: 12, fontWeight: 600,
+                        color: C.text, cursor: 'pointer',
+                      }}
+                    >
+                      {tileVersePickerFor.ch}:{vn}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         {BadgeToast}
         {BookDoneToast}
