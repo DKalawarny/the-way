@@ -1651,21 +1651,19 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
   const ChatPanel = (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: dark ? '#130B05' : '#FDFAF4', borderLeft: dark ? 'none' : '3px solid rgba(184,115,58,0.45)' }}>
 
-      {/* Header — mobile only; desktop shows info in the reading header pill */}
-      {!isDesktop && (
-        <div style={{ padding: '10px 14px 10px 16px', borderBottom: `1px solid ${dark ? C.border : 'rgba(184,115,58,0.22)'}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: dark ? '#1A0E07' : '#F5E9CA' }}>
-          <div>
-            <div style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: dark ? C.muted : 'rgba(154,99,40,0.7)', fontWeight: 700, marginBottom: 2 }}>Commentary</div>
-            <span style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: dark ? C.text : '#3D2510', letterSpacing: '-0.01em' }}>
-              {book.name} {chNum}
-              <span style={{ fontWeight: 400, color: dark ? C.muted : 'rgba(101,64,24,0.7)', marginLeft: 7, fontSize: 12 }}>
-                {VERSIONS.find((v) => v.id === bibleId)?.abbr}
-              </span>
+      {/* Header */}
+      <div style={{ padding: '10px 14px 10px 16px', borderBottom: `1px solid ${dark ? C.border : 'rgba(184,115,58,0.22)'}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: dark ? '#1A0E07' : '#F5E9CA' }}>
+        <div>
+          <div style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: dark ? C.muted : 'rgba(154,99,40,0.7)', fontWeight: 700, marginBottom: 2 }}>Commentary</div>
+          <span style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: dark ? C.text : '#3D2510', letterSpacing: '-0.01em' }}>
+            {book.name} {chNum}
+            <span style={{ fontWeight: 400, color: dark ? C.muted : 'rgba(101,64,24,0.7)', marginLeft: 7, fontSize: 12 }}>
+              {VERSIONS.find((v) => v.id === bibleId)?.abbr}
             </span>
-          </div>
-          <button onClick={() => setChatOpen(false)} style={{ background: 'rgba(101,64,24,0.1)', border: 'none', color: dark ? C.muted : '#8E5528', cursor: 'pointer', padding: '5px 8px', borderRadius: 8, display: 'flex', alignItems: 'center' }}><X size={15} strokeWidth={2} /></button>
+          </span>
         </div>
-      )}
+        <button onClick={() => setChatOpen(false)} style={{ background: 'rgba(101,64,24,0.1)', border: 'none', color: dark ? C.muted : '#8E5528', cursor: 'pointer', padding: '5px 8px', borderRadius: 8, display: 'flex', alignItems: 'center' }}><X size={15} strokeWidth={2} /></button>
+      </div>
 
       {/* Messages */}
       <div ref={chatScrollRef} onScroll={handleChatScroll} style={{ flex: 1, overflowY: 'auto', padding: '16px 14px' }}>
@@ -1872,35 +1870,25 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
 
         {/* Right controls */}
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          {chatOpen && isDesktop && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: dark ? 'rgba(26,14,7,0.9)' : '#F0E3C4', border: `1px solid ${dark ? 'rgba(184,115,58,0.25)' : 'rgba(184,115,58,0.35)'}`, borderRadius: 10, padding: '0 6px 0 10px', height: 34 }}>
-              <div>
-                <div style={{ fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', color: dark ? C.muted : 'rgba(154,99,40,0.7)', fontWeight: 700, lineHeight: 1 }}>Commentary</div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: dark ? C.text : '#3D2510', lineHeight: 1.3 }}>{book.name} {chNum}</div>
-              </div>
-              <button onClick={() => setChatOpen(false)} style={{ background: 'none', border: 'none', color: dark ? C.muted : 'rgba(101,64,24,0.6)', cursor: 'pointer', padding: '4px 6px', borderRadius: 6, display: 'flex', alignItems: 'center' }}><X size={14} strokeWidth={2} /></button>
-            </div>
-          )}
           {isDesktop && (
             <span style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: 1, marginRight: 2 }}>
               {VERSIONS.find((v) => v.id === bibleId)?.abbr}
             </span>
           )}
-          {!chatOpen && (
-            <button
-              onClick={() => { setChatOpen(true); setTimeout(() => chatInputRef.current?.focus(), 300); }}
-              style={{
-                width: 34, height: 34, borderRadius: '50%', cursor: 'pointer',
-                background: C.inputBg,
-                border: `1px solid ${C.border}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 15, color: C.verse,
-                transition: 'all 0.18s',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-              title="Ask about this chapter"
-            >✦</button>
-          )}
+          <button
+            onClick={() => { setChatOpen((o) => !o); if (!chatOpen) setTimeout(() => chatInputRef.current?.focus(), 300); }}
+            style={{
+              width: 34, height: 34, borderRadius: '50%', cursor: 'pointer',
+              background: chatOpen ? `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)` : C.inputBg,
+              border: `1px solid ${chatOpen ? 'transparent' : C.border}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 15, color: chatOpen ? T.cream : C.verse,
+              boxShadow: chatOpen ? '0 2px 10px rgba(184,115,58,0.4)' : 'none',
+              transition: 'all 0.18s',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+            title={chatOpen ? 'Close commentary' : 'Ask about this chapter'}
+          >✦</button>
         </div>
       </div>
 
