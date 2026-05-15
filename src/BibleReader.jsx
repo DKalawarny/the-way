@@ -909,9 +909,22 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
 
   function markDone() {
     const key = `${bibleId}:${bookId}:${chNum}`;
+    if (completed.has(key)) { goChapter(chNum + 1); return; }
     const next = new Set([...completed, key]);
     setCompleted(next);
     localStorage.setItem('rdr_done', JSON.stringify([...next]));
+
+    // Detect book completion synchronously — before goChapter() batches a bookId change.
+    // bookDoneMap doesn't include `key` yet, so prevDone+1 = new total for this book.
+    const prevDone = bookDoneMap[bookId] ?? 0;
+    if (prevDone + 1 === book.ch && !prevBookDoneRef.current?.has(bookId)) {
+      if (prevBookDoneRef.current) {
+        prevBookDoneRef.current = new Set([...prevBookDoneRef.current, bookId]);
+      }
+      setNewBookDone(book);
+      setTimeout(() => setNewBookDone(null), 3600);
+    }
+
     goChapter(chNum + 1);
   }
 
