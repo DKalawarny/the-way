@@ -1,81 +1,101 @@
 import { useRef, useState } from 'react';
 
 /**
- * Wrapper around the Web Speech API.
- * - continuous = true  → keeps listening until the user stops it
- * - Accumulates final results within a session
- * - Appends to whatever text is already in the box (pass currentInput to toggle)
- * onResult(transcript) is called with the full combined string as the user speaks.
+ * Wraps the Web Speech API with continuous listening and text accumulation.
+ *
+ * - Keeps mic open until the user explicitly stops it.
+ * - On browsers that kill the session early (iOS 30-s cap), auto-spawns a
+ *   new recognition instance and preserves all previously spoken text.
+ * - New sessions append to whatever is already in the input box (pass
+ *   currentInput to toggle() so committed starts from the right place).
+ *
  * Returns { listening, toggle, supported }.
+ * toggle(currentInput) — starts or stops listening.
  */
 export function useSpeechRecognition(onResult) {
-  const [listening, setListening] = useState(false);
-  const recRef        = useRef(null);
-  const sessionBase   = useRef(''); // input text captured at session start
-  const finalAccum    = useRef(''); // final results accumulated this session
+  const [listening, setListening]  = useState(false);
+  const activeRef   = useRef(false);  // true while we want the mic open
+  const recRef      = useRef(null);
+  const committed   = useRef('');     // text finalised before the current sub-session
+  const onResultRef = useRef(onResult);
+  onResultRef.current = onResult;     // stay fresh every render, no effect needed
 
   const supported =
     typeof window !== 'undefined' &&
     !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 
-  function stop() {
-    recRef.current?.stop();
-    recRef.current = null;
-    setListening(false);
-  }
+  function spawnRec() {
+    if (!supported || !activeRef.current) return;
 
-  function start(currentInput) {
-    if (!supported) return;
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SR  = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SR();
-    rec.continuous     = true;
+    rec.continuous     = true;   // Chrome/desktop: stays open; iOS: ignored but we restart
     rec.interimResults = true;
     rec.lang           = 'en-US';
 
-    sessionBase.current = currentInput ?? '';
-    finalAccum.current  = '';
+    let latestFinal = ''; // finals seen in this sub-session (cumulative from e.results)
 
     rec.onresult = (e) => {
-      let finalPart = '';
-      let interim   = '';
+      let finalStr = '';
+      let interim  = '';
       for (const result of Array.from(e.results)) {
-        if (result.isFinal) finalPart += result[0].transcript;
+        if (result.isFinal) finalStr += result[0].transcript;
         else interim += result[0].transcript;
       }
-      finalAccum.current = finalPart;
-      const base = sessionBase.current;
-      const spoken = (finalPart + interim).trim();
-      const combined = base
-        ? spoken ? base + ' ' + spoken : base
-        : spoken;
-      onResult(combined);
+      latestFinal = finalStr;
+
+      // Display = pre-session text  +  this session's finals  +  current interim
+      const parts = [committed.current, finalStr, interim]
+        .map((s) => s.trim())
+        .filter(Boolean);
+      onResultRef.current(parts.join(' '));
     };
 
     rec.onerror = (e) => {
-      // 'no-speech' is not a real error — ignore it so the session stays open
-      if (e.error !== 'no-speech') stop();
-    };
-
-    rec.onend = () => {
-      // Guard: if we're still supposed to be listening (browser killed the
-      // session early, e.g. iOS 30-s cap), restart automatically.
-      if (recRef.current === rec) {
-        try { rec.start(); } catch { stop(); }
+      // 'no-speech' just means a pause — keep listening
+      if (e.error !== 'no-speech') {
+        activeRef.current = false;
+        setListening(false);
       }
     };
 
-    recRef.current = rec;
+    rec.onend = () => {
+      if (!activeRef.current) return; // user explicitly stopped — don't restart
+
+      // Browser killed the session (iOS 30-s cap or similar).
+      // Commit whatever was finalised in this sub-session, then spawn a new one.
+      committed.current = [committed.current, latestFinal]
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .join(' ');
+      latestFinal = '';
+      setTimeout(spawnRec, 150); // brief gap avoids InvalidStateError on some browsers
+    };
+
     try {
       rec.start();
-      setListening(true);
+      recRef.current = rec;
     } catch {
-      recRef.current = null;
+      // start() can throw if the browser blocks mic access
+      activeRef.current = false;
+      setListening(false);
     }
   }
 
   function toggle(currentInput) {
-    if (listening) { stop(); return; }
-    start(currentInput);
+    if (activeRef.current) {
+      // Stop
+      activeRef.current = false;
+      recRef.current?.stop();
+      recRef.current = null;
+      setListening(false);
+      return;
+    }
+    // Start — seed committed with whatever is already typed
+    activeRef.current    = true;
+    committed.current    = (currentInput ?? '').trimEnd();
+    spawnRec();
+    setListening(true);
   }
 
   return { listening, toggle, supported };
