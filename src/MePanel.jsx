@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Smile } from 'lucide-react';
 import SwipeableSheet from './SwipeableSheet.jsx';
-import { supabase, uploadPostImage, uploadProfileImage, directProfileUpdate } from './supabase.js';
+import { supabase, uploadProfileImage, directProfileUpdate } from './supabase.js';
 import { T, SEMANTIC } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
 import { Avatar, BANNER_PRESETS, bannerBackground } from './ProfilePage.jsx';
 import AvatarPicker from './AvatarPicker.jsx';
-import { VISIBILITY_OPTIONS } from './PostComposer.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
+
+const PostComposer = lazy(() => import('./PostComposer.jsx'));
 // Shared with UserProfile — same constants, same helpers, same church card.
 // PRAYER_REACTIONS stays local because it's only used here (the prayer tab).
 import { REACTIONS, TYPE_COLORS, timeAgo, loadChurchContext, ChurchAttendsCard } from './profileShared.jsx';
@@ -586,18 +587,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
   const [avatarLightbox, setAvatarLightbox] = useState(false);
   const [bannerError, setBannerError] = useState(null);
   const [bannerPickerOpen, setBannerPickerOpen] = useState(false);
-  const [composeActive, setComposeActive] = useState(false);
-  const [composeBody, setComposeBody] = useState('');
-  const [composeSubmitting, setComposeSubmitting] = useState(false);
-  const [composeVisibility, setComposeVisibility] = useState('public');
-  // milestone toggle — see PostComposer for the same pattern. Tags the post
-  // as kind='journey_milestone' so it's findable when the Journey tab lands.
-  const [composeIsMilestone, setComposeIsMilestone] = useState(false);
-  const [composeAudienceMenuOpen, setComposeAudienceMenuOpen] = useState(false);
-  const [composeImageDrafts, setComposeImageDrafts] = useState([]);
-  const composeFileInputRef = useRef(null);
-  const composeTextRef = useRef(null);
-  const MAX_IMAGES_PER_POST = 4;
+  const [composeOpen, setComposeOpen] = useState(false);
   const [prayers, setPrayers] = useState([]);
   const [prayerText, setPrayerText] = useState('');
   const [prayerSubmitting, setPrayerSubmitting] = useState(false);
@@ -629,65 +619,6 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
     return () => { cancelled = true; };
   }, [profile?.church_id]);
 
-  async function submitPost() {
-    if ((!composeBody.trim() && composeImageDrafts.length === 0) || !session || composeSubmitting) return;
-    setComposeSubmitting(true);
-    let imageUrls = [];
-    try {
-      for (const draft of composeImageDrafts) {
-        const url = await uploadPostImage(draft.file, session.user.id);
-        imageUrls.push(url);
-      }
-    } catch (e) {
-      setComposeSubmitting(false);
-      console.error('Image upload failed:', e.message ?? e);
-      return;
-    }
-    const bodyData = imageUrls.length ? { image_urls: imageUrls } : {};
-    const { data, error } = await supabase.from('posts').insert({
-      author_id: session.user.id,
-      scope: 'me',
-      kind: composeIsMilestone ? 'journey_milestone' : 'text',
-      body: composeBody.trim(),
-      body_data: bodyData,
-      person_type: profile?.person_type ?? null,
-      visibility: composeVisibility,
-    }).select('*, profiles!author_id(display_name, city, country, tradition, person_type, avatar_config, avatar_url, show_flag, flags), post_comments(id)').single();
-    setComposeSubmitting(false);
-    if (error) { console.error('Post failed:', error.message); return; }
-    if (data) {
-      setPosts((prev) => [{ ...data, reaction_counts: {}, my_reaction: null, reply_count: 0 }, ...prev]);
-      setComposeBody('');
-      setComposeActive(false);
-      setComposeVisibility('public');
-      setComposeAudienceMenuOpen(false);
-      setComposeIsMilestone(false);
-      composeImageDrafts.forEach((d) => URL.revokeObjectURL(d.previewUrl));
-      setComposeImageDrafts([]);
-    }
-  }
-
-  function pickComposeImages(eventFiles) {
-    const incoming = Array.from(eventFiles ?? []);
-    if (!incoming.length) return;
-    const slotsLeft = MAX_IMAGES_PER_POST - composeImageDrafts.length;
-    if (slotsLeft <= 0) return;
-    const accepted = incoming.slice(0, slotsLeft).filter((f) => f.type.startsWith('image/'));
-    if (!accepted.length) return;
-    setComposeImageDrafts((prev) => [
-      ...prev,
-      ...accepted.map((file) => ({ file, previewUrl: URL.createObjectURL(file) })),
-    ]);
-  }
-
-  function removeComposeImageDraft(idx) {
-    setComposeImageDrafts((prev) => {
-      const next = prev.slice();
-      const [removed] = next.splice(idx, 1);
-      if (removed) URL.revokeObjectURL(removed.previewUrl);
-      return next;
-    });
-  }
   async function loadPrayers() {
     if (prayersLoaded || !session?.user?.id) return;
     const { data } = await supabase.from('personal_prayers')
@@ -1272,227 +1203,76 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
         {/* Posts tab */}
         {tab === 'posts' && (
           <div style={{ padding: '0 14px', maxWidth: 620, margin: '0 auto' }}>
-            {/* Compose pill — matches Community language. Collapsed shows a
-                gold-ringed avatar + parchment pill; tapping expands the full
-                editor inline on a warm engraved card. */}
             <div style={{ marginBottom: 16 }}>
-            {!composeActive ? (
-              <button
-                onClick={() => { setComposeActive(true); requestAnimationFrame(() => composeTextRef.current?.focus()); }}
-                style={{
-                  width: '100%', display: 'flex', gap: 12, alignItems: 'center',
-                  background: 'transparent', border: 'none',
-                  cursor: 'pointer', padding: 0, textAlign: 'left',
-                  WebkitTapHighlightColor: 'transparent',
-                }}
-              >
-                <div style={{
-                  borderRadius: '50%',
-                  boxShadow: '0 2px 8px rgba(44,24,16,0.14), 0 0 0 2px rgba(255,255,255,0.95), 0 0 0 3px rgba(184,115,58,0.18)',
-                  flexShrink: 0,
-                }}>
-                  <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url} size={40} />
-                </div>
-                <div style={{
-                  flex: 1, minWidth: 0,
-                  background: 'linear-gradient(180deg, #FFFEFA 0%, #FBF4E3 100%)',
-                  border: '1px solid #C9B98E',
-                  borderRadius: 999, padding: '11px 16px',
-                  fontSize: 14.5, fontFamily: T.serif, fontStyle: 'italic',
-                  color: '#6b5d48',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  boxShadow: 'inset 0 2px 4px rgba(154,99,40,0.10), inset 0 -1px 0 rgba(255,255,255,0.6)',
-                }}>
-                  <span>A thought, a doubt, a question…</span>
-                  <span style={{
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                    width: 26, height: 26, marginLeft: 12,
+              {!composeOpen ? (
+                <button
+                  onClick={() => setComposeOpen(true)}
+                  style={{
+                    width: '100%', display: 'flex', gap: 12, alignItems: 'center',
+                    background: 'transparent', border: 'none',
+                    cursor: 'pointer', padding: 0, textAlign: 'left',
+                    WebkitTapHighlightColor: 'transparent',
+                  }}
+                >
+                  <div style={{
                     borderRadius: '50%',
-                    background: `linear-gradient(135deg, ${T.goldLight}, ${T.goldDark})`,
-                    color: T.cream, fontSize: 13, fontWeight: 700,
-                    boxShadow: '0 2px 6px rgba(184,115,58,0.35)',
-                  }}>✎</span>
-                </div>
-              </button>
-            ) : (
-            <div style={{
-              display: 'flex', gap: 12, alignItems: 'flex-start',
-              background: 'linear-gradient(180deg, #FFFEFA 0%, #FBF4E3 100%)',
-              border: '1px solid rgba(154,99,40,0.18)',
-              borderRadius: 14, padding: '14px',
-              boxShadow: 'inset 0 2px 4px rgba(44,24,16,0.05), inset 0 -1px 0 rgba(255,255,255,0.6)',
-            }}>
+                    boxShadow: '0 2px 8px rgba(44,24,16,0.14), 0 0 0 2px rgba(255,255,255,0.95), 0 0 0 3px rgba(184,115,58,0.18)',
+                    flexShrink: 0,
+                  }}>
+                    <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url} size={40} />
+                  </div>
+                  <div style={{
+                    flex: 1, minWidth: 0,
+                    background: 'linear-gradient(180deg, #FFFEFA 0%, #FBF4E3 100%)',
+                    border: '1px solid #C9B98E', borderRadius: 999, padding: '11px 16px',
+                    fontSize: 14.5, fontFamily: T.serif, fontStyle: 'italic', color: '#6b5d48',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    boxShadow: 'inset 0 2px 4px rgba(154,99,40,0.10), inset 0 -1px 0 rgba(255,255,255,0.6)',
+                  }}>
+                    <span>A thought, a doubt, a question…</span>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      width: 26, height: 26, marginLeft: 12, borderRadius: '50%',
+                      background: `linear-gradient(135deg, ${T.goldLight}, ${T.goldDark})`,
+                      color: T.cream, fontSize: 13, fontWeight: 700,
+                      boxShadow: '0 2px 6px rgba(184,115,58,0.35)',
+                    }}>✎</span>
+                  </div>
+                </button>
+              ) : (
                 <div style={{
-                  borderRadius: '50%',
-                  boxShadow: '0 2px 8px rgba(44,24,16,0.14), 0 0 0 2px rgba(255,255,255,0.95), 0 0 0 3px rgba(184,115,58,0.18)',
-                  flexShrink: 0, marginTop: 2,
+                  display: 'flex', gap: 12, alignItems: 'flex-start',
+                  background: 'linear-gradient(180deg, #FFFEFA 0%, #FBF4E3 100%)',
+                  border: '1px solid rgba(154,99,40,0.18)',
+                  borderRadius: 14, padding: '14px',
+                  boxShadow: 'inset 0 2px 4px rgba(44,24,16,0.05), inset 0 -1px 0 rgba(255,255,255,0.6)',
                 }}>
-                  <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url} size={40} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <textarea
-                    ref={composeTextRef}
-                    autoFocus
-                    value={composeBody}
-                    onChange={(e) => setComposeBody(e.target.value)}
-                    placeholder={composeIsMilestone
-                      ? 'A step on your walk — e.g. "Got baptized today at Westside Church"'
-                      : 'A thought, a doubt, a question…'}
-                    rows={4}
-                    style={{
-                      width: '100%', boxSizing: 'border-box',
-                      border: 'none', outline: 'none', resize: 'vertical',
-                      fontFamily: T.serif, fontSize: 15, lineHeight: 1.65,
-                      color: T.ink, background: 'transparent',
-                      transition: 'all 0.2s',
-                      overflow: 'auto',
-                    }}
-                  />
-                  {composeActive && composeImageDrafts.length > 0 && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 8, marginTop: 10 }}>
-                      {composeImageDrafts.map((d, i) => (
-                        <div key={d.previewUrl} style={{
-                          position: 'relative', paddingBottom: '100%', borderRadius: 10,
-                          overflow: 'hidden', background: T.parchment,
-                        }}>
-                          <img src={d.previewUrl} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-                          <button
-                            type="button"
-                            onClick={() => removeComposeImageDraft(i)}
-                            aria-label="Remove image"
-                            style={{
-                              position: 'absolute', top: 6, right: 6,
-                              width: 24, height: 24, borderRadius: '50%',
-                              background: 'rgba(0,0,0,0.55)', color: T.cream,
-                              border: 'none', cursor: 'pointer', fontSize: 14, lineHeight: 1,
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            }}
-                          >×</button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {composeActive && (
-                    <input
-                      ref={composeFileInputRef}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      style={{ display: 'none' }}
-                      onChange={(e) => { pickComposeImages(e.target.files); e.target.value = ''; }}
-                    />
-                  )}
-                  {composeActive && (
-                    <div style={{ marginTop: 10, borderTop: `1px solid ${T.line}`, paddingTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        onClick={() => composeFileInputRef.current?.click()}
-                        disabled={composeImageDrafts.length >= MAX_IMAGES_PER_POST}
-                        title={composeImageDrafts.length >= MAX_IMAGES_PER_POST ? `Up to ${MAX_IMAGES_PER_POST} images` : 'Add photo'}
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 6,
-                          background: T.cream, border: `1px solid ${T.line}`, borderRadius: 999,
-                          padding: '6px 10px', fontSize: 12.5, color: T.inkSoft,
-                          cursor: composeImageDrafts.length >= MAX_IMAGES_PER_POST ? 'not-allowed' : 'pointer',
-                          opacity: composeImageDrafts.length >= MAX_IMAGES_PER_POST ? 0.5 : 1,
+                  <div style={{
+                    borderRadius: '50%',
+                    boxShadow: '0 2px 8px rgba(44,24,16,0.14), 0 0 0 2px rgba(255,255,255,0.95), 0 0 0 3px rgba(184,115,58,0.18)',
+                    flexShrink: 0, marginTop: 2,
+                  }}>
+                    <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url} size={40} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <Suspense fallback={<div style={{ padding: 24, textAlign: 'center', color: T.inkMuted, fontFamily: T.serif }}>Loading…</div>}>
+                      <PostComposer
+                        inModal
+                        bare
+                        session={session}
+                        profile={profile}
+                        scope="me"
+                        onPosted={() => {
+                          setComposeOpen(false);
+                          loadPosts(session.user.id);
+                          setStats((s) => ({ ...s, posts: s.posts + 1 }));
                         }}
-                      >
-                        📷 Photo
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setComposeIsMilestone((v) => !v)}
-                        title="Mark this as a step on your walk — baptism, first read-through, joining a group, etc."
-                        style={{
-                          display: 'inline-flex', alignItems: 'center', gap: 6,
-                          background: composeIsMilestone ? 'rgba(184,115,58,0.14)' : T.cream,
-                          border: `1px solid ${composeIsMilestone ? T.gold : T.line}`,
-                          borderRadius: 999, padding: '6px 10px', fontSize: 12.5,
-                          color: composeIsMilestone ? T.goldDark : T.inkSoft,
-                          fontWeight: composeIsMilestone ? 600 : 400, cursor: 'pointer',
-                        }}
-                      >
-                        ✦ Milestone
-                      </button>
-                      <div style={{ position: 'relative' }}>
-                        <button
-                          type="button"
-                          onClick={() => setComposeAudienceMenuOpen((v) => !v)}
-                          style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 6,
-                            background: T.cream, border: `1px solid ${T.line}`, borderRadius: 999,
-                            padding: '6px 10px', fontSize: 12.5, color: T.inkSoft, cursor: 'pointer',
-                          }}
-                        >
-                          <span>{VISIBILITY_OPTIONS.find((v) => v.id === composeVisibility)?.emoji}</span>
-                          {VISIBILITY_OPTIONS.find((v) => v.id === composeVisibility)?.label}
-                          <span style={{ fontSize: 10, color: T.inkMuted }}>▾</span>
-                        </button>
-                        {composeAudienceMenuOpen && (
-                          <div style={{
-                            position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, zIndex: 10,
-                            background: T.white, border: `1px solid ${T.line}`, borderRadius: 12,
-                            boxShadow: '0 6px 20px rgba(44,24,16,0.12)', padding: 6, minWidth: 240,
-                          }}>
-                            {VISIBILITY_OPTIONS.map((v) => (
-                              <button
-                                key={v.id}
-                                type="button"
-                                onClick={() => { setComposeVisibility(v.id); setComposeAudienceMenuOpen(false); }}
-                                style={{
-                                  width: '100%', textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: 10,
-                                  background: composeVisibility === v.id ? T.parchment : 'transparent', border: 'none',
-                                  borderRadius: 8, padding: '8px 10px', cursor: 'pointer',
-                                }}
-                              >
-                                <span style={{ fontSize: 16, lineHeight: '20px' }}>{v.emoji}</span>
-                                <span style={{ flex: 1 }}>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{v.label}</div>
-                                  <div style={{ fontSize: 11.5, color: T.inkMuted, marginTop: 2 }}>{v.desc}</div>
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      </div>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        <button
-                          onClick={() => {
-                            setComposeActive(false); setComposeBody(''); setComposeVisibility('public'); setComposeAudienceMenuOpen(false); setComposeIsMilestone(false);
-                            composeImageDrafts.forEach((d) => { try { URL.revokeObjectURL(d.previewUrl); } catch {} });
-                            setComposeImageDrafts([]);
-                          }}
-                          style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 13, cursor: 'pointer', padding: '6px 10px' }}
-                        >
-                          Cancel
-                        </button>
-                        {(() => {
-                          const canPost = (composeBody.trim().length > 0 || composeImageDrafts.length > 0) && !composeSubmitting;
-                          return (
-                            <button
-                              onClick={submitPost}
-                              disabled={!canPost}
-                              style={{
-                                background: canPost ? `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)` : T.line,
-                                color: T.cream, border: 'none', borderRadius: 999,
-                                padding: '8px 22px', fontSize: 13, fontWeight: 600,
-                                cursor: canPost ? 'pointer' : 'not-allowed',
-                                transition: 'all 0.15s',
-                                boxShadow: canPost ? '0 3px 12px rgba(184,115,58,0.3)' : 'none',
-                              }}
-                            >
-                              {composeSubmitting ? 'Posting…' : 'Post'}
-                            </button>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  )}
+                        onCancel={() => setComposeOpen(false)}
+                      />
+                    </Suspense>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
             </div>
             {loading && <div style={{ textAlign: 'center', padding: 40, color: T.inkMuted, fontFamily: T.serif }}>Loading…</div>}
             {!loading && posts.length === 0 && (
