@@ -7,6 +7,22 @@ import HomeFound from './HomeFound.jsx';
 import FlagPicker from './FlagPicker.jsx';
 import { COUNTRIES } from './countries.js';
 
+// Spiritual-state options only — chat-mode types (group, guided, kids) are
+// intentionally excluded here; they live in constants.js for the AI prompts.
+const PROFILE_PERSON_TYPES = ['curious','seeking','skeptic','heard-things','new-faith','deeper','inter-faith'];
+
+const AGE_RANGES = ['Under 18','18–24','25–34','35–49','50–64','65+'];
+
+const EXPLORING_SINCE = [
+  'Just starting out',
+  'A few weeks',
+  'A few months',
+  'About a year',
+  '2–5 years',
+  'More than 5 years',
+  'Grew up in it',
+];
+
 const TRADITIONS = [
   'Still Discovering','Catholic','Eastern Orthodox','Ethiopian Orthodox',
   'Anglican / Episcopal','Baptist','Presbyterian / Reformed','Methodist',
@@ -217,7 +233,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
               <Field label="Age range">
                 <select style={sStyle} value={form.age_range} onChange={(e) => set('age_range', e.target.value)}>
                   <option value="">Select…</option>
-                  {['18–24','25–34','35–49','50+'].map((a) => <option key={a}>{a}</option>)}
+                  {AGE_RANGES.map((a) => <option key={a}>{a}</option>)}
                 </select>
               </Field>
               <Field label="Gender">
@@ -264,9 +280,9 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
             {/* ── Faith journey ── */}
             <Section icon={<CrossMark />} label="Faith journey" />
 
-            <Field label="Who are you right now?">
+            <Field label="Where are you at right now?">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {PERSON_TYPES.map((p) => (
+                {PERSON_TYPES.filter((p) => PROFILE_PERSON_TYPES.includes(p.id)).map((p) => (
                   <button
                     key={p.id}
                     type="button"
@@ -299,10 +315,10 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
               </Field>
             </div>
 
-            <Field label="How long exploring?">
+            <Field label="How long have you been exploring?">
               <select style={sStyle} value={form.exploring_since} onChange={(e) => set('exploring_since', e.target.value)}>
                 <option value="">Select…</option>
-                {['Just started','A few months','About a year','Several years'].map((o) => <option key={o}>{o}</option>)}
+                {EXPLORING_SINCE.map((o) => <option key={o}>{o}</option>)}
               </select>
             </Field>
 
