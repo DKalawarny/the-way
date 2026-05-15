@@ -2078,7 +2078,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
             </div>
 
             <button
-              onClick={() => { if (hasNext) goChapter(chNum + 1); }}
+              onClick={() => { if (hasNext) markDone(); }}
               disabled={!hasNext}
               style={{
                 flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
