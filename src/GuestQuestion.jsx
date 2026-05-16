@@ -5,11 +5,11 @@ import ShareSheet from './ShareSheet.jsx';
 
 const EXAMPLE_QUESTIONS = [
   "If God is real, why do innocent people suffer?",
-  "Is there actual evidence the resurrection happened?",
   "Why would a loving God send people to hell?",
-  "I had faith once — how do I know if any of it was real?",
-  "Can you be a good person without believing in God?",
-  "What does Jesus actually say about fear and anxiety?",
+  "I prayed for years and nothing changed. Is God even listening?",
+  "Is there actual evidence the resurrection happened?",
+  "Why are so many Christians such hypocrites?",
+  "Can I have real doubts and still belong here?",
 ];
 
 const LEVELS = [
