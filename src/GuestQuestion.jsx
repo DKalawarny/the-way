@@ -63,7 +63,7 @@ function MsgText({ text }) {
   return <span style={{ whiteSpace: 'pre-wrap' }}>{text}</span>;
 }
 
-export default function GuestQuestion({ onSignUp, initialQuestion }) {
+export default function GuestQuestion({ onSignUp, initialQuestion, landingMode = false }) {
   const [input, setInput] = useState('');
   const [response, setResponse] = useState('');
   const [busy, setBusy] = useState(false);
@@ -147,130 +147,182 @@ export default function GuestQuestion({ onSignUp, initialQuestion }) {
       {/* Input area — always visible */}
       {!response && !busy && (
         <>
-          {/* Level selector */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(253,248,240,0.4)', marginBottom: 12, textAlign: 'center' }}>
-              Where are you?
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-              {LEVELS.map((l) => (
-                <button
-                  key={l.id}
-                  onClick={() => { setLevel(l.id); if (l.id !== 'questioning') setDenom(null); }}
-                  title={l.hint}
-                  style={{
-                    background: level === l.id ? 'rgba(184,115,58,0.2)' : 'rgba(255,255,255,0.04)',
-                    border: `1.5px solid ${level === l.id ? T.gold : 'rgba(255,255,255,0.1)'}`,
-                    borderRadius: 999,
-                    padding: '7px 16px',
-                    fontSize: 13,
-                    color: level === l.id ? T.cream : 'rgba(253,248,240,0.5)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    transition: 'all 0.15s',
-                    fontWeight: level === l.id ? 600 : 400,
-                  }}
-                >
-                  <span>{l.emoji}</span>
-                  <span>{l.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Denomination follow-up — only for Questioning */}
-          {level === 'questioning' && (
-            <div style={{ marginBottom: 20, animation: 'fadeIn 0.25s ease' }}>
-              <div style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(253,248,240,0.4)', marginBottom: 12, textAlign: 'center' }}>
-                What background are you coming from?
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-                {DENOMS.map((d) => (
+          {landingMode ? (
+            /* ── Landing: chips first, then textarea ── */
+            <>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center', marginBottom: 20 }}>
+                {EXAMPLE_QUESTIONS.map((q) => (
                   <button
-                    key={d.id}
-                    onClick={() => setDenom(denom === d.id ? null : d.id)}
+                    key={q}
+                    onClick={() => ask(q)}
                     style={{
-                      background: denom === d.id ? 'rgba(184,115,58,0.2)' : 'rgba(255,255,255,0.04)',
-                      border: `1.5px solid ${denom === d.id ? T.gold : 'rgba(255,255,255,0.1)'}`,
-                      borderRadius: 999,
-                      padding: '6px 14px',
-                      fontSize: 12,
-                      color: denom === d.id ? T.cream : 'rgba(253,248,240,0.45)',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s',
-                      fontWeight: denom === d.id ? 600 : 400,
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(184,115,58,0.3)',
+                      borderRadius: 999, padding: '10px 18px',
+                      fontSize: 13.5, color: 'rgba(253,248,240,0.75)',
+                      cursor: 'pointer', lineHeight: 1.45,
+                      transition: 'all 0.15s', fontFamily: 'inherit',
                     }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.color = T.cream; e.currentTarget.style.background = 'rgba(184,115,58,0.12)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(184,115,58,0.3)'; e.currentTarget.style.color = 'rgba(253,248,240,0.75)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
                   >
-                    {d.label}
+                    {q}
                   </button>
                 ))}
               </div>
-              <div style={{ fontSize: 11, color: 'rgba(253,248,240,0.25)', textAlign: 'center', marginTop: 10 }}>
-                Optional — helps us understand where you're coming from
+              <div style={{ fontSize: 11, letterSpacing: 2.5, textTransform: 'uppercase', color: 'rgba(253,248,240,0.25)', textAlign: 'center', marginBottom: 16 }}>
+                or ask your own
               </div>
-            </div>
+              <div style={{ position: 'relative' }}>
+                <textarea
+                  ref={taRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); } }}
+                  placeholder="Type your question…"
+                  rows={2}
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1.5px solid rgba(184,115,58,0.25)',
+                    borderRadius: 14, padding: '14px 100px 14px 18px',
+                    fontSize: 15, fontFamily: T.serif,
+                    color: T.cream, outline: 'none', resize: 'none',
+                    lineHeight: 1.55, transition: 'border-color 0.15s',
+                  }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(184,115,58,0.25)')}
+                />
+                <button
+                  onClick={() => ask()}
+                  disabled={!input.trim()}
+                  style={{
+                    position: 'absolute', bottom: 10, right: 10,
+                    background: input.trim() ? T.gold : 'rgba(184,115,58,0.2)',
+                    color: T.cream, border: 'none', borderRadius: 999,
+                    padding: '8px 20px', fontSize: 13, fontWeight: 600,
+                    cursor: input.trim() ? 'pointer' : 'default',
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  Ask →
+                </button>
+              </div>
+            </>
+          ) : (
+            /* ── Full mode: level picker → textarea → chips ── */
+            <>
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(253,248,240,0.4)', marginBottom: 12, textAlign: 'center' }}>
+                  Where are you?
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                  {LEVELS.map((l) => (
+                    <button
+                      key={l.id}
+                      onClick={() => { setLevel(l.id); if (l.id !== 'questioning') setDenom(null); }}
+                      title={l.hint}
+                      style={{
+                        background: level === l.id ? 'rgba(184,115,58,0.2)' : 'rgba(255,255,255,0.04)',
+                        border: `1.5px solid ${level === l.id ? T.gold : 'rgba(255,255,255,0.1)'}`,
+                        borderRadius: 999, padding: '7px 16px', fontSize: 13,
+                        color: level === l.id ? T.cream : 'rgba(253,248,240,0.5)',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+                        transition: 'all 0.15s', fontWeight: level === l.id ? 600 : 400,
+                      }}
+                    >
+                      <span>{l.emoji}</span><span>{l.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {level === 'questioning' && (
+                <div style={{ marginBottom: 20, animation: 'fadeIn 0.25s ease' }}>
+                  <div style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(253,248,240,0.4)', marginBottom: 12, textAlign: 'center' }}>
+                    What background are you coming from?
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                    {DENOMS.map((d) => (
+                      <button
+                        key={d.id}
+                        onClick={() => setDenom(denom === d.id ? null : d.id)}
+                        style={{
+                          background: denom === d.id ? 'rgba(184,115,58,0.2)' : 'rgba(255,255,255,0.04)',
+                          border: `1.5px solid ${denom === d.id ? T.gold : 'rgba(255,255,255,0.1)'}`,
+                          borderRadius: 999, padding: '6px 14px', fontSize: 12,
+                          color: denom === d.id ? T.cream : 'rgba(253,248,240,0.45)',
+                          cursor: 'pointer', transition: 'all 0.15s',
+                          fontWeight: denom === d.id ? 600 : 400,
+                        }}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'rgba(253,248,240,0.25)', textAlign: 'center', marginTop: 10 }}>
+                    Optional — helps us understand where you're coming from
+                  </div>
+                </div>
+              )}
+
+              <div style={{ position: 'relative', marginBottom: 16 }}>
+                <textarea
+                  ref={taRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); } }}
+                  placeholder="Type your hardest question about faith, God, or the Bible…"
+                  rows={3}
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1.5px solid rgba(184,115,58,0.35)',
+                    borderRadius: 16, padding: '16px 18px',
+                    fontSize: 16, fontFamily: T.serif,
+                    color: T.cream, outline: 'none', resize: 'none',
+                    lineHeight: 1.6, transition: 'border-color 0.15s',
+                  }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(184,115,58,0.35)')}
+                />
+                <button
+                  onClick={() => ask()}
+                  disabled={!input.trim()}
+                  style={{
+                    position: 'absolute', bottom: 12, right: 12,
+                    background: input.trim() ? T.gold : 'rgba(184,115,58,0.2)',
+                    color: T.cream, border: 'none', borderRadius: 999,
+                    padding: '8px 18px', fontSize: 13, fontWeight: 600,
+                    cursor: input.trim() ? 'pointer' : 'default',
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  Ask →
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                {EXAMPLE_QUESTIONS.map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => ask(q)}
+                    style={{
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(184,115,58,0.25)',
+                      borderRadius: 999, padding: '7px 14px',
+                      fontSize: 12, color: 'rgba(253,248,240,0.65)',
+                      cursor: 'pointer', lineHeight: 1.4, transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.color = T.cream; e.currentTarget.style.background = 'rgba(184,115,58,0.1)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(184,115,58,0.25)'; e.currentTarget.style.color = 'rgba(253,248,240,0.65)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
-
-          <div style={{ position: 'relative', marginBottom: 16 }}>
-            <textarea
-              ref={taRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); } }}
-              placeholder="Type your hardest question about faith, God, or the Bible…"
-              rows={3}
-              style={{
-                width: '100%', boxSizing: 'border-box',
-                background: 'rgba(255,255,255,0.06)',
-                border: `1.5px solid rgba(184,115,58,0.35)`,
-                borderRadius: 16, padding: '16px 18px',
-                fontSize: 16, fontFamily: T.serif,
-                color: T.cream, outline: 'none', resize: 'none',
-                lineHeight: 1.6,
-                transition: 'border-color 0.15s',
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
-              onBlur={(e) => (e.currentTarget.style.borderColor = 'rgba(184,115,58,0.35)')}
-            />
-            <button
-              onClick={() => ask()}
-              disabled={!input.trim()}
-              style={{
-                position: 'absolute', bottom: 12, right: 12,
-                background: input.trim() ? T.gold : 'rgba(184,115,58,0.2)',
-                color: T.cream, border: 'none', borderRadius: 999,
-                padding: '8px 18px', fontSize: 13, fontWeight: 600,
-                cursor: input.trim() ? 'pointer' : 'default',
-                transition: 'background 0.15s',
-              }}
-            >
-              Ask →
-            </button>
-          </div>
-
-          {/* Example question chips */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-            {EXAMPLE_QUESTIONS.map((q) => (
-              <button
-                key={q}
-                onClick={() => ask(q)}
-                style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(184,115,58,0.25)',
-                  borderRadius: 999, padding: '7px 14px',
-                  fontSize: 12, color: 'rgba(253,248,240,0.65)',
-                  cursor: 'pointer', lineHeight: 1.4,
-                  transition: 'all 0.15s',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.color = T.cream; e.currentTarget.style.background = 'rgba(184,115,58,0.1)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(184,115,58,0.25)'; e.currentTarget.style.color = 'rgba(253,248,240,0.65)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
-              >
-                {q}
-              </button>
-            ))}
-          </div>
         </>
       )}
 

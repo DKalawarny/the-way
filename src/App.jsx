@@ -184,7 +184,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
         </p>
 
         <div style={{ width: '100%', maxWidth: 680, margin: '0 auto', position: 'relative' }}>
-          <GuestQuestion onSignUp={onBegin} initialQuestion={initialQuestion} />
+          <GuestQuestion onSignUp={onBegin} initialQuestion={initialQuestion} landingMode />
         </div>
       </main>
 
