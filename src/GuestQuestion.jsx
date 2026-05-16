@@ -5,10 +5,8 @@ import ShareSheet from './ShareSheet.jsx';
 
 const EXAMPLE_QUESTIONS = [
   "If God is real, why do innocent people suffer?",
-  "Why would a loving God send people to hell?",
   "I prayed for years and nothing changed. Is God even listening?",
   "Is there actual evidence the resurrection happened?",
-  "Why are so many Christians such hypocrites?",
   "Can I have real doubts and still belong here?",
 ];
 
