@@ -201,14 +201,14 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
         <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, maxWidth: 520, margin: '0 auto 52px', lineHeight: 1.75 }}>
           The loneliest part of seeking is doing it alone. kinwove connects you with real people — every background, every stage — who are asking the same questions you are.
         </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, maxWidth: 780, margin: '0 auto' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 14, maxWidth: 780, margin: '0 auto' }}>
           {[
             { icon: '💬', title: 'Post & discuss', body: 'Share thoughts, ask questions. Your community responds — not an algorithm.' },
             { icon: '🙏', title: 'Pray together', body: 'Post a request. People pray for you. You\'ll know when they do.' },
             { icon: '📖', title: 'Study scripture', body: 'Read any chapter. Tap any verse for instant AI insight, right in the margin.' },
             { icon: '⛪', title: 'Find your church', body: 'Connect with your congregation or discover a community near you.' },
           ].map((f) => (
-            <div key={f.title} style={{ padding: '24px 20px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, textAlign: 'left' }}>
+            <div key={f.title} style={{ flex: '1 1 200px', maxWidth: 240, padding: '24px 20px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, textAlign: 'left' }}>
               <div style={{ fontSize: 22, marginBottom: 12 }}>{f.icon}</div>
               <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.cream, marginBottom: 6, letterSpacing: '-0.008em' }}>{f.title}</div>
               <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.65 }}>{f.body}</div>
@@ -233,7 +233,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12, maxWidth: 800, margin: '0 auto' }}>
           {trustPoints.map((t) => (
-            <div key={t} style={{ flex: '1 1 240px', maxWidth: 258, display: 'flex', alignItems: 'flex-start', gap: 12, padding: '16px 18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.14)', borderRadius: 12 }}>
+            <div key={t} style={{ flex: '1 1 240px', maxWidth: 258, display: 'flex', alignItems: 'flex-start', gap: 12, padding: '16px 18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.14)', borderRadius: 12, textAlign: 'left' }}>
               <span style={{ color: T.gold, fontSize: 13, flexShrink: 0, marginTop: 2, lineHeight: 1 }}>✦</span>
               <span style={{ fontSize: 13.5, color: DIM, lineHeight: 1.6 }}>{t}</span>
             </div>
@@ -288,14 +288,14 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
             Sunday is one hour. kinwove is the other six days —
             where your members keep wrestling with what was preached, ask the questions they won't raise in the lobby, and pray for each other by name.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, maxWidth: 780, margin: '0 auto 40px', textAlign: 'left' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 14, maxWidth: 780, margin: '0 auto 40px' }}>
             {[
               { icon: '✦', t: 'A page for every Sunday', d: 'Sermon content, scripture, daily verses, kids version — all in one place. Your congregation engages with it all week.' },
               { icon: '💬', t: 'Real discussion, not dead chat', d: 'Threaded conversations under each sermon. Members reply, wrestle, and come back to Sunday more ready.' },
               { icon: '🙏', t: 'Prayer that stays personal', d: 'Requests anchored to the people in your congregation — not a feed of strangers.' },
               { icon: '🛡', t: 'Your church profile — free', d: 'Get your church on kinwove at no cost. The tools that genuinely replace your time cost money. The presence doesn\'t.' },
             ].map((f) => (
-              <div key={f.t} style={{ padding: '20px 18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14 }}>
+              <div key={f.t} style={{ flex: '1 1 200px', maxWidth: 240, padding: '20px 18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, textAlign: 'left' }}>
                 <div style={{ fontSize: 17, color: T.gold, marginBottom: 10 }}>{f.icon}</div>
                 <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.cream, marginBottom: 6, letterSpacing: '-0.005em' }}>{f.t}</div>
                 <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.65 }}>{f.d}</div>
