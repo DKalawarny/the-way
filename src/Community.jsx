@@ -1070,7 +1070,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tab
   );
 }
 
-export default function Community({ session, profile, onClose, onOpenChat, hideHeader, userGroup, onViewProfile, onFindPeople, onInviteFriends, onOpenPrayer, onOpenRead, onOpenBible, onVerseClick, onOpenChurch, onOpenSermon, accentColor }) {
+export default function Community({ session, profile, onClose, onOpenChat, hideHeader, userGroup, onViewProfile, onFindPeople, onInviteFriends, onOpenPrayer, onOpenRead, onOpenBible, onVerseClick, onOpenChurch, onOpenSermon, onOpenConnect, accentColor }) {
   // Section colour: gold for main Feed, forest green for church community feed
   const TAB_COLOR = accentColor ?? '#B8733A';
   const TAB_TEXT  = accentColor ?? '#8E5528'; // slightly darker for text legibility
@@ -1638,6 +1638,31 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
                 “{qotd.question_of_day}”
               </div>
             </div>
+          )}
+
+          {/* ── Connect banner ── */}
+          {feedType === 'posts' && onOpenConnect && (
+            <button
+              onClick={onOpenConnect}
+              style={{
+                width: '100%', margin: '0 0 16px', padding: '14px 18px',
+                background: 'linear-gradient(135deg, rgba(184,115,58,0.07) 0%, rgba(58,107,138,0.07) 100%)',
+                border: `1px solid ${T.line}`, borderRadius: 14,
+                display: 'flex', alignItems: 'center', gap: 14,
+                cursor: 'pointer', textAlign: 'left',
+              }}
+            >
+              <span style={{ fontSize: 26, flexShrink: 0 }}>🤝</span>
+              <div>
+                <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink, marginBottom: 2 }}>
+                  Connect with someone on the journey
+                </div>
+                <div style={{ fontSize: 12, color: T.inkMuted, lineHeight: 1.5 }}>
+                  Find a mentor, a partner, or someone to have an honest conversation with.
+                </div>
+              </div>
+              <span style={{ marginLeft: 'auto', color: T.inkMuted, fontSize: 16, flexShrink: 0 }}>›</span>
+            </button>
           )}
 
           {/* ── Posts feed (excludes milestones + sermons — those have own tabs) ── */}

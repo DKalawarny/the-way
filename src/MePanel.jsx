@@ -575,7 +575,7 @@ function PlanCard({ plan, aiUsage, session }) {
   );
 }
 
-export default function MePanel({ session, profile, onClose, onEditProfile, onSignOut, onDeleteAccount, onOpenBoard, onOpenHistory, onProfileUpdate, onOpenChat, onViewProfile, onFindPeople, onInviteFriends, onFindChurches, onApplyAsPastor, onOpenPastorAdminQueue, onOpenChurchDisputesQueue, onOpenChurch, onOpenSermon, onOpenWalks, onOpenTalkToSomeone, onOpenCareInbox, onOpenMessages, onOpenPastorDashboard, hasCareTeamRole, hasPastoredChurch }) {
+export default function MePanel({ session, profile, onClose, onEditProfile, onSignOut, onDeleteAccount, onOpenBoard, onOpenHistory, onProfileUpdate, onOpenChat, onViewProfile, onFindPeople, onInviteFriends, onFindChurches, onApplyAsPastor, onOpenPastorAdminQueue, onOpenChurchDisputesQueue, onOpenChurch, onOpenSermon, onOpenWalks, onOpenTalkToSomeone, onOpenCareInbox, onOpenMessages, onOpenConnect, onOpenPastorDashboard, hasCareTeamRole, hasPastoredChurch }) {
   const [posts, setPosts] = useState([]);
   const [stats, setStats] = useState({ posts: 0, following: 0, followers: 0 });
   const [followingList, setFollowingList] = useState([]);
@@ -899,6 +899,15 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
       onProfileUpdate?.({ ...profile, banner_preset: key, banner_url: null });
       setBannerPickerOpen(false);
     } catch (err) { setBannerError(err.message); }
+  }
+
+  async function toggleConnectFlag(field) {
+    if (!session?.user?.id) return;
+    const next = !profile?.[field];
+    try {
+      await directProfileUpdate(session.user.id, { [field]: next });
+      onProfileUpdate?.({ ...profile, [field]: next });
+    } catch {}
   }
 
 
@@ -1620,7 +1629,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
               style={{
                 width: '100%', background: T.parchment,
                 border: `1.5px dashed ${T.goldLight}`, borderRadius: 12,
-                padding: '12px 16px', marginBottom: 18, cursor: 'pointer',
+                padding: '12px 16px', marginBottom: 12, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 fontSize: 14, color: T.goldDark, fontWeight: 600,
                 transition: 'background 0.15s',
@@ -1630,6 +1639,60 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
             >
               🔍 Find people
             </button>
+
+            {/* Connect settings */}
+            <div style={{
+              background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
+              padding: '16px 18px', marginBottom: 18,
+            }}>
+              <div style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 600, marginBottom: 14 }}>
+                Connect settings
+              </div>
+
+              {/* Mentor toggle */}
+              {[
+                { field: 'mentor_open',  label: 'Open to mentoring others', desc: "Someone further behind on the journey can reach out to you." },
+                { field: 'connect_open', label: 'Open to conversations',     desc: "Anyone can start an honest faith conversation with you." },
+              ].map(({ field, label, desc }) => {
+                const on = !!profile?.[field];
+                return (
+                  <div key={field} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, marginBottom: 2 }}>{label}</div>
+                      <div style={{ fontSize: 12, color: T.inkMuted, lineHeight: 1.5 }}>{desc}</div>
+                    </div>
+                    <button
+                      onClick={() => toggleConnectFlag(field)}
+                      style={{
+                        width: 44, height: 26, borderRadius: 999, border: 'none', cursor: 'pointer',
+                        background: on ? T.gold : T.line,
+                        position: 'relative', flexShrink: 0, transition: 'background 0.2s',
+                      }}
+                    >
+                      <span style={{
+                        position: 'absolute', top: 3, left: on ? 21 : 3,
+                        width: 20, height: 20, borderRadius: '50%', background: T.white,
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s',
+                      }} />
+                    </button>
+                  </div>
+                );
+              })}
+
+              {/* Browse connect screen */}
+              {onOpenConnect && (
+                <button
+                  onClick={onOpenConnect}
+                  style={{
+                    width: '100%', background: T.ink, color: T.cream,
+                    border: 'none', borderRadius: 999, padding: '10px 16px',
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer', marginTop: 4,
+                  }}
+                >
+                  🤝 Browse people open to connect
+                </button>
+              )}
+            </div>
             {/* Pending requests */}
             {pendingRequests.length > 0 && (
               <div style={{ marginBottom: 20 }}>

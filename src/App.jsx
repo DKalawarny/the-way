@@ -73,6 +73,7 @@ import ChurchModeShell from './ChurchModeShell.jsx';
 import InstallPrompt from './InstallPrompt.jsx';
 
 const Community         = lazy(() => import('./Community.jsx'));
+const ConnectScreen     = lazy(() => import('./ConnectScreen.jsx'));
 const Prayer            = lazy(() => import('./Prayer.jsx'));
 const GroupSpace        = lazy(() => import('./GroupSpace.jsx'));
 const GroupSetup        = lazy(() => import('./GroupSetup.jsx'));
@@ -703,7 +704,7 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
   // Map stages onto top-level tabs
   const tabFor = (s) => {
     if (s === 'home') return 'home';
-    if (s === 'church' || s === 'churches' || s === 'church-entry' || s === 'feed' || s === 'groups' || s === 'prayer' || s === 'talk-to-someone' || s === 'care-conversation' || s === 'church-admin' || s === 'pastor-dashboard' || s === 'sermon-composer' || s === 'care-admin' || s === 'sermon-view') return 'church';
+    if (s === 'church' || s === 'churches' || s === 'church-entry' || s === 'feed' || s === 'groups' || s === 'prayer' || s === 'talk-to-someone' || s === 'care-conversation' || s === 'church-admin' || s === 'pastor-dashboard' || s === 'sermon-composer' || s === 'care-admin' || s === 'sermon-view' || s === 'connect') return 'church';
     if (s === 'read') return 'read';
     if (s === 'me' || s === 'walks' || s === 'care-inbox' || s === 'messages' || s === 'dm-conversation' || s === 'app-admin') return 'me';
     return null;
@@ -1389,7 +1390,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
     if (s === 'home') return 'home';
     if (['church', 'churches', 'church-entry', 'feed', 'groups', 'prayer',
          'talk-to-someone', 'care-conversation', 'church-admin', 'pastor-dashboard',
-         'sermon-composer', 'care-admin', 'sermon-view'].includes(s)) return 'church';
+         'sermon-composer', 'care-admin', 'sermon-view', 'connect'].includes(s)) return 'church';
     if (s === 'read') return 'read';
     if (['me', 'walks', 'care-inbox', 'messages', 'dm-conversation', 'app-admin'].includes(s)) return 'me';
     return null;
@@ -2490,6 +2491,7 @@ export default function App() {
             else setStage('churches');
           }}
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
+          onOpenConnect={() => setStage('connect')}
         />
       )}
       {stage === 'prayer' && session && (
@@ -2520,6 +2522,14 @@ export default function App() {
               onClose={() => goBack('feed')}
             />
       )}
+      {stage === 'connect' && session && (
+        <ConnectScreen
+          session={session}
+          profile={profile}
+          onClose={() => goBack('feed')}
+          onStartDM={startDM}
+        />
+      )}
       {stage === 'me' && session && (
         <MePanel
           session={session}
@@ -2545,6 +2555,7 @@ export default function App() {
           onOpenTalkToSomeone={profile?.church_id ? () => { setViewingChurchId(profile.church_id); setStage('talk-to-someone'); } : undefined}
           onOpenCareInbox={careTeamRecord ? () => setStage('care-inbox') : undefined}
           onOpenMessages={() => setStage('messages')}
+          onOpenConnect={() => setStage('connect')}
           onOpenPastorDashboard={pastorChurchId ? () => setStage('church-admin') : undefined}
           hasCareTeamRole={!!careTeamRecord}
           hasPastoredChurch={!!pastorChurchId}

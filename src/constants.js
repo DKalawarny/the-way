@@ -39,22 +39,10 @@ export const PERSON_TYPES = [
     description: 'Know the stories. Now I want the history, language, and layers.',
   },
   {
-    id: 'group',
-    emoji: '👥',
-    label: 'Group Study',
-    description: "Reading together. Help us think, question, and go deeper.",
-  },
-  {
     id: 'inter-faith',
     emoji: '🌍',
     label: 'Other Faiths',
     description: 'Understand other faiths and talk about Jesus with confidence.',
-  },
-  {
-    id: 'guided',
-    emoji: '🧭',
-    label: 'Walk Me Through',
-    description: 'Step by step through the Bible. Plain language, no jargon.',
   },
   {
     id: 'kids',

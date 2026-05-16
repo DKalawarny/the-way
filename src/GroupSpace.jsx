@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { supabase } from './supabase.js';
+import { useEffect, useRef, useState } from 'react';
+import { supabase, authedFetch } from './supabase.js';
 import { T } from './theme.js';
 import { Avatar } from './ProfilePage.jsx';
 import ShareSheet from './ShareSheet.jsx';
@@ -184,6 +184,127 @@ function PostCard({ post, session, profile, isPastor }) {
   );
 }
 
+const STUDY_SYSTEM = `You are a group Bible study facilitator. Given a passage or theme, respond with exactly 3 open-ended discussion questions numbered 1–3. Output only the questions — no preamble, no titles, no explanations. Each question should invite personal reflection and different perspectives.`;
+
+async function streamStudyQuestions(passage, onChunk, signal) {
+  const res = await authedFetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    signal,
+    body: JSON.stringify({
+      system: STUDY_SYSTEM,
+      messages: [{ role: 'user', content: `Passage or theme: ${passage}` }],
+      personType: 'group',
+    }),
+  });
+  if (!res.ok || !res.body) return;
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const events = buf.split('\n\n');
+    buf = events.pop() ?? '';
+    for (const raw of events) {
+      const lines = raw.split('\n');
+      const ev = lines.find((l) => l.startsWith('event: '))?.slice(7).trim();
+      const data = lines.find((l) => l.startsWith('data: '))?.slice(6);
+      if (ev === 'text' && data) {
+        try { onChunk(JSON.parse(data).delta); } catch {}
+      }
+    }
+  }
+}
+
+function parseQuestions(raw) {
+  return raw
+    .split('\n')
+    .map((l) => l.replace(/^\d+[.)]\s*/, '').trim())
+    .filter((l) => l.length > 10);
+}
+
+function StudyQuestionsCard({ focus, isPastor, onUseQuestion }) {
+  const [raw, setRaw] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [focusId, setFocusId] = useState(null);
+  const abortRef = useRef(null);
+
+  useEffect(() => {
+    if (!focus || focus.id === focusId) return;
+    generate();
+  }, [focus]);
+
+  async function generate() {
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setRaw('');
+    setLoading(true);
+    setFocusId(focus.id);
+    try {
+      await streamStudyQuestions(focus.passage, (chunk) => setRaw((r) => r + chunk), ctrl.signal);
+    } catch {}
+    setLoading(false);
+  }
+
+  const questions = parseQuestions(raw);
+
+  return (
+    <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 18, padding: '20px 22px', marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{ fontSize: 10, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', opacity: 0.8 }}>
+          Study Questions
+        </div>
+        {isPastor && !loading && raw && (
+          <button
+            onClick={generate}
+            style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 11, cursor: 'pointer', padding: 0 }}
+          >
+            ↻ Regenerate
+          </button>
+        )}
+      </div>
+
+      {loading && questions.length === 0 && (
+        <div style={{ fontFamily: T.serif, fontSize: 14, color: T.inkMuted, lineHeight: 1.7 }}>
+          {raw || 'Generating questions…'}
+        </div>
+      )}
+
+      {questions.map((q, i) => (
+        <div key={i} style={{
+          background: T.parchment, borderRadius: 12, padding: '14px 16px',
+          marginBottom: i < questions.length - 1 ? 10 : 0,
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
+        }}>
+          <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.65, flex: 1 }}>
+            {q}
+          </div>
+          <button
+            onClick={() => onUseQuestion(q)}
+            style={{
+              background: 'none', border: `1px solid ${T.line}`, color: T.inkSoft,
+              borderRadius: 999, padding: '5px 12px', fontSize: 11, cursor: 'pointer',
+              whiteSpace: 'nowrap', flexShrink: 0,
+            }}
+          >
+            Reflect →
+          </button>
+        </div>
+      ))}
+
+      {loading && questions.length === 0 && !raw && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+          <div style={{ width: 14, height: 14, border: `1.5px solid ${T.line}`, borderTopColor: T.gold, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <span style={{ fontSize: 12, color: T.inkMuted }}>Generating…</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function GroupSpace({ group, role, session, profile, onLeave, onClose, hideHeader }) {
   const isPastor = role === 'pastor';
   const [focus, setFocus] = useState(null);
@@ -283,7 +404,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
           {settingFocus ? (
             <SetFocusForm groupId={group.id} onSaved={(f) => { setFocus(f); setSettingFocus(false); }} onCancel={() => setSettingFocus(false)} />
           ) : focus ? (
-            <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 18, padding: '22px 22px', marginBottom: 24 }}>
+            <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 18, padding: '22px 22px', marginBottom: 16 }}>
               <div style={{ fontSize: 10, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', marginBottom: 10, opacity: 0.75 }}>This week</div>
               <div style={{ fontFamily: T.display, fontSize: 24, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: focus.pastor_note ? 12 : 0 }}>
                 {focus.passage}
@@ -317,6 +438,15 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
                 </div>
               )}
             </div>
+          )}
+
+          {/* AI study questions — shown whenever there's a focus */}
+          {focus && !settingFocus && (
+            <StudyQuestionsCard
+              focus={focus}
+              isPastor={isPastor}
+              onUseQuestion={(q) => setText(q)}
+            />
           )}
 
           {/* Post composer */}
