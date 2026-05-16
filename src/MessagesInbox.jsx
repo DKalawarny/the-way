@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { lazy, useEffect, useState, Suspense } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { Avatar } from './ProfilePage.jsx';
 import CareConversation from './CareConversation.jsx';
-import DMConversation from './DMConversation.jsx';
+const DMConversation = lazy(() => import('./DMConversation.jsx'));
 
 function timeAgo(ts) {
   const diff = (Date.now() - new Date(ts)) / 1000;
@@ -161,13 +161,15 @@ export default function MessagesInbox({ session, profile, onBack }) {
 
   if (openDm) {
     return (
-      <DMConversation
-        session={session}
-        profile={profile}
-        conversationId={openDm.id}
-        otherProfile={openDm.otherProfile}
-        onBack={() => setOpenDm(null)}
-      />
+      <Suspense fallback={null}>
+        <DMConversation
+          session={session}
+          profile={profile}
+          conversationId={openDm.id}
+          otherProfile={openDm.otherProfile}
+          onBack={() => setOpenDm(null)}
+        />
+      </Suspense>
     );
   }
 
