@@ -106,8 +106,6 @@ const Chat              = lazy(() => import('./Chat.jsx'));
 const AdminPage         = lazy(() => import('./AdminPage.jsx'));
 const HelpPage          = lazy(() => import('./HelpPage.jsx'));
 import { getJourneyProgress, advanceJourneyProgress } from './journeys.js';
-import { usePlan } from './usePlan.js';
-import { UpgradeWall } from './PlanGate.jsx';
 import FeatureTour, { isTourDone } from './FeatureTour.jsx';
 import CoachMark, { incrementLoginCount } from './CoachMark.jsx';
 
@@ -1612,7 +1610,6 @@ export default function App() {
   const [joinResult, setJoinResult] = useState(null); // { ok: bool, message: string, churchName? }
   const [careTeamRecord, setCareTeamRecord] = useState(null);
   const [pastorChurchId, setPastorChurchId] = useState(null);
-  const churchPlanInfo = usePlan(pastorChurchId);
   // Used by ChurchModeShell on wrapped sub-pages so the header shows the
   // pastor's own church name even before the page-specific data loads.
   const [pastorChurch,   setPastorChurch]   = useState(null);
@@ -2706,23 +2703,20 @@ export default function App() {
         />
       )}
       {stage === 'care-admin' && session && pastorChurchId && (
-        churchPlanInfo.trialExpired
-          ? <UpgradeWall onBack={() => goBack('church-admin')} />
-          : <CareTeamAdmin
-              session={session}
-              churchId={pastorChurchId}
-              onBack={() => goBack('church-admin')}
-            />
+        <CareTeamAdmin
+          session={session}
+          churchId={pastorChurchId}
+          onBack={() => goBack('church-admin')}
+        />
       )}
       {stage === 'sermon-composer' && session && pastorChurchId && (
-        churchPlanInfo.trialExpired
-          ? <UpgradeWall onBack={() => goBack('church-admin')} />
-          : <SermonComposer
-              session={session}
-              churchId={pastorChurchId}
-              initialSermonId={composerSermonId}
-              onBack={() => goBack('church-admin')}
-            />
+        <SermonComposer
+          session={session}
+          churchId={pastorChurchId}
+          initialSermonId={composerSermonId}
+          userPlan={profile?.plan ?? 'free'}
+          onBack={() => goBack('church-admin')}
+        />
       )}
       {(stage === 'pastor-dashboard') && session && pastorChurchId && (
         <ChurchAdmin

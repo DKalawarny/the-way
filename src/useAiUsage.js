@@ -3,7 +3,7 @@ import { supabase } from './supabase.js';
 
 // ── Plan configuration ────────────────────────────────────────────────────────
 export const PLAN_LIMITS = {
-  free:              { period: 'lifetime', limit: 25  },
+  free:              { period: 'weekly',   limit: 10  },
   premium:           { period: 'monthly',  limit: 200 }, // Individual $4.99 — Haiku+Sonnet
   premium_plus:      { period: 'monthly',  limit: 150 }, // Individual Pro $9.99 — Haiku+Sonnet+Opus
   church_base:       { period: 'monthly',  limit: 0   }, // Church $29.99 — no AI cap (pastor tools only)
@@ -16,6 +16,12 @@ export const TOPUP_PRICE    = '$5';
 function currentPeriod(type) {
   if (type === 'lifetime') return 'lifetime';
   const d = new Date();
+  if (type === 'weekly') {
+    // Monday-anchored ISO week key: W-YYYY-MM-DD of that Monday
+    const mon = new Date(d);
+    mon.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return `W${mon.getFullYear()}${String(mon.getMonth() + 1).padStart(2, '0')}${String(mon.getDate()).padStart(2, '0')}`;
+  }
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 

@@ -93,6 +93,11 @@ function currentPeriod(plan) {
   const cfg = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
   if (cfg.period === 'lifetime') return 'lifetime';
   const d = new Date();
+  if (cfg.period === 'weekly') {
+    const mon = new Date(d);
+    mon.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return `W${mon.getFullYear()}${String(mon.getMonth() + 1).padStart(2, '0')}${String(mon.getDate()).padStart(2, '0')}`;
+  }
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
@@ -108,7 +113,7 @@ export function AiUsageWarning({ remaining }) {
       flexShrink: 0,
     }}>
       <span style={{ fontSize: 11, color: '#A53F2B', fontWeight: 600 }}>
-        {remaining === 0 ? 'No AI messages left' : `${remaining} AI message${remaining === 1 ? '' : 's'} left`}
+        {remaining === 0 ? 'No free questions left this week' : `${remaining} free question${remaining === 1 ? '' : 's'} left this week`}
       </span>
     </div>
   );
@@ -195,10 +200,10 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
               fontFamily: T.display, fontSize: 18, fontWeight: 600,
               color: T.ink, marginBottom: 6, letterSpacing: '-0.01em',
             }}>
-              You've experienced kinwove
+              That's your 10 free questions this week
             </div>
             <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, maxWidth: 300 }}>
-              Unlock unlimited conversations, deeper study, and everything kinwove has to offer.
+              Free questions reset every Monday. Upgrade for unlimited conversations, deeper study, and all AI models.
             </div>
           </div>
 

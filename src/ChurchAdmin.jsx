@@ -6,8 +6,6 @@ import Badge, { INVITABLE_ROLES, presetForRole } from './Badge.jsx';
 import { useUiKit, EmptyState, TextButton } from './uikit.jsx';
 import ChurchModeShell from './ChurchModeShell.jsx';
 import FlagPicker from './FlagPicker.jsx';
-import { usePlan } from './usePlan.js';
-import { TrialBanner, UpgradeWall } from './PlanGate.jsx';
 
 const PastorDashboard = lazy(() => import('./PastorDashboard.jsx'));
 const SermonComposer  = lazy(() => import('./SermonComposer.jsx'));
@@ -1868,7 +1866,6 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
   const VALID_TABS = ['overview', 'sermons', 'people', 'settings'];
   const [tab, setTab] = useState(initialTab && VALID_TABS.includes(initialTab) ? initialTab : 'overview');
   const [church, setChurch] = useState(null);
-  const planInfo = usePlan(churchId);
   const [composerSermonId, setComposerSermonId] = useState(null);
   // One-shot action that the next mounted panel should execute (e.g. when the
   // setup checklist's "Print your QR code" item fires, we route to Settings
@@ -1898,11 +1895,6 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
     setTab('sermons');
   }
 
-  // Upgrade wall: trial has expired
-  if (!planInfo.loading && planInfo.trialExpired) {
-    return <UpgradeWall onBack={onBack} />;
-  }
-
   return (
     <ChurchModeShell
       church={church}
@@ -1913,10 +1905,6 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
       onOpenChurchHub={onOpenChurchHub}
       currentSubpage={null}
     >
-      {/* Trial banner — visible during active trial only */}
-      {!planInfo.loading && planInfo.plan === 'trial' && !planInfo.trialExpired && (
-        <TrialBanner daysLeft={planInfo.daysLeft} />
-      )}
       <Suspense fallback={<div style={{ color: T.inkMuted, fontFamily: T.serif, padding: 40, textAlign: 'center' }}>Loading…</div>}>
         {tab === 'overview' && (
           <PastorDashboard

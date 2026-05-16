@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase, authedFetch } from './supabase.js';
 import { T } from './theme.js';
+import { useSermonAiUsage, FREE_SERMON_LIMIT } from './useSermonAiUsage.js';
 import { useUiKit } from './uikit.jsx';
 import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
@@ -134,7 +135,7 @@ function ContentItem({ item, onChange, onRemove, onRegenerate, regenerating, any
   );
 }
 
-export default function SermonComposer({ session, churchId, onBack, initialSermonId, onOpenSermon, embedded = false }) {
+export default function SermonComposer({ session, churchId, onBack, initialSermonId, onOpenSermon, embedded = false, userPlan = 'free' }) {
   const [sermons, setSermons] = useState([]);
   const [view, setView] = useState('list');  // 'list' | 'edit'
   const [editing, setEditing] = useState(null);
@@ -158,6 +159,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState(null);
   const { showToast, ui: uikitUi } = useUiKit();
+  const sermonAi = useSermonAiUsage(session?.user?.id, userPlan);
 
   // Series state — null means standalone (no series). Loaded once per church.
   const [seriesList, setSeriesList] = useState([]);
@@ -262,6 +264,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
   }
 
   async function handleGenerate() {
+    if (sermonAi.atLimit) return;
     if (!summary.trim()) {
       setError('Paste your sermon outline first.');
       return;
@@ -280,11 +283,11 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
         ...c,
         _local: true,
         sort_order: i,
-        // Pre-fill a default schedule for daily verses: 8 AM local time on the verse's day.
         scheduled_at: c.kind === 'daily_verse' && c.day != null
           ? defaultScheduledAt(weekStartsOn, c.day)
           : (c.scheduled_at ?? null),
       })));
+      sermonAi.increment();
     } catch (e) {
       setError(e?.message ?? 'Generation failed.');
     } finally {
@@ -293,6 +296,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
   }
 
   async function handleGenerateSection(kind) {
+    if (sermonAi.atLimit) return;
     if (!summary.trim()) { setError('Paste your sermon outline first.'); return; }
     setSectionGenerating(kind);
     setError(null);
@@ -304,7 +308,6 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
       });
       if (!r.ok) throw new Error(await r.text());
       const { content: generated } = await r.json();
-      // Replace only this kind's items; everything else stays untouched.
       setContent((prev) => {
         const others = prev.filter((c) => c.kind !== kind);
         const newItems = generated.map((c, i) => ({
@@ -317,6 +320,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
         }));
         return [...others, ...newItems];
       });
+      sermonAi.increment();
     } catch (e) {
       setError(e?.message ?? 'Generation failed.');
     } finally {
@@ -325,6 +329,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
   }
 
   async function handleRegenerateOne(idx) {
+    if (sermonAi.atLimit) return;
     if (!summary.trim()) { setError('Paste your sermon outline first.'); return; }
     if (regeneratingIdx != null || generating || sectionGenerating) return;
     const target = content[idx];
@@ -333,7 +338,6 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
     setRegeneratingIdx(idx);
     setError(null);
     try {
-      // Tell the server about the OTHER days so the model picks a fresh topic.
       const existingItems = content
         .filter((c, i) => i !== idx && c.kind === 'daily_verse')
         .map((c) => ({ day: c.day ?? null, scripture: c.scripture ?? '', body: c.body ?? '' }));
@@ -353,8 +357,6 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
       const replacement = Array.isArray(generated) ? generated[0] : null;
       if (!replacement) throw new Error('No replacement returned.');
 
-      // Preserve the slot's day + scheduled_at + sort_order so the schedule
-      // doesn't shift when the pastor swaps out one question.
       setContent((arr) => arr.map((x, i) => i === idx ? {
         ...x,
         kind: 'daily_verse',
@@ -364,6 +366,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
         scheduled_at: x.scheduled_at ?? null,
         _local: true,
       } : x));
+      sermonAi.increment();
     } catch (e) {
       setError(e?.message ?? 'Regeneration failed.');
     } finally {
@@ -706,17 +709,59 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
           </div>
 
           <div style={{ marginBottom: 18 }}>
-            <button
-              onClick={handleGenerate}
-              disabled={generating || !summary.trim()}
-              style={{
-                background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
-                padding: '11px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                opacity: (generating || !summary.trim()) ? 0.5 : 1,
-              }}
-            >
-              {generating ? 'Generating week…' : content.length > 0 ? '✦ Regenerate the week' : '✦ Generate the week'}
-            </button>
+            {sermonAi.atLimit ? (
+              /* ── Inline AI upgrade gate ── */
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(184,115,58,0.08) 0%, rgba(184,115,58,0.04) 100%)',
+                border: `1px solid rgba(184,115,58,0.28)`,
+                borderRadius: 14, padding: '16px 18px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                gap: 14, flexWrap: 'wrap',
+              }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: T.ink, marginBottom: 3 }}>
+                    ✦ You've used your {FREE_SERMON_LIMIT} free AI sermons
+                  </div>
+                  <div style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.5 }}>
+                    Upgrade to keep generating — your congregation won't notice the difference in prep time, but you will.
+                  </div>
+                </div>
+                <a
+                  href={`mailto:hello@theway.app?subject=${encodeURIComponent('kinwove — AI Upgrade')}&body=${encodeURIComponent('Hi, I would like to upgrade to unlock unlimited AI sermon generation.')}`}
+                  style={{
+                    background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
+                    color: '#FDF8EE', borderRadius: 999,
+                    padding: '9px 18px', fontSize: 13, fontWeight: 600,
+                    textDecoration: 'none', flexShrink: 0,
+                    boxShadow: '0 3px 12px rgba(184,115,58,0.3)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Unlock AI →
+                </a>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={handleGenerate}
+                  disabled={generating || !summary.trim()}
+                  style={{
+                    background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
+                    color: T.cream, border: 'none', borderRadius: 999,
+                    padding: '11px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                    boxShadow: '0 3px 14px rgba(184,115,58,0.35)',
+                    opacity: (generating || !summary.trim()) ? 0.5 : 1,
+                  }}
+                >
+                  {generating ? 'Generating week…' : content.length > 0 ? '✦ Regenerate the week' : '✦ Generate the week'}
+                </button>
+                {sermonAi.isFree && !sermonAi.loading && (
+                  <span style={{ marginLeft: 12, fontSize: 12, color: T.inkMuted }}>
+                    {sermonAi.remaining} of {FREE_SERMON_LIMIT} free AI generation{sermonAi.remaining === 1 ? '' : 's'} left
+                  </span>
+                )}
+              </>
+            )}
           </div>
 
           {error && (
@@ -828,21 +873,23 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
                 }}>
                   <button
                     onClick={() => handleGenerateSection(activeTab)}
-                    disabled={anyBusy || !summary.trim()}
-                    title={!summary.trim() ? 'Paste your outline above first' : `Regenerate only the ${activeKindMeta.label.toLowerCase()}`}
+                    disabled={anyBusy || !summary.trim() || sermonAi.atLimit}
+                    title={sermonAi.atLimit ? 'Upgrade to unlock AI generation' : !summary.trim() ? 'Paste your outline above first' : `Regenerate only the ${activeKindMeta.label.toLowerCase()}`}
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: 6,
                       background: 'transparent',
-                      border: `1px solid ${anyBusy || !summary.trim() ? T.line : T.goldLight}`,
+                      border: `1px solid ${anyBusy || !summary.trim() || sermonAi.atLimit ? T.line : T.goldLight}`,
                       borderRadius: 999, padding: '6px 12px',
                       fontSize: 12.5, fontWeight: 600,
-                      color: anyBusy || !summary.trim() ? T.inkMuted : T.goldDark,
-                      cursor: anyBusy || !summary.trim() ? 'not-allowed' : 'pointer',
-                      opacity: anyBusy || !summary.trim() ? 0.55 : 1,
+                      color: anyBusy || !summary.trim() || sermonAi.atLimit ? T.inkMuted : T.goldDark,
+                      cursor: anyBusy || !summary.trim() || sermonAi.atLimit ? 'not-allowed' : 'pointer',
+                      opacity: anyBusy || !summary.trim() || sermonAi.atLimit ? 0.55 : 1,
                     }}
                   >
                     {isSectionBusy ? (
                       <>⏳ Regenerating…</>
+                    ) : sermonAi.atLimit ? (
+                      <>🔒 Repopulate {activeKindMeta.label.toLowerCase()}</>
                     ) : (
                       <>↺ Repopulate {activeKindMeta.label.toLowerCase()}</>
                     )}
