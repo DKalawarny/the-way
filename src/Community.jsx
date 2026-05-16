@@ -1070,7 +1070,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tab
   );
 }
 
-export default function Community({ session, profile, onClose, onOpenChat, hideHeader, userGroup, onViewProfile, onFindPeople, onInviteFriends, onOpenPrayer, onOpenRead, onOpenBible, onOpenChurch, onOpenSermon, accentColor }) {
+export default function Community({ session, profile, onClose, onOpenChat, hideHeader, userGroup, onViewProfile, onFindPeople, onInviteFriends, onOpenPrayer, onOpenRead, onOpenBible, onVerseClick, onOpenChurch, onOpenSermon, accentColor }) {
   // Section colour: gold for main Feed, forest green for church community feed
   const TAB_COLOR = accentColor ?? '#B8733A';
   const TAB_TEXT  = accentColor ?? '#8E5528'; // slightly darker for text legibility
@@ -1385,8 +1385,8 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
               const v = getDailyVerse();
               return (
                 <button
-                  onClick={() => onOpenBible?.(v.ref)}
-                  title={`Read ${v.ref} in the Bible`}
+                  onClick={() => onVerseClick ? onVerseClick() : onOpenBible?.(v.ref)}
+                  title="Today's verse — tap to reflect"
                   style={{
                     flex: 1, minWidth: 0,
                     display: 'flex', alignItems: 'baseline', gap: 8,
@@ -1395,7 +1395,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
                     borderLeft: '1px solid rgba(232,181,99,0.22)',
                     overflow: 'hidden',
                     background: 'none', border: 'none',
-                    cursor: onOpenBible ? 'pointer' : 'default',
+                    cursor: 'pointer',
                     textAlign: 'left', padding: '0 0 0 12px',
                   }}
                 >

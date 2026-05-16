@@ -1271,7 +1271,7 @@ function Board({ open, onClose, notes, onRemove, onGoDeeper, onSharePublicly }) 
 // Full-width dark bar pinned to the very top of the viewport. Left segment
 // (240px, aligned with sidebar) holds the wordmark; right segment holds the
 // daily verse. The sidebar starts BELOW this bar at top:56px.
-function AppHeader({ onOpenBible }) {
+function AppHeader({ onOpenBible, onVerseClick }) {
   const verse = getDailyVerse();
   return (
     <div style={{
@@ -1300,13 +1300,13 @@ function AppHeader({ onOpenBible }) {
       </div>
       {/* Verse segment */}
       <button
-        onClick={() => onOpenBible?.(verse.ref)}
-        title={`Read ${verse.ref}`}
+        onClick={() => onVerseClick ? onVerseClick() : onOpenBible?.(verse.ref)}
+        title="Today's verse — tap to reflect"
         style={{
           flex: 1, minWidth: 0, padding: '0 12px 0 14px',
           display: 'flex', alignItems: 'baseline', gap: 8,
           background: 'none', border: 'none',
-          cursor: onOpenBible ? 'pointer' : 'default',
+          cursor: 'pointer',
           textAlign: 'left', overflow: 'hidden',
         }}
       >
@@ -1331,7 +1331,7 @@ function AppHeader({ onOpenBible }) {
 // ── Mobile global top header ────────────────────────────────────────────────
 // Mirrors AppHeader but for mobile — same dark walnut bar, ✦ kinwove, daily
 // verse. Shown on every page when logged in so the brand is always anchored.
-function MobileHeader({ onOpenBible }) {
+function MobileHeader({ onOpenBible, onVerseClick }) {
   const verse = getDailyVerse();
   return (
     <div style={{
@@ -1355,15 +1355,15 @@ function MobileHeader({ onOpenBible }) {
         kinwove
       </div>
       <button
-        onClick={() => onOpenBible?.(verse.ref)}
-        title={`Read ${verse.ref}`}
+        onClick={() => onVerseClick ? onVerseClick() : onOpenBible?.(verse.ref)}
+        title="Today's verse — tap to reflect"
         style={{
           flex: 1, minWidth: 0,
           display: 'flex', alignItems: 'baseline', gap: 7,
           background: 'none', border: 'none',
           paddingLeft: 12,
           borderLeft: '1px solid rgba(232,181,99,0.22)',
-          cursor: onOpenBible ? 'pointer' : 'default',
+          cursor: 'pointer',
           textAlign: 'left', overflow: 'hidden',
         }}
       >
@@ -2426,8 +2426,8 @@ export default function App() {
       {/* ── Global dark header (all devices when logged in) ─────────── */}
       {showNav && (
         isDesktop
-          ? <AppHeader onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }} />
-          : <MobileHeader onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }} />
+          ? <AppHeader onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }} onVerseClick={() => setShowVerseCard(true)} />
+          : <MobileHeader onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }} onVerseClick={() => setShowVerseCard(true)} />
       )}
 
       {/* ── Main stage ─────────────────────────────────────────────── */}
@@ -2470,6 +2470,7 @@ export default function App() {
           onOpenPrayer={() => setStage('prayer')}
           onOpenRead={() => setStage('read')}
           onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }}
+          onVerseClick={() => setShowVerseCard(true)}
           onOpenChurch={() => {
             if (profile?.church_id) { setViewingChurchId(profile.church_id); setStage('church'); }
             else setStage('churches');
@@ -2517,6 +2518,7 @@ export default function App() {
           onInviteFriends={() => setStage('invite')}
           onOpenPrayer={() => setStage('prayer')}
           onOpenRead={() => setStage('read')}
+          onVerseClick={() => setShowVerseCard(true)}
           onOpenChurch={() => {
             if (profile?.church_id) { setViewingChurchId(profile.church_id); setStage('church'); }
             else setStage('churches');
