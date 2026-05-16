@@ -200,7 +200,7 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
               fontFamily: T.display, fontSize: 18, fontWeight: 600,
               color: T.ink, marginBottom: 6, letterSpacing: '-0.01em',
             }}>
-              That's your 10 free questions this week
+              That's your 5 free questions this week
             </div>
             <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, maxWidth: 300 }}>
               Your free questions reset every Monday.
@@ -221,8 +221,8 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
             borderRadius: 14, padding: '16px 20px', width: '100%', maxWidth: 320,
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <PriceRow label="Individual" price="$6.99 CAD/mo" detail="200 msgs/mo · Haiku + Sonnet AI" />
-              <PriceRow label="Individual Pro" price="$13.99 CAD/mo" detail="150 msgs/mo · all 3 AI models" highlight />
+              <PriceRow label="Individual" price="$6.99 CAD/mo" detail="200 msgs/mo · Standard AI" />
+              <PriceRow label="Individual Pro" price="$13.99 CAD/mo" detail="270 msgs/mo · Deep Study AI" highlight />
             </div>
           </div>
 

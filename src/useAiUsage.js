@@ -3,11 +3,11 @@ import { supabase } from './supabase.js';
 
 // ── Plan configuration ────────────────────────────────────────────────────────
 export const PLAN_LIMITS = {
-  free:              { period: 'weekly',   limit: 10  },
-  premium:           { period: 'monthly',  limit: 200 }, // Individual $4.99 — Haiku+Sonnet
-  premium_plus:      { period: 'monthly',  limit: 150 }, // Individual Pro $9.99 — Haiku+Sonnet+Opus
-  church_base:       { period: 'monthly',  limit: 0   }, // Church $29.99 — no AI cap (pastor tools only)
-  church_pro:        { period: 'monthly',  limit: 0   }, // Church Pro $59.99 — no AI cap
+  free:              { period: 'weekly',   limit: 5   },  // 5 free questions/week
+  premium:           { period: 'monthly',  limit: 200 },  // Individual $6.99 CAD — Haiku+Sonnet
+  premium_plus:      { period: 'monthly',  limit: 270 },  // Individual Pro $13.99 CAD — Haiku+Sonnet+Opus
+  church_base:       { period: 'monthly',  limit: 0   },  // Church — no AI cap (pastor tools only)
+  church_pro:        { period: 'monthly',  limit: 0   },  // Church Pro — no AI cap
 };
 
 export const TOPUP_MESSAGES = 150;

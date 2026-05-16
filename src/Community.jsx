@@ -1080,6 +1080,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
   const [churchMap, setChurchMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [filterPersonalized, setFilterPersonalized] = useState(false);
   const [blockedIds, setBlockedIds] = useState([]);
   const [savedPostIds, setSavedPostIds] = useState(new Set());
   const [following, setFollowing] = useState(new Set());
@@ -1308,6 +1309,14 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
   }, [session]);
 
   useEffect(() => { if (feedType === 'prayers') loadCommunityPrayers(); }, [feedType, loadCommunityPrayers]);
+
+  // Default filter to user's own faith stage on first open (before they manually change it)
+  useEffect(() => {
+    if (!filterPersonalized && profile?.person_type && filter === 'all') {
+      setFilter(profile.person_type);
+      setFilterPersonalized(true);
+    }
+  }, [profile?.person_type, filterPersonalized, filter]);
 
   async function submitPrayer(e) {
     e.preventDefault();

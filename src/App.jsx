@@ -108,6 +108,124 @@ const HelpPage          = lazy(() => import('./HelpPage.jsx'));
 import { getJourneyProgress, advanceJourneyProgress } from './journeys.js';
 import FeatureTour, { isTourDone } from './FeatureTour.jsx';
 import CoachMark, { incrementLoginCount } from './CoachMark.jsx';
+import DailyVerseCard, { shouldShowDailyVerse, markVerseAsSeen } from './DailyVerseCard.jsx';
+
+// ── Live community activity preview (landing page social proof) ───────────────
+function CommunityPreview({ onBegin }) {
+  const [posts, setPosts]   = useState([]);
+  const [stats, setStats]   = useState(null); // { members, posts }
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const [{ data: postData }, { count: memberCount }, { count: postCount }] = await Promise.all([
+        supabase
+          .from('posts')
+          .select('id, body, person_type, view_count, created_at')
+          .eq('visibility', 'public')
+          .not('body', 'is', null)
+          .order('view_count', { ascending: false })
+          .limit(3),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('posts').select('id', { count: 'exact', head: true }).eq('visibility', 'public'),
+      ]);
+      const filtered = (postData ?? []).filter((p) => {
+        const body = typeof p.body === 'string' ? p.body : p.body?.text ?? '';
+        return body.length > 30;
+      });
+      setPosts(filtered.slice(0, 3));
+      setStats({ members: memberCount ?? 0, posts: postCount ?? 0 });
+      setLoaded(true);
+    })();
+  }, []);
+
+  if (!loaded || (posts.length === 0 && (!stats || stats.members < 2))) return null;
+
+  const DIM   = 'rgba(253,248,240,0.55)';
+  const DIMLO = 'rgba(253,248,240,0.38)';
+
+  const PERSON_LABELS = {
+    curious: 'Curious', skeptic: 'Skeptic', agnostic: 'Open mind',
+    questioning: 'Questioning', believer: 'Believer', new: 'New to faith', kids: 'For kids',
+  };
+
+  return (
+    <section style={{ padding: '88px 32px 92px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
+      <div style={{ textAlign: 'center', marginBottom: 48 }}>
+        <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 16 }}>
+          Live in the community
+        </div>
+        <h2 style={{ fontFamily: T.display, fontSize: 'clamp(24px, 3.2vw, 36px)', color: T.cream, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+          Real questions. Real people.
+        </h2>
+        {stats && (stats.members > 1 || stats.posts > 1) && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 32, flexWrap: 'wrap' }}>
+            {stats.members > 1 && (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontFamily: T.display, fontSize: 28, fontWeight: 700, color: T.cream, letterSpacing: '-0.02em' }}>
+                  {stats.members.toLocaleString()}
+                </div>
+                <div style={{ fontSize: 12, color: DIMLO, marginTop: 2, letterSpacing: 0.5 }}>people exploring</div>
+              </div>
+            )}
+            {stats.posts > 1 && (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontFamily: T.display, fontSize: 28, fontWeight: 700, color: T.cream, letterSpacing: '-0.02em' }}>
+                  {stats.posts.toLocaleString()}
+                </div>
+                <div style={{ fontSize: 12, color: DIMLO, marginTop: 2, letterSpacing: 0.5 }}>conversations started</div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {posts.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 14, maxWidth: 860, margin: '0 auto' }}>
+          {posts.map((post) => {
+            const body = typeof post.body === 'string' ? post.body : post.body?.text ?? '';
+            const excerpt = body.length > 160 ? body.slice(0, 157) + '…' : body;
+            const label = PERSON_LABELS[post.person_type] ?? null;
+            return (
+              <button
+                key={post.id}
+                onClick={onBegin}
+                style={{
+                  flex: '1 1 240px', maxWidth: 272, textAlign: 'left',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(184,115,58,0.14)',
+                  borderRadius: 18, padding: '24px 22px',
+                  cursor: 'pointer', transition: 'all 0.18s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.07)'; e.currentTarget.style.borderColor = 'rgba(184,115,58,0.3)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(184,115,58,0.14)'; }}
+              >
+                {label && (
+                  <div style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 10 }}>
+                    {label}
+                  </div>
+                )}
+                <p style={{ fontFamily: T.serif, fontSize: 14.5, lineHeight: 1.7, color: DIM, margin: '0 0 16px', fontStyle: 'italic' }}>
+                  "{excerpt}"
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {(post.view_count ?? 0) > 0 && (
+                    <span style={{ fontSize: 11.5, color: DIMLO }}>
+                      {(post.view_count).toLocaleString()} views
+                    </span>
+                  )}
+                  <span style={{ fontSize: 11.5, color: 'rgba(184,115,58,0.5)', marginLeft: 'auto' }}>
+                    Join to reply →
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
 
 function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorIntent, pastorChurchId, referralRef }) {
   const initialQuestion = useMemo(() => {
@@ -246,6 +364,11 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
           </p>
         </div>
       </section>
+
+      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
+
+      {/* ── Social proof — live community activity ── */}
+      <CommunityPreview onBegin={onBegin} />
 
       <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
 
@@ -1558,6 +1681,7 @@ export default function App() {
   const { notes, addNote, removeNote } = useNotes();
   const { conversations, create: createConv, update: updateConv, remove: removeConv } = useConversations();
   const [showTour, setShowTour] = useState(false);
+  const [showVerseCard, setShowVerseCard] = useState(false);
 
   useEffect(() => {
     const h = () => setWinW(window.innerWidth);
@@ -1733,6 +1857,7 @@ export default function App() {
         if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); }
         else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); }
         else { setStage('home'); }
+        if (shouldShowDailyVerse()) setShowVerseCard(true);
       } else if (initialAnonChurchId) {
         setViewingChurchId(initialAnonChurchId);
         setStage('church-entry');
@@ -1749,6 +1874,27 @@ export default function App() {
         if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); }
         else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); }
         else { setStage('home'); }
+        // Import guest Q+A saved before sign-up
+        if (event === 'SIGNED_IN') {
+          try {
+            const raw = localStorage.getItem('kinwove:pendingConv');
+            if (raw) {
+              const { q, a } = JSON.parse(raw);
+              if (q && a) {
+                const conv = createConv('curious');
+                updateConv(conv.id, [
+                  { role: 'user', content: q },
+                  { role: 'assistant', content: a },
+                ]);
+                setCurrentConvId(conv.id);
+                setChatPanelOpen(true);
+              }
+              localStorage.removeItem('kinwove:pendingConv');
+            }
+          } catch {}
+        }
+        // Show daily verse card once per day
+        if (shouldShowDailyVerse()) setShowVerseCard(true);
       }
       else {
         setProfile(null);
@@ -2981,6 +3127,19 @@ export default function App() {
       {/* ── Feature tour — shown once to new users, re-openable from Help ── */}
       {showTour && session && (
         <FeatureTour onClose={() => setShowTour(false)} />
+      )}
+
+      {/* ── Daily verse card — shown once per day on app open ── */}
+      {showVerseCard && session && (
+        <DailyVerseCard
+          onReflect={(verse) => {
+            if (!currentConvId) startChatFromProfile();
+            setAutoSendPrompt(`Help me reflect on today's verse — ${verse.ref}: "${verse.text}"`);
+            setChatPanelOpen(true);
+          }}
+          onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }}
+          onClose={() => setShowVerseCard(false)}
+        />
       )}
     </>
   );

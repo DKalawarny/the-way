@@ -46,3 +46,14 @@ export function getDailyVerse() {
   const dayKey = d.getFullYear() * 366 + d.getMonth() * 31 + d.getDate();
   return DAILY_VERSES[dayKey % DAILY_VERSES.length];
 }
+
+export function getTodayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+export function getYesterdayKey() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}

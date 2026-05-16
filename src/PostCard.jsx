@@ -41,9 +41,11 @@ function renderWithMentions(text, mentions, onViewProfile, onViewChurch) {
 }
 
 const REACTIONS = [
-  { id: 'amen',    emoji: '🙏', label: 'Amen' },
-  { id: 'praying', emoji: '🤲', label: 'Praying' },
-  { id: 'heart',   emoji: null, Icon: Heart, label: 'Love' },
+  { id: 'amen',       emoji: '🙏', label: 'Amen' },
+  { id: 'praying',    emoji: '🤲', label: 'Praying' },
+  { id: 'heart',      emoji: null, Icon: Heart, label: 'Love' },
+  { id: 'resonates',  emoji: '❤️', label: 'Resonates' },
+  { id: 'same',       emoji: '💭', label: 'Same question' },
 ];
 
 function ReactionButton({ kind, count, mine, onToggle }) {
@@ -370,6 +372,7 @@ export default function PostCard({
 }) {
   const [reactions, setReactions] = useState({}); // { amen: 4, praying: 2, heart: 1 }
   const [mine, setMine]           = useState({}); // { amen: true }
+  const [viewCount, setViewCount] = useState(item.view_count ?? 0);
   const [commentsOpen, setCommentsOpen] = useState(defaultCommentsOpen);
   const [localCommentCount, setLocalCommentCount] = useState(commentCount);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -504,6 +507,14 @@ export default function PostCard({
     })();
     return () => { active = false; };
   }, [item.id, item.source, sessionUserId]);
+
+  // Record a view once per user per post (deduplicated in DB via primary key)
+  useEffect(() => {
+    if (item.source !== 'post' || !sessionUserId) return;
+    supabase.rpc('record_post_view', { p_post_id: item.id, p_viewer_id: sessionUserId })
+      .then(() => setViewCount((c) => c + 1));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id]);
 
   async function toggleReaction(kindId) {
     if (!sessionUserId || item.source !== 'post') return;
@@ -921,6 +932,11 @@ export default function PostCard({
             borderRadius: 999, padding: '5px 11px', fontSize: 12.5, fontWeight: 600,
           }}>
             🙏 {item.body?.prayer_count ?? 0} praying
+          </span>
+        )}
+        {item.source === 'post' && !item.body?.is_sermon_announcement && viewCount > 0 && (
+          <span style={{ fontSize: 11.5, color: T.inkMuted, marginLeft: 2 }}>
+            {viewCount.toLocaleString()} {viewCount === 1 ? 'view' : 'views'}
           </span>
         )}
         <div style={{ flex: 1 }} />

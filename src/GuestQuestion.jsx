@@ -110,6 +110,7 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
+      let accumulated = '';
 
       while (true) {
         const { value, done: streamDone } = await reader.read();
@@ -122,9 +123,17 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
           const ev = lines.find((l) => l.startsWith('event: '))?.slice(7).trim();
           const data = lines.find((l) => l.startsWith('data: '))?.slice(6);
           if (ev === 'text' && data) {
-            try { setResponse((prev) => prev + JSON.parse(data).delta); } catch {}
+            try {
+              const delta = JSON.parse(data).delta;
+              accumulated += delta;
+              setResponse((prev) => prev + delta);
+            } catch {}
           }
         }
+      }
+      // Save so it can be imported as first conversation after sign-up
+      if (accumulated) {
+        try { localStorage.setItem('kinwove:pendingConv', JSON.stringify({ q, a: accumulated, ts: Date.now() })); } catch {}
       }
     } catch {}
 
