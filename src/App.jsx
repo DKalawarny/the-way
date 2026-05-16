@@ -175,13 +175,12 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
           You don't have to have it<br />figured out to <em style={{ color: T.gold, fontStyle: 'italic', fontWeight: 500 }}>belong here.</em>
         </h1>
 
-        <p style={{ fontFamily: T.serif, fontSize: 18, lineHeight: 1.72, color: DIM, maxWidth: 540, margin: '0 0 16px', position: 'relative' }}>
-          Ask your hardest questions about faith. Find real people on the same road.
-          Explore scripture — honestly, without pressure.
+        <p style={{ fontFamily: T.serif, fontSize: 18, lineHeight: 1.72, color: DIM, maxWidth: 560, margin: '0 0 12px', position: 'relative' }}>
+          kinwove is a faith community — AI that stays in scripture, real people at every stage of the journey, and tools for your church to stay connected between Sundays.
         </p>
 
-        <p style={{ fontSize: 12, letterSpacing: 1.8, textTransform: 'uppercase', color: DIMLO, marginBottom: 52, fontWeight: 500 }}>
-          Free to start &nbsp;·&nbsp; Available worldwide &nbsp;·&nbsp; No judgment
+        <p style={{ fontFamily: T.serif, fontSize: 16, color: DIMLO, maxWidth: 480, margin: '0 0 48px', lineHeight: 1.65, position: 'relative', fontStyle: 'italic' }}>
+          Ask your hardest questions. Find people who get it. Explore scripture honestly.
         </p>
 
         <div style={{ width: '100%', maxWidth: 680, margin: '0 auto', position: 'relative' }}>
@@ -227,10 +226,8 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
           You're not just talking to an AI.<br />
           <em style={{ color: T.gold, fontStyle: 'italic', fontWeight: 500 }}>You're joining people.</em>
         </h2>
-        <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, maxWidth: 560, margin: '0 auto 52px', lineHeight: 1.75 }}>
-          The loneliest part of seeking is doing it alone. kinwove is a network —
-          real people at every stage of the journey, from every background, from every part of the world.
-          Share what you're wrestling with. Pray for someone. Get a response from a real person who's been where you are.
+        <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, maxWidth: 520, margin: '0 auto 52px', lineHeight: 1.75 }}>
+          The loneliest part of seeking is doing it alone. kinwove connects you with real people — every background, every stage — who are asking the same questions you are.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, maxWidth: 780, margin: '0 auto' }}>
           {[
@@ -262,9 +259,9 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
             kinwove's AI was built with one rule at its core: if it's not in the text, we don't say it.
           </p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, maxWidth: 800, margin: '0 auto' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12, maxWidth: 800, margin: '0 auto' }}>
           {trustPoints.map((t) => (
-            <div key={t} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '16px 18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.14)', borderRadius: 12 }}>
+            <div key={t} style={{ flex: '1 1 240px', maxWidth: 258, display: 'flex', alignItems: 'flex-start', gap: 12, padding: '16px 18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.14)', borderRadius: 12 }}>
               <span style={{ color: T.gold, fontSize: 13, flexShrink: 0, marginTop: 2, lineHeight: 1 }}>✦</span>
               <span style={{ fontSize: 13.5, color: DIM, lineHeight: 1.6 }}>{t}</span>
             </div>
@@ -319,29 +316,24 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
       {/* ── Bottom CTA ── */}
       <section style={{ padding: '96px 24px 108px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 700, height: 500, background: 'radial-gradient(ellipse at 50% 0%, rgba(184,115,58,0.09) 0%, transparent 65%)', pointerEvents: 'none' }} />
-        <div style={{ maxWidth: 720, margin: '0 auto', position: 'relative' }}>
+        <div style={{ maxWidth: 600, margin: '0 auto', position: 'relative' }}>
           <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 22 }}>Begin</div>
-          <h2 style={{ fontFamily: T.display, fontSize: 'clamp(30px, 5vw, 58px)', fontWeight: 600, color: T.cream, lineHeight: 1.05, marginBottom: 16, letterSpacing: '-0.026em' }}>
-            Where are you<br />starting from?
+          <h2 style={{ fontFamily: T.display, fontSize: 'clamp(30px, 5vw, 58px)', fontWeight: 600, color: T.cream, lineHeight: 1.05, marginBottom: 20, letterSpacing: '-0.026em' }}>
+            Start asking.<br />We'll meet you there.
           </h2>
-          <p style={{ fontFamily: T.serif, fontSize: 16.5, color: DIM, lineHeight: 1.7, marginBottom: 48, maxWidth: 420, margin: '0 auto 48px' }}>
-            There's no wrong place to begin. Tap wherever you are — we'll meet you there.
+          <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, lineHeight: 1.72, maxWidth: 400, margin: '0 auto 48px' }}>
+            No right beliefs required. No background check. Free to explore wherever you are.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, maxWidth: 680, margin: '0 auto 40px' }}>
-            {whoCards.map((c) => (
-              <button key={c.label} onClick={onBegin}
-                style={{ padding: '20px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(184,115,58,0.2)', borderRadius: 16, cursor: 'pointer', transition: 'all 0.18s ease', textAlign: 'center' }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.12)'; e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(184,115,58,0.2)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-              >
-                <div style={{ fontSize: 26, marginBottom: 8 }}>{c.emoji}</div>
-                <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.cream, letterSpacing: '-0.01em' }}>{c.label}</div>
-              </button>
-            ))}
-          </div>
-          <div style={{ fontSize: 12, color: DIMLO, marginBottom: 24 }}>Free · No credit card · Takes 30 seconds</div>
+          <button onClick={onBegin}
+            style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '16px 44px', fontSize: 16, fontWeight: 600, cursor: 'pointer', boxShadow: '0 6px 24px rgba(184,115,58,0.4)', letterSpacing: '-0.01em', fontFamily: T.sans }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = T.goldLight)}
+            onMouseLeave={(e) => (e.currentTarget.style.background = T.gold)}
+          >
+            Get started free →
+          </button>
+          <div style={{ marginTop: 16, fontSize: 12, color: DIMLO }}>No credit card · Takes 30 seconds</div>
           {!session && (
-            <div style={{ fontSize: 13, color: DIMLO }}>
+            <div style={{ marginTop: 20, fontSize: 13, color: DIMLO }}>
               Already here?{' '}
               <button onClick={onSignIn} style={{ background: 'none', border: 'none', color: DIM, fontSize: 13, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>Sign in</button>
             </div>
