@@ -176,30 +176,45 @@ export default function DMConversation({ session, profile, conversationId, other
 
       {/* Message list */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 8px' }}>
-        {messages.map((msg) => {
+        {messages.map((msg, i) => {
           const isMe = msg.sender_id === session?.user?.id;
+          const prevMsg = messages[i - 1];
+          const sameSenderAsPrev = prevMsg?.sender_id === msg.sender_id;
+          const senderName = isMe ? 'You' : (other?.display_name ?? '…');
+
           return (
             <div key={msg.id} style={{
-              display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start',
+              display: 'flex', flexDirection: 'column',
+              alignItems: isMe ? 'flex-end' : 'flex-start',
               marginBottom: 10,
+              marginTop: sameSenderAsPrev ? 0 : 6,
             }}>
+              {/* Sender name — only show on first message in a consecutive block */}
+              {!sameSenderAsPrev && (
+                <div style={{
+                  fontSize: 11, fontWeight: 600,
+                  color: T.inkMuted,
+                  marginBottom: 4,
+                  paddingLeft: isMe ? 0 : 2,
+                  paddingRight: isMe ? 2 : 0,
+                }}>
+                  {senderName}
+                </div>
+              )}
+
               <div style={{
                 maxWidth: '80%',
-                background: isMe ? T.ink : T.white,
+                background: isMe ? T.gold : T.white,
                 color: isMe ? T.cream : T.ink,
                 border: isMe ? 'none' : `1px solid ${T.line}`,
                 borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
                 padding: '10px 14px',
                 fontSize: 14.5, lineHeight: 1.6,
               }}>
-                {isMe ? (
-                  <div>{msg.body}</div>
-                ) : (
-                  <div style={{ fontFamily: T.serif }}>
-                    <MsgText text={msg.body} />
-                  </div>
-                )}
-                <div style={{ fontSize: 10.5, color: isMe ? 'rgba(253,248,240,0.5)' : T.inkMuted, marginTop: 4, textAlign: 'right' }}>
+                <div style={{ fontFamily: isMe ? 'inherit' : T.serif }}>
+                  <MsgText text={msg.body} />
+                </div>
+                <div style={{ fontSize: 10.5, color: isMe ? 'rgba(253,248,240,0.65)' : T.inkMuted, marginTop: 4, textAlign: 'right' }}>
                   {timeAgo(msg.created_at)}
                 </div>
               </div>
