@@ -203,7 +203,16 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
               That's your 10 free questions this week
             </div>
             <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, maxWidth: 300 }}>
-              Free questions reset every Monday. Upgrade for unlimited conversations, deeper study, and all AI models.
+              Your free questions reset every Monday.
+            </div>
+          </div>
+
+          <div style={{
+            background: T.parchment, border: `1px solid ${T.goldLight}`,
+            borderRadius: 12, padding: '14px 18px', width: '100%', maxWidth: 320,
+          }}>
+            <div style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.65, fontFamily: T.serif, fontStyle: 'italic', textAlign: 'center' }}>
+              Every answer is generated live by one of the world's most advanced AI systems — that has a real cost. Subscribers make it possible to offer free questions to everyone.
             </div>
           </div>
 
@@ -238,6 +247,9 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, maxWidth: 300 }}>
               You've used all your AI messages for this month. They reset on your next billing date — or top up now to keep going.
+            </div>
+            <div style={{ fontSize: 12, color: T.inkMuted, lineHeight: 1.6, maxWidth: 280, marginTop: 8, fontFamily: T.serif, fontStyle: 'italic' }}>
+              Thank you for subscribing — your support keeps kinwove free for everyone else.
             </div>
           </div>
 
