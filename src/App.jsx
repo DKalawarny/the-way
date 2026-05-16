@@ -110,316 +110,246 @@ import FeatureTour, { isTourDone } from './FeatureTour.jsx';
 import CoachMark, { incrementLoginCount } from './CoachMark.jsx';
 
 function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorIntent, pastorChurchId, referralRef }) {
-  // Deep-link: ?q=encoded+question pre-populates the guest question box
   const initialQuestion = useMemo(() => {
     try {
       const raw = new URLSearchParams(window.location.search).get('q');
       return raw ? decodeURIComponent(raw) : null;
-    } catch {
-      return null;
-    }
+    } catch { return null; }
   }, []);
+
+  const DIM   = 'rgba(253,248,240,0.55)';
+  const DIMLO = 'rgba(253,248,240,0.38)';
+  const RULE  = 'rgba(255,255,255,0.06)';
+
+  const trustPoints = [
+    'Strictly rooted in scripture — no invented theological positions',
+    'Every claim referenced back to the actual text, book and verse',
+    'Honest when scholars genuinely disagree — it tells you that',
+    'No denominational bias — you\'ll hear where traditions differ',
+    'Designed to guide people toward Jesus, never to push an agenda',
+  ];
+
+  const whoCards = [
+    { emoji: '🤔', label: 'The curious',      body: 'You\'ve heard about Jesus. Something keeps pulling you toward the question. You want honest answers, not a sales pitch.' },
+    { emoji: '🤨', label: 'The skeptic',       body: 'You\'re not sure any of this is true. You have real doubts and you want them taken seriously, not papered over.' },
+    { emoji: '💭', label: 'The searching',     body: 'Something in your life cracked open. You\'re not sure what you believe anymore — or maybe for the first time, you want to know.' },
+    { emoji: '🙏', label: 'The believer',      body: 'Your faith is real. You want to go deeper, understand more, and find people who take it as seriously as you do.' },
+  ];
 
   return (
     <div style={{ minHeight: '100vh', background: '#1A110A', display: 'flex', flexDirection: 'column', fontFamily: T.sans }}>
 
-      {/* Nav */}
-      <header style={{ padding: '20px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ color: T.gold, fontSize: 15, lineHeight: 1 }}>✦</span>
-          <span style={{ fontFamily: T.display, fontSize: 21, fontWeight: 500, color: T.cream, letterSpacing: '-0.02em' }}>kinwove</span>
+      {/* ── Nav ── */}
+      <header style={{ padding: '18px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${RULE}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <span style={{ color: T.gold, fontSize: 14, lineHeight: 1 }}>✦</span>
+          <span style={{ fontFamily: T.display, fontSize: 20, fontWeight: 500, color: T.cream, letterSpacing: '-0.02em' }}>kinwove</span>
         </div>
         {session ? (
           <button onClick={onEditProfile} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
-            <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url} size={34} />
+            <Avatar name={profile?.display_name} avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url} size={32} />
           </button>
         ) : (
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <button onClick={onSignIn} style={{ background: 'none', border: 'none', color: 'rgba(253,248,240,0.55)', fontSize: 14, cursor: 'pointer', padding: '8px 4px', letterSpacing: '0.01em' }}>Sign in</button>
-            <button
-              onClick={onBegin}
-              style={{ background: T.gold, color: T.cream, border: 'none', padding: '10px 22px', borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.02em', boxShadow: '0 4px 16px rgba(184,115,58,0.35)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = T.goldLight; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = T.gold; }}
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <button onClick={onSignIn} style={{ background: 'none', border: 'none', color: DIMLO, fontSize: 14, cursor: 'pointer', padding: '8px 4px' }}>Sign in</button>
+            <button onClick={onBegin} style={{ background: T.gold, color: T.cream, border: 'none', padding: '9px 20px', borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 16px rgba(184,115,58,0.35)' }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = T.goldLight)}
+              onMouseLeave={(e) => (e.currentTarget.style.background = T.gold)}
             >Get started</button>
           </div>
         )}
       </header>
 
-      {/* Hero */}
-      <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '72px 24px 88px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: -40, left: '50%', transform: 'translateX(-50%)', width: 800, height: 560, background: 'radial-gradient(ellipse at 50% 30%, rgba(184,115,58,0.16) 0%, rgba(184,115,58,0.05) 50%, transparent 72%)', pointerEvents: 'none' }} />
+      {/* ── Hero ── */}
+      <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '64px 24px 80px', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: -60, left: '50%', transform: 'translateX(-50%)', width: 900, height: 600, background: 'radial-gradient(ellipse at 50% 30%, rgba(184,115,58,0.14) 0%, rgba(184,115,58,0.04) 50%, transparent 72%)', pointerEvents: 'none' }} />
 
-        {/* Referral nudge — only shown when someone arrives via a shared link */}
         {referralRef && (
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            background: 'rgba(184,115,58,0.12)', border: '1px solid rgba(184,115,58,0.25)',
-            borderRadius: 999, padding: '7px 16px', marginBottom: 28,
-            fontSize: 13, color: 'rgba(253,248,240,0.75)', position: 'relative',
-            animation: 'fadeIn 0.5s ease both',
-          }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(184,115,58,0.12)', border: '1px solid rgba(184,115,58,0.25)', borderRadius: 999, padding: '7px 16px', marginBottom: 28, fontSize: 13, color: DIM, animation: 'fadeIn 0.5s ease both' }}>
             <span style={{ color: T.gold }}>✦</span>
             Someone who knows you thought you'd find this worthwhile.
           </div>
         )}
 
-        <div style={{ fontSize: 11, letterSpacing: 6, textTransform: 'uppercase', color: 'rgba(253,248,240,0.5)', marginBottom: 44, fontWeight: 500, position: 'relative' }}>
-          AI &nbsp;·&nbsp; Community &nbsp;·&nbsp; Prayer &nbsp;·&nbsp; Journeys
-        </div>
-
-        <h1 style={{ fontFamily: T.display, fontSize: 'clamp(42px, 7.5vw, 84px)', lineHeight: 1.04, margin: '0 0 28px', fontWeight: 600, letterSpacing: '-0.028em', color: T.cream, maxWidth: 760, width: '100%', position: 'relative' }}>
-          A place to walk through faith, doubt,<br />and <em style={{ color: T.gold, fontStyle: 'italic', fontWeight: 500 }}>everything in between.</em>
+        <h1 style={{ fontFamily: T.display, fontSize: 'clamp(38px, 7vw, 80px)', lineHeight: 1.05, margin: '0 0 22px', fontWeight: 600, letterSpacing: '-0.028em', color: T.cream, maxWidth: 820, position: 'relative' }}>
+          You don't have to have it<br />figured out to <em style={{ color: T.gold, fontStyle: 'italic', fontWeight: 500 }}>belong here.</em>
         </h1>
 
-        <p style={{ fontFamily: T.serif, fontSize: 18.5, lineHeight: 1.7, color: 'rgba(253,248,240,0.66)', maxWidth: 560, width: '100%', margin: '0 0 60px', position: 'relative' }}>
-          For believers, seekers, and the still-not-sure — a companion through scripture, prayer, and community that doesn't dodge the hard questions.
+        <p style={{ fontFamily: T.serif, fontSize: 18, lineHeight: 1.72, color: DIM, maxWidth: 540, margin: '0 0 16px', position: 'relative' }}>
+          Ask your hardest questions about faith. Find real people on the same road.
+          Explore scripture — honestly, without pressure.
         </p>
 
-        <div style={{ position: 'relative', width: '100%', maxWidth: 640, margin: '0 auto' }}>
+        <p style={{ fontSize: 12, letterSpacing: 1.8, textTransform: 'uppercase', color: DIMLO, marginBottom: 52, fontWeight: 500 }}>
+          Free to start &nbsp;·&nbsp; Available worldwide &nbsp;·&nbsp; No judgment
+        </p>
+
+        <div style={{ width: '100%', maxWidth: 680, margin: '0 auto', position: 'relative' }}>
           <GuestQuestion onSignUp={onBegin} initialQuestion={initialQuestion} />
         </div>
       </main>
 
-      {/* Section divider */}
-      <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent)', margin: '0 40px 96px' }} />
+      {/* ── Section rule ── */}
+      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
 
-      {/* What you get */}
-      <section style={{ padding: '0 32px 96px', maxWidth: 1040, margin: '0 auto', width: '100%' }}>
+      {/* ── Who it's for ── */}
+      <section style={{ padding: '88px 32px 92px', maxWidth: 1040, margin: '0 auto', width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: 52 }}>
-          <div style={{ fontSize: 11, letterSpacing: 6, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 14 }}>
-            Where doubt becomes discovery
-          </div>
-          <h2 style={{ fontFamily: T.display, fontSize: 'clamp(28px, 3.6vw, 38px)', color: T.cream, fontWeight: 600, margin: 0, letterSpacing: '-0.018em', lineHeight: 1.15 }}>
-            Everything you need in one place.
+          <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 14 }}>Wherever you're starting from</div>
+          <h2 style={{ fontFamily: T.display, fontSize: 'clamp(26px, 3.4vw, 38px)', color: T.cream, fontWeight: 600, margin: '0 0 16px', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+            There's a place for you here.
           </h2>
+          <p style={{ fontFamily: T.serif, fontSize: 16, color: DIM, maxWidth: 480, margin: '0 auto', lineHeight: 1.7 }}>
+            kinwove isn't built for people who have all the answers. It's built for people who are honest enough to keep asking.
+          </p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 14 }}>
-          {[
-            {
-              num: '01', title: 'AI Companion',
-              desc: "Ask anything. Get honest, scripture-grounded answers that don't dodge the hard parts.",
-              trust: ['References verified live', 'Knows common misquotes', 'Flags uncertainty honestly'],
-              svg: (
-                <svg width={26} height={26} viewBox="0 0 36 36" fill="none" aria-hidden>
-                  {/* Eight-pointed star — the ✦ mark */}
-                  <path d="M18 4 L20 14 L29 7 L22 16 L32 18 L22 20 L29 29 L20 22 L18 32 L16 22 L7 29 L14 20 L4 18 L14 16 L7 7 L16 14 Z" fill={T.gold} opacity="0.92"/>
-                  <circle cx="18" cy="18" r="3.5" fill="rgba(255,220,100,0.4)"/>
-                </svg>
-              ),
-            },
-            {
-              num: '02', title: 'Real Community',
-              desc: "Share what you're wrestling with. Find people at every stage — curious, skeptical, faithful.",
-              svg: (
-                <svg width={26} height={26} viewBox="0 0 36 36" fill="none" aria-hidden>
-                  {/* Two overlapping circles — people in community */}
-                  <circle cx="13" cy="18" r="7" fill="none" stroke={T.gold} strokeWidth="1.8"/>
-                  <circle cx="23" cy="18" r="7" fill="none" stroke={T.gold} strokeWidth="1.8"/>
-                  <path d="M18 12 Q21 10 24 12" stroke={T.gold} strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.55"/>
-                </svg>
-              ),
-            },
-            {
-              num: '03', title: 'Prayer Together',
-              desc: "Post requests. Follow others' journeys. Watch what happens when people pray together.",
-              svg: (
-                <svg width={26} height={26} viewBox="0 0 36 36" fill="none" aria-hidden>
-                  {/* Dove in flight — peace and the Spirit */}
-                  <path d="M18 22 Q10 18 7 11 Q15 9 21 14" fill={T.gold} opacity="0.85"/>
-                  <path d="M18 22 Q12 26 7 27 Q11 22 18 22" fill={T.gold} opacity="0.55"/>
-                  <ellipse cx="22" cy="20" rx="8" ry="5" fill={T.gold} opacity="0.9"/>
-                  <path d="M28 18 Q34 14 36 10 Q34 16 30 20" fill={T.gold} opacity="0.75"/>
-                  <circle cx="26" cy="18" r="1.2" fill="rgba(30,10,0,0.35)"/>
-                </svg>
-              ),
-            },
-            {
-              num: '04', title: 'Guided Journeys',
-              desc: 'Step-by-step paths through scripture — starting exactly where you are.',
-              svg: (
-                <svg width={26} height={26} viewBox="0 0 36 36" fill="none" aria-hidden>
-                  {/* Compass rose — direction and purpose */}
-                  <circle cx="18" cy="18" r="12" fill="none" stroke={T.gold} strokeWidth="1.6" opacity="0.5"/>
-                  <polygon points="18,6 20,16 18,18 16,16" fill={T.gold} opacity="0.92"/>
-                  <polygon points="18,30 20,20 18,18 16,20" fill={T.gold} opacity="0.4"/>
-                  <polygon points="6,18 16,16 18,18 16,20" fill={T.gold} opacity="0.4"/>
-                  <polygon points="30,18 20,20 18,18 20,16" fill={T.gold} opacity="0.4"/>
-                  <circle cx="18" cy="18" r="2.5" fill={T.gold}/>
-                </svg>
-              ),
-            },
-          ].map((f) => (
-            <div
-              key={f.title}
-              style={{ padding: '32px 28px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: 20, transition: 'all 0.2s ease', cursor: 'default' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.09)'; e.currentTarget.style.borderColor = 'rgba(184,115,58,0.35)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.09)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+          {whoCards.map((c) => (
+            <button key={c.label} onClick={onBegin}
+              style={{ textAlign: 'left', padding: '28px 24px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.18)', borderRadius: 20, cursor: 'pointer', transition: 'all 0.2s ease' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.1)'; e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.transform = 'translateY(-3px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(184,115,58,0.18)'; e.currentTarget.style.transform = 'translateY(0)'; }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-                <div>{f.svg}</div>
-                <div style={{ fontFamily: T.serif, fontSize: 11, color: T.gold, opacity: 0.6, letterSpacing: 2 }}>{f.num}</div>
-              </div>
-              <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.cream, marginBottom: 10, lineHeight: 1.25, letterSpacing: '-0.01em' }}>{f.title}</div>
-              <div style={{ fontSize: 13, color: 'rgba(253,248,240,0.55)', lineHeight: 1.8 }}>{f.desc}</div>
-              {f.trust && (
-                <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {f.trust.map((t) => (
-                    <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                      <span style={{ color: 'rgba(80,160,80,0.85)', fontSize: 11, lineHeight: 1, flexShrink: 0 }}>✓</span>
-                      <span style={{ fontSize: 11.5, color: 'rgba(253,248,240,0.4)', letterSpacing: '0.01em' }}>{t}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Testimonials / Social proof */}
-      <section style={{ padding: '0 32px 96px', maxWidth: 960, margin: '0 auto', width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <div style={{ fontSize: 11, letterSpacing: 6, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 14 }}>
-            From the community
-          </div>
-          <h2 style={{ fontFamily: T.display, fontSize: 'clamp(24px, 3.2vw, 34px)', color: T.cream, fontWeight: 600, margin: 0, letterSpacing: '-0.018em', lineHeight: 1.2 }}>
-            Real questions. Real answers.
-          </h2>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: 16 }}>
-          {[
-            {
-              quote: "I've been skeptical my whole life. This is the first time I've asked faith questions and not felt like someone was trying to sell me something.",
-              name: "Michael R.",
-              tag: "Self-described skeptic",
-            },
-            {
-              quote: "I asked why God allows suffering at 2am when I couldn't sleep. The answer sat with me for a week. I'm still thinking about it.",
-              name: "Sarah K.",
-              tag: "Curious, not religious",
-            },
-            {
-              quote: "My pastor recommended it. I've been using it to study between Sundays — it goes way deeper than I expected.",
-              name: "James T.",
-              tag: "Church member",
-            },
-          ].map((t) => (
-            <div key={t.name} style={{
-              padding: '28px 28px',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: 20,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 20,
-            }}>
-              <div style={{ fontSize: 22, color: T.gold, opacity: 0.6, lineHeight: 1, fontFamily: T.serif }}>"</div>
-              <p style={{ fontFamily: T.serif, fontSize: 15.5, color: 'rgba(253,248,240,0.75)', lineHeight: 1.75, margin: 0, flex: 1 }}>
-                {t.quote}
-              </p>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: T.cream }}>{t.name}</div>
-                <div style={{ fontSize: 12, color: 'rgba(253,248,240,0.4)', marginTop: 2 }}>{t.tag}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* For pastors */}
-      {onPastorIntent && !pastorChurchId && (
-        <section style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '88px 24px 96px', textAlign: 'center', position: 'relative' }}>
-          <div style={{ maxWidth: 620, margin: '0 auto' }}>
-            <div style={{ fontSize: 11, letterSpacing: 6, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 20 }}>
-              For pastors & church leaders
-            </div>
-            <h2 style={{ fontFamily: T.display, fontSize: 'clamp(28px, 4vw, 40px)', fontWeight: 600, color: T.cream, lineHeight: 1.1, margin: '0 0 18px', letterSpacing: '-0.022em' }}>
-              Bring your church<br />into the conversation.
-            </h2>
-            <p style={{ fontFamily: T.serif, fontSize: 17, color: 'rgba(253,248,240,0.62)', lineHeight: 1.7, margin: '0 auto 36px', maxWidth: 520 }}>
-              A quiet, honest space for the six days between Sundays — where members keep wrestling with what was preached, ask the questions they wouldn't raise in the lobby, and pray for each other.
-            </p>
-
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-              gap: 14, textAlign: 'left', margin: '0 auto 40px',
-            }}>
-              {[
-                { icon: '✦', t: 'A page for every Sunday', d: 'Sermon, scripture, discussion questions, daily verses, kids version — all in one place.' },
-                { icon: '💬', t: 'Discussion that doesn\'t fade Monday', d: 'FB-style threads under each sermon. Members reply, you moderate, the conversation keeps going.' },
-                { icon: '🙏', t: 'Prayer that stays connected', d: 'Requests anchored to the people in your pews — not a global feed of strangers.' },
-                { icon: '🛡', t: 'Verified, every time', d: 'Email matches your church domain? Approved instantly. Otherwise reviewed by hand. No fakes.' },
-              ].map((f) => (
-                <div
-                  key={f.t}
-                  style={{ padding: '18px 18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14 }}
-                >
-                  <div style={{ fontSize: 18, color: T.gold, marginBottom: 8 }}>{f.icon}</div>
-                  <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.cream, marginBottom: 6, letterSpacing: '-0.005em' }}>{f.t}</div>
-                  <div style={{ fontSize: 13, color: 'rgba(253,248,240,0.55)', lineHeight: 1.6 }}>{f.d}</div>
-                </div>
-              ))}
-            </div>
-
-            <button
-              onClick={onPastorIntent}
-              style={{ background: 'transparent', color: T.gold, border: `1px solid ${T.gold}`, borderRadius: 999, padding: '14px 32px', fontSize: 14, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.02em' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.12)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-            >
-              ✦ Apply to bring your church
+              <div style={{ fontSize: 28, marginBottom: 14 }}>{c.emoji}</div>
+              <div style={{ fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.cream, marginBottom: 8, letterSpacing: '-0.01em' }}>{c.label}</div>
+              <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.7 }}>{c.body}</div>
             </button>
-            <div style={{ marginTop: 14, fontSize: 12.5, color: 'rgba(253,248,240,0.4)', letterSpacing: '0.01em' }}>
-              Free. Instant approval when your email matches your church domain. Others reviewed by hand.
+          ))}
+        </div>
+      </section>
+
+      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
+
+      {/* ── Community ── */}
+      <section style={{ padding: '88px 32px 92px', maxWidth: 900, margin: '0 auto', width: '100%', textAlign: 'center' }}>
+        <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 18 }}>Real community</div>
+        <h2 style={{ fontFamily: T.display, fontSize: 'clamp(26px, 3.6vw, 40px)', color: T.cream, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.022em', lineHeight: 1.12 }}>
+          You're not just talking to an AI.<br />
+          <em style={{ color: T.gold, fontStyle: 'italic', fontWeight: 500 }}>You're joining people.</em>
+        </h2>
+        <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, maxWidth: 560, margin: '0 auto 52px', lineHeight: 1.75 }}>
+          The loneliest part of seeking is doing it alone. kinwove is a network —
+          real people at every stage of the journey, from every background, from every part of the world.
+          Share what you're wrestling with. Pray for someone. Get a response from a real person who's been where you are.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, maxWidth: 780, margin: '0 auto' }}>
+          {[
+            { icon: '💬', title: 'Post & discuss', body: 'Share thoughts, ask questions. Your community responds — not an algorithm.' },
+            { icon: '🙏', title: 'Pray together', body: 'Post a request. People pray for you. You\'ll know when they do.' },
+            { icon: '📖', title: 'Study scripture', body: 'Read any chapter. Tap any verse for instant AI insight, right in the margin.' },
+            { icon: '⛪', title: 'Find your church', body: 'Connect with your congregation or discover a community near you.' },
+          ].map((f) => (
+            <div key={f.title} style={{ padding: '24px 20px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, textAlign: 'left' }}>
+              <div style={{ fontSize: 22, marginBottom: 12 }}>{f.icon}</div>
+              <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.cream, marginBottom: 6, letterSpacing: '-0.008em' }}>{f.title}</div>
+              <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.65 }}>{f.body}</div>
             </div>
+          ))}
+        </div>
+      </section>
+
+      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
+
+      {/* ── AI trust ── */}
+      <section style={{ padding: '88px 32px 92px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 48 }}>
+          <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 18 }}>AI built differently</div>
+          <h2 style={{ fontFamily: T.display, fontSize: 'clamp(26px, 3.6vw, 40px)', color: T.cream, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.022em', lineHeight: 1.12, maxWidth: 640 }}>
+            We know you might not trust AI<br />with something this important.
+          </h2>
+          <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, maxWidth: 540, lineHeight: 1.75, margin: 0 }}>
+            Most AI makes things up. For a question about God, scripture, and faith — that's not acceptable.
+            kinwove's AI was built with one rule at its core: if it's not in the text, we don't say it.
+          </p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 12, maxWidth: 800, margin: '0 auto' }}>
+          {trustPoints.map((t) => (
+            <div key={t} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '16px 18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.14)', borderRadius: 12 }}>
+              <span style={{ color: T.gold, fontSize: 13, flexShrink: 0, marginTop: 2, lineHeight: 1 }}>✦</span>
+              <span style={{ fontSize: 13.5, color: DIM, lineHeight: 1.6 }}>{t}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign: 'center', marginTop: 36 }}>
+          <p style={{ fontFamily: T.serif, fontSize: 15, color: DIMLO, fontStyle: 'italic', lineHeight: 1.7, maxWidth: 500, margin: '0 auto' }}>
+            "When we don't know, we say so. When scholars genuinely disagree, we tell you that too.
+            You deserve honesty more than you deserve comfortable answers."
+          </p>
+        </div>
+      </section>
+
+      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
+
+      {/* ── For pastors ── */}
+      {onPastorIntent && !pastorChurchId && (
+        <section style={{ padding: '88px 32px 92px', maxWidth: 900, margin: '0 auto', width: '100%', textAlign: 'center' }}>
+          <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 18 }}>For pastors & church leaders</div>
+          <h2 style={{ fontFamily: T.display, fontSize: 'clamp(26px, 3.6vw, 40px)', color: T.cream, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.022em', lineHeight: 1.12 }}>
+            Your congregation<br />needs a home between Sundays.
+          </h2>
+          <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, maxWidth: 540, margin: '0 auto 40px', lineHeight: 1.75 }}>
+            Sunday is one hour. kinwove is the other six days —
+            where your members keep wrestling with what was preached, ask the questions they won't raise in the lobby, and pray for each other by name.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, maxWidth: 780, margin: '0 auto 40px', textAlign: 'left' }}>
+            {[
+              { icon: '✦', t: 'A page for every Sunday', d: 'Sermon content, scripture, daily verses, kids version — all in one place. Your congregation engages with it all week.' },
+              { icon: '💬', t: 'Real discussion, not dead chat', d: 'Threaded conversations under each sermon. Members reply, wrestle, and come back to Sunday more ready.' },
+              { icon: '🙏', t: 'Prayer that stays personal', d: 'Requests anchored to the people in your congregation — not a feed of strangers.' },
+              { icon: '🛡', t: 'Your church profile — free', d: 'Get your church on kinwove at no cost. The tools that genuinely replace your time cost money. The presence doesn\'t.' },
+            ].map((f) => (
+              <div key={f.t} style={{ padding: '20px 18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14 }}>
+                <div style={{ fontSize: 17, color: T.gold, marginBottom: 10 }}>{f.icon}</div>
+                <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.cream, marginBottom: 6, letterSpacing: '-0.005em' }}>{f.t}</div>
+                <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.65 }}>{f.d}</div>
+              </div>
+            ))}
           </div>
+          <button onClick={onPastorIntent}
+            style={{ background: 'transparent', color: T.gold, border: `1px solid ${T.gold}`, borderRadius: 999, padding: '13px 32px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(184,115,58,0.12)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+          >✦ Bring your church — it's free</button>
+          <div style={{ marginTop: 12, fontSize: 12, color: DIMLO }}>Instant when your email matches your church domain. Others reviewed by hand.</div>
         </section>
       )}
 
-      {/* Bottom CTA */}
-      <section style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '96px 24px 100px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 600, height: 400, background: 'radial-gradient(ellipse at 50% 0%, rgba(184,115,58,0.1) 0%, transparent 65%)', pointerEvents: 'none' }} />
-        <div style={{ maxWidth: 560, margin: '0 auto', position: 'relative' }}>
-          <div style={{ fontSize: 11, letterSpacing: 6, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 24 }}>
-            Free · Forever · No judgment
-          </div>
-          <h2 style={{ fontFamily: T.display, fontSize: 'clamp(32px, 4.8vw, 54px)', fontWeight: 600, color: T.cream, lineHeight: 1.06, marginBottom: 20, letterSpacing: '-0.025em' }}>
-            Bring the questions.<br />Find the people walking the same road.
+      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
+
+      {/* ── Bottom CTA ── */}
+      <section style={{ padding: '96px 24px 108px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 700, height: 500, background: 'radial-gradient(ellipse at 50% 0%, rgba(184,115,58,0.09) 0%, transparent 65%)', pointerEvents: 'none' }} />
+        <div style={{ maxWidth: 720, margin: '0 auto', position: 'relative' }}>
+          <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 22 }}>Begin</div>
+          <h2 style={{ fontFamily: T.display, fontSize: 'clamp(30px, 5vw, 58px)', fontWeight: 600, color: T.cream, lineHeight: 1.05, marginBottom: 16, letterSpacing: '-0.026em' }}>
+            Where are you<br />starting from?
           </h2>
-          <p style={{ fontSize: 16, color: 'rgba(253,248,240,0.52)', lineHeight: 1.75, marginBottom: 44, maxWidth: 420, margin: '0 auto 44px' }}>
-            The conversation you've been looking for is already here.
+          <p style={{ fontFamily: T.serif, fontSize: 16.5, color: DIM, lineHeight: 1.7, marginBottom: 48, maxWidth: 420, margin: '0 auto 48px' }}>
+            There's no wrong place to begin. Tap wherever you are — we'll meet you there.
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center', alignItems: 'center' }}>
-            <button
-              onClick={onBegin}
-              style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '17px 52px', fontSize: 16, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.03em', boxShadow: '0 8px 40px rgba(184,115,58,0.4)' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = T.goldLight; e.currentTarget.style.boxShadow = '0 12px 48px rgba(184,115,58,0.55)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = T.gold; e.currentTarget.style.boxShadow = '0 8px 40px rgba(184,115,58,0.4)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-            >
-              Begin your journey →
-            </button>
-            {onPastorIntent && !pastorChurchId && (
-              <button
-                onClick={onPastorIntent}
-                style={{ background: 'transparent', color: T.gold, border: `1px solid ${T.gold}`, borderRadius: 999, padding: '16px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.02em' }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.12)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, maxWidth: 680, margin: '0 auto 40px' }}>
+            {whoCards.map((c) => (
+              <button key={c.label} onClick={onBegin}
+                style={{ padding: '20px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(184,115,58,0.2)', borderRadius: 16, cursor: 'pointer', transition: 'all 0.18s ease', textAlign: 'center' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.12)'; e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = 'rgba(184,115,58,0.2)'; e.currentTarget.style.transform = 'translateY(0)'; }}
               >
-                ✦ Bring your church
+                <div style={{ fontSize: 26, marginBottom: 8 }}>{c.emoji}</div>
+                <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.cream, letterSpacing: '-0.01em' }}>{c.label}</div>
               </button>
-            )}
+            ))}
           </div>
+          <div style={{ fontSize: 12, color: DIMLO, marginBottom: 24 }}>Free · No credit card · Takes 30 seconds</div>
           {!session && (
-            <div style={{ marginTop: 20, fontSize: 13, color: 'rgba(253,248,240,0.35)' }}>
-              Already a member?{' '}
-              <button onClick={onSignIn} style={{ background: 'none', border: 'none', color: 'rgba(253,248,240,0.6)', fontSize: 13, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>Sign in</button>
+            <div style={{ fontSize: 13, color: DIMLO }}>
+              Already here?{' '}
+              <button onClick={onSignIn} style={{ background: 'none', border: 'none', color: DIM, fontSize: 13, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>Sign in</button>
             </div>
           )}
         </div>
       </section>
 
-      <footer style={{ padding: '20px 40px', textAlign: 'center', fontSize: 12, color: 'rgba(253,248,240,0.22)', borderTop: '1px solid rgba(255,255,255,0.05)', letterSpacing: '0.04em' }}>
+      <footer style={{ padding: '20px 40px', textAlign: 'center', fontSize: 12, color: 'rgba(253,248,240,0.2)', borderTop: `1px solid ${RULE}`, letterSpacing: '0.04em' }}>
         ✦ &nbsp;kinwove &nbsp;·&nbsp; {new Date().getFullYear()} &nbsp;·&nbsp; Free to explore
       </footer>
     </div>
