@@ -110,119 +110,85 @@ import FeatureTour, { isTourDone } from './FeatureTour.jsx';
 import CoachMark, { incrementLoginCount } from './CoachMark.jsx';
 import DailyVerseCard, { shouldShowDailyVerse, markVerseAsSeen } from './DailyVerseCard.jsx';
 
-// ── Live community activity preview (landing page social proof) ───────────────
+// ── AI exchange preview (landing page social proof) ──────────────────────────
 function CommunityPreview({ onBegin }) {
-  const [posts, setPosts]   = useState([]);
-  const [stats, setStats]   = useState(null); // { members, posts }
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      const [{ data: postData }, { count: memberCount }, { count: postCount }] = await Promise.all([
-        supabase
-          .from('posts')
-          .select('id, body, person_type, view_count, created_at')
-          .eq('visibility', 'public')
-          .not('body', 'is', null)
-          .order('view_count', { ascending: false })
-          .limit(3),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }),
-        supabase.from('posts').select('id', { count: 'exact', head: true }).eq('visibility', 'public'),
-      ]);
-      const filtered = (postData ?? []).filter((p) => {
-        const body = typeof p.body === 'string' ? p.body : p.body?.text ?? '';
-        return body.length > 30;
-      });
-      setPosts(filtered.slice(0, 3));
-      setStats({ members: memberCount ?? 0, posts: postCount ?? 0 });
-      setLoaded(true);
-    })();
-  }, []);
-
-  if (!loaded || (posts.length === 0 && (!stats || stats.members < 2))) return null;
-
   const DIM   = 'rgba(253,248,240,0.55)';
-  const DIMLO = 'rgba(253,248,240,0.38)';
-
-  const PERSON_LABELS = {
-    curious: 'Curious', skeptic: 'Skeptic', agnostic: 'Open mind',
-    questioning: 'Questioning', believer: 'Believer', new: 'New to faith', kids: 'For kids',
-  };
+  const DIMLO = 'rgba(253,248,240,0.35)';
 
   return (
-    <section style={{ padding: '88px 32px 92px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
+    <section style={{ padding: '88px 32px 92px', maxWidth: 720, margin: '0 auto', width: '100%' }}>
       <div style={{ textAlign: 'center', marginBottom: 48 }}>
         <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 16 }}>
-          Live in the community
+          See it in action
         </div>
-        <h2 style={{ fontFamily: T.display, fontSize: 'clamp(24px, 3.2vw, 36px)', color: T.cream, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
-          Real questions. Real people.
+        <h2 style={{ fontFamily: T.display, fontSize: 'clamp(24px, 3.2vw, 36px)', color: T.cream, fontWeight: 600, margin: 0, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+          Real questions. Honest answers.
         </h2>
-        {stats && (stats.members > 1 || stats.posts > 1) && (
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 32, flexWrap: 'wrap' }}>
-            {stats.members > 1 && (
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: T.display, fontSize: 28, fontWeight: 700, color: T.cream, letterSpacing: '-0.02em' }}>
-                  {stats.members.toLocaleString()}
-                </div>
-                <div style={{ fontSize: 12, color: DIMLO, marginTop: 2, letterSpacing: 0.5 }}>people exploring</div>
-              </div>
-            )}
-            {stats.posts > 1 && (
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: T.display, fontSize: 28, fontWeight: 700, color: T.cream, letterSpacing: '-0.02em' }}>
-                  {stats.posts.toLocaleString()}
-                </div>
-                <div style={{ fontSize: 12, color: DIMLO, marginTop: 2, letterSpacing: 0.5 }}>conversations started</div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
-      {posts.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 14, maxWidth: 860, margin: '0 auto' }}>
-          {posts.map((post) => {
-            const body = typeof post.body === 'string' ? post.body : post.body?.text ?? '';
-            const excerpt = body.length > 160 ? body.slice(0, 157) + '…' : body;
-            const label = PERSON_LABELS[post.person_type] ?? null;
-            return (
-              <button
-                key={post.id}
-                onClick={onBegin}
-                style={{
-                  flex: '1 1 240px', maxWidth: 272, textAlign: 'left',
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(184,115,58,0.14)',
-                  borderRadius: 18, padding: '24px 22px',
-                  cursor: 'pointer', transition: 'all 0.18s',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.07)'; e.currentTarget.style.borderColor = 'rgba(184,115,58,0.3)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.borderColor = 'rgba(184,115,58,0.14)'; }}
-              >
-                {label && (
-                  <div style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 10 }}>
-                    {label}
-                  </div>
-                )}
-                <p style={{ fontFamily: T.serif, fontSize: 14.5, lineHeight: 1.7, color: DIM, margin: '0 0 16px', fontStyle: 'italic' }}>
-                  "{excerpt}"
-                </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  {(post.view_count ?? 0) > 0 && (
-                    <span style={{ fontSize: 11.5, color: DIMLO }}>
-                      {(post.view_count).toLocaleString()} views
-                    </span>
-                  )}
-                  <span style={{ fontSize: 11.5, color: 'rgba(184,115,58,0.5)', marginLeft: 'auto' }}>
-                    Join to reply →
-                  </span>
-                </div>
-              </button>
-            );
-          })}
+      <div style={{
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(184,115,58,0.16)',
+        borderRadius: 20, padding: '32px 32px 0', position: 'relative', overflow: 'hidden',
+      }}>
+        {/* Question bubble */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 24 }}>
+          <div style={{
+            background: T.gold, color: T.cream,
+            borderRadius: '18px 18px 4px 18px',
+            padding: '13px 18px', maxWidth: '75%',
+            fontSize: 15, fontFamily: T.sans, lineHeight: 1.5,
+          }}>
+            If God is real, why do innocent people suffer?
+          </div>
         </div>
-      )}
+
+        {/* AI response */}
+        <div style={{
+          fontFamily: T.serif, fontSize: 16, lineHeight: 1.8,
+          color: DIM, marginBottom: 0,
+        }}>
+          <p style={{ margin: '0 0 16px' }}>
+            Theologians call this the "problem of evil" — and it's the question most honest believers have wrestled with privately, even if they never said it out loud in church.
+          </p>
+          <p style={{ margin: '0 0 16px' }}>
+            The Bible doesn't paper over it. Job loses everything without explanation. The Psalms are full of raw "God, where are you?" — David wrote lines like that, and Jesus quoted them from the cross. The writers weren't pretending the pain wasn't real.
+          </p>
+          <p style={{ margin: 0, color: DIMLO }}>
+            What scripture offers isn't a clean explanation — it offers presence in the middle of it. Romans 8 doesn't say suffering makes sense. It says nothing in it can separate you from…
+          </p>
+        </div>
+
+        {/* Fade + CTA */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          height: 140,
+          background: 'linear-gradient(to bottom, transparent, #1A110A)',
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          paddingBottom: 32,
+        }}>
+          <button
+            onClick={onBegin}
+            style={{
+              background: T.gold, color: T.cream, border: 'none',
+              borderRadius: 999, padding: '13px 32px',
+              fontSize: 14, fontWeight: 600, cursor: 'pointer',
+              boxShadow: '0 4px 20px rgba(184,115,58,0.4)',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = T.goldLight)}
+            onMouseLeave={(e) => (e.currentTarget.style.background = T.gold)}
+          >
+            Read the full answer — free →
+          </button>
+        </div>
+
+        {/* Spacer so the fade has room */}
+        <div style={{ height: 100 }} />
+      </div>
+
+      <div style={{ textAlign: 'center', marginTop: 14, fontSize: 12, color: DIMLO }}>
+        No account needed to ask your first question.
+      </div>
     </section>
   );
 }
