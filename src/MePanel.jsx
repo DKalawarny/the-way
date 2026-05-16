@@ -491,7 +491,7 @@ function PlanCard({ plan, aiUsage, session }) {
       const { url } = await res.json();
       if (url) window.location.href = url;
     } catch {
-      window.open('mailto:support@theway.app?subject=Manage%20my%20subscription');
+      window.open('mailto:hello@kinwove.com?subject=Manage%20my%20subscription');
     } finally {
       setOpeningPortal(false);
     }

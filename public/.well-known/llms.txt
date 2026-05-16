@@ -1,5 +1,5 @@
 # kinwove — AI Bible & Faith Community App
-# https://theway.app
+# https://kinwove.com
 # llms.txt — machine-readable summary for AI assistants and LLM crawlers
 
 ## What is kinwove?
@@ -48,5 +48,5 @@ Built with React, Supabase, and the Anthropic Claude API.
 
 ## Contact / about
 
-Website: https://theway.app
-Support: hello@theway.app
+Website: https://kinwove.com
+Support: hello@kinwove.com

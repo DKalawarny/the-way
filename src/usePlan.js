@@ -3,7 +3,7 @@ import { supabase } from './supabase.js';
 
 export const TRIAL_DAYS = 30;
 export const PRO_PRICE  = '$19/mo';
-export const UPGRADE_EMAIL = 'hello@theway.app'; // swap for Stripe link when ready
+export const UPGRADE_EMAIL = 'hello@kinwove.com'; // swap for Stripe link when ready
 
 export function usePlan(churchId) {
   const [rawData, setRawData] = useState(null);

@@ -1,6 +1,6 @@
 // Cache version — bump this string when you deploy a breaking change
 // so all clients immediately drop the old cache and fetch fresh assets.
-const CACHE = 'theway-v3';
+const CACHE = 'kinwove-v1';
 
 // RECOVERY BUILD: this SW wipes all old caches and then becomes a no-op
 // while in development mode. The fetch handler only runs on production

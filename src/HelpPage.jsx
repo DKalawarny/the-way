@@ -441,10 +441,10 @@ export default function HelpPage({ onClose, onOpenTour }) {
                 Still need help?
               </div>
               <a
-                href="mailto:support@theway.app"
+                href="mailto:hello@kinwove.com"
                 style={{ fontSize: 12.5, color: '#B8733A', fontWeight: 600, textDecoration: 'none' }}
               >
-                support@theway.app
+                hello@kinwove.com
               </a>
             </div>
           </nav>
