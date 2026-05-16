@@ -191,34 +191,6 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
       {/* ── Section rule ── */}
       <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
 
-      {/* ── Who it's for ── */}
-      <section style={{ padding: '88px 32px 92px', maxWidth: 1040, margin: '0 auto', width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: 52 }}>
-          <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 14 }}>Wherever you're starting from</div>
-          <h2 style={{ fontFamily: T.display, fontSize: 'clamp(26px, 3.4vw, 38px)', color: T.cream, fontWeight: 600, margin: '0 0 16px', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
-            There's a place for you here.
-          </h2>
-          <p style={{ fontFamily: T.serif, fontSize: 16, color: DIM, maxWidth: 480, margin: '0 auto', lineHeight: 1.7 }}>
-            kinwove isn't built for people who have all the answers. It's built for people who are honest enough to keep asking.
-          </p>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
-          {whoCards.map((c) => (
-            <button key={c.label} onClick={onBegin}
-              style={{ textAlign: 'left', padding: '28px 24px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.18)', borderRadius: 20, cursor: 'pointer', transition: 'all 0.2s ease' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.1)'; e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.transform = 'translateY(-3px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(184,115,58,0.18)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-            >
-              <div style={{ fontSize: 28, marginBottom: 14 }}>{c.emoji}</div>
-              <div style={{ fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.cream, marginBottom: 8, letterSpacing: '-0.01em' }}>{c.label}</div>
-              <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.7 }}>{c.body}</div>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
-
       {/* ── Community ── */}
       <section style={{ padding: '88px 32px 92px', maxWidth: 900, margin: '0 auto', width: '100%', textAlign: 'center' }}>
         <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 18 }}>Real community</div>
@@ -272,6 +244,34 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
             "When we don't know, we say so. When scholars genuinely disagree, we tell you that too.
             You deserve honesty more than you deserve comfortable answers."
           </p>
+        </div>
+      </section>
+
+      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
+
+      {/* ── Who it's for ── */}
+      <section style={{ padding: '88px 32px 92px', maxWidth: 1040, margin: '0 auto', width: '100%' }}>
+        <div style={{ textAlign: 'center', marginBottom: 52 }}>
+          <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 14 }}>Whoever you are</div>
+          <h2 style={{ fontFamily: T.display, fontSize: 'clamp(26px, 3.4vw, 38px)', color: T.cream, fontWeight: 600, margin: '0 0 16px', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+            There's a place for you here.
+          </h2>
+          <p style={{ fontFamily: T.serif, fontSize: 16, color: DIM, maxWidth: 480, margin: '0 auto', lineHeight: 1.7 }}>
+            kinwove isn't built for people who have all the answers. It's built for people who are honest enough to keep asking.
+          </p>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+          {whoCards.map((c) => (
+            <button key={c.label} onClick={onBegin}
+              style={{ textAlign: 'left', padding: '28px 24px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.18)', borderRadius: 20, cursor: 'pointer', transition: 'all 0.2s ease' }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.1)'; e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.transform = 'translateY(-3px)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(184,115,58,0.18)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+            >
+              <div style={{ fontSize: 28, marginBottom: 14 }}>{c.emoji}</div>
+              <div style={{ fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.cream, marginBottom: 8, letterSpacing: '-0.01em' }}>{c.label}</div>
+              <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.7 }}>{c.body}</div>
+            </button>
+          ))}
         </div>
       </section>
 

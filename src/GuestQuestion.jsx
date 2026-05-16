@@ -4,12 +4,12 @@ import { authedFetch } from './supabase.js';
 import ShareSheet from './ShareSheet.jsx';
 
 const EXAMPLE_QUESTIONS = [
-  "Why does God allow so much suffering?",
-  "Is the Bible actually historically reliable?",
-  "Can you believe in evolution and the Bible?",
-  "Why is the Old Testament so violent?",
-  "What if I die and none of this is real?",
-  "Why does God seem so different in the Old vs New Testament?",
+  "If God is real, why do innocent people suffer?",
+  "Is there actual evidence the resurrection happened?",
+  "Why would a loving God send people to hell?",
+  "I had faith once — how do I know if any of it was real?",
+  "Can you be a good person without believing in God?",
+  "What does Jesus actually say about fear and anxiety?",
 ];
 
 const LEVELS = [
