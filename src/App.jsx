@@ -2492,6 +2492,7 @@ export default function App() {
           }}
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
           onOpenConnect={() => setStage('connect')}
+          onOpenGroups={() => setStage('groups')}
         />
       )}
       {stage === 'prayer' && session && (

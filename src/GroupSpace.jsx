@@ -400,6 +400,38 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 100px', background: T.cream }}>
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
 
+          {/* Invite code banner — always visible so members can share easily */}
+          <div style={{
+            background: 'rgba(184,115,58,0.08)', border: '1px solid rgba(184,115,58,0.25)',
+            borderRadius: 14, padding: '14px 18px', marginBottom: 20,
+            display: 'flex', alignItems: 'center', gap: 14,
+          }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', marginBottom: 4, opacity: 0.8 }}>
+                Invite code
+              </div>
+              <div style={{ fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: 6 }}>
+                {group.invite_code}
+              </div>
+              <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 4 }}>
+                Share this code so others can join
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(group.invite_code).catch(() => {});
+                setInviteOpen(true);
+              }}
+              style={{
+                background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
+                padding: '10px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              ↗ Invite
+            </button>
+          </div>
+
           {/* Weekly focus */}
           {settingFocus ? (
             <SetFocusForm groupId={group.id} onSaved={(f) => { setFocus(f); setSettingFocus(false); }} onCancel={() => setSettingFocus(false)} />

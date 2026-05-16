@@ -1070,7 +1070,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tab
   );
 }
 
-export default function Community({ session, profile, onClose, onOpenChat, hideHeader, userGroup, onViewProfile, onFindPeople, onInviteFriends, onOpenPrayer, onOpenRead, onOpenBible, onVerseClick, onOpenChurch, onOpenSermon, onOpenConnect, accentColor }) {
+export default function Community({ session, profile, onClose, onOpenChat, hideHeader, userGroup, onViewProfile, onFindPeople, onInviteFriends, onOpenPrayer, onOpenRead, onOpenBible, onVerseClick, onOpenChurch, onOpenSermon, onOpenConnect, onOpenGroups, accentColor }) {
   // Section colour: gold for main Feed, forest green for church community feed
   const TAB_COLOR = accentColor ?? '#B8733A';
   const TAB_TEXT  = accentColor ?? '#8E5528'; // slightly darker for text legibility
@@ -1638,6 +1638,47 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
                 “{qotd.question_of_day}”
               </div>
             </div>
+          )}
+
+          {/* ── Groups card ── */}
+          {feedType === 'posts' && onOpenGroups && (
+            <button
+              onClick={onOpenGroups}
+              style={{
+                width: '100%', margin: '0 0 10px', padding: '14px 18px',
+                background: userGroup
+                  ? 'linear-gradient(135deg, rgba(107,36,56,0.08) 0%, rgba(184,115,58,0.06) 100%)'
+                  : T.white,
+                border: `1px solid ${userGroup ? 'rgba(107,36,56,0.2)' : T.line}`,
+                borderRadius: 14,
+                display: 'flex', alignItems: 'center', gap: 14,
+                cursor: 'pointer', textAlign: 'left',
+              }}
+            >
+              <span style={{ fontSize: 26, flexShrink: 0 }}>⛪</span>
+              <div style={{ flex: 1 }}>
+                {userGroup ? (
+                  <>
+                    <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink, marginBottom: 2 }}>
+                      {userGroup.group.name}
+                    </div>
+                    <div style={{ fontSize: 12, color: T.inkMuted }}>
+                      Your group · Tap to open
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink, marginBottom: 2 }}>
+                      Join or create a group
+                    </div>
+                    <div style={{ fontSize: 12, color: T.inkMuted }}>
+                      Private Bible study, discipleship circle, or church group.
+                    </div>
+                  </>
+                )}
+              </div>
+              <span style={{ color: T.inkMuted, fontSize: 16, flexShrink: 0 }}>›</span>
+            </button>
           )}
 
           {/* ── Connect banner ── */}
