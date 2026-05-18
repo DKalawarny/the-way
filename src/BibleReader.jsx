@@ -1875,6 +1875,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
               {VERSIONS.find((v) => v.id === bibleId)?.abbr}
             </span>
           )}
+          {DarkToggle}
           <button
             onClick={() => { setChatOpen((o) => !o); if (!chatOpen) setTimeout(() => chatInputRef.current?.focus(), 300); }}
             style={{
