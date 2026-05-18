@@ -251,7 +251,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
 
         {referralRef && (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(184,115,58,0.12)', border: '1px solid rgba(184,115,58,0.25)', borderRadius: 999, padding: '7px 16px', marginBottom: 28, fontSize: 13, color: DIM, animation: 'fadeIn 0.5s ease both' }}>
-            <span style={{ color: T.gold }}>✦</span>
+            <KinwoveStar size={11} color={T.gold} />
             Someone who knows you thought you'd find this worthwhile.
           </div>
         )}
@@ -260,12 +260,8 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
           You don't have to have it<br />figured out to <em style={{ color: T.gold, fontStyle: 'italic', fontWeight: 500 }}>belong here.</em>
         </h1>
 
-        <p style={{ fontFamily: T.serif, fontSize: 18, lineHeight: 1.72, color: DIM, maxWidth: 560, margin: '0 0 12px', position: 'relative' }}>
-          kinwove is a faith community — AI that stays in scripture, real people at every stage of the journey, and tools for your church to stay connected between Sundays.
-        </p>
-
-        <p style={{ fontFamily: T.serif, fontSize: 16, color: DIMLO, maxWidth: 480, margin: '0 0 48px', lineHeight: 1.65, position: 'relative', fontStyle: 'italic' }}>
-          Ask your hardest questions. Find people who get it. Explore scripture honestly.
+        <p style={{ fontFamily: T.serif, fontSize: 18, lineHeight: 1.72, color: DIM, maxWidth: 520, margin: '0 0 48px', position: 'relative' }}>
+          AI that stays in scripture. Real people at every stage. Tools for your church between Sundays.
         </p>
 
         <div style={{ width: '100%', maxWidth: 680, margin: '0 auto', position: 'relative' }}>
@@ -283,8 +279,8 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
           You're not just talking to an AI.<br />
           <em style={{ color: T.gold, fontStyle: 'italic', fontWeight: 500 }}>You're joining people.</em>
         </h2>
-        <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, maxWidth: 520, margin: '0 auto 52px', lineHeight: 1.75 }}>
-          The loneliest part of seeking is doing it alone. kinwove connects you with real people — every background, every stage — who are asking the same questions you are.
+        <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, maxWidth: 480, margin: '0 auto 52px', lineHeight: 1.75 }}>
+          The loneliest part of seeking is doing it alone. Real people, every background, every stage.
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 14, maxWidth: 780, margin: '0 auto' }}>
           {[
@@ -319,7 +315,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12, maxWidth: 800, margin: '0 auto' }}>
           {trustPoints.map((t) => (
             <div key={t} style={{ flex: '1 1 240px', maxWidth: 258, display: 'flex', alignItems: 'flex-start', gap: 12, padding: '16px 18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.14)', borderRadius: 12, textAlign: 'left' }}>
-              <span style={{ color: T.gold, fontSize: 13, flexShrink: 0, marginTop: 2, lineHeight: 1 }}>✦</span>
+              <KinwoveStar size={11} color={T.gold} style={{ flexShrink: 0, marginTop: 2 }} />
               <span style={{ fontSize: 13.5, color: DIM, lineHeight: 1.6 }}>{t}</span>
             </div>
           ))}
@@ -346,8 +342,8 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
           <h2 style={{ fontFamily: T.display, fontSize: 'clamp(26px, 3.4vw, 38px)', color: T.cream, fontWeight: 600, margin: '0 0 16px', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
             There's a place for you here.
           </h2>
-          <p style={{ fontFamily: T.serif, fontSize: 16, color: DIM, maxWidth: 480, margin: '0 auto', lineHeight: 1.7 }}>
-            kinwove isn't built for people who have all the answers. It's built for people who are honest enough to keep asking.
+          <p style={{ fontFamily: T.serif, fontSize: 16, color: DIM, maxWidth: 440, margin: '0 auto', lineHeight: 1.7 }}>
+            Not for people who have all the answers. For people honest enough to keep asking.
           </p>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
@@ -380,13 +376,13 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 14, maxWidth: 780, margin: '0 auto 40px' }}>
             {[
-              { icon: '✦', t: 'A page for every Sunday', d: 'Sermon content, scripture, daily verses, kids version — all in one place. Your congregation engages with it all week.' },
+              { icon: '📖', t: 'A page for every Sunday', d: 'Sermon content, scripture, daily verses, kids version — all in one place.' },
               { icon: '💬', t: 'Real discussion, not dead chat', d: 'Threaded conversations under each sermon. Members reply, wrestle, and come back to Sunday more ready.' },
               { icon: '🙏', t: 'Prayer that stays personal', d: 'Requests anchored to the people in your congregation — not a feed of strangers.' },
               { icon: '🛡', t: 'Your church profile — free', d: 'Get your church on kinwove at no cost. The tools that genuinely replace your time cost money. The presence doesn\'t.' },
             ].map((f) => (
               <div key={f.t} style={{ flex: '1 1 200px', maxWidth: 240, padding: '20px 18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, textAlign: 'left' }}>
-                <div style={{ fontSize: 17, color: T.gold, marginBottom: 10 }}>{f.icon}</div>
+                <div style={{ fontSize: 17, marginBottom: 10 }}>{f.icon}</div>
                 <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.cream, marginBottom: 6, letterSpacing: '-0.005em' }}>{f.t}</div>
                 <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.65 }}>{f.d}</div>
               </div>
@@ -396,7 +392,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
             style={{ background: 'transparent', color: T.gold, border: `1px solid ${T.gold}`, borderRadius: 999, padding: '13px 32px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
             onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(184,115,58,0.12)')}
             onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-          >✦ Bring your church — it's free</button>
+          >Bring your church — it's free</button>
           <div style={{ marginTop: 12, fontSize: 12, color: DIMLO }}>Instant when your email matches your church domain. Others reviewed by hand.</div>
         </section>
       )}
@@ -432,7 +428,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
       </section>
 
       <footer style={{ padding: '20px 40px', textAlign: 'center', fontSize: 12, color: 'rgba(253,248,240,0.2)', borderTop: `1px solid ${RULE}`, letterSpacing: '0.04em' }}>
-        ✦ &nbsp;kinwove &nbsp;·&nbsp; {new Date().getFullYear()} &nbsp;·&nbsp; Free to explore
+        <KinwoveWordmark size={13} textColor="rgba(253,248,240,0.3)" starColor="rgba(253,248,240,0.3)" /> &nbsp;·&nbsp; {new Date().getFullYear()} &nbsp;·&nbsp; Free to explore
       </footer>
     </div>
   );

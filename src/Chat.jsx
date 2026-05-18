@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { T } from './theme.js';
 import { KinwoveWordmark } from './components/brand/KinwoveWordmark.jsx';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { PERSON_TYPES, STARTERS, DEEPER_STARTERS, ADS } from './constants.js';
 import { getSystemPrompt } from './prompts.js';
 import { useSpeechRecognition } from './useSpeechRecognition.js';
@@ -266,7 +267,7 @@ function AdStrip() {
         color: T.inkMuted,
       }}
     >
-      <span style={{ color: T.gold, fontSize: 9, letterSpacing: 1 }}>✦</span>
+      <KinwoveStar size={9} color={T.gold} />
       <span
         style={{
           fontSize: 9,
@@ -729,7 +730,7 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
           </div>
           <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <span style={{ fontSize: 10, color: T.gold }}>✦</span>
+              <KinwoveStar size={10} color={T.gold} />
               <span style={{ fontSize: 11, color: T.inkMuted }}>
                 {headingLoading ? 'AI is writing a heading…' : 'AI suggested · tap to edit'}
               </span>
@@ -1509,7 +1510,7 @@ export default function Chat({
                       e.currentTarget.style.boxShadow = 'none';
                     }}
                   >
-                    <span style={{ color: T.gold, fontSize: 11, flexShrink: 0, marginTop: 3 }}>✦</span>
+                    <KinwoveStar size={11} color={T.gold} style={{ flexShrink: 0, marginTop: 3 }} />
                     <span style={{ flex: 1 }}>{s}</span>
                   </button>
                 ))}
