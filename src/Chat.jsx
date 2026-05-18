@@ -827,7 +827,7 @@ export default function Chat({
   onSetPersonType,
   seededFromNote,
 }) {
-  const [dark, setDark] = useState(() => localStorage.getItem('chat_dark') !== '0');
+  const [dark, setDark] = useState(() => localStorage.getItem('chat_dark') === '1');
   const C = dark ? CHAT_DARK : CHAT_LIGHT;
   function toggleDark() { setDark((d) => { localStorage.setItem('chat_dark', d ? '0' : '1'); return !d; }); }
 
