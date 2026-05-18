@@ -25,7 +25,7 @@ export const KinwoveWordmark = ({
       <span
         style={{
           position: 'absolute',
-          top: '-0.62em',
+          top: '-0.48em',
           left: '50%',
           transform: 'translateX(-50%)',
           width: '0.28em',
