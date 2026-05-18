@@ -827,7 +827,7 @@ export default function Chat({
   onSetPersonType,
   seededFromNote,
 }) {
-  const [dark, setDark] = useState(() => localStorage.getItem('chat_dark') === '1');
+  const [dark, setDark] = useState(() => localStorage.getItem('chat_dark') !== '0');
   const C = dark ? CHAT_DARK : CHAT_LIGHT;
   function toggleDark() { setDark((d) => { localStorage.setItem('chat_dark', d ? '0' : '1'); return !d; }); }
 
@@ -1224,7 +1224,7 @@ export default function Chat({
           )}
           {!panelMode && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
-              <KinwoveWordmark size={21} textColor={C.text} starColor={T.honey} />
+              <KinwoveWordmark size={26} textColor={C.text} starColor={T.honey} />
             </div>
           )}
           <div style={{ position: 'relative' }}>
