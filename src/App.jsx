@@ -8,7 +8,7 @@ function ScreenLoader() {
   return (
     <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18 }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <KinwoveWordmark size={22} textColor={T.ink} />
+        <KinwoveWordmark size={22} textColor={T.ink} starColor={T.honey} />
       </div>
       <div style={{ width: 24, height: 24, border: `2px solid ${T.line}`, borderTopColor: T.gold, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -441,7 +441,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
       </section>
 
       <footer style={{ padding: '20px 40px', textAlign: 'center', fontSize: 12, color: 'rgba(253,248,240,0.2)', borderTop: `1px solid ${RULE}`, letterSpacing: '0.04em' }}>
-        <KinwoveWordmark size={13} textColor="rgba(253,248,240,0.3)" starColor="rgba(253,248,240,0.3)" /> &nbsp;·&nbsp; {new Date().getFullYear()} &nbsp;·&nbsp; Free to explore
+        <KinwoveWordmark size={13} textColor="rgba(253,248,240,0.3)" starColor="rgba(212,162,74,0.35)" /> &nbsp;·&nbsp; {new Date().getFullYear()} &nbsp;·&nbsp; Free to explore
       </footer>
     </div>
   );
@@ -1257,7 +1257,7 @@ function AppHeader({ onOpenBible, onVerseClick }) {
         display: 'flex', alignItems: 'center', gap: 9,
         borderRight: '1px solid rgba(232,181,99,0.22)',
       }}>
-        <KinwoveWordmark size={28} textColor="#f4e9d4" starColor="#D4A24A" />
+        <KinwoveWordmark size={28} textColor="#f4e9d4" starColor={T.honey} />
       </div>
       {/* Verse segment */}
       <button
@@ -1308,7 +1308,7 @@ function MobileHeader({ onOpenBible, onVerseClick }) {
       gap: 12,
     }}>
       <div style={{ flexShrink: 0 }}>
-        <KinwoveWordmark size={28} textColor="#f4e9d4" starColor="#D4A24A" />
+        <KinwoveWordmark size={28} textColor="#f4e9d4" starColor={T.honey} />
       </div>
       <button
         onClick={() => onVerseClick ? onVerseClick() : onOpenBible?.(verse.ref)}

@@ -1377,7 +1377,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
               flexShrink: 0,
               textShadow: '0 1px 0 rgba(0,0,0,0.4)',
             }}>
-              <KinwoveWordmark size={18} textColor="#f4e9d4" starColor="#D4A24A" />
+              <KinwoveWordmark size={18} textColor="#f4e9d4" starColor={T.honey} />
             </div>
             {(() => {
               const v = getDailyVerse();
