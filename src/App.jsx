@@ -228,7 +228,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
       {/* ── Nav ── */}
       <header style={{ padding: '18px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${RULE}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-          <KinwoveWordmark size={20} textColor={T.cream} starColor="#F5EDD8" />
+          <KinwoveWordmark size={26} textColor={T.cream} starColor="#F5EDD8" />
         </div>
         {session ? (
           <button onClick={onEditProfile} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
@@ -248,6 +248,10 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
       {/* ── Hero ── */}
       <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '64px 24px 80px', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: -60, left: '50%', transform: 'translateX(-50%)', width: 900, height: 600, background: 'radial-gradient(ellipse at 50% 30%, rgba(184,115,58,0.14) 0%, rgba(184,115,58,0.04) 50%, transparent 72%)', pointerEvents: 'none' }} />
+
+        <div style={{ marginBottom: 36, position: 'relative' }}>
+          <KinwoveWordmark size={52} textColor={T.cream} starColor={T.gold} />
+        </div>
 
         {referralRef && (
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(184,115,58,0.12)', border: '1px solid rgba(184,115,58,0.25)', borderRadius: 999, padding: '7px 16px', marginBottom: 28, fontSize: 13, color: DIM, animation: 'fadeIn 0.5s ease both' }}>
