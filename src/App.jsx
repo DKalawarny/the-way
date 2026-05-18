@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, lazy, Suspense, Component } from 
 import { T, globalCss } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
 import { KinwoveWordmark } from './components/brand/KinwoveWordmark.jsx';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 function ScreenLoader() {
   return (
@@ -795,14 +796,7 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
               : 'radial-gradient(circle, rgba(184,115,58,0.12) 0%, rgba(184,115,58,0.03) 70%, transparent 100%)',
             transition: 'background 0.18s ease',
           }}>
-            <span style={{
-              fontSize: 24, lineHeight: 1,
-              color: chatOpen ? T.goldDark : T.gold,
-              filter: chatOpen
-                ? 'drop-shadow(0 0 8px rgba(184,115,58,0.65))'
-                : 'drop-shadow(0 0 5px rgba(184,115,58,0.40))',
-              transition: 'color 0.18s ease, filter 0.18s ease',
-            }}>✦</span>
+            <KinwoveStar size={20} color={chatOpen ? T.goldDark : T.gold} style={{ filter: chatOpen ? 'drop-shadow(0 0 8px rgba(168,85,48,0.65))' : 'drop-shadow(0 0 5px rgba(168,85,48,0.40))', transition: 'color 0.18s ease' }} />
           </span>
           <span style={{
             ...labelStyle('ask'),
@@ -1254,7 +1248,7 @@ function AppHeader({ onOpenBible, onVerseClick }) {
         display: 'flex', alignItems: 'center', gap: 9,
         borderRight: '1px solid rgba(232,181,99,0.22)',
       }}>
-        <KinwoveWordmark size={18} textColor="#f4e9d4" starColor="#D4A24A" />
+        <KinwoveWordmark size={24} textColor="#f4e9d4" starColor="#D4A24A" />
       </div>
       {/* Verse segment */}
       <button
@@ -1305,7 +1299,7 @@ function MobileHeader({ onOpenBible, onVerseClick }) {
       gap: 12,
     }}>
       <div style={{ flexShrink: 0 }}>
-        <KinwoveWordmark size={20} textColor="#f4e9d4" starColor="#D4A24A" />
+        <KinwoveWordmark size={24} textColor="#f4e9d4" starColor="#D4A24A" />
       </div>
       <button
         onClick={() => onVerseClick ? onVerseClick() : onOpenBible?.(verse.ref)}
@@ -1469,13 +1463,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
               ? 'radial-gradient(circle, rgba(184,115,58,0.28) 0%, rgba(184,115,58,0.08) 60%, transparent 100%)'
               : 'radial-gradient(circle, rgba(184,115,58,0.16) 0%, rgba(184,115,58,0.04) 60%, transparent 100%)',
           }}>
-            <span style={{
-              fontSize: 20, lineHeight: 1,
-              color: chatOpen ? T.goldDark : T.gold,
-              filter: chatOpen
-                ? 'drop-shadow(0 0 7px rgba(184,115,58,0.75))'
-                : 'drop-shadow(0 0 5px rgba(184,115,58,0.50))',
-            }}>✦</span>
+            <KinwoveStar size={16} color={chatOpen ? T.goldDark : T.gold} style={{ filter: chatOpen ? 'drop-shadow(0 0 7px rgba(168,85,48,0.75))' : 'drop-shadow(0 0 5px rgba(168,85,48,0.50))' }} />
           </span>
           <span style={{ fontSize: 13.5, fontWeight: chatOpen ? 600 : 500, color: chatOpen ? T.goldDark : T.inkSoft }}>Ask</span>
         </button>

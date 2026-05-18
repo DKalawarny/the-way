@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { T } from './theme.js';
+import { KinwoveWordmark } from './components/brand/KinwoveWordmark.jsx';
 import { PERSON_TYPES, STARTERS, DEEPER_STARTERS, ADS } from './constants.js';
 import { getSystemPrompt } from './prompts.js';
 import { useSpeechRecognition } from './useSpeechRecognition.js';
@@ -1223,8 +1224,7 @@ export default function Chat({
           )}
           {!panelMode && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
-              <span style={{ color: T.gold, fontSize: 16, lineHeight: 1, filter: 'drop-shadow(0 0 6px rgba(184,115,58,0.45))' }}>✦</span>
-              <span style={{ fontFamily: T.display, fontSize: 21, fontWeight: 500, color: C.text, letterSpacing: '-0.025em' }}>kinwove</span>
+              <KinwoveWordmark size={21} textColor={C.text} starColor={T.honey} />
             </div>
           )}
           <div style={{ position: 'relative' }}>
