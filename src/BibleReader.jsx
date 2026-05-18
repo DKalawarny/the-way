@@ -684,6 +684,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState(null);
   const [dark,    setDark]    = useState(() => localStorage.getItem('rdr_dark') === '1');
+  const [chatDark, setChatDark] = useState(() => localStorage.getItem('rdr_chat_dark') === '1');
   const [selectedVerse, setSelectedVerse] = useState(null);
   const [lastVerse,     setLastVerse]     = useState(null); // persists after deselect for quick actions
   const [chatOpen,      setChatOpen]      = useState(false);
@@ -723,6 +724,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const { speakingId: rdSpeakingId, speak: rdSpeak, supported: rdTtsSupported } = useTextToSpeech({ voice: ttsVoice });
   const isDesktop    = winW >= 768;
   const C = dark ? DARK : LIGHT;
+  const CC = chatDark ? DARK : LIGHT;
   const book  = ALL_BOOKS.find((b) => b.id === bookId) ?? ALL_BOOKS[0];
   const isDone = completed.has(`${bibleId}:${bookId}:${chNum}`);
   const hasHistory = localStorage.getItem('rdr_book') !== null;
@@ -795,7 +797,8 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     localStorage.setItem('rdr_book',  bookId);
     localStorage.setItem('rdr_ch',    String(chNum));
     localStorage.setItem('rdr_dark',  dark ? '1' : '0');
-  }, [bibleId, bookId, chNum, dark]);
+    localStorage.setItem('rdr_chat_dark', chatDark ? '1' : '0');
+  }, [bibleId, bookId, chNum, dark, chatDark]);
 
   // Load persisted chat + last verse whenever chapter changes; auto-open if history exists
   useEffect(() => {
@@ -1061,6 +1064,12 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
   const DarkToggle = (
     <button onClick={() => setDark((d) => !d)} style={{ background: C.inputBg, border: `1px solid ${C.border}`, borderRadius: 999, width: 32, height: 32, cursor: 'pointer', fontSize: 14, color: C.muted }}>
       {dark ? '☀' : '🌙'}
+    </button>
+  );
+
+  const ChatDarkToggle = (
+    <button onClick={() => setChatDark((d) => !d)} style={{ background: CC.inputBg, border: `1px solid ${CC.border}`, borderRadius: 999, width: 32, height: 32, cursor: 'pointer', fontSize: 14, color: CC.muted }}>
+      {chatDark ? '☀' : '🌙'}
     </button>
   );
 
@@ -1649,22 +1658,22 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
 
   // Chat panel (shared between mobile sheet and desktop side)
   const ChatPanel = (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: dark ? '#130B05' : '#FDFAF4', borderLeft: dark ? 'none' : '3px solid rgba(184,115,58,0.45)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: chatDark ? '#130B05' : '#FDFAF4', borderLeft: chatDark ? 'none' : '3px solid rgba(184,115,58,0.45)' }}>
 
       {/* Header */}
-      <div style={{ padding: '10px 14px 10px 16px', borderBottom: `1px solid ${dark ? C.border : 'rgba(184,115,58,0.22)'}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: dark ? '#1A0E07' : '#F5E9CA' }}>
+      <div style={{ padding: '10px 14px 10px 16px', borderBottom: `1px solid ${chatDark ? CC.border : 'rgba(184,115,58,0.22)'}`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: chatDark ? '#1A1108' : '#F5E9CA' }}>
         <div>
-          <div style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: dark ? C.muted : 'rgba(154,99,40,0.7)', fontWeight: 700, marginBottom: 2 }}>Commentary</div>
-          <span style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: dark ? C.text : '#3D2510', letterSpacing: '-0.01em' }}>
+          <div style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: chatDark ? CC.muted : 'rgba(154,99,40,0.7)', fontWeight: 700, marginBottom: 2 }}>Commentary</div>
+          <span style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: chatDark ? CC.text : '#3D2510', letterSpacing: '-0.01em' }}>
             {book.name} {chNum}
-            <span style={{ fontWeight: 400, color: dark ? C.muted : 'rgba(101,64,24,0.7)', marginLeft: 7, fontSize: 12 }}>
+            <span style={{ fontWeight: 400, color: chatDark ? CC.muted : 'rgba(101,64,24,0.7)', marginLeft: 7, fontSize: 12 }}>
               {VERSIONS.find((v) => v.id === bibleId)?.abbr}
             </span>
           </span>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          {DarkToggle}
-          <button onClick={() => setChatOpen(false)} style={{ background: 'rgba(101,64,24,0.1)', border: 'none', color: dark ? C.muted : '#8E5528', cursor: 'pointer', padding: '5px 8px', borderRadius: 8, display: 'flex', alignItems: 'center' }}><X size={15} strokeWidth={2} /></button>
+          {ChatDarkToggle}
+          <button onClick={() => setChatOpen(false)} style={{ background: 'rgba(101,64,24,0.1)', border: 'none', color: chatDark ? CC.muted : '#8E5528', cursor: 'pointer', padding: '5px 8px', borderRadius: 8, display: 'flex', alignItems: 'center' }}><X size={15} strokeWidth={2} /></button>
         </div>
       </div>
 
@@ -1680,10 +1689,10 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                 <div style={{
                   maxWidth: '88%',
                   background: isAssistant
-                    ? (dark ? C.section : '#F5EDD8')
-                    : (dark ? T.gold : '#8B5A1A'),
-                  color: isAssistant ? C.text : T.cream,
-                  border: isAssistant ? `1px solid ${dark ? C.border : 'rgba(184,115,58,0.28)'}` : 'none',
+                    ? (chatDark ? CC.section : '#F5EDD8')
+                    : (chatDark ? T.gold : '#8B5A1A'),
+                  color: isAssistant ? CC.text : T.cream,
+                  border: isAssistant ? `1px solid ${chatDark ? CC.border : 'rgba(184,115,58,0.28)'}` : 'none',
                   borderRadius: isAssistant ? '16px 16px 16px 4px' : '16px 16px 4px 16px',
                   padding: '10px 14px', fontSize: 14, fontFamily: T.serif, lineHeight: 1.65, whiteSpace: 'pre-wrap',
                 }}>
@@ -1706,7 +1715,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                     style={{
                       background: 'transparent', border: 'none', padding: '2px 6px',
                       cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
-                      color: rdCopiedIdx === i ? C.verse : C.muted, fontSize: 11,
+                      color: rdCopiedIdx === i ? CC.verse : CC.muted, fontSize: 11,
                       transition: 'color 0.2s',
                     }}
                   >
@@ -1723,14 +1732,14 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                     style={{
                       background: 'transparent', border: 'none', padding: '2px 6px',
                       cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
-                      color: rdSpeakingId === i ? C.verse : C.muted, fontSize: 11,
+                      color: rdSpeakingId === i ? CC.verse : CC.muted, fontSize: 11,
                       transition: 'color 0.15s',
                     }}
                   >
                     {rdSpeakingId === i ? (
                       <span style={{ display: 'inline-flex', alignItems: 'flex-end', gap: 2, height: 12 }}>
                         {[1, 0.5, 0.8, 0.4].map((h, k) => (
-                          <span key={k} style={{ width: 2.5, borderRadius: 2, background: C.verse, height: `${h * 100}%`, animation: `micPulse 0.8s ease-in-out ${k * 0.15}s infinite alternate` }} />
+                          <span key={k} style={{ width: 2.5, borderRadius: 2, background: CC.verse, height: `${h * 100}%`, animation: `micPulse 0.8s ease-in-out ${k * 0.15}s infinite alternate` }} />
                         ))}
                       </span>
                     ) : (
@@ -1753,21 +1762,21 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                       onClick={() => sendQuickAction(a, lastVerse)}
                       style={{
                         background: 'transparent',
-                        border: `1px solid ${C.border}`,
+                        border: `1px solid ${CC.border}`,
                         borderRadius: 999,
                         padding: '3px 10px',
                         fontSize: 11, fontWeight: 500,
-                        color: C.muted, cursor: 'pointer',
+                        color: CC.muted, cursor: 'pointer',
                         transition: 'all 0.12s',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = C.verse;
-                        e.currentTarget.style.color = C.verse;
+                        e.currentTarget.style.borderColor = CC.verse;
+                        e.currentTarget.style.color = CC.verse;
                         e.currentTarget.style.background = 'rgba(184,115,58,0.08)';
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = C.border;
-                        e.currentTarget.style.color = C.muted;
+                        e.currentTarget.style.borderColor = CC.border;
+                        e.currentTarget.style.color = CC.muted;
                         e.currentTarget.style.background = 'transparent';
                       }}
                     >
@@ -1788,15 +1797,15 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
       ) : (
         <div style={{ flexShrink: 0 }}>
           <AiUsageWarning remaining={aiUsage.remaining} />
-          <div style={{ padding: '10px 12px 14px', borderTop: `1px solid ${dark ? C.border : 'rgba(184,115,58,0.2)'}`, background: dark ? 'transparent' : '#FAF3E4' }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: dark ? C.inputBg : '#FDF8EE', borderRadius: 999, border: `1px solid ${dark ? C.border : 'rgba(184,115,58,0.3)'}`, padding: '6px 6px 6px 14px' }}>
+          <div style={{ padding: '10px 12px 14px', borderTop: `1px solid ${chatDark ? CC.border : 'rgba(184,115,58,0.2)'}`, background: chatDark ? 'transparent' : '#FAF3E4' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: chatDark ? CC.inputBg : '#FDF8EE', borderRadius: 999, border: `1px solid ${chatDark ? CC.border : 'rgba(184,115,58,0.3)'}`, padding: '6px 6px 6px 14px' }}>
               <input
                 ref={chatInputRef}
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); sendChat(); } }}
                 placeholder={micListening ? 'Listening…' : 'Ask about this passage…'}
-                style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 14, fontFamily: T.serif, color: C.text, outline: 'none' }}
+                style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 14, fontFamily: T.serif, color: CC.text, outline: 'none' }}
               />
               {micSupported && (
                 <button
@@ -1805,7 +1814,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                   style={{
                     width: 28, height: 28, borderRadius: '50%', border: 'none', flexShrink: 0,
                     background: micListening ? 'rgba(220,38,38,0.12)' : 'transparent',
-                    color: micListening ? '#dc2626' : C.muted,
+                    color: micListening ? '#dc2626' : CC.muted,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: 'all 0.15s',
                     animation: micListening ? 'micPulse 1.2s ease-in-out infinite' : 'none',
@@ -1822,7 +1831,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                 disabled={!chatInput.trim() || chatBusy}
                 style={{
                   width: 34, height: 34, borderRadius: '50%', border: 'none', flexShrink: 0,
-                  background: chatInput.trim() && !chatBusy ? `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)` : C.border,
+                  background: chatInput.trim() && !chatBusy ? `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)` : CC.border,
                   color: T.cream, fontSize: 15, cursor: chatInput.trim() && !chatBusy ? 'pointer' : 'default',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'background 0.15s',
