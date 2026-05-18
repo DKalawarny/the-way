@@ -780,9 +780,9 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
 }
 
 const CHAT_LIGHT = {
-  bg: T.cream, text: T.ink, muted: T.inkMuted, textSoft: T.inkSoft,
-  border: T.line, headerBg: T.white, footerBg: T.white,
-  card: T.parchment, inputBg: T.cream,
+  bg: '#FDF8F0', text: T.ink, muted: T.inkMuted, textSoft: T.inkSoft,
+  border: T.line, headerBg: '#FFFFFF', footerBg: '#FFFFFF',
+  card: '#F5ECD9', inputBg: '#FDF8F0',
 };
 const CHAT_DARK = {
   bg: '#0E0906', text: 'rgba(253,248,240,0.92)', muted: 'rgba(253,248,240,0.45)',
