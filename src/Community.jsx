@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useCallback, lazy, Suspense, Fragment } fr
 import { Smile, Bookmark } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T, tintFor, SEMANTIC } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
+import { KinwoveWordmark } from './components/brand/KinwoveWordmark.jsx';
 import { PERSON_TYPES } from './constants.js';
 import { Avatar } from './ProfilePage.jsx';
 import ShareSheet from './ShareSheet.jsx';
@@ -104,7 +106,7 @@ function CardSeparator() {
       pointerEvents: 'none',
     }}>
       <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, rgba(154,99,40,0.28), transparent)' }} />
-      <span style={{ fontSize: 11, color: 'rgba(154,99,40,0.55)' }}>✦</span>
+      <KinwoveStar size={9} color="rgba(168,85,48,0.5)" />
       <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, rgba(154,99,40,0.28), transparent)' }} />
     </div>
   );
@@ -1375,11 +1377,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
               flexShrink: 0,
               textShadow: '0 1px 0 rgba(0,0,0,0.4)',
             }}>
-              <span style={{
-                color: '#e8b563', fontSize: 18,
-                filter: 'drop-shadow(0 0 10px rgba(232,181,99,0.65))',
-              }}>✦</span>
-              kinwove
+              <KinwoveWordmark size={18} textColor="#f4e9d4" starColor="#D4A24A" />
             </div>
             {(() => {
               const v = getDailyVerse();

@@ -551,8 +551,8 @@ export default function PostCard({
 
   return (
     <div style={{
-      background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
-      padding: '14px 16px', marginBottom: 12,
+      background: T.white, border: `1px solid ${T.line}`, borderRadius: 18,
+      padding: '18px 20px', marginBottom: 16,
       opacity: hiddenLocally ? 0.55 : 1,
     }}>
       {/* Header */}
