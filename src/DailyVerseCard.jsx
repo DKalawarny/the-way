@@ -56,6 +56,7 @@ export default function DailyVerseCard({ onReflect, onOpenBible, onClose }) {
           boxShadow: '0 24px 80px rgba(20,10,6,0.5)',
           position: 'relative',
           animation: 'fadeUp 0.3s ease both',
+          borderTop: `3px solid ${T.honey}`,
         }}
       >
         <button
@@ -81,7 +82,7 @@ export default function DailyVerseCard({ onReflect, onOpenBible, onClose }) {
 
         <div style={{
           fontSize: 10, letterSpacing: 4, textTransform: 'uppercase',
-          color: T.inkMuted, textAlign: 'center', marginBottom: 20,
+          color: T.honey, textAlign: 'center', marginBottom: 20, fontWeight: 600,
         }}>
           Today's verse
         </div>
@@ -95,7 +96,7 @@ export default function DailyVerseCard({ onReflect, onOpenBible, onClose }) {
         </div>
         <div style={{
           textAlign: 'center', fontWeight: 700, fontSize: 13,
-          color: T.goldDark, letterSpacing: 0.5, marginBottom: 30,
+          color: T.honey, letterSpacing: 0.5, marginBottom: 30,
         }}>
           — {verse.ref}
         </div>

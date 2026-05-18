@@ -1254,15 +1254,7 @@ function AppHeader({ onOpenBible, onVerseClick }) {
         display: 'flex', alignItems: 'center', gap: 9,
         borderRight: '1px solid rgba(232,181,99,0.22)',
       }}>
-        <span style={{
-          color: '#e8b563', fontSize: 16, lineHeight: 1,
-          filter: 'drop-shadow(0 0 8px rgba(232,181,99,0.55))',
-        }}>✦</span>
-        <span style={{
-          fontFamily: T.display, fontSize: 18, fontWeight: 500,
-          color: '#f4e9d4', letterSpacing: '-0.02em',
-          textShadow: '0 1px 0 rgba(0,0,0,0.4)',
-        }}>kinwove</span>
+        <KinwoveWordmark size={18} textColor="#f4e9d4" starColor="#D4A24A" />
       </div>
       {/* Verse segment */}
       <button
@@ -1283,7 +1275,7 @@ function AppHeader({ onOpenBible, onVerseClick }) {
           flex: 1, textShadow: '0 1px 0 rgba(0,0,0,0.3)',
         }}>&ldquo;{verse.text}&rdquo;</span>
         <span style={{
-          fontSize: 11, fontWeight: 700, color: '#e8b563',
+          fontSize: 11, fontWeight: 700, color: T.honey,
           letterSpacing: '0.06em', flexShrink: 0,
           textShadow: '0 1px 0 rgba(0,0,0,0.4)',
         }}>{verse.ref} ↗</span>
@@ -1312,13 +1304,8 @@ function MobileHeader({ onOpenBible, onVerseClick }) {
       padding: '0 164px 0 16px', // right: room for 3 FABs (3×44 + 2×8 gaps + 12px edge)
       gap: 12,
     }}>
-      <div style={{
-        fontFamily: T.display, fontSize: 20, fontWeight: 500, color: '#f4e9d4',
-        letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 7,
-        flexShrink: 0,
-      }}>
-        <span style={{ color: '#e8b563', fontSize: 16, filter: 'drop-shadow(0 0 8px rgba(232,181,99,0.6))' }}>✦</span>
-        kinwove
+      <div style={{ flexShrink: 0 }}>
+        <KinwoveWordmark size={20} textColor="#f4e9d4" starColor="#D4A24A" />
       </div>
       <button
         onClick={() => onVerseClick ? onVerseClick() : onOpenBible?.(verse.ref)}
@@ -1340,7 +1327,7 @@ function MobileHeader({ onOpenBible, onVerseClick }) {
         }}>
           &ldquo;{verse.text}&rdquo;
         </span>
-        <span style={{ fontSize: 10.5, fontWeight: 700, color: '#e8b563', letterSpacing: '0.06em', flexShrink: 0 }}>
+        <span style={{ fontSize: 10.5, fontWeight: 700, color: T.honey, letterSpacing: '0.06em', flexShrink: 0 }}>
           {verse.ref} ↗
         </span>
       </button>
