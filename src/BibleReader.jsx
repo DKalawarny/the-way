@@ -1662,7 +1662,10 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
             </span>
           </span>
         </div>
-        <button onClick={() => setChatOpen(false)} style={{ background: 'rgba(101,64,24,0.1)', border: 'none', color: dark ? C.muted : '#8E5528', cursor: 'pointer', padding: '5px 8px', borderRadius: 8, display: 'flex', alignItems: 'center' }}><X size={15} strokeWidth={2} /></button>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          {DarkToggle}
+          <button onClick={() => setChatOpen(false)} style={{ background: 'rgba(101,64,24,0.1)', border: 'none', color: dark ? C.muted : '#8E5528', cursor: 'pointer', padding: '5px 8px', borderRadius: 8, display: 'flex', alignItems: 'center' }}><X size={15} strokeWidth={2} /></button>
+        </div>
       </div>
 
       {/* Messages */}
