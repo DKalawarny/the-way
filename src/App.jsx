@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState, lazy, Suspense, Component } from 'react';
 import { T, globalCss } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
+import { KinwoveWordmark } from './components/brand/KinwoveWordmark.jsx';
 
 function ScreenLoader() {
   return (
     <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ color: T.gold, fontSize: 18, lineHeight: 1 }}>✦</span>
-        <span style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 22, fontWeight: 500, color: T.ink, letterSpacing: '-0.02em' }}>kinwove</span>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <KinwoveWordmark size={22} textColor={T.ink} />
       </div>
       <div style={{ width: 24, height: 24, border: `2px solid ${T.line}`, borderTopColor: T.gold, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -227,8 +227,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
       {/* ── Nav ── */}
       <header style={{ padding: '18px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${RULE}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-          <span style={{ color: T.gold, fontSize: 14, lineHeight: 1 }}>✦</span>
-          <span style={{ fontFamily: T.display, fontSize: 20, fontWeight: 500, color: T.cream, letterSpacing: '-0.02em' }}>kinwove</span>
+          <KinwoveWordmark size={20} textColor={T.cream} starColor="#F5EDD8" />
         </div>
         {session ? (
           <button onClick={onEditProfile} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>

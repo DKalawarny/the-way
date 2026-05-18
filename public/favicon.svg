@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="23" fill="#A85530"/>
+  <!-- corner star -->
+  <path fill="#F5EDD8" opacity="0.9" transform="translate(62,8) scale(0.55)"
+    d="M12 1 L13.4 9.6 L22 11 L13.4 12.4 L12 23 L10.6 12.4 L2 11 L10.6 9.6 Z"/>
+  <!-- k letterform -->
+  <text x="50" y="80" text-anchor="middle"
+    font-family="Georgia, serif"
+    font-size="72" font-weight="400"
+    fill="#F5EDD8">k</text>
+</svg>

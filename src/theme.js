@@ -1,23 +1,29 @@
 export const T = {
-  cream: '#FDF8F0',
-  parchment: '#F5ECD9',
-  parchmentDark: '#E8DCC0',
-  gold: '#B8733A',
-  goldLight: '#CC8D52',
-  goldDark: '#8E5528',
-  ink: '#2C1810',
-  inkSoft: '#4A3828',
+  // Surfaces
+  cream: '#F5EDD8',
+  parchment: '#FAF3E2',
+  parchmentDark: '#EDE0C4',
+  // Brand accent — clay
+  gold: '#A85530',          // clay — primary CTAs, accents (kept as "gold" for compat)
+  goldLight: '#C4693C',
+  goldDark: '#7C3E22',
+  // Joy accent — honey (use sparingly: milestones, verse arrival, completion)
+  honey: '#D4A24A',
+  honeySoft: '#E8C887',
+  // Type
+  ink: '#1A1108',
+  inkSoft: '#5A4733',
   inkMuted: '#7A6B58',
-  line: '#D9C9A8',
+  line: 'rgba(26,17,8,0.12)',
   white: '#FFFFFF',
   error: '#A53F2B',
-  success: '#2E7A48',        // green — published / done / new-faith states
+  success: '#2E7A48',
   successBg: 'rgba(74,139,90,0.14)',
-  resolvedText: '#2F5547',   // dark teal — approved / resolved / verified labels
+  resolvedText: '#2F5547',
   resolvedBg: 'rgba(63,107,94,0.10)',
-  serif: "'Lora', Georgia, serif",
+  serif: "'Fraunces', Georgia, serif",
   sans: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-  display: "'Fraunces', Georgia, serif",
+  display: "'Newsreader', Georgia, serif",
 };
 
 // ── Design system tokens ────────────────────────────────────────────
@@ -29,11 +35,11 @@ export const T = {
 export const SPACE = { 0: 0, 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 7: 32, 8: 40, 9: 56, 10: 72 };
 export const RADIUS = { sm: 6, md: 10, lg: 14, xl: 20, pill: 999 };
 export const SHADOW = {
-  whisper: '0 1px 2px rgba(44,24,16,0.04)',
-  warm:    '0 2px 8px rgba(44,24,16,0.06), 0 1px 2px rgba(44,24,16,0.04)',
-  lift:    '0 8px 24px rgba(44,24,16,0.10), 0 2px 6px rgba(44,24,16,0.06)',
-  candle:  '0 12px 40px rgba(44,24,16,0.14), 0 4px 12px rgba(44,24,16,0.08)',
-  glow:    '0 0 0 1px rgba(184,115,58,0.20), 0 6px 20px rgba(184,115,58,0.18)',
+  whisper: '0 1px 2px rgba(26,17,8,0.04)',
+  warm:    '0 2px 8px rgba(26,17,8,0.06), 0 1px 2px rgba(26,17,8,0.04)',
+  lift:    '0 8px 24px rgba(26,17,8,0.10), 0 2px 6px rgba(26,17,8,0.06)',
+  candle:  '0 12px 40px rgba(26,17,8,0.14), 0 4px 12px rgba(26,17,8,0.08)',
+  glow:    '0 0 0 1px rgba(168,85,48,0.20), 0 6px 20px rgba(168,85,48,0.18)',
 };
 export const MOTION = {
   quick: '0.18s cubic-bezier(0.2, 0.8, 0.2, 1)',
@@ -94,20 +100,20 @@ export const SEMANTIC = {
 // Each persona contributes a soft warm/cool wash so a feed of 10 posts isn't
 // 10 identical rectangles. Backgrounds stay near-white; the accent is the rail.
 export const TYPE_TINTS = {
-  curious:      { bg: 'rgba(184,115,58,0.14)',  bgChip: 'rgba(184,115,58,0.22)', rail: '#B8733A', text: '#8E5528' },
+  curious:      { bg: 'rgba(168,85,48,0.14)',  bgChip: 'rgba(168,85,48,0.22)', rail: '#B8733A', text: '#8E5528' },
   seeking:      { bg: 'rgba(74,123,157,0.16)',  bgChip: 'rgba(74,123,157,0.24)', rail: '#4A7B9D', text: '#2E6A8E' },
   skeptic:      { bg: 'rgba(110,110,120,0.14)', bgChip: 'rgba(110,110,120,0.22)', rail: '#7A6B58', text: '#555' },
   'new-faith':  { bg: 'rgba(74,139,90,0.16)',   bgChip: 'rgba(74,139,90,0.24)', rail: '#4A8B5A', text: '#2E7A48' },
   'heard-things': { bg: 'rgba(120,90,150,0.16)', bgChip: 'rgba(120,90,150,0.24)', rail: '#8E6FB8', text: '#6B3FA0' },
   deeper:       { bg: 'rgba(150,90,40,0.16)',   bgChip: 'rgba(150,90,40,0.24)', rail: '#A66A2A', text: '#7A4F1F' },
-  group:        { bg: 'rgba(184,115,58,0.14)',  bgChip: 'rgba(184,115,58,0.22)', rail: '#B8733A', text: '#8E5528' },
+  group:        { bg: 'rgba(168,85,48,0.14)',  bgChip: 'rgba(168,85,48,0.22)', rail: '#B8733A', text: '#8E5528' },
   'inter-faith':{ bg: 'rgba(45,120,120,0.16)',  bgChip: 'rgba(45,120,120,0.24)', rail: '#3D8C8C', text: '#2A6868' },
   guided:       { bg: 'rgba(180,120,60,0.16)',  bgChip: 'rgba(180,120,60,0.24)', rail: '#B57A3C', text: '#8C5A26' },
 };
 export const tintFor = (id) => TYPE_TINTS[id] ?? TYPE_TINTS.curious;
 
 export const globalCss = `
-  @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&family=Fraunces:opsz,wght@9..144,300..500&display=swap');
 
   *, *::before, *::after { box-sizing: border-box; }
   html, body, #root { height: 100%; }
@@ -133,8 +139,8 @@ export const globalCss = `
     40% { transform: translateY(-6px); opacity: 1; }
   }
   @keyframes glow {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(184,115,58, 0.0); }
-    50% { box-shadow: 0 0 24px 0 rgba(184,115,58, 0.25); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(168,85,48, 0.0); }
+    50% { box-shadow: 0 0 24px 0 rgba(168,85,48, 0.25); }
   }
   @keyframes fadeIn {
     from { opacity: 0; }
@@ -158,8 +164,8 @@ export const globalCss = `
   /* Subtle warmth across the page — replaces flat cream with depth */
   .scene {
     background:
-      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(184,115,58,0.10), transparent 70%),
-      radial-gradient(ellipse 60% 40% at 50% 110%, rgba(184,115,58,0.06), transparent 70%),
+      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(168,85,48,0.10), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 50% 110%, rgba(168,85,48,0.06), transparent 70%),
       ${T.cream};
   }
 
@@ -173,7 +179,7 @@ export const globalCss = `
     position: absolute;
     inset: -40%;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(184,115,58,0.22) 0%, rgba(184,115,58,0.06) 40%, transparent 70%);
+    background: radial-gradient(circle, rgba(168,85,48,0.22) 0%, rgba(168,85,48,0.06) 40%, transparent 70%);
     z-index: -1;
     animation: haloPulse 4.5s ease-in-out infinite;
     pointer-events: none;
@@ -192,7 +198,7 @@ export const globalCss = `
   }
   .lift:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(44,24,16,0.10), 0 2px 6px rgba(44,24,16,0.06);
+    box-shadow: 0 8px 24px rgba(26,17,8,0.10), 0 2px 6px rgba(26,17,8,0.06);
     border-color: ${T.gold} !important;
   }
   .lift:active { transform: translateY(0); transition-duration: 0.08s; }
@@ -200,7 +206,7 @@ export const globalCss = `
   /* The single magnet — primary CTA on a screen */
   .magnet {
     position: relative;
-    box-shadow: 0 6px 20px rgba(184,115,58,0.20), 0 1px 4px rgba(44,24,16,0.08);
+    box-shadow: 0 6px 20px rgba(168,85,48,0.20), 0 1px 4px rgba(26,17,8,0.08);
   }
   .magnet::after {
     content: '';
@@ -208,12 +214,12 @@ export const globalCss = `
     inset: -1px;
     border-radius: inherit;
     pointer-events: none;
-    box-shadow: 0 0 0 0 rgba(184,115,58,0);
+    box-shadow: 0 0 0 0 rgba(168,85,48,0);
     animation: magnetPulse 2.6s ease-in-out infinite;
   }
   @keyframes magnetPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(184,115,58,0.0); }
-    50%      { box-shadow: 0 0 0 6px rgba(184,115,58,0.14); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(168,85,48,0.0); }
+    50%      { box-shadow: 0 0 0 6px rgba(168,85,48,0.14); }
   }
 
   .ref-inline {
@@ -221,7 +227,7 @@ export const globalCss = `
     padding: 1px 6px;
     margin: 0 1px;
     border-radius: 4px;
-    background: rgba(184,115,58, 0.12);
+    background: rgba(168,85,48, 0.12);
     color: ${T.goldDark};
     font-weight: 500;
     font-size: 0.92em;
@@ -247,15 +253,15 @@ export const globalCss = `
   .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
   .card-raised {
-    box-shadow: 0 4px 20px rgba(44,24,16,0.10), 0 1px 4px rgba(44,24,16,0.06);
+    box-shadow: 0 4px 20px rgba(26,17,8,0.10), 0 1px 4px rgba(26,17,8,0.06);
   }
   .card-sunken {
-    box-shadow: inset 0 2px 8px rgba(44,24,16,0.07);
+    box-shadow: inset 0 2px 8px rgba(26,17,8,0.07);
   }
 
   .texture-bg {
     background-image:
-      radial-gradient(circle, rgba(184,115,58,0.10) 1px, transparent 1px);
+      radial-gradient(circle, rgba(168,85,48,0.10) 1px, transparent 1px);
     background-size: 28px 28px;
   }
 
@@ -355,8 +361,8 @@ export const globalCss = `
   .float-in { animation: floatIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
   @keyframes askPulse {
-    0%, 100% { box-shadow: 0 6px 20px rgba(184,115,58,0.30), 0 0 0 0 rgba(184,115,58,0); }
-    50%      { box-shadow: 0 6px 20px rgba(184,115,58,0.30), 0 0 0 10px rgba(184,115,58,0.12); }
+    0%, 100% { box-shadow: 0 6px 20px rgba(168,85,48,0.30), 0 0 0 0 rgba(168,85,48,0); }
+    50%      { box-shadow: 0 6px 20px rgba(168,85,48,0.30), 0 0 0 10px rgba(168,85,48,0.12); }
   }
 
   /* ── Mobile base fixes ─────────────────────────────────────────── */
