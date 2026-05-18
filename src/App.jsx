@@ -228,7 +228,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
       {/* ── Nav ── */}
       <header style={{ padding: '18px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${RULE}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-          <KinwoveWordmark size={26} textColor={T.cream} starColor="#F5EDD8" />
+          <KinwoveWordmark size={26} textColor={T.cream} starColor={T.honey} />
         </div>
         {session ? (
           <button onClick={onEditProfile} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}>
