@@ -246,11 +246,20 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
       </header>
 
       {/* ── Hero ── */}
-      <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '64px 24px 80px', position: 'relative', overflow: 'hidden' }}>
+      <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '80px 24px 80px', position: 'relative', overflow: 'hidden' }}>
+        {/* Ambient glow */}
         <div style={{ position: 'absolute', top: -60, left: '50%', transform: 'translateX(-50%)', width: 900, height: 600, background: 'radial-gradient(ellipse at 50% 30%, rgba(184,115,58,0.14) 0%, rgba(184,115,58,0.04) 50%, transparent 72%)', pointerEvents: 'none' }} />
 
-        <div style={{ marginBottom: 36, position: 'relative' }}>
-          <KinwoveWordmark size={52} textColor={T.cream} starColor={T.gold} />
+        {/* Wordmark — the arrival moment */}
+        <div style={{ marginBottom: 24, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {/* Focused glow behind the wordmark */}
+          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 560, height: 180, background: 'radial-gradient(ellipse at 50% 50%, rgba(212,162,74,0.13) 0%, rgba(168,85,48,0.07) 45%, transparent 70%)', pointerEvents: 'none' }} />
+          <KinwoveWordmark size={88} textColor={T.cream} starColor={T.honey} />
+        </div>
+
+        {/* Honey star — punctuation between brand and message */}
+        <div style={{ marginBottom: 40 }}>
+          <KinwoveStar size={9} color="rgba(212,162,74,0.5)" />
         </div>
 
         {referralRef && (
