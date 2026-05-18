@@ -25,12 +25,13 @@ export const KinwoveWordmark = ({
       <span
         style={{
           position: 'absolute',
-          top: '-0.34em',
+          top: '-0.62em',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: '0.2em',
-          height: '0.2em',
+          width: '0.28em',
+          height: '0.28em',
           display: 'block',
+          filter: `drop-shadow(0 0 3px ${starColor}) drop-shadow(0 0 6px ${starColor}88)`,
         }}
         aria-hidden="true"
       >
