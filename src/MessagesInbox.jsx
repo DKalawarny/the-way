@@ -108,16 +108,20 @@ function ThreadRow({ name, avatarConfig, photoUrl, subtitle, subtitleColor, last
           }}>{lastBody}</div>
         )}
       </button>
-      {onDelete && hovered && (
+      {onDelete && (
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
           title="Delete conversation"
           style={{
             position: 'absolute', top: '50%', right: 10,
             transform: 'translateY(-50%)',
-            background: 'rgba(192,57,43,0.1)', border: 'none',
-            color: '#c0392b', fontSize: 17, lineHeight: 1,
+            background: hovered ? 'rgba(192,57,43,0.12)' : 'transparent',
+            border: 'none',
+            color: hovered ? '#c0392b' : T.inkMuted,
+            fontSize: 17, lineHeight: 1,
             cursor: 'pointer', padding: '4px 8px', borderRadius: 8, zIndex: 1,
+            opacity: hovered ? 1 : 0.4,
+            transition: 'all 0.15s',
           }}
         >×</button>
       )}
