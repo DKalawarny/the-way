@@ -338,6 +338,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   const [messages, setMessages] = useState([]);
   const [msgInput, setMsgInput] = useState('');
   const [msgBusy, setMsgBusy] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const msgEndRef = useRef(null);
   const msgInputRef = useRef(null);
 
@@ -401,6 +402,12 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
     }
     setMsgBusy(false);
     msgInputRef.current?.focus();
+  }
+
+  async function deleteMsg(id) {
+    setMessages((prev) => prev.filter((m) => m.id !== id));
+    await supabase.from('group_messages').delete().eq('id', id);
+    setDeletingId(null);
   }
 
   async function sendAsk(e) {
@@ -540,8 +547,17 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
                   {showName && (
                     <div style={{ fontSize: 11, fontWeight: 700, color, marginBottom: 2, marginLeft: 4 }}>{name}</div>
                   )}
-                  <div style={{ maxWidth: '78%', background: isMe ? T.gold : T.white, color: isMe ? T.cream : T.ink, borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px', padding: '9px 14px', fontSize: 14, fontFamily: T.serif, lineHeight: 1.55, border: isMe ? 'none' : `1px solid rgba(184,115,58,0.18)` }}>
-                    {m.body}
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, flexDirection: isMe ? 'row-reverse' : 'row' }}>
+                    <div
+                      onClick={() => isMe && setDeletingId(deletingId === m.id ? null : m.id)}
+                      style={{ maxWidth: '78%', background: isMe ? T.gold : T.white, color: isMe ? T.cream : T.ink, borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px', padding: '9px 14px', fontSize: 14, fontFamily: T.serif, lineHeight: 1.55, border: isMe ? 'none' : `1px solid rgba(184,115,58,0.18)`, cursor: isMe ? 'pointer' : 'default' }}>
+                      {m.body}
+                    </div>
+                    {isMe && deletingId === m.id && (
+                      <button onClick={() => deleteMsg(m.id)} style={{ background: 'none', border: 'none', color: '#c0392b', fontSize: 11, cursor: 'pointer', padding: '2px 6px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                        Delete
+                      </button>
+                    )}
                   </div>
                   <div style={{ fontSize: 10, color: T.inkMuted, marginTop: 2, marginLeft: 4, marginRight: 4 }}>{msgTimeAgo(m.created_at)}</div>
                 </div>

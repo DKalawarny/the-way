@@ -16,57 +16,64 @@ function timeAgo(ts) {
 const CARE_STATUS_LABEL = { open: 'Waiting for reply', claimed: 'In conversation', closed: 'Closed' };
 const CARE_STATUS_COLOR = { open: T.goldDark, claimed: T.ink, closed: T.inkMuted };
 
-function SectionLabel({ children, top }) {
-  return (
-    <div style={{
-      fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase',
-      color: T.inkMuted, fontWeight: 700, margin: `${top ? 0 : 24}px 0 8px`,
-    }}>{children}</div>
-  );
-}
-
-function ThreadRow({ name, avatarConfig, photoUrl, subtitle, subtitleColor, lastBody, ts, onOpen, accent }) {
+function ThreadRow({ name, avatarConfig, photoUrl, subtitle, subtitleColor, lastBody, ts, onOpen, accent, active }) {
   return (
     <button
       onClick={onOpen}
       style={{
         display: 'block', width: '100%', textAlign: 'left',
-        background: accent ? T.parchment : T.white,
-        border: accent ? `1px solid ${T.gold}88` : `1px solid ${T.line}`,
+        background: active ? `${T.gold}1A` : accent ? T.parchment : T.white,
+        border: active ? `1px solid ${T.gold}66` : accent ? `1px solid ${T.gold}88` : `1px solid ${T.line}`,
         borderRadius: 14,
-        padding: '14px 16px', cursor: 'pointer', marginBottom: 10,
-        boxShadow: accent ? `0 0 0 3px ${T.gold}14` : 'none',
+        padding: '12px 14px', cursor: 'pointer', marginBottom: 8,
+        boxShadow: accent && !active ? `0 0 0 3px ${T.gold}14` : 'none',
+        transition: 'background 0.12s, border-color 0.12s',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: lastBody ? 6 : 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: lastBody ? 5 : 0 }}>
         {name ? (
-          <Avatar name={name} avatarConfig={avatarConfig} photoUrl={photoUrl} size={38} />
+          <Avatar name={name} avatarConfig={avatarConfig} photoUrl={photoUrl} size={36} />
         ) : (
           <div style={{
-            width: 38, height: 38, borderRadius: '50%', background: T.parchment,
+            width: 36, height: 36, borderRadius: '50%', background: T.parchment,
             border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: T.goldDark, fontSize: 16, flexShrink: 0,
+            color: T.goldDark, fontSize: 15, flexShrink: 0,
           }}>✦</div>
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink, marginBottom: 2 }}>
+          <div style={{ fontWeight: 600, fontSize: 13.5, color: T.ink, marginBottom: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {name ?? 'Someone from your church'}
           </div>
-          <div style={{ fontSize: 12, color: subtitleColor ?? T.inkMuted }}>
+          <div style={{ fontSize: 11.5, color: subtitleColor ?? T.inkMuted }}>
             {subtitle}{ts && <> · {timeAgo(ts)}</>}
           </div>
         </div>
-        <span style={{ color: T.inkMuted, fontSize: 14 }}>→</span>
+        <span style={{ color: T.inkMuted, fontSize: 13 }}>›</span>
       </div>
       {lastBody && (
         <div style={{
-          fontSize: 13, color: T.inkSoft, lineHeight: 1.5, fontFamily: T.serif, fontStyle: 'italic',
+          fontSize: 12.5, color: T.inkSoft, lineHeight: 1.45, fontFamily: T.serif, fontStyle: 'italic',
           overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box',
-          WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-          paddingLeft: 50,
+          WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
+          paddingLeft: 46,
         }}>{lastBody}</div>
       )}
     </button>
+  );
+}
+
+function EmptyPane() {
+  return (
+    <div style={{
+      flex: 1, height: '100%', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', gap: 10,
+      background: T.cream,
+    }}>
+      <div style={{ fontSize: 28, color: T.gold, opacity: 0.35 }}>✦</div>
+      <div style={{ fontFamily: T.serif, fontSize: 15, fontStyle: 'italic', color: T.inkMuted }}>
+        Select a conversation
+      </div>
+    </div>
   );
 }
 
@@ -76,9 +83,18 @@ export default function MessagesInbox({ session, profile, onBack }) {
   const [careLastMsgs, setCareLastMsgs] = useState({});
   const [dmLastMsgs, setDmLastMsgs] = useState({});
   const [loading, setLoading] = useState(true);
-  const [openCare, setOpenCare] = useState(null);   // conv id
-  const [openDm, setOpenDm] = useState(null);       // { id, otherProfile }
+  const [openCare, setOpenCare] = useState(null);
+  const [openDm, setOpenDm] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+
+  useEffect(() => {
+    const handle = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handle);
+    return () => window.removeEventListener('resize', handle);
+  }, []);
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -86,10 +102,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
     const uid = session.user.id;
 
     (async () => {
-      const [
-        { data: care },
-        { data: dms },
-      ] = await Promise.all([
+      const [{ data: care }, { data: dms }] = await Promise.all([
         supabase
           .from('care_conversations')
           .select('*, care_member:profiles!care_member_id(id, display_name, avatar_config, avatar_url)')
@@ -104,7 +117,6 @@ export default function MessagesInbox({ session, profile, onBack }) {
 
       setCareConvs(care ?? []);
 
-      // Resolve the other participant's profile for each DM
       const dmList = dms ?? [];
       const otherIds = dmList.map((c) => c.participant_ids.find((id) => id !== uid)).filter(Boolean);
       let profileMap = {};
@@ -120,7 +132,6 @@ export default function MessagesInbox({ session, profile, onBack }) {
         otherProfile: profileMap[c.participant_ids.find((id) => id !== uid)] ?? null,
       })));
 
-      // Last messages for care threads
       const careIds = (care ?? []).map((c) => c.id);
       if (careIds.length) {
         const { data: msgs } = await supabase
@@ -132,7 +143,6 @@ export default function MessagesInbox({ session, profile, onBack }) {
         setCareLastMsgs(map);
       }
 
-      // Last messages for DM threads
       const dmIds = dmList.map((c) => c.id);
       if (dmIds.length) {
         const { data: msgs } = await supabase
@@ -148,7 +158,8 @@ export default function MessagesInbox({ session, profile, onBack }) {
     })();
   }, [session?.user?.id, refreshKey]);
 
-  if (openCare) {
+  // Mobile: full-screen sub-views
+  if (isMobile && openCare) {
     return (
       <CareConversation
         session={session}
@@ -159,8 +170,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
       />
     );
   }
-
-  if (openDm) {
+  if (isMobile && openDm) {
     return (
       <Suspense fallback={null}>
         <DMConversation
@@ -174,87 +184,207 @@ export default function MessagesInbox({ session, profile, onBack }) {
     );
   }
 
-  const empty = careConvs.length === 0 && dmConvs.length === 0;
+  // Filtered + searched lists
+  const q = search.toLowerCase().trim();
 
-  return (
-    <div style={{ minHeight: '100vh', background: T.cream, padding: '32px 20px 80px', overflowY: 'auto' }}>
-      <div style={{ maxWidth: 600, margin: '0 auto' }}>
-        <button onClick={onBack} style={{
-          background: 'none', border: 'none', color: T.goldDark,
-          fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 14,
-        }}>← Back</button>
+  const filteredDms = filter === 'care' ? [] : [...dmConvs]
+    .sort((a, b) => {
+      const aS = a.otherProfile?.display_name === 'kinwove';
+      const bS = b.otherProfile?.display_name === 'kinwove';
+      return aS === bS ? 0 : aS ? -1 : 1;
+    })
+    .filter((c) => {
+      if (!q) return true;
+      const name = c.otherProfile?.display_name?.toLowerCase() ?? '';
+      const body = dmLastMsgs[c.id]?.body?.toLowerCase() ?? '';
+      return name.includes(q) || body.includes(q);
+    });
 
-        <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 8 }}>
-          Your messages
+  const filteredCare = filter === 'dms' ? [] : careConvs.filter((c) => {
+    if (!q) return true;
+    const name = c.care_member?.display_name?.toLowerCase() ?? '';
+    const body = careLastMsgs[c.id]?.body?.toLowerCase() ?? '';
+    return name.includes(q) || body.includes(q);
+  });
+
+  const empty = filteredDms.length === 0 && filteredCare.length === 0;
+
+  const convList = (
+    <>
+      {loading ? (
+        <div style={{ color: T.inkMuted, fontFamily: T.serif, textAlign: 'center', padding: 32, fontSize: 14 }}>Loading…</div>
+      ) : empty ? (
+        <div style={{
+          border: `1px dashed ${T.line}`, borderRadius: 14,
+          padding: '28px 16px', textAlign: 'center',
+          color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.65, fontSize: 13,
+        }}>
+          {q ? 'No results.' : 'No conversations yet.'}
         </div>
-        <h1 style={{ fontFamily: T.display, fontSize: 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 24px' }}>
-          Conversations
-        </h1>
+      ) : (
+        <>
+          {filteredDms.map((c) => {
+            const isSystem = c.otherProfile?.display_name === 'kinwove';
+            return (
+              <ThreadRow
+                key={c.id}
+                name={c.otherProfile?.display_name}
+                avatarConfig={c.otherProfile?.avatar_config}
+                photoUrl={c.otherProfile?.avatar_url}
+                subtitle={isSystem ? 'Welcome message ✦' : 'Direct message'}
+                subtitleColor={isSystem ? T.goldDark : undefined}
+                ts={c.last_message_at ?? c.created_at}
+                lastBody={dmLastMsgs[c.id]?.body}
+                onOpen={() => setOpenDm({ id: c.id, otherProfile: c.otherProfile })}
+                accent={isSystem}
+                active={!isMobile && openDm?.id === c.id}
+              />
+            );
+          })}
+          {filteredCare.map((c) => (
+            <ThreadRow
+              key={c.id}
+              name={c.care_member?.display_name}
+              avatarConfig={c.care_member?.avatar_config}
+              photoUrl={c.care_member?.avatar_url}
+              subtitle={CARE_STATUS_LABEL[c.status] ?? c.status}
+              subtitleColor={CARE_STATUS_COLOR[c.status]}
+              ts={c.last_message_at ?? c.created_at}
+              lastBody={careLastMsgs[c.id]?.body}
+              onOpen={() => setOpenCare(c.id)}
+              active={!isMobile && openCare === c.id}
+            />
+          ))}
+        </>
+      )}
+    </>
+  );
 
-        {loading ? (
-          <div style={{ color: T.inkMuted, fontFamily: T.serif, textAlign: 'center', padding: 40 }}>Loading…</div>
-        ) : empty ? (
-          <div style={{
-            background: T.white, border: `1px dashed ${T.line}`, borderRadius: 14,
-            padding: '40px 20px', textAlign: 'center',
-            color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.65,
-          }}>
-            No conversations yet.<br />
-            Message someone from their profile, or use "Talk to someone" from your church.
+  const filterTabs = (
+    <div style={{ display: 'flex', borderBottom: `1px solid ${T.line}`, flexShrink: 0 }}>
+      {[['all', 'All'], ['dms', 'Direct'], ['care', 'Care']].map(([f, label]) => (
+        <button key={f} onClick={() => setFilter(f)} style={{
+          flex: 1, background: 'none', border: 'none', padding: '10px 0',
+          fontSize: 12, fontWeight: filter === f ? 700 : 500,
+          color: filter === f ? T.gold : T.inkMuted,
+          cursor: 'pointer',
+          borderBottom: filter === f ? `2px solid ${T.gold}` : '2px solid transparent',
+          transition: 'all 0.15s',
+        }}>{label}</button>
+      ))}
+    </div>
+  );
+
+  // Mobile: full-page inbox list
+  if (isMobile) {
+    return (
+      <div style={{ minHeight: '100vh', background: T.cream, padding: '28px 16px 80px', overflowY: 'auto' }}>
+        <div style={{ maxWidth: 600, margin: '0 auto' }}>
+          <button onClick={onBack} style={{
+            background: 'none', border: 'none', color: T.goldDark,
+            fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 12,
+          }}>← Back</button>
+          <h1 style={{ fontFamily: T.display, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 14px' }}>
+            Messages
+          </h1>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search conversations…"
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              background: T.white, border: `1px solid ${T.line}`, borderRadius: 999,
+              padding: '9px 14px', fontSize: 13.5, color: T.ink, outline: 'none', marginBottom: 14,
+            }}
+            onFocus={(e) => (e.target.style.borderColor = T.gold)}
+            onBlur={(e) => (e.target.style.borderColor = T.line)}
+          />
+          <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
+            {[['all', 'All'], ['dms', 'Direct'], ['care', 'Care']].map(([f, label]) => (
+              <button key={f} onClick={() => setFilter(f)} style={{
+                background: filter === f ? T.gold : T.white,
+                color: filter === f ? T.cream : T.inkMuted,
+                border: `1px solid ${filter === f ? T.gold : T.line}`,
+                borderRadius: 999, padding: '6px 14px', fontSize: 12, fontWeight: 600,
+                cursor: 'pointer',
+              }}>{label}</button>
+            ))}
           </div>
-        ) : (
-          <>
-            {dmConvs.length > 0 && (
-              <>
-                <SectionLabel top>Direct messages</SectionLabel>
-                {/* Sort: "kinwove" system account pinned first */}
-                {[...dmConvs]
-                  .sort((a, b) => {
-                    const aIsSystem = a.otherProfile?.display_name === 'kinwove';
-                    const bIsSystem = b.otherProfile?.display_name === 'kinwove';
-                    if (aIsSystem && !bIsSystem) return -1;
-                    if (!aIsSystem && bIsSystem) return 1;
-                    return 0;
-                  })
-                  .map((c) => {
-                    const isSystem = c.otherProfile?.display_name === 'kinwove';
-                    return (
-                      <ThreadRow
-                        key={c.id}
-                        name={c.otherProfile?.display_name}
-                        avatarConfig={c.otherProfile?.avatar_config}
-                        photoUrl={c.otherProfile?.avatar_url}
-                        subtitle={isSystem ? 'Welcome message ✦' : 'Direct message'}
-                        subtitleColor={isSystem ? T.goldDark : undefined}
-                        ts={c.last_message_at ?? c.created_at}
-                        lastBody={dmLastMsgs[c.id]?.body}
-                        onOpen={() => setOpenDm({ id: c.id, otherProfile: c.otherProfile })}
-                        accent={isSystem}
-                      />
-                    );
-                  })}
-              </>
-            )}
+          {convList}
+        </div>
+      </div>
+    );
+  }
 
-            {careConvs.length > 0 && (
-              <>
-                <SectionLabel top={dmConvs.length === 0}>Care conversations</SectionLabel>
-                {careConvs.map((c) => (
-                  <ThreadRow
-                    key={c.id}
-                    name={c.care_member?.display_name}
-                    avatarConfig={c.care_member?.avatar_config}
-                    photoUrl={c.care_member?.avatar_url}
-                    subtitle={CARE_STATUS_LABEL[c.status] ?? c.status}
-                    subtitleColor={CARE_STATUS_COLOR[c.status]}
-                    ts={c.last_message_at ?? c.created_at}
-                    lastBody={careLastMsgs[c.id]?.body}
-                    onOpen={() => setOpenCare(c.id)}
-                  />
-                ))}
-              </>
-            )}
-          </>
+  // Desktop: two-panel layout
+  return (
+    <div style={{ display: 'flex', height: '100vh', background: T.cream, overflow: 'hidden' }}>
+      {/* Sidebar */}
+      <div style={{
+        width: 300, minWidth: 240,
+        borderRight: `1px solid ${T.line}`,
+        background: T.white,
+        display: 'flex', flexDirection: 'column',
+        flexShrink: 0,
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '18px 16px 12px',
+          paddingTop: 'calc(18px + env(safe-area-inset-top, 0px))',
+          borderBottom: `1px solid ${T.line}`,
+          flexShrink: 0,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+            <button onClick={onBack} style={{
+              background: 'none', border: 'none', color: T.goldDark,
+              fontSize: 18, cursor: 'pointer', padding: 0, lineHeight: 1,
+            }}>←</button>
+            <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em' }}>
+              Messages
+            </div>
+          </div>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search…"
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              background: T.cream, border: `1px solid ${T.line}`, borderRadius: 999,
+              padding: '8px 13px', fontSize: 13, color: T.ink, outline: 'none',
+            }}
+            onFocus={(e) => (e.target.style.borderColor = T.gold)}
+            onBlur={(e) => (e.target.style.borderColor = T.line)}
+          />
+        </div>
+        {filterTabs}
+        {/* Conversation list */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px' }}>
+          {convList}
+        </div>
+      </div>
+
+      {/* Right panel */}
+      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        {openDm ? (
+          <Suspense fallback={null}>
+            <DMConversation
+              session={session}
+              profile={profile}
+              conversationId={openDm.id}
+              otherProfile={openDm.otherProfile}
+              onBack={() => { setOpenDm(null); setRefreshKey((k) => k + 1); }}
+            />
+          </Suspense>
+        ) : openCare ? (
+          <CareConversation
+            session={session}
+            profile={profile}
+            conversationId={openCare}
+            viewerRole="requester"
+            onBack={() => setOpenCare(null)}
+          />
+        ) : (
+          <EmptyPane />
         )}
       </div>
     </div>

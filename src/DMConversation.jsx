@@ -3,6 +3,8 @@ import { supabase, authedFetch } from './supabase.js';
 import { T } from './theme.js';
 import { Avatar } from './ProfilePage.jsx';
 import MsgText from './MsgText.jsx';
+import { getSystemPrompt } from './prompts.js';
+import { KinwoveStar } from './components/brand/KinwoveStar';
 
 function timeAgo(ts) {
   const diff = (Date.now() - new Date(ts)) / 1000;
@@ -19,6 +21,7 @@ export default function DMConversation({ session, profile, conversationId, other
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [other, setOther] = useState(otherProfile ?? null);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiQuery, setAiQuery] = useState('');
@@ -41,6 +44,7 @@ export default function DMConversation({ session, profile, conversationId, other
         headers: { 'Content-Type': 'application/json' },
         signal: ctrl.signal,
         body: JSON.stringify({
+          system: getSystemPrompt(profile?.person_type ?? 'curious', null, 0),
           messages: [{ role: 'user', content: aiQuery.trim() }],
           personType: profile?.person_type ?? 'curious',
         }),
@@ -148,12 +152,18 @@ export default function DMConversation({ session, profile, conversationId, other
     setSending(false);
   }
 
+  async function deleteMsg(id) {
+    setMessages((prev) => prev.filter((m) => m.id !== id));
+    await supabase.from('dm_messages').delete().eq('id', id);
+    setDeletingId(null);
+  }
+
   function onKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: T.cream }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '100vh', background: T.cream }}>
       {/* Header */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
@@ -207,21 +217,32 @@ export default function DMConversation({ session, profile, conversationId, other
                 </div>
               )}
 
-              <div style={{
-                maxWidth: '80%',
-                background: isMe ? T.gold : T.white,
-                color: isMe ? T.cream : T.ink,
-                border: isMe ? 'none' : `1px solid ${T.line}`,
-                borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                padding: '10px 14px',
-                fontSize: 14.5, lineHeight: 1.6,
-              }}>
-                <div style={{ fontFamily: isMe ? 'inherit' : T.serif }}>
-                  <MsgText text={msg.body} />
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, flexDirection: isMe ? 'row-reverse' : 'row' }}>
+                <div
+                  onClick={() => isMe && setDeletingId(deletingId === msg.id ? null : msg.id)}
+                  style={{
+                    maxWidth: '80%',
+                    background: isMe ? T.gold : T.white,
+                    color: isMe ? T.cream : T.ink,
+                    border: isMe ? 'none' : `1px solid ${T.line}`,
+                    borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                    padding: '10px 14px',
+                    fontSize: 14.5, lineHeight: 1.6,
+                    cursor: isMe ? 'pointer' : 'default',
+                  }}
+                >
+                  <div style={{ fontFamily: isMe ? 'inherit' : T.serif }}>
+                    <MsgText text={msg.body} />
+                  </div>
+                  <div style={{ fontSize: 10.5, color: isMe ? 'rgba(253,248,240,0.65)' : T.inkMuted, marginTop: 4, textAlign: 'right' }}>
+                    {timeAgo(msg.created_at)}
+                  </div>
                 </div>
-                <div style={{ fontSize: 10.5, color: isMe ? 'rgba(253,248,240,0.65)' : T.inkMuted, marginTop: 4, textAlign: 'right' }}>
-                  {timeAgo(msg.created_at)}
-                </div>
+                {isMe && deletingId === msg.id && (
+                  <button onClick={() => deleteMsg(msg.id)} style={{ background: 'none', border: 'none', color: '#c0392b', fontSize: 11, cursor: 'pointer', padding: '2px 6px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    Delete
+                  </button>
+                )}
               </div>
             </div>
           );
@@ -250,7 +271,7 @@ export default function DMConversation({ session, profile, conversationId, other
               padding: '12px 14px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <span style={{ color: T.gold, fontSize: 14 }}>✦</span>
+                <KinwoveStar size={14} color={T.gold} />
                 <span style={{ fontSize: 12, fontWeight: 600, color: T.goldDark }}>Ask kinwove</span>
                 <button onClick={() => { setAiOpen(false); setAiQuery(''); setAiResponse(''); aiAbortRef.current?.abort(); }}
                   style={{ marginLeft: 'auto', background: 'none', border: 'none', color: T.inkMuted, fontSize: 18, cursor: 'pointer', lineHeight: 1 }}>×</button>
@@ -314,7 +335,7 @@ export default function DMConversation({ session, profile, conversationId, other
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: T.gold, fontSize: 16, transition: 'all 0.15s',
               }}
-            >✦</button>
+            ><KinwoveStar size={18} color={T.gold} /></button>
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
