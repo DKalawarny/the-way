@@ -77,16 +77,27 @@ export default function DMConversation({ session, profile, conversationId, other
   async function sendAiResponse() {
     if (!aiResponse.trim()) return;
     const body = `✦ kinwove says:\n\n${aiResponse.trim()}`;
+    // Optimistic: add a temp message immediately so the sender sees it right away
+    const tempId = `temp-${Date.now()}`;
+    const tempMsg = {
+      id: tempId,
+      conversation_id: conversationId,
+      sender_id: session.user.id,
+      body,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, tempMsg]);
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    setAiOpen(false);
+    setAiQuery('');
+    setAiResponse('');
+    // Persist to DB and swap temp with real row
     const { data: newMsg } = await supabase.from('dm_messages').insert({
       conversation_id: conversationId, sender_id: session.user.id, body,
     }).select().single();
     if (newMsg) {
-      setMessages((prev) => [...prev, newMsg]);
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+      setMessages((prev) => prev.map((m) => m.id === tempId ? newMsg : m));
     }
-    setAiOpen(false);
-    setAiQuery('');
-    setAiResponse('');
   }
 
   useEffect(() => {
