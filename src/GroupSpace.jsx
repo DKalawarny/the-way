@@ -6,6 +6,23 @@ import ShareSheet from './ShareSheet.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
 import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
 
+const MEMBER_PALETTE = [
+  '#A85530','#6B7C5E','#5B6E8A','#7A4A6B',
+  '#8B6E35','#4A6B5B','#6B4A35','#5B4A7A',
+];
+function memberColor(userId) {
+  let h = 0;
+  for (let i = 0; i < userId.length; i++) h = (h * 31 + userId.charCodeAt(i)) >>> 0;
+  return MEMBER_PALETTE[h % MEMBER_PALETTE.length];
+}
+function msgTimeAgo(ts) {
+  const diff = (Date.now() - new Date(ts)) / 1000;
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+  return new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
 function timeAgo(ts) {
   const diff = (Date.now() - new Date(ts)) / 1000;
   if (diff < 60) return 'just now';
@@ -307,6 +324,7 @@ function StudyQuestionsCard({ focus, isPastor, onUseQuestion }) {
 
 export default function GroupSpace({ group, role, session, profile, onLeave, onClose, hideHeader }) {
   const isPastor = role === 'pastor';
+  const [tab, setTab] = useState('study');
   const [focus, setFocus] = useState(null);
   const [posts, setPosts] = useState([]);
   const [text, setText] = useState('');
@@ -316,15 +334,102 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   const [inviteOpen, setInviteOpen] = useState(false);
   const imageDrafts = useImageDrafts(4);
 
+  // Chat
+  const [messages, setMessages] = useState([]);
+  const [msgInput, setMsgInput] = useState('');
+  const [msgBusy, setMsgBusy] = useState(false);
+  const msgEndRef = useRef(null);
+  const msgInputRef = useRef(null);
+
+  // Ask AI (inline, contextual to focus passage)
+  const [askOpen, setAskOpen] = useState(false);
+  const [askMsgs, setAskMsgs] = useState([]);
+  const [askInput, setAskInput] = useState('');
+  const [askBusy, setAskBusy] = useState(false);
+  const askEndRef = useRef(null);
+
   useEffect(() => {
     loadFocus();
     loadPosts();
+    loadMessages();
     supabase
       .from('group_members')
       .select('id', { count: 'exact' })
       .eq('group_id', group.id)
       .then(({ count }) => setMemberCount(count ?? 0));
+
+    const sub = supabase
+      .channel(`group_messages:${group.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'group_messages', filter: `group_id=eq.${group.id}` }, (payload) => {
+        const msg = payload.new;
+        supabase.from('profiles').select('display_name,avatar_config,avatar_url').eq('id', msg.author_id).single()
+          .then(({ data: p }) => {
+            setMessages((prev) => [...prev, { ...msg, profiles: p }]);
+            setTimeout(() => msgEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+          });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(sub); };
   }, [group.id]);
+
+  async function loadMessages() {
+    const { data } = await supabase
+      .from('group_messages')
+      .select('*, profiles(display_name, avatar_config, avatar_url)')
+      .eq('group_id', group.id)
+      .order('created_at', { ascending: true })
+      .limit(100);
+    setMessages(data ?? []);
+    setTimeout(() => msgEndRef.current?.scrollIntoView(), 50);
+  }
+
+  async function sendMessage(e) {
+    e?.preventDefault();
+    if (!msgInput.trim() || msgBusy || !session) return;
+    setMsgBusy(true);
+    const body = msgInput.trim();
+    setMsgInput('');
+    await supabase.from('group_messages').insert({ group_id: group.id, author_id: session.user.id, body });
+    setMsgBusy(false);
+    msgInputRef.current?.focus();
+  }
+
+  async function sendAsk(e) {
+    e?.preventDefault();
+    if (!askInput.trim() || askBusy) return;
+    const userMsg = { role: 'user', content: askInput.trim() };
+    setAskMsgs((prev) => [...prev, userMsg]);
+    setAskInput('');
+    setAskBusy(true);
+    const context = focus ? `The group is studying: ${focus.passage}.${focus.pastor_note ? ` Pastor's note: ${focus.pastor_note}` : ''}` : '';
+    const system = `You are a warm, knowledgeable Bible study companion for a small group. ${context} Answer questions about scripture thoughtfully and concisely. Be honest about uncertainty.`;
+    const res = await authedFetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system, messages: [...askMsgs, userMsg], personType: 'group' }),
+    });
+    if (!res.ok || !res.body) { setAskBusy(false); return; }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '', full = '';
+    setAskMsgs((prev) => [...prev, { role: 'assistant', content: '' }]);
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const events = buf.split('\n\n'); buf = events.pop() ?? '';
+      for (const raw of events) {
+        const lines = raw.split('\n');
+        const ev = lines.find((l) => l.startsWith('event: '))?.slice(7).trim();
+        const data = lines.find((l) => l.startsWith('data: '))?.slice(6);
+        if (ev === 'text' && data) {
+          try { const d = JSON.parse(data).delta; full += d; setAskMsgs((prev) => { const c = [...prev]; c[c.length - 1] = { role: 'assistant', content: full }; return c; }); } catch {}
+        }
+      }
+    }
+    setAskBusy(false);
+    setTimeout(() => askEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+  }
 
   async function loadFocus() {
     const today = new Date().toISOString().slice(0, 10);
@@ -397,6 +502,62 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
         )}
       </header>}
 
+      {/* Tab bar */}
+      <div style={{ display: 'flex', borderBottom: '1px solid rgba(184,115,58,0.15)', background: T.cream, flexShrink: 0 }}>
+        {['study', 'chat'].map((t) => (
+          <button key={t} onClick={() => { setTab(t); if (t === 'chat') setTimeout(() => msgEndRef.current?.scrollIntoView(), 100); }}
+            style={{ flex: 1, background: 'none', border: 'none', padding: '12px 0', fontSize: 13, fontWeight: tab === t ? 700 : 500, color: tab === t ? T.gold : T.inkMuted, cursor: 'pointer', borderBottom: tab === t ? `2px solid ${T.gold}` : '2px solid transparent', transition: 'all 0.15s' }}>
+            {t === 'study' ? 'Study' : 'Chat'}
+          </button>
+        ))}
+      </div>
+
+      {/* Chat tab */}
+      {tab === 'chat' && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 8px' }}>
+            {messages.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '60px 20px', fontFamily: T.serif, fontSize: 15, color: T.inkMuted }}>
+                No messages yet. Say hello.
+              </div>
+            )}
+            {messages.map((m, i) => {
+              const isMe = m.author_id === session?.user?.id;
+              const name = m.profiles?.display_name ?? 'Member';
+              const color = memberColor(m.author_id);
+              const showName = !isMe && (i === 0 || messages[i - 1]?.author_id !== m.author_id);
+              return (
+                <div key={m.id} style={{ marginBottom: 6, display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                  {showName && (
+                    <div style={{ fontSize: 11, fontWeight: 700, color, marginBottom: 2, marginLeft: 4 }}>{name}</div>
+                  )}
+                  <div style={{ maxWidth: '78%', background: isMe ? T.gold : T.white, color: isMe ? T.cream : T.ink, borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px', padding: '9px 14px', fontSize: 14, fontFamily: T.serif, lineHeight: 1.55, border: isMe ? 'none' : `1px solid rgba(184,115,58,0.18)` }}>
+                    {m.body}
+                  </div>
+                  <div style={{ fontSize: 10, color: T.inkMuted, marginTop: 2, marginLeft: 4, marginRight: 4 }}>{msgTimeAgo(m.created_at)}</div>
+                </div>
+              );
+            })}
+            <div ref={msgEndRef} />
+          </div>
+          <form onSubmit={sendMessage} style={{ padding: '10px 12px 16px', borderTop: '1px solid rgba(184,115,58,0.15)', background: T.cream, display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              ref={msgInputRef}
+              value={msgInput}
+              onChange={(e) => setMsgInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+              placeholder="Message the group…"
+              style={{ flex: 1, background: T.white, border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '10px 16px', fontSize: 14, fontFamily: T.serif, color: T.ink, outline: 'none' }}
+            />
+            <button type="submit" disabled={!msgInput.trim() || msgBusy}
+              style={{ width: 36, height: 36, borderRadius: '50%', background: msgInput.trim() ? T.gold : T.line, border: 'none', color: T.cream, fontSize: 16, cursor: msgInput.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s' }}>
+              →
+            </button>
+          </form>
+        </div>
+      )}
+
+      {tab === 'study' && (
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 100px', background: T.cream }}>
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
 
@@ -481,6 +642,55 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
             />
           )}
 
+          {/* Ask AI — inline, contextual to the focus passage */}
+          {focus && !settingFocus && (
+            <div style={{ marginBottom: 20 }}>
+              {!askOpen ? (
+                <button onClick={() => setAskOpen(true)} style={{ width: '100%', background: 'rgba(168,85,48,0.07)', border: `1px solid rgba(168,85,48,0.22)`, borderRadius: 14, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}>
+                  <span style={{ fontSize: 18 }}>✦</span>
+                  <div>
+                    <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink, marginBottom: 2 }}>Ask about {focus.passage}</div>
+                    <div style={{ fontSize: 12, color: T.inkMuted }}>Ask the AI anything about this week's passage</div>
+                  </div>
+                  <span style={{ marginLeft: 'auto', color: T.inkMuted, fontSize: 16 }}>›</span>
+                </button>
+              ) : (
+                <div style={{ background: T.white, border: `1px solid rgba(168,85,48,0.22)`, borderRadius: 16, overflow: 'hidden' }}>
+                  <div style={{ padding: '12px 16px', borderBottom: `1px solid rgba(168,85,48,0.15)`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink }}>Ask about {focus.passage}</span>
+                    <button onClick={() => setAskOpen(false)} style={{ background: 'none', border: 'none', color: T.inkMuted, cursor: 'pointer', fontSize: 13 }}>✕</button>
+                  </div>
+                  <div style={{ padding: '12px 16px', maxHeight: 280, overflowY: 'auto' }}>
+                    {askMsgs.length === 0 && (
+                      <div style={{ fontFamily: T.serif, fontSize: 13, color: T.inkMuted, paddingBottom: 8 }}>What do you want to understand better about this passage?</div>
+                    )}
+                    {askMsgs.map((m, i) => (
+                      <div key={i} style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', alignItems: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                        <div style={{ maxWidth: '85%', background: m.role === 'user' ? T.gold : 'rgba(168,85,48,0.07)', color: m.role === 'user' ? T.cream : T.ink, borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px', padding: '8px 13px', fontSize: 13, fontFamily: T.serif, lineHeight: 1.6 }}>
+                          {m.content || '…'}
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={askEndRef} />
+                  </div>
+                  <form onSubmit={sendAsk} style={{ padding: '10px 12px', borderTop: `1px solid rgba(168,85,48,0.12)`, display: 'flex', gap: 8 }}>
+                    <input
+                      value={askInput}
+                      onChange={(e) => setAskInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); sendAsk(); } }}
+                      placeholder={`Ask about ${focus.passage}…`}
+                      style={{ flex: 1, background: 'rgba(168,85,48,0.05)', border: `1px solid rgba(168,85,48,0.2)`, borderRadius: 999, padding: '8px 14px', fontSize: 13, fontFamily: T.serif, color: T.ink, outline: 'none' }}
+                    />
+                    <button type="submit" disabled={!askInput.trim() || askBusy}
+                      style={{ width: 32, height: 32, borderRadius: '50%', background: askInput.trim() ? T.gold : T.line, border: 'none', color: T.cream, fontSize: 15, cursor: askInput.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      →
+                    </button>
+                  </form>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Post composer */}
           <form onSubmit={submitPost} style={{ marginBottom: 24 }}>
             <textarea
@@ -540,6 +750,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
           )}
         </div>
       </div>
+      )}
 
       {inviteOpen && (
         <ShareSheet
