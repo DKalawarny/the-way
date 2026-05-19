@@ -1751,7 +1751,7 @@ export default function App() {
     document.title = TITLES[stage] ?? 'kinwove';
     // Persist nav position so tab-suspend / mobile reload returns user to same screen.
     // localStorage: fast, same-browser. user_metadata: cross-browser fallback (debounced).
-    const PERSIST = new Set(['home','feed','bible','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
+    const PERSIST = new Set(['home','feed','read','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
     if (PERSIST.has(stage)) {
       localStorage.setItem('kw:stage', stage);
       clearTimeout(stageSaveTimerRef.current);
@@ -1815,7 +1815,7 @@ export default function App() {
     setActiveCareConv(prev.activeCareConv);
   }
 
-  const STAGE_SAFE = new Set(['home','feed','bible','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
+  const STAGE_SAFE = new Set(['home','feed','read','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
