@@ -128,7 +128,7 @@ export const globalCss = `
   }
   button { font-family: inherit; cursor: pointer; }
   input, textarea { font-family: inherit; }
-  ::selection { background: ${T.gold}; color: ${T.cream}; }
+  ::selection { background: ${T.ink}; color: ${T.cream}; }
 
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(8px); }
