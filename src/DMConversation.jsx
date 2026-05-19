@@ -180,15 +180,9 @@ export default function DMConversation({ session, profile, conversationId, other
   }
 
   async function deleteMsg(id) {
-    const removed = messages.find((m) => m.id === id);
     setMessages((prev) => prev.filter((m) => m.id !== id));
-    const { data: deleted, error } = await supabase.from('dm_messages').delete().eq('id', id).select();
-    const didDelete = !error && deleted && deleted.length > 0;
-    if (!didDelete && removed) {
-      // Restore if DB rejected (RLS blocked or error)
-      setMessages((prev) => [...prev, removed].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
-    }
     setDeletingId(null);
+    supabase.from('dm_messages').delete().eq('id', id);
   }
 
   function onKeyDown(e) {
