@@ -313,19 +313,45 @@ export default function DMConversation({ session, profile, conversationId, other
                       )}
                     </div>
                   )}
-                  <div style={{
-                    maxWidth: '75%',
-                    background: isMe ? T.gold : T.white,
-                    color: isMe ? T.cream : T.ink,
-                    border: isMe ? 'none' : `1px solid ${T.line}`,
-                    borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                    padding: '10px 14px', fontSize: 14.5, lineHeight: 1.6,
-                    wordBreak: 'break-word', userSelect: 'text', cursor: 'text',
-                  }}>
-                    <div style={{ fontFamily: isMe ? 'inherit' : T.serif }}>
-                      <MsgText text={msg.body} />
-                    </div>
-                  </div>
+                  {(() => {
+                    const AI_PREFIX = '✦ kinwove says:\n\n';
+                    const isAiMsg = msg.body.startsWith(AI_PREFIX);
+                    const aiBody = isAiMsg ? msg.body.slice(AI_PREFIX.length) : null;
+                    return (
+                      <div style={{
+                        maxWidth: '75%',
+                        background: isAiMsg ? T.parchment : isMe ? T.gold : T.white,
+                        color: T.ink,
+                        border: isAiMsg ? `1px solid ${T.gold}88` : isMe ? 'none' : `1px solid ${T.line}`,
+                        borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                        padding: isAiMsg ? '0' : '10px 14px',
+                        fontSize: 14.5, lineHeight: 1.6,
+                        wordBreak: 'break-word', userSelect: 'text', cursor: 'text',
+                        overflow: 'hidden',
+                      }}>
+                        {isAiMsg ? (
+                          <>
+                            <div style={{
+                              display: 'flex', alignItems: 'center', gap: 7,
+                              padding: '8px 14px 7px',
+                              borderBottom: `1px solid ${T.gold}55`,
+                              background: `${T.gold}18`,
+                            }}>
+                              <KinwoveStar size={13} color={T.goldDark} />
+                              <span style={{ fontSize: 12, fontWeight: 700, color: T.goldDark, letterSpacing: '0.02em', fontFamily: T.display }}>kinwove says</span>
+                            </div>
+                            <div style={{ padding: '10px 14px', fontFamily: T.serif }}>
+                              <MsgText text={aiBody} />
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ fontFamily: isMe ? 'inherit' : T.serif }}>
+                            <MsgText text={msg.body} />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
