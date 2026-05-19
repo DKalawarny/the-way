@@ -429,10 +429,26 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
         </div>
       </div>
 
-      {/* Their church + this week's sermon — see profileShared.jsx.
-          Hidden on the viewer's own profile (you don't need a "your church"
-          card on someone else's profile that's actually you — the bottom-nav
-          Church tab already covers that case). */}
+      {/* Direct message — primary action, right under the header */}
+      {onStartDM && session?.user?.id !== userId && (
+        <button
+          onClick={() => onStartDM(userId)}
+          style={{
+            width: '100%', marginBottom: 16,
+            background: T.ink, color: T.cream,
+            border: 'none', borderRadius: 12,
+            padding: '13px 18px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 10,
+            fontFamily: 'inherit', fontSize: 15, fontWeight: 600,
+          }}
+        >
+          <span style={{ fontSize: 17 }}>✉</span>
+          <span>Message {profile?.display_name?.split(' ')[0] ?? 'them'}</span>
+          <span style={{ marginLeft: 'auto', fontSize: 15 }}>→</span>
+        </button>
+      )}
+
+      {/* Their church + this week's sermon */}
       {session?.user?.id !== userId && (
         <ChurchAttendsCard
           firstName={firstName}
@@ -443,25 +459,6 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
           onOpenChurch={onOpenChurch}
           onOpenSermon={onOpenSermon}
         />
-      )}
-
-      {/* Direct message */}
-      {onStartDM && session?.user?.id !== userId && (
-        <button
-          onClick={() => onStartDM(userId)}
-          style={{
-            width: '100%', marginBottom: 10,
-            background: T.ink, color: T.cream,
-            border: 'none', borderRadius: 12,
-            padding: '11px 14px', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 10,
-            fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
-          }}
-        >
-          <span style={{ fontSize: 16 }}>✉</span>
-          <span>Message {profile?.display_name?.split(' ')[0] ?? 'them'}</span>
-          <span style={{ marginLeft: 'auto', fontSize: 14 }}>→</span>
-        </button>
       )}
 
 
