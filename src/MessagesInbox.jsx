@@ -96,7 +96,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
           .order('last_message_at', { ascending: false, nullsFirst: false }),
         supabase
           .from('dm_conversations')
-          .select('*, p1:profiles!inner(id, display_name, avatar_config, avatar_url)')
+          .select('*')
           .contains('participant_ids', [uid])
           .order('last_message_at', { ascending: false, nullsFirst: false }),
       ]);

@@ -393,10 +393,10 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
     const { data: newMsg } = await supabase
       .from('group_messages')
       .insert({ group_id: group.id, author_id: session.user.id, body })
-      .select('*, profiles(display_name, avatar_config, avatar_url)')
+      .select()
       .single();
     if (newMsg) {
-      setMessages((prev) => [...prev, newMsg]);
+      setMessages((prev) => [...prev, { ...newMsg, profiles: { display_name: profile?.display_name, avatar_config: profile?.avatar_config, avatar_url: profile?.avatar_url } }]);
       setTimeout(() => msgEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     }
     setMsgBusy(false);

@@ -122,6 +122,7 @@ export default function DMConversation({ session, profile, conversationId, other
         table: 'dm_messages',
         filter: `conversation_id=eq.${conversationId}`,
       }, (payload) => {
+        if (payload.new.sender_id === session?.user?.id) return;
         setMessages((prev) => [...prev, payload.new]);
         setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
       })
@@ -135,11 +136,15 @@ export default function DMConversation({ session, profile, conversationId, other
     if (!body || sending || !session?.user?.id) return;
     setSending(true);
     setInput('');
-    await supabase.from('dm_messages').insert({
+    const { data: newMsg } = await supabase.from('dm_messages').insert({
       conversation_id: conversationId,
       sender_id: session.user.id,
       body,
-    });
+    }).select().single();
+    if (newMsg) {
+      setMessages((prev) => [...prev, newMsg]);
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    }
     setSending(false);
   }
 
