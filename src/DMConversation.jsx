@@ -77,7 +77,13 @@ export default function DMConversation({ session, profile, conversationId, other
   async function sendAiResponse() {
     if (!aiResponse.trim()) return;
     const body = `✦ kinwove says:\n\n${aiResponse.trim()}`;
-    await supabase.from('dm_messages').insert({ conversation_id: conversationId, sender_id: session.user.id, body });
+    const { data: newMsg } = await supabase.from('dm_messages').insert({
+      conversation_id: conversationId, sender_id: session.user.id, body,
+    }).select().single();
+    if (newMsg) {
+      setMessages((prev) => [...prev, newMsg]);
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    }
     setAiOpen(false);
     setAiQuery('');
     setAiResponse('');
