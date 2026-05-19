@@ -19,7 +19,8 @@ const isSystemAccount = (p) => p?.display_name === 'kinwove';
 
 export default function DMConversation({ session, profile, conversationId, otherProfile, onBack }) {
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
+  const DRAFT_KEY = `kw:dm-draft:${conversationId}`;
+  const [input, setInput] = useState(() => sessionStorage.getItem(DRAFT_KEY) ?? '');
   const [sending, setSending] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [other, setOther] = useState(otherProfile ?? null);
@@ -140,6 +141,7 @@ export default function DMConversation({ session, profile, conversationId, other
     if (!body || sending || !session?.user?.id) return;
     setSending(true);
     setInput('');
+    sessionStorage.removeItem(DRAFT_KEY);
     const { data: newMsg } = await supabase.from('dm_messages').insert({
       conversation_id: conversationId,
       sender_id: session.user.id,
@@ -338,7 +340,7 @@ export default function DMConversation({ session, profile, conversationId, other
             ><KinwoveStar size={18} color={T.gold} /></button>
             <textarea
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => { setInput(e.target.value); sessionStorage.setItem(DRAFT_KEY, e.target.value); }}
               onKeyDown={onKeyDown}
               placeholder="Message…"
               rows={1}

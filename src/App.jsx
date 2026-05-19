@@ -1744,6 +1744,9 @@ export default function App() {
       'app-admin':       'Admin · kinwove',
     };
     document.title = TITLES[stage] ?? 'kinwove';
+    // Persist nav position so tab-suspend / mobile reload returns user to same screen
+    const PERSIST = new Set(['home','feed','bible','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
+    if (PERSIST.has(stage)) sessionStorage.setItem('kw:stage', stage);
   }, [stage]);
 
   // Enrich the tab title with the actual church or sermon name once loaded.
@@ -1806,7 +1809,11 @@ export default function App() {
         loadProfile(data.session.user.id);
         if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); }
         else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); }
-        else { setStage('home'); }
+        else {
+          const saved = sessionStorage.getItem('kw:stage');
+          const SAFE = new Set(['home','feed','bible','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
+          setStage(saved && SAFE.has(saved) ? saved : 'home');
+        }
         if (shouldShowDailyVerse()) setShowVerseCard(true);
       } else if (initialAnonChurchId) {
         setViewingChurchId(initialAnonChurchId);
@@ -1823,7 +1830,12 @@ export default function App() {
         loadProfile(s.user.id);
         if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); }
         else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); }
-        else { setStage('home'); }
+        else {
+          // On reload (INITIAL_SESSION) restore saved position; on fresh SIGNED_IN go to home
+          const saved = event === 'INITIAL_SESSION' ? sessionStorage.getItem('kw:stage') : null;
+          const SAFE = new Set(['home','feed','bible','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
+          setStage(saved && SAFE.has(saved) ? saved : 'home');
+        }
         // Import guest Q+A saved before sign-up
         if (event === 'SIGNED_IN') {
           try {

@@ -327,7 +327,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   const [tab, setTab] = useState('study');
   const [focus, setFocus] = useState(null);
   const [posts, setPosts] = useState([]);
-  const [text, setText] = useState('');
+  const [text, setText] = useState(() => sessionStorage.getItem(`kw:group-post:${group.id}`) ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [settingFocus, setSettingFocus] = useState(false);
   const [memberCount, setMemberCount] = useState(0);
@@ -335,8 +335,10 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   const imageDrafts = useImageDrafts(4);
 
   // Chat
+  const CHAT_DRAFT_KEY = `kw:group-chat:${group.id}`;
+  const POST_DRAFT_KEY = `kw:group-post:${group.id}`;
   const [messages, setMessages] = useState([]);
-  const [msgInput, setMsgInput] = useState('');
+  const [msgInput, setMsgInput] = useState(() => sessionStorage.getItem(CHAT_DRAFT_KEY) ?? '');
   const [msgBusy, setMsgBusy] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const msgEndRef = useRef(null);
@@ -391,6 +393,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
     setMsgBusy(true);
     const body = msgInput.trim();
     setMsgInput('');
+    sessionStorage.removeItem(CHAT_DRAFT_KEY);
     const { data: newMsg } = await supabase
       .from('group_messages')
       .insert({ group_id: group.id, author_id: session.user.id, body })
@@ -485,6 +488,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
       image_urls,
     }).select('*, profiles(display_name, avatar_config, avatar_url)').single();
     setText('');
+    sessionStorage.removeItem(POST_DRAFT_KEY);
     setSubmitting(false);
     imageDrafts.clear();
     if (data) setPosts((prev) => [data, ...prev]);
@@ -569,7 +573,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
             <input
               ref={msgInputRef}
               value={msgInput}
-              onChange={(e) => setMsgInput(e.target.value)}
+              onChange={(e) => { setMsgInput(e.target.value); sessionStorage.setItem(CHAT_DRAFT_KEY, e.target.value); }}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
               placeholder="Message the group…"
               style={{ flex: 1, background: T.white, border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '10px 16px', fontSize: 14, fontFamily: T.serif, color: T.ink, outline: 'none' }}
@@ -720,7 +724,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
           <form onSubmit={submitPost} style={{ marginBottom: 24 }}>
             <textarea
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => { setText(e.target.value); sessionStorage.setItem(POST_DRAFT_KEY, e.target.value); }}
               placeholder={focus ? `Share a reflection on ${focus.passage}…` : 'Share something with the group…'}
               rows={3}
               style={{
