@@ -1831,8 +1831,8 @@ export default function App() {
         if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); }
         else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); }
         else {
-          // On reload (INITIAL_SESSION) restore saved position; on fresh SIGNED_IN go to home
-          const saved = event === 'INITIAL_SESSION' ? localStorage.getItem('kw:stage') : null;
+          // Always restore saved position (cleared on sign-out so fresh logins still land on home)
+          const saved = localStorage.getItem('kw:stage');
           const SAFE = new Set(['home','feed','bible','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
           setStage(saved && SAFE.has(saved) ? saved : 'home');
         }
@@ -1863,6 +1863,7 @@ export default function App() {
         setCareTeamRecord(null);
         setPastorChurchId(null);
         setPastorChurch(null);
+        localStorage.removeItem('kw:stage');
         setStage(initialAnonChurchId ? 'church-entry' : initialChurchId ? 'church' : 'landing');
       }
     });
