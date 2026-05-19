@@ -23,12 +23,15 @@ export default function DMConversation({ session, profile, conversationId, other
   const [input, setInput] = useState(() => sessionStorage.getItem(DRAFT_KEY) ?? '');
   const [sending, setSending] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editBody, setEditBody] = useState('');
   const [other, setOther] = useState(otherProfile ?? null);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiQuery, setAiQuery] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const bottomRef = useRef(null);
+  const editRef = useRef(null);
   const aiAbortRef = useRef(null);
   const isSystem = isSystemAccount(other);
 
@@ -156,6 +159,14 @@ export default function DMConversation({ session, profile, conversationId, other
       }, (payload) => {
         setMessages((prev) => prev.filter((m) => m.id !== payload.old.id));
       })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'dm_messages',
+        filter: `conversation_id=eq.${conversationId}`,
+      }, (payload) => {
+        setMessages((prev) => prev.map((m) => m.id === payload.new.id ? { ...m, body: payload.new.body } : m));
+      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -183,6 +194,27 @@ export default function DMConversation({ session, profile, conversationId, other
     setMessages((prev) => prev.filter((m) => m.id !== id));
     setDeletingId(null);
     supabase.from('dm_messages').delete().eq('id', id);
+  }
+
+  function startEdit(msg) {
+    setDeletingId(null);
+    setEditingId(msg.id);
+    setEditBody(msg.body);
+    setTimeout(() => { editRef.current?.focus(); editRef.current?.select(); }, 50);
+  }
+
+  async function saveEdit(id) {
+    const body = editBody.trim();
+    if (!body) return;
+    setMessages((prev) => prev.map((m) => m.id === id ? { ...m, body } : m));
+    setEditingId(null);
+    setEditBody('');
+    supabase.from('dm_messages').update({ body }).eq('id', id);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditBody('');
   }
 
   function onKeyDown(e) {
@@ -223,61 +255,77 @@ export default function DMConversation({ session, profile, conversationId, other
           const prevMsg = messages[i - 1];
           const sameSenderAsPrev = prevMsg?.sender_id === msg.sender_id;
           const senderName = isMe ? 'You' : (other?.display_name ?? '…');
+          const isEditing = editingId === msg.id;
+          const isDeleting = deletingId === msg.id;
 
           return (
             <div key={msg.id} style={{ marginBottom: 8, marginTop: sameSenderAsPrev ? 0 : 6 }}>
-              {/* Sender name */}
               {!sameSenderAsPrev && (
-                <div style={{
-                  fontSize: 11, fontWeight: 600, color: T.inkMuted,
-                  marginBottom: 3, textAlign: isMe ? 'right' : 'left',
-                  paddingLeft: isMe ? 0 : 2, paddingRight: isMe ? 2 : 0,
-                }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: T.inkMuted, marginBottom: 3, textAlign: isMe ? 'right' : 'left', paddingLeft: isMe ? 0 : 2, paddingRight: isMe ? 2 : 0 }}>
                   {senderName}
                 </div>
               )}
 
-              {/* Bubble row — full width, justify pushes bubble to correct side */}
-              <div style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 6 }}>
-                {isMe && (
-                  deletingId === msg.id ? (
-                    <button onClick={() => deleteMsg(msg.id)} style={{ background: 'none', border: 'none', color: '#c0392b', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                      Delete
-                    </button>
-                  ) : (
-                    <button onClick={() => setDeletingId(msg.id)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 13, cursor: 'pointer', padding: '2px 4px', flexShrink: 0, opacity: 0.45, lineHeight: 1 }} title="Delete message">
-                      ×
-                    </button>
-                  )
-                )}
-                <div
-                  onClick={() => isMe && setDeletingId(deletingId === msg.id ? null : msg.id)}
-                  onContextMenu={(e) => { if (isMe) { e.preventDefault(); setDeletingId(msg.id); } }}
-                  style={{
+              {isEditing ? (
+                /* ── Inline edit mode ── */
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, alignItems: 'flex-end' }}>
+                  <div style={{ maxWidth: '75%', width: '100%' }}>
+                    <textarea
+                      ref={editRef}
+                      value={editBody}
+                      onChange={(e) => setEditBody(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(msg.id); }
+                        if (e.key === 'Escape') cancelEdit();
+                      }}
+                      rows={Math.min(6, (editBody.match(/\n/g)?.length ?? 0) + 1)}
+                      style={{
+                        width: '100%', boxSizing: 'border-box', resize: 'none',
+                        background: T.gold, color: T.cream,
+                        border: `2px solid ${T.goldDark}`, borderRadius: '18px 18px 4px 18px',
+                        padding: '10px 14px', fontSize: 14.5, lineHeight: 1.6,
+                        fontFamily: 'inherit', outline: 'none',
+                      }}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 4 }}>
+                      <button onClick={cancelEdit} style={{ background: 'none', border: `1px solid ${T.line}`, color: T.inkMuted, fontSize: 12, borderRadius: 999, padding: '4px 12px', cursor: 'pointer' }}>Cancel</button>
+                      <button onClick={() => saveEdit(msg.id)} style={{ background: T.ink, color: T.cream, border: 'none', fontSize: 12, fontWeight: 600, borderRadius: 999, padding: '4px 12px', cursor: 'pointer' }}>Save</button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* ── Normal bubble ── */
+                <div style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 6 }}>
+                  {isMe && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', flexShrink: 0 }}>
+                      {isDeleting ? (
+                        <button onClick={() => deleteMsg(msg.id)} style={{ background: 'none', border: 'none', color: '#c0392b', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap' }}>Delete</button>
+                      ) : (
+                        <>
+                          <button onClick={() => startEdit(msg)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer', padding: '2px 4px', opacity: 0.45, lineHeight: 1 }} title="Edit message">✎</button>
+                          <button onClick={() => setDeletingId(msg.id)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 14, cursor: 'pointer', padding: '2px 4px', opacity: 0.45, lineHeight: 1 }} title="Delete message">×</button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  <div style={{
                     maxWidth: '75%',
                     background: isMe ? T.gold : T.white,
                     color: isMe ? T.cream : T.ink,
                     border: isMe ? 'none' : `1px solid ${T.line}`,
                     borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                    padding: '10px 14px',
-                    fontSize: 14.5, lineHeight: 1.6,
-                    cursor: isMe ? 'pointer' : 'default',
-                    wordBreak: 'break-word',
-                  }}
-                >
-                  <div style={{ fontFamily: isMe ? 'inherit' : T.serif }}>
-                    <MsgText text={msg.body} />
+                    padding: '10px 14px', fontSize: 14.5, lineHeight: 1.6,
+                    wordBreak: 'break-word', userSelect: 'text', cursor: 'text',
+                  }}>
+                    <div style={{ fontFamily: isMe ? 'inherit' : T.serif }}>
+                      <MsgText text={msg.body} />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Timestamp below bubble */}
-              <div style={{
-                fontSize: 10.5, color: T.inkMuted, marginTop: 3,
-                textAlign: isMe ? 'right' : 'left',
-                paddingLeft: isMe ? 0 : 2, paddingRight: isMe ? 2 : 0,
-              }}>
-                {timeAgo(msg.created_at)}
+              <div style={{ fontSize: 10.5, color: T.inkMuted, marginTop: 3, textAlign: isMe ? 'right' : 'left', paddingLeft: isMe ? 0 : 2, paddingRight: isMe ? 2 : 0 }}>
+                {timeAgo(msg.created_at)}{msg._edited ? ' · edited' : ''}
               </div>
             </div>
           );
