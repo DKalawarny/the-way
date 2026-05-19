@@ -200,30 +200,36 @@ export default function DMConversation({ session, profile, conversationId, other
           const senderName = isMe ? 'You' : (other?.display_name ?? '…');
 
           return (
-            <div key={msg.id} style={{
-              display: 'flex', flexDirection: 'column',
-              alignItems: isMe ? 'flex-end' : 'flex-start',
-              marginBottom: 10,
-              marginTop: sameSenderAsPrev ? 0 : 6,
-            }}>
-              {/* Sender name — only show on first message in a consecutive block */}
+            <div key={msg.id} style={{ marginBottom: 8, marginTop: sameSenderAsPrev ? 0 : 6 }}>
+              {/* Sender name */}
               {!sameSenderAsPrev && (
                 <div style={{
-                  fontSize: 11, fontWeight: 600,
-                  color: T.inkMuted,
-                  marginBottom: 4,
-                  paddingLeft: isMe ? 0 : 2,
-                  paddingRight: isMe ? 2 : 0,
+                  fontSize: 11, fontWeight: 600, color: T.inkMuted,
+                  marginBottom: 3, textAlign: isMe ? 'right' : 'left',
+                  paddingLeft: isMe ? 0 : 2, paddingRight: isMe ? 2 : 0,
                 }}>
                   {senderName}
                 </div>
               )}
 
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, flexDirection: isMe ? 'row-reverse' : 'row' }}>
+              {/* Bubble row — full width, justify pushes bubble to correct side */}
+              <div style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 6 }}>
+                {isMe && (
+                  deletingId === msg.id ? (
+                    <button onClick={() => deleteMsg(msg.id)} style={{ background: 'none', border: 'none', color: '#c0392b', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      Delete
+                    </button>
+                  ) : (
+                    <button onClick={() => setDeletingId(msg.id)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 13, cursor: 'pointer', padding: '2px 4px', flexShrink: 0, opacity: 0.45, lineHeight: 1 }} title="Delete message">
+                      ×
+                    </button>
+                  )
+                )}
                 <div
                   onClick={() => isMe && setDeletingId(deletingId === msg.id ? null : msg.id)}
+                  onContextMenu={(e) => { if (isMe) { e.preventDefault(); setDeletingId(msg.id); } }}
                   style={{
-                    maxWidth: '80%',
+                    maxWidth: '75%',
                     background: isMe ? T.gold : T.white,
                     color: isMe ? T.cream : T.ink,
                     border: isMe ? 'none' : `1px solid ${T.line}`,
@@ -231,20 +237,22 @@ export default function DMConversation({ session, profile, conversationId, other
                     padding: '10px 14px',
                     fontSize: 14.5, lineHeight: 1.6,
                     cursor: isMe ? 'pointer' : 'default',
+                    wordBreak: 'break-word',
                   }}
                 >
                   <div style={{ fontFamily: isMe ? 'inherit' : T.serif }}>
                     <MsgText text={msg.body} />
                   </div>
-                  <div style={{ fontSize: 10.5, color: isMe ? 'rgba(253,248,240,0.65)' : T.inkMuted, marginTop: 4, textAlign: isMe ? 'right' : 'left', whiteSpace: 'nowrap' }}>
-                    {timeAgo(msg.created_at)}
-                  </div>
                 </div>
-                {isMe && deletingId === msg.id && (
-                  <button onClick={() => deleteMsg(msg.id)} style={{ background: 'none', border: 'none', color: '#c0392b', fontSize: 11, cursor: 'pointer', padding: '2px 6px', borderRadius: 6, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                    Delete
-                  </button>
-                )}
+              </div>
+
+              {/* Timestamp below bubble */}
+              <div style={{
+                fontSize: 10.5, color: T.inkMuted, marginTop: 3,
+                textAlign: isMe ? 'right' : 'left',
+                paddingLeft: isMe ? 0 : 2, paddingRight: isMe ? 2 : 0,
+              }}>
+                {timeAgo(msg.created_at)}
               </div>
             </div>
           );
