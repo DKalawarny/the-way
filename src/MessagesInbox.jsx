@@ -452,7 +452,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
       </div>
 
       {/* Right panel */}
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {openDm ? (
           <Suspense fallback={null}>
             <DMConversation

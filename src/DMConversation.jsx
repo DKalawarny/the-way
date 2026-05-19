@@ -234,7 +234,7 @@ export default function DMConversation({ session, profile, conversationId, other
                   <div style={{ fontFamily: isMe ? 'inherit' : T.serif }}>
                     <MsgText text={msg.body} />
                   </div>
-                  <div style={{ fontSize: 10.5, color: isMe ? 'rgba(253,248,240,0.65)' : T.inkMuted, marginTop: 4, textAlign: 'right' }}>
+                  <div style={{ fontSize: 10.5, color: isMe ? 'rgba(253,248,240,0.65)' : T.inkMuted, marginTop: 4, textAlign: isMe ? 'right' : 'left', whiteSpace: 'nowrap' }}>
                     {timeAgo(msg.created_at)}
                   </div>
                 </div>
