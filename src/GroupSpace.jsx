@@ -365,12 +365,15 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
       .channel(`group_messages:${group.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'group_messages', filter: `group_id=eq.${group.id}` }, (payload) => {
         const msg = payload.new;
-        if (msg.author_id === session?.user?.id) return; // already added optimistically
+        if (msg.author_id === session?.user?.id) return;
         supabase.from('profiles').select('display_name,avatar_config,avatar_url').eq('id', msg.author_id).single()
           .then(({ data: p }) => {
             setMessages((prev) => [...prev, { ...msg, profiles: p }]);
             setTimeout(() => msgEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
           });
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'group_messages', filter: `group_id=eq.${group.id}` }, (payload) => {
+        setMessages((prev) => prev.filter((m) => m.id !== payload.old.id));
       })
       .subscribe();
     return () => { supabase.removeChannel(sub); };
@@ -408,8 +411,13 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   }
 
   async function deleteMsg(id) {
+    const removed = messages.find((m) => m.id === id);
     setMessages((prev) => prev.filter((m) => m.id !== id));
-    await supabase.from('group_messages').delete().eq('id', id);
+    const { data: deleted, error } = await supabase.from('group_messages').delete().eq('id', id).select();
+    const didDelete = !error && deleted && deleted.length > 0;
+    if (!didDelete && removed) {
+      setMessages((prev) => [...prev, removed].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
+    }
     setDeletingId(null);
   }
 
