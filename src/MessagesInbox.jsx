@@ -16,49 +16,112 @@ function timeAgo(ts) {
 const CARE_STATUS_LABEL = { open: 'Waiting for reply', claimed: 'In conversation', closed: 'Closed' };
 const CARE_STATUS_COLOR = { open: T.goldDark, claimed: T.ink, closed: T.inkMuted };
 
-function ThreadRow({ name, avatarConfig, photoUrl, subtitle, subtitleColor, lastBody, ts, onOpen, accent, active }) {
+function DeleteConfirmModal({ name, onConfirm, onCancel }) {
   return (
-    <button
-      onClick={onOpen}
+    <div
+      onClick={onCancel}
       style={{
-        display: 'block', width: '100%', textAlign: 'left',
-        background: active ? `${T.gold}1A` : accent ? T.parchment : T.white,
-        border: active ? `1px solid ${T.gold}66` : accent ? `1px solid ${T.gold}88` : `1px solid ${T.line}`,
-        borderRadius: 14,
-        padding: '12px 14px', cursor: 'pointer', marginBottom: 8,
-        boxShadow: accent && !active ? `0 0 0 3px ${T.gold}14` : 'none',
-        transition: 'background 0.12s, border-color 0.12s',
+        position: 'fixed', inset: 0, zIndex: 2000,
+        background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: lastBody ? 5 : 0 }}>
-        {name ? (
-          <Avatar name={name} avatarConfig={avatarConfig} photoUrl={photoUrl} size={36} />
-        ) : (
-          <div style={{
-            width: 36, height: 36, borderRadius: '50%', background: T.parchment,
-            border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: T.goldDark, fontSize: 15, flexShrink: 0,
-          }}>✦</div>
-        )}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: 13.5, color: T.ink, marginBottom: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {name ?? 'Someone from your church'}
-          </div>
-          <div style={{ fontSize: 11.5, color: subtitleColor ?? T.inkMuted }}>
-            {subtitle}{ts && <> · {timeAgo(ts)}</>}
-          </div>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: T.white, borderRadius: 20, padding: '28px 24px',
+          maxWidth: 320, width: '100%', textAlign: 'center',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.18)',
+        }}
+      >
+        <div style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: T.ink, marginBottom: 8 }}>
+          Delete conversation?
         </div>
-        <span style={{ color: T.inkMuted, fontSize: 13 }}>›</span>
+        <div style={{ fontFamily: T.serif, fontSize: 14, color: T.inkMuted, lineHeight: 1.65, marginBottom: 24 }}>
+          Your conversation with <strong style={{ color: T.ink }}>{name}</strong> will be permanently removed.
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={onCancel} style={{
+            flex: 1, background: T.parchment, border: `1px solid ${T.line}`,
+            color: T.inkSoft, borderRadius: 999, padding: '11px 0',
+            fontSize: 14, fontWeight: 600, cursor: 'pointer',
+          }}>Cancel</button>
+          <button onClick={onConfirm} style={{
+            flex: 1, background: '#c0392b', border: 'none',
+            color: '#fff', borderRadius: 999, padding: '11px 0',
+            fontSize: 14, fontWeight: 600, cursor: 'pointer',
+          }}>Delete</button>
+        </div>
       </div>
-      {lastBody && (
-        <div style={{
-          fontSize: 12.5, color: T.inkSoft, lineHeight: 1.45, fontFamily: T.serif, fontStyle: 'italic',
-          overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box',
-          WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
-          paddingLeft: 46,
-        }}>{lastBody}</div>
+    </div>
+  );
+}
+
+function ThreadRow({ name, avatarConfig, photoUrl, subtitle, subtitleColor, lastBody, ts, onOpen, accent, active, onDelete }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      style={{ position: 'relative', marginBottom: 8 }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <button
+        onClick={onOpen}
+        style={{
+          display: 'block', width: '100%', textAlign: 'left',
+          background: active ? `${T.gold}1A` : accent ? T.parchment : T.white,
+          border: active ? `1px solid ${T.gold}66` : accent ? `1px solid ${T.gold}88` : `1px solid ${T.line}`,
+          borderRadius: 14,
+          padding: '12px 14px',
+          paddingRight: onDelete ? 42 : 14,
+          cursor: 'pointer',
+          boxShadow: accent && !active ? `0 0 0 3px ${T.gold}14` : 'none',
+          transition: 'background 0.12s, border-color 0.12s',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: lastBody ? 5 : 0 }}>
+          {name ? (
+            <Avatar name={name} avatarConfig={avatarConfig} photoUrl={photoUrl} size={36} />
+          ) : (
+            <div style={{
+              width: 36, height: 36, borderRadius: '50%', background: T.parchment,
+              border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: T.goldDark, fontSize: 15, flexShrink: 0,
+            }}>✦</div>
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 600, fontSize: 13.5, color: T.ink, marginBottom: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {name ?? 'Someone from your church'}
+            </div>
+            <div style={{ fontSize: 11.5, color: subtitleColor ?? T.inkMuted }}>
+              {subtitle}{ts && <> · {timeAgo(ts)}</>}
+            </div>
+          </div>
+          <span style={{ color: T.inkMuted, fontSize: 13 }}>›</span>
+        </div>
+        {lastBody && (
+          <div style={{
+            fontSize: 12.5, color: T.inkSoft, lineHeight: 1.45, fontFamily: T.serif, fontStyle: 'italic',
+            overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box',
+            WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
+            paddingLeft: 46,
+          }}>{lastBody}</div>
+        )}
+      </button>
+      {onDelete && hovered && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          title="Delete conversation"
+          style={{
+            position: 'absolute', top: '50%', right: 10,
+            transform: 'translateY(-50%)',
+            background: 'rgba(192,57,43,0.1)', border: 'none',
+            color: '#c0392b', fontSize: 17, lineHeight: 1,
+            cursor: 'pointer', padding: '4px 8px', borderRadius: 8, zIndex: 1,
+          }}
+        >×</button>
       )}
-    </button>
+    </div>
   );
 }
 
@@ -86,6 +149,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
   const [openCare, setOpenCare] = useState(null);
   const [openDm, setOpenDm] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -157,6 +221,21 @@ export default function MessagesInbox({ session, profile, onBack }) {
       setLoading(false);
     })();
   }, [session?.user?.id, refreshKey]);
+
+  async function deleteConversation() {
+    if (!deleteConfirm) return;
+    const { type, id } = deleteConfirm;
+    setDeleteConfirm(null);
+    if (type === 'dm') {
+      if (openDm?.id === id) setOpenDm(null);
+      setDmConvs((prev) => prev.filter((c) => c.id !== id));
+      await supabase.from('dm_conversations').delete().eq('id', id);
+    } else {
+      if (openCare === id) setOpenCare(null);
+      setCareConvs((prev) => prev.filter((c) => c.id !== id));
+      await supabase.from('care_conversations').delete().eq('id', id);
+    }
+  }
 
   // Mobile: full-screen sub-views
   if (isMobile && openCare) {
@@ -238,6 +317,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
                 onOpen={() => { setOpenCare(null); setOpenDm({ id: c.id, otherProfile: c.otherProfile }); }}
                 accent={isSystem}
                 active={!isMobile && openDm?.id === c.id}
+                onDelete={() => setDeleteConfirm({ type: 'dm', id: c.id, name: c.otherProfile?.display_name ?? 'this person' })}
               />
             );
           })}
@@ -253,6 +333,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
               lastBody={careLastMsgs[c.id]?.body}
               onOpen={() => { setOpenDm(null); setOpenCare(c.id); }}
               active={!isMobile && openCare === c.id}
+              onDelete={() => setDeleteConfirm({ type: 'care', id: c.id, name: c.care_member?.display_name ?? 'this conversation' })}
             />
           ))}
         </>
@@ -313,6 +394,13 @@ export default function MessagesInbox({ session, profile, onBack }) {
           {convList}
         </div>
       </div>
+      {deleteConfirm && (
+        <DeleteConfirmModal
+          name={deleteConfirm.name}
+          onConfirm={deleteConversation}
+          onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
     );
   }
 
@@ -388,5 +476,12 @@ export default function MessagesInbox({ session, profile, onBack }) {
         )}
       </div>
     </div>
+    {deleteConfirm && (
+      <DeleteConfirmModal
+        name={deleteConfirm.name}
+        onConfirm={deleteConversation}
+        onCancel={() => setDeleteConfirm(null)}
+      />
+    )}
   );
 }
