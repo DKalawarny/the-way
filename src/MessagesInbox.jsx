@@ -78,6 +78,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
   const [loading, setLoading] = useState(true);
   const [openCare, setOpenCare] = useState(null);   // conv id
   const [openDm, setOpenDm] = useState(null);       // { id, otherProfile }
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -145,7 +146,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
 
       setLoading(false);
     })();
-  }, [session?.user?.id]);
+  }, [session?.user?.id, refreshKey]);
 
   if (openCare) {
     return (
@@ -167,7 +168,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
           profile={profile}
           conversationId={openDm.id}
           otherProfile={openDm.otherProfile}
-          onBack={() => setOpenDm(null)}
+          onBack={() => { setOpenDm(null); setRefreshKey((k) => k + 1); }}
         />
       </Suspense>
     );
