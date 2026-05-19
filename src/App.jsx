@@ -1847,24 +1847,32 @@ export default function App() {
       _setSession(s);
       if (s) {
         if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') incrementLoginCount();
-        if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); }
-        else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); }
-        else {
-          const local = localStorage.getItem('kw:stage');
-          if (local && STAGE_SAFE.has(local)) {
-            setStage(local);
-            loadProfile(s.user.id);
-          } else {
-            // No local value — wait for profile then restore from profiles.last_stage
-            loadProfile(s.user.id).then((prof) => {
-              const local2 = localStorage.getItem('kw:stage');
-              if (!local2 && prof?.last_stage && STAGE_SAFE.has(prof.last_stage)) {
-                setStage(prof.last_stage);
-              } else if (!local2) {
-                setStage('home');
-              }
-            });
+        // Only restore saved stage on initial load or fresh sign-in.
+        // TOKEN_REFRESHED fires silently while the user is navigating — restoring
+        // here would yank them back to the saved screen mid-session.
+        const isInitialLoad = event === 'SIGNED_IN' || event === 'INITIAL_SESSION';
+        if (isInitialLoad) {
+          if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); }
+          else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); }
+          else {
+            const local = localStorage.getItem('kw:stage');
+            if (local && STAGE_SAFE.has(local)) {
+              setStage(local);
+              loadProfile(s.user.id);
+            } else {
+              loadProfile(s.user.id).then((prof) => {
+                const local2 = localStorage.getItem('kw:stage');
+                if (!local2 && prof?.last_stage && STAGE_SAFE.has(prof.last_stage)) {
+                  setStage(prof.last_stage);
+                } else if (!local2) {
+                  setStage('home');
+                }
+              });
+            }
           }
+        } else {
+          // TOKEN_REFRESHED, USER_UPDATED, etc. — refresh profile silently, don't touch stage.
+          loadProfile(s.user.id);
         }
         // Import guest Q+A saved before sign-up
         if (event === 'SIGNED_IN') {
