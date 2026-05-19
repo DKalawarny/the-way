@@ -3,6 +3,7 @@ import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { Avatar } from './ProfilePage.jsx';
 import CareConversation from './CareConversation.jsx';
+import { KinwoveStar } from './components/brand/KinwoveStar';
 const DMConversation = lazy(() => import('./DMConversation.jsx'));
 
 function timeAgo(ts) {
@@ -86,8 +87,8 @@ function ThreadRow({ name, avatarConfig, photoUrl, subtitle, subtitleColor, last
             <div style={{
               width: 36, height: 36, borderRadius: '50%', background: T.parchment,
               border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: T.goldDark, fontSize: 15, flexShrink: 0,
-            }}>✦</div>
+              flexShrink: 0,
+            }}><KinwoveStar size={16} color={T.goldDark} /></div>
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 600, fontSize: 13.5, color: T.ink, marginBottom: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -136,7 +137,7 @@ function EmptyPane() {
       alignItems: 'center', justifyContent: 'center', gap: 10,
       background: T.cream,
     }}>
-      <div style={{ fontSize: 28, color: T.gold, opacity: 0.35 }}>✦</div>
+      <KinwoveStar size={28} color={T.gold} style={{ opacity: 0.35 }} />
       <div style={{ fontFamily: T.serif, fontSize: 15, fontStyle: 'italic', color: T.inkMuted }}>
         Select a conversation
       </div>

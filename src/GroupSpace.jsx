@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase, authedFetch } from './supabase.js';
 import { T } from './theme.js';
 import { Avatar } from './ProfilePage.jsx';
+import { KinwoveStar } from './components/brand/KinwoveStar';
 import ShareSheet from './ShareSheet.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
 import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
@@ -679,7 +680,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
             <div style={{ marginBottom: 20 }}>
               {!askOpen ? (
                 <button onClick={() => setAskOpen(true)} style={{ width: '100%', background: 'rgba(168,85,48,0.07)', border: `1px solid rgba(168,85,48,0.22)`, borderRadius: 14, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}>
-                  <span style={{ fontSize: 18 }}>✦</span>
+                  <KinwoveStar size={18} color={T.gold} />
                   <div>
                     <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink, marginBottom: 2 }}>Ask about {focus.passage}</div>
                     <div style={{ fontSize: 12, color: T.inkMuted }}>Ask the AI anything about this week's passage</div>
