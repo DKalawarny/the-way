@@ -28,20 +28,27 @@ export default function DMConversation({ session, profile, conversationId, other
   const [other, setOther] = useState(otherProfile ?? null);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiQuery, setAiQuery] = useState('');
-  const [aiResponse, setAiResponse] = useState('');
+  const [aiThread, setAiThread] = useState([]);
   const [aiLoading, setAiLoading] = useState(false);
   const bottomRef = useRef(null);
   const editRef = useRef(null);
+  const aiBottomRef = useRef(null);
   const aiAbortRef = useRef(null);
   const isSystem = isSystemAccount(other);
 
   async function askAi() {
-    if (!aiQuery.trim() || aiLoading) return;
+    const q = aiQuery.trim();
+    if (!q || aiLoading) return;
     aiAbortRef.current?.abort();
     const ctrl = new AbortController();
     aiAbortRef.current = ctrl;
-    setAiResponse('');
+
+    const newThread = [...aiThread, { role: 'user', content: q }];
+    setAiThread([...newThread, { role: 'assistant', content: '' }]);
+    setAiQuery('');
     setAiLoading(true);
+    setTimeout(() => aiBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+
     try {
       const res = await authedFetch('/api/chat', {
         method: 'POST',
@@ -49,7 +56,7 @@ export default function DMConversation({ session, profile, conversationId, other
         signal: ctrl.signal,
         body: JSON.stringify({
           system: getSystemPrompt(profile?.person_type ?? 'curious', null, 0),
-          messages: [{ role: 'user', content: aiQuery.trim() }],
+          messages: newThread,
           personType: profile?.person_type ?? 'curious',
         }),
       });
@@ -57,7 +64,6 @@ export default function DMConversation({ session, profile, conversationId, other
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
-      let full = '';
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
@@ -69,7 +75,15 @@ export default function DMConversation({ session, profile, conversationId, other
           const ev = lines.find((l) => l.startsWith('event: '))?.slice(7).trim();
           const data = lines.find((l) => l.startsWith('data: '))?.slice(6);
           if (ev === 'text' && data) {
-            try { const delta = JSON.parse(data).delta; full += delta; setAiResponse((r) => r + delta); } catch {}
+            try {
+              const delta = JSON.parse(data).delta;
+              setAiThread((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = { role: 'assistant', content: updated[updated.length - 1].content + delta };
+                return updated;
+              });
+              setTimeout(() => aiBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 0);
+            } catch {}
           }
         }
       }
@@ -78,29 +92,20 @@ export default function DMConversation({ session, profile, conversationId, other
   }
 
   async function sendAiResponse() {
-    if (!aiResponse.trim()) return;
-    const body = `✦ kinwove says:\n\n${aiResponse.trim()}`;
-    // Optimistic: add a temp message immediately so the sender sees it right away
+    const lastAi = [...aiThread].reverse().find((m) => m.role === 'assistant');
+    if (!lastAi?.content.trim()) return;
+    const body = `✦ kinwove says:\n\n${lastAi.content.trim()}`;
     const tempId = `temp-${Date.now()}`;
-    const tempMsg = {
-      id: tempId,
-      conversation_id: conversationId,
-      sender_id: session.user.id,
-      body,
-      created_at: new Date().toISOString(),
-    };
+    const tempMsg = { id: tempId, conversation_id: conversationId, sender_id: session.user.id, body, created_at: new Date().toISOString() };
     setMessages((prev) => [...prev, tempMsg]);
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     setAiOpen(false);
+    setAiThread([]);
     setAiQuery('');
-    setAiResponse('');
-    // Persist to DB and swap temp with real row
     const { data: newMsg } = await supabase.from('dm_messages').insert({
       conversation_id: conversationId, sender_id: session.user.id, body,
     }).select().single();
-    if (newMsg) {
-      setMessages((prev) => prev.map((m) => m.id === tempId ? newMsg : m));
-    }
+    if (newMsg) setMessages((prev) => prev.map((m) => m.id === tempId ? newMsg : m));
   }
 
   useEffect(() => {
@@ -351,20 +356,63 @@ export default function DMConversation({ session, profile, conversationId, other
           {aiOpen && (
             <div style={{
               background: T.parchment, borderTop: `1px solid ${T.line}`,
-              padding: '12px 14px',
+              display: 'flex', flexDirection: 'column', maxHeight: 340,
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px 8px', flexShrink: 0 }}>
                 <KinwoveStar size={14} color={T.gold} />
                 <span style={{ fontSize: 12, fontWeight: 600, color: T.goldDark }}>Ask kinwove</span>
-                <button onClick={() => { setAiOpen(false); setAiQuery(''); setAiResponse(''); aiAbortRef.current?.abort(); }}
+                {aiThread.length > 0 && (
+                  <button onClick={() => setAiThread([])} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 11, cursor: 'pointer', padding: '2px 8px', borderRadius: 999, marginLeft: 4 }}>Clear</button>
+                )}
+                <button onClick={() => { setAiOpen(false); setAiThread([]); setAiQuery(''); aiAbortRef.current?.abort(); }}
                   style={{ marginLeft: 'auto', background: 'none', border: 'none', color: T.inkMuted, fontSize: 18, cursor: 'pointer', lineHeight: 1 }}>×</button>
               </div>
-              <div style={{ display: 'flex', gap: 8, marginBottom: aiResponse || aiLoading ? 10 : 0 }}>
+
+              {/* Thread */}
+              {aiThread.length > 0 && (
+                <div style={{ flex: 1, overflowY: 'auto', padding: '0 14px 8px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {aiThread.map((msg, i) => {
+                    const isUser = msg.role === 'user';
+                    const isLastAssistant = !isUser && i === aiThread.length - 1;
+                    return (
+                      <div key={i}>
+                        <div style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
+                          <div style={{
+                            maxWidth: '85%',
+                            background: isUser ? T.gold : T.white,
+                            color: isUser ? T.cream : T.ink,
+                            border: isUser ? 'none' : `1px solid ${T.line}`,
+                            borderRadius: isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                            padding: '8px 12px', fontSize: 13.5, lineHeight: 1.6,
+                            fontFamily: isUser ? 'inherit' : T.serif,
+                            wordBreak: 'break-word',
+                          }}>
+                            {msg.content || (aiLoading && isLastAssistant ? <span style={{ color: T.inkMuted, fontStyle: 'italic' }}>Thinking…</span> : null)}
+                          </div>
+                        </div>
+                        {isLastAssistant && !aiLoading && msg.content && (
+                          <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 6 }}>
+                            <button onClick={sendAiResponse} style={{
+                              background: T.ink, color: T.cream, border: 'none',
+                              borderRadius: 999, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                            }}>Share to conversation</button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <div ref={aiBottomRef} />
+                </div>
+              )}
+
+              {/* Input row */}
+              <div style={{ display: 'flex', gap: 8, padding: '0 14px 12px', flexShrink: 0 }}>
                 <input
                   value={aiQuery}
                   onChange={(e) => setAiQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && askAi()}
-                  placeholder="Ask a Bible or faith question…"
+                  placeholder={aiThread.length ? 'Ask a follow-up…' : 'Ask a Bible or faith question…'}
                   style={{
                     flex: 1, border: `1px solid ${T.line}`, borderRadius: 999,
                     padding: '9px 14px', fontSize: 14, color: T.ink,
@@ -379,24 +427,6 @@ export default function DMConversation({ session, profile, conversationId, other
                   opacity: !aiQuery.trim() || aiLoading ? 0.5 : 1,
                 }}>Ask</button>
               </div>
-              {(aiResponse || aiLoading) && (
-                <div style={{
-                  background: T.white, border: `1px solid ${T.line}`, borderRadius: 12,
-                  padding: '12px 14px', maxHeight: 160, overflowY: 'auto',
-                }}>
-                  <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.7 }}>
-                    {aiResponse || <span style={{ color: T.inkMuted }}>Thinking…</span>}
-                  </div>
-                  {!aiLoading && aiResponse && (
-                    <button onClick={sendAiResponse} style={{
-                      marginTop: 10, background: T.ink, color: T.cream, border: 'none',
-                      borderRadius: 999, padding: '7px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                    }}>
-                      Share to conversation
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
           )}
 
