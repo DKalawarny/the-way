@@ -363,53 +363,56 @@ export default function MessagesInbox({ session, profile, onBack }) {
   // Mobile: full-page inbox list
   if (isMobile) {
     return (
-      <div style={{ minHeight: '100vh', background: T.cream, padding: '28px 16px 80px', overflowY: 'auto' }}>
-        <div style={{ maxWidth: 600, margin: '0 auto' }}>
-          <button onClick={onBack} style={{
-            background: 'none', border: 'none', color: T.goldDark,
-            fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 12,
-          }}>← Back</button>
-          <h1 style={{ fontFamily: T.display, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 14px' }}>
-            Messages
-          </h1>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search conversations…"
-            style={{
-              width: '100%', boxSizing: 'border-box',
-              background: T.white, border: `1px solid ${T.line}`, borderRadius: 999,
-              padding: '9px 14px', fontSize: 13.5, color: T.ink, outline: 'none', marginBottom: 14,
-            }}
-            onFocus={(e) => (e.target.style.borderColor = T.gold)}
-            onBlur={(e) => (e.target.style.borderColor = T.line)}
-          />
-          <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
-            {[['all', 'All'], ['dms', 'Direct'], ['care', 'Care']].map(([f, label]) => (
-              <button key={f} onClick={() => setFilter(f)} style={{
-                background: filter === f ? T.gold : T.white,
-                color: filter === f ? T.cream : T.inkMuted,
-                border: `1px solid ${filter === f ? T.gold : T.line}`,
-                borderRadius: 999, padding: '6px 14px', fontSize: 12, fontWeight: 600,
-                cursor: 'pointer',
-              }}>{label}</button>
-            ))}
+      <>
+        <div style={{ minHeight: '100vh', background: T.cream, padding: '28px 16px 80px', overflowY: 'auto' }}>
+          <div style={{ maxWidth: 600, margin: '0 auto' }}>
+            <button onClick={onBack} style={{
+              background: 'none', border: 'none', color: T.goldDark,
+              fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 12,
+            }}>← Back</button>
+            <h1 style={{ fontFamily: T.display, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 14px' }}>
+              Messages
+            </h1>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search conversations…"
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                background: T.white, border: `1px solid ${T.line}`, borderRadius: 999,
+                padding: '9px 14px', fontSize: 13.5, color: T.ink, outline: 'none', marginBottom: 14,
+              }}
+              onFocus={(e) => (e.target.style.borderColor = T.gold)}
+              onBlur={(e) => (e.target.style.borderColor = T.line)}
+            />
+            <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
+              {[['all', 'All'], ['dms', 'Direct'], ['care', 'Care']].map(([f, label]) => (
+                <button key={f} onClick={() => setFilter(f)} style={{
+                  background: filter === f ? T.gold : T.white,
+                  color: filter === f ? T.cream : T.inkMuted,
+                  border: `1px solid ${filter === f ? T.gold : T.line}`,
+                  borderRadius: 999, padding: '6px 14px', fontSize: 12, fontWeight: 600,
+                  cursor: 'pointer',
+                }}>{label}</button>
+              ))}
+            </div>
+            {convList}
           </div>
-          {convList}
         </div>
-      </div>
-      {deleteConfirm && (
-        <DeleteConfirmModal
-          name={deleteConfirm.name}
-          onConfirm={deleteConversation}
-          onCancel={() => setDeleteConfirm(null)}
-        />
-      )}
+        {deleteConfirm && (
+          <DeleteConfirmModal
+            name={deleteConfirm.name}
+            onConfirm={deleteConversation}
+            onCancel={() => setDeleteConfirm(null)}
+          />
+        )}
+      </>
     );
   }
 
   // Desktop: two-panel layout
   return (
+    <>
     <div style={{ display: 'flex', height: '100vh', background: T.cream, overflow: 'hidden' }}>
       {/* Sidebar */}
       <div style={{
@@ -487,5 +490,6 @@ export default function MessagesInbox({ session, profile, onBack }) {
         onCancel={() => setDeleteConfirm(null)}
       />
     )}
+    </>
   );
 }

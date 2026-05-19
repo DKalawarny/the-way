@@ -1633,6 +1633,7 @@ export default function App() {
   const [showTour, setShowTour] = useState(false);
   const [showVerseCard, setShowVerseCard] = useState(false);
   const stageSaveTimerRef = useRef(null);
+  const sessionRef = useRef(null);
 
   useEffect(() => {
     const h = () => setWinW(window.innerWidth);
@@ -1652,6 +1653,9 @@ export default function App() {
   // Auth + profile state
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
+  // Keep a ref so stage-save effect can access the current session without
+  // needing session in its dependency array (would cause double-saves).
+  const _setSession = (s) => { sessionRef.current = s; setSession(s); };
   // pastorChurchId from church_roles; falls back to profile.church_id when
   // the church_roles RLS lookup fails (e.g. schema not migrated yet).
   const effectiveChurchId = pastorChurchId || (profile?.church_id ?? null);
@@ -1752,7 +1756,8 @@ export default function App() {
       localStorage.setItem('kw:stage', stage);
       clearTimeout(stageSaveTimerRef.current);
       stageSaveTimerRef.current = setTimeout(() => {
-        supabase.auth.updateUser({ data: { kw_stage: stage } }).catch(() => {});
+        const uid = sessionRef.current?.user?.id;
+        if (uid) supabase.from('profiles').update({ last_stage: stage }).eq('id', uid).catch(() => {});
       }, 2000);
     }
   }, [stage]);
@@ -1810,19 +1815,24 @@ export default function App() {
     setActiveCareConv(prev.activeCareConv);
   }
 
+  const STAGE_SAFE = new Set(['home','feed','bible','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session ?? null);
+      _setSession(data.session ?? null);
       if (data.session) {
-        loadProfile(data.session.user.id);
-        if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); }
-        else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); }
+        if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); loadProfile(data.session.user.id); }
+        else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); loadProfile(data.session.user.id); }
         else {
-          const SAFE = new Set(['home','feed','bible','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
           const local = localStorage.getItem('kw:stage');
-          const server = data.session.user.user_metadata?.kw_stage;
-          const saved = (local && SAFE.has(local)) ? local : (server && SAFE.has(server)) ? server : null;
-          setStage(saved ?? 'home');
+          if (local && STAGE_SAFE.has(local)) { setStage(local); loadProfile(data.session.user.id); }
+          else {
+            loadProfile(data.session.user.id).then((prof) => {
+              const local2 = localStorage.getItem('kw:stage');
+              if (!local2 && prof?.last_stage && STAGE_SAFE.has(prof.last_stage)) setStage(prof.last_stage);
+              else if (!local2) setStage('home');
+            });
+          }
         }
         if (shouldShowDailyVerse()) setShowVerseCard(true);
       } else if (initialAnonChurchId) {
@@ -1834,18 +1844,27 @@ export default function App() {
       }
     });
     const { data: listener } = supabase.auth.onAuthStateChange((event, s) => {
-      setSession(s);
+      _setSession(s);
       if (s) {
         if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') incrementLoginCount();
-        loadProfile(s.user.id);
         if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); }
         else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); }
         else {
-          const SAFE = new Set(['home','feed','bible','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
           const local = localStorage.getItem('kw:stage');
-          const server = s.user.user_metadata?.kw_stage;
-          const saved = (local && SAFE.has(local)) ? local : (server && SAFE.has(server)) ? server : null;
-          setStage(saved ?? 'home');
+          if (local && STAGE_SAFE.has(local)) {
+            setStage(local);
+            loadProfile(s.user.id);
+          } else {
+            // No local value — wait for profile then restore from profiles.last_stage
+            loadProfile(s.user.id).then((prof) => {
+              const local2 = localStorage.getItem('kw:stage');
+              if (!local2 && prof?.last_stage && STAGE_SAFE.has(prof.last_stage)) {
+                setStage(prof.last_stage);
+              } else if (!local2) {
+                setStage('home');
+              }
+            });
+          }
         }
         // Import guest Q+A saved before sign-up
         if (event === 'SIGNED_IN') {
@@ -1875,11 +1894,11 @@ export default function App() {
         setPastorChurchId(null);
         setPastorChurch(null);
         // Only wipe saved stage on explicit sign-out. TOKEN_REFRESHED can fire
-        // with s=null briefly, and wiping here would drop the saved position
-        // so the subsequent TOKEN_REFRESHED (with a valid session) lands on home.
+        // with s=null briefly — don't treat that as signed-out.
         if (event === 'SIGNED_OUT') {
           localStorage.removeItem('kw:stage');
-          supabase.auth.updateUser({ data: { kw_stage: null } }).catch(() => {});
+          const uid = sessionRef.current?.user?.id;
+          if (uid) supabase.from('profiles').update({ last_stage: null }).eq('id', uid).catch(() => {});
         }
         setStage(initialAnonChurchId ? 'church-entry' : initialChurchId ? 'church' : 'landing');
       }
@@ -2062,11 +2081,9 @@ export default function App() {
   async function loadProfile(userId) {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
     setProfile(data ?? null);
-    // Show the feature tour once for new users (or anyone who hasn't seen it yet).
     if (!isTourDone()) setShowTour(true);
-    // Await the role lookups so callers (e.g. onBecamePastor → setStage('church-admin'))
-    // can rely on pastorChurchId being populated by the time loadProfile resolves.
     await Promise.all([loadGroup(userId), loadChurchRoles(userId)]);
+    return data ?? null;
   }
 
   async function loadChurchRoles(userId) {
