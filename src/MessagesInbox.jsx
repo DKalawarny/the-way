@@ -235,7 +235,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
                 subtitleColor={isSystem ? T.goldDark : undefined}
                 ts={c.last_message_at ?? c.created_at}
                 lastBody={dmLastMsgs[c.id]?.body}
-                onOpen={() => setOpenDm({ id: c.id, otherProfile: c.otherProfile })}
+                onOpen={() => { setOpenCare(null); setOpenDm({ id: c.id, otherProfile: c.otherProfile }); }}
                 accent={isSystem}
                 active={!isMobile && openDm?.id === c.id}
               />
@@ -251,7 +251,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
               subtitleColor={CARE_STATUS_COLOR[c.status]}
               ts={c.last_message_at ?? c.created_at}
               lastBody={careLastMsgs[c.id]?.body}
-              onOpen={() => setOpenCare(c.id)}
+              onOpen={() => { setOpenDm(null); setOpenCare(c.id); }}
               active={!isMobile && openCare === c.id}
             />
           ))}
