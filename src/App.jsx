@@ -1632,6 +1632,7 @@ export default function App() {
   const { conversations, create: createConv, update: updateConv, remove: removeConv } = useConversations();
   const [showTour, setShowTour] = useState(false);
   const [showVerseCard, setShowVerseCard] = useState(false);
+  const stageSaveTimerRef = useRef(null);
 
   useEffect(() => {
     const h = () => setWinW(window.innerWidth);
@@ -1744,9 +1745,16 @@ export default function App() {
       'app-admin':       'Admin · kinwove',
     };
     document.title = TITLES[stage] ?? 'kinwove';
-    // Persist nav position so tab-suspend / mobile reload returns user to same screen
+    // Persist nav position so tab-suspend / mobile reload returns user to same screen.
+    // localStorage: fast, same-browser. user_metadata: cross-browser fallback (debounced).
     const PERSIST = new Set(['home','feed','bible','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
-    if (PERSIST.has(stage)) localStorage.setItem('kw:stage', stage);
+    if (PERSIST.has(stage)) {
+      localStorage.setItem('kw:stage', stage);
+      clearTimeout(stageSaveTimerRef.current);
+      stageSaveTimerRef.current = setTimeout(() => {
+        supabase.auth.updateUser({ data: { kw_stage: stage } }).catch(() => {});
+      }, 2000);
+    }
   }, [stage]);
 
   // Enrich the tab title with the actual church or sermon name once loaded.
@@ -1810,9 +1818,11 @@ export default function App() {
         if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); }
         else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); }
         else {
-          const saved = localStorage.getItem('kw:stage');
           const SAFE = new Set(['home','feed','bible','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
-          setStage(saved && SAFE.has(saved) ? saved : 'home');
+          const local = localStorage.getItem('kw:stage');
+          const server = data.session.user.user_metadata?.kw_stage;
+          const saved = (local && SAFE.has(local)) ? local : (server && SAFE.has(server)) ? server : null;
+          setStage(saved ?? 'home');
         }
         if (shouldShowDailyVerse()) setShowVerseCard(true);
       } else if (initialAnonChurchId) {
@@ -1831,10 +1841,11 @@ export default function App() {
         if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); }
         else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); }
         else {
-          // Always restore saved position (cleared on sign-out so fresh logins still land on home)
-          const saved = localStorage.getItem('kw:stage');
           const SAFE = new Set(['home','feed','bible','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
-          setStage(saved && SAFE.has(saved) ? saved : 'home');
+          const local = localStorage.getItem('kw:stage');
+          const server = s.user.user_metadata?.kw_stage;
+          const saved = (local && SAFE.has(local)) ? local : (server && SAFE.has(server)) ? server : null;
+          setStage(saved ?? 'home');
         }
         // Import guest Q+A saved before sign-up
         if (event === 'SIGNED_IN') {
@@ -1863,7 +1874,13 @@ export default function App() {
         setCareTeamRecord(null);
         setPastorChurchId(null);
         setPastorChurch(null);
-        localStorage.removeItem('kw:stage');
+        // Only wipe saved stage on explicit sign-out. TOKEN_REFRESHED can fire
+        // with s=null briefly, and wiping here would drop the saved position
+        // so the subsequent TOKEN_REFRESHED (with a valid session) lands on home.
+        if (event === 'SIGNED_OUT') {
+          localStorage.removeItem('kw:stage');
+          supabase.auth.updateUser({ data: { kw_stage: null } }).catch(() => {});
+        }
         setStage(initialAnonChurchId ? 'church-entry' : initialChurchId ? 'church' : 'landing');
       }
     });
