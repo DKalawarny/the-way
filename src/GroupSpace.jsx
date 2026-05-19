@@ -362,6 +362,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
       .channel(`group_messages:${group.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'group_messages', filter: `group_id=eq.${group.id}` }, (payload) => {
         const msg = payload.new;
+        if (msg.author_id === session?.user?.id) return; // already added optimistically
         supabase.from('profiles').select('display_name,avatar_config,avatar_url').eq('id', msg.author_id).single()
           .then(({ data: p }) => {
             setMessages((prev) => [...prev, { ...msg, profiles: p }]);
@@ -389,7 +390,15 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
     setMsgBusy(true);
     const body = msgInput.trim();
     setMsgInput('');
-    await supabase.from('group_messages').insert({ group_id: group.id, author_id: session.user.id, body });
+    const { data: newMsg } = await supabase
+      .from('group_messages')
+      .insert({ group_id: group.id, author_id: session.user.id, body })
+      .select('*, profiles(display_name, avatar_config, avatar_url)')
+      .single();
+    if (newMsg) {
+      setMessages((prev) => [...prev, newMsg]);
+      setTimeout(() => msgEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    }
     setMsgBusy(false);
     msgInputRef.current?.focus();
   }
