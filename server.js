@@ -150,10 +150,18 @@ app.get('/api/health', (_req, res) => {
 const URL_DETECT = /https?:\/\/[^\s<>"{}|\\^`\[\]]{8,}/gi;
 const YT_ID = /(?:youtube\.com\/watch\?(?:[^#&?]*&)*v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
 
-function isPrivateHost(url) {
+// Domains that return login walls, are adult content, or produce no useful text
+const BLOCKED_DOMAINS = new Set([
+  'twitter.com','x.com','instagram.com','facebook.com','tiktok.com',
+  'reddit.com','linkedin.com','pinterest.com','snapchat.com',
+  'onlyfans.com','pornhub.com','xvideos.com','xhamster.com',
+]);
+
+function isBlockedUrl(url) {
   try {
-    const h = new URL(url).hostname;
-    return /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.)/.test(h);
+    const h = new URL(url).hostname.replace(/^www\./, '');
+    if (/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.)/.test(h)) return true;
+    return BLOCKED_DOMAINS.has(h);
   } catch { return true; }
 }
 
@@ -230,7 +238,7 @@ async function fetchWebContent(url) {
 }
 
 async function resolveUrlContext(message) {
-  const urls = [...(message.matchAll(URL_DETECT))].map(([u]) => u).filter((u) => !isPrivateHost(u)).slice(0, 2);
+  const urls = [...(message.matchAll(URL_DETECT))].map(([u]) => u).filter((u) => !isBlockedUrl(u)).slice(0, 2);
   if (!urls.length) return '';
   const results = await Promise.all(urls.map(async (url) => {
     try {
