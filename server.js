@@ -145,6 +145,103 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
 });
 
+// ── URL content fetcher (web pages + YouTube transcripts) ────────────────────
+
+const URL_DETECT = /https?:\/\/[^\s<>"{}|\\^`\[\]]{8,}/gi;
+const YT_ID = /(?:youtube\.com\/watch\?(?:[^#&?]*&)*v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+
+function isPrivateHost(url) {
+  try {
+    const h = new URL(url).hostname;
+    return /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.)/.test(h);
+  } catch { return true; }
+}
+
+async function fetchYouTubeContent(rawUrl, videoId) {
+  let title = '', author = '', transcript = '';
+  try {
+    const oe = await fetch(
+      `https://www.youtube.com/oembed?url=${encodeURIComponent(rawUrl)}&format=json`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+    if (oe.ok) { const d = await oe.json(); title = d.title ?? ''; author = d.author_name ?? ''; }
+  } catch {}
+
+  try {
+    const page = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'en-US,en;q=0.9' },
+      signal: AbortSignal.timeout(8000),
+    });
+    const html = await page.text();
+    const capMatch = html.match(/"captionTracks":\[{"baseUrl":"([^"]+)"/);
+    if (capMatch) {
+      const capUrl = JSON.parse(`"${capMatch[1]}"`);
+      const capRes = await fetch(capUrl + '&fmt=json3', { signal: AbortSignal.timeout(5000) });
+      if (capRes.ok) {
+        const capJson = await capRes.json();
+        transcript = (capJson?.events ?? [])
+          .flatMap((e) => e.segs ?? [])
+          .map((s) => s.utf8 ?? '')
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 5000);
+      }
+      if (!transcript) {
+        // fallback: XML captions
+        const xmlRes = await fetch(capUrl, { signal: AbortSignal.timeout(5000) });
+        if (xmlRes.ok) {
+          transcript = (await xmlRes.text())
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/&#39;/g, "'").replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+            .replace(/\s+/g, ' ').trim().slice(0, 5000);
+        }
+      }
+    }
+  } catch {}
+
+  let out = `[YouTube Video]\nTitle: ${title || 'Unknown'}\nChannel: ${author || 'Unknown'}\nURL: ${rawUrl}`;
+  if (transcript) out += `\n\nTranscript:\n${transcript}`;
+  else out += '\n\n(No transcript available — respond based on the title and channel.)';
+  return out;
+}
+
+async function fetchWebContent(url) {
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; kinwove/1.0)', 'Accept': 'text/html' },
+    signal: AbortSignal.timeout(8000),
+    redirect: 'follow',
+  });
+  if (!res.ok) return null;
+  const ct = res.headers.get('content-type') ?? '';
+  if (!ct.includes('text/html') && !ct.includes('text/plain')) return null;
+  const html = await res.text();
+  const text = html
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ').trim().slice(0, 5000);
+  if (!text) return null;
+  // Try to pull page title
+  const titleMatch = html.match(/<title[^>]*>([^<]{1,120})<\/title>/i);
+  const pageTitle = titleMatch ? titleMatch[1].trim() : url;
+  return `[Web Page: ${pageTitle}]\nURL: ${url}\n\n${text}`;
+}
+
+async function resolveUrlContext(message) {
+  const urls = [...(message.matchAll(URL_DETECT))].map(([u]) => u).filter((u) => !isPrivateHost(u)).slice(0, 2);
+  if (!urls.length) return '';
+  const results = await Promise.all(urls.map(async (url) => {
+    try {
+      const ytMatch = url.match(YT_ID);
+      return ytMatch ? await fetchYouTubeContent(url, ytMatch[1]) : await fetchWebContent(url);
+    } catch { return null; }
+  }));
+  const content = results.filter(Boolean).join('\n\n---\n\n');
+  return content ? `\n\n---\nThe user has shared the following content for you to reference:\n\n${content}\n---` : '';
+}
+
 // ── Q&A cache (Supabase-backed) + event log ─────────────────────────────────
 // qa_cache: deduped (person_type, question_normalized) → answer.
 // qa_events: append-only log of every chat call.
@@ -448,6 +545,10 @@ app.post('/api/chat', optionalAuth, limitEither(
     }
   }
 
+  // Fetch any URLs the user shared and inject as context
+  const urlContext = await resolveUrlContext(lastUserMsg).catch(() => '');
+  const hasUrlContext = urlContext.length > 0;
+
   try {
     // Model routing — tier controls ceiling, complexity controls selection within tier.
     // Free: Haiku only. Individual: Haiku|Sonnet. Pro: Haiku|Sonnet|Opus.
@@ -482,7 +583,7 @@ app.post('/api/chat', optionalAuth, limitEither(
     const stream = client.messages.stream({
       model,
       max_tokens: 2048,
-      system,   // seekingContext already appended by getSystemPrompt() on the client
+      system: system + urlContext,
       messages: trimmed,
     });
     req.on('close', () => stream.controller?.abort?.());
@@ -503,7 +604,7 @@ app.post('/api/chat', optionalAuth, limitEither(
     res.end();
 
     // Persist cache + event after the response is on its way to the client.
-    if (isFirstTurn && personType && fullText.length > 0) {
+    if (isFirstTurn && personType && fullText.length > 0 && !hasUrlContext) {
       writeCacheEntry({ personType, question: lastUserMsg, answer: fullText, model });
     }
     logQaEvent({
