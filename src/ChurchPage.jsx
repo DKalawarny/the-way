@@ -392,10 +392,11 @@ export default function ChurchPage({
       <div style={{
         position: 'relative',
         background: churchBannerBg(church),
-        borderBottom: '1px solid rgba(184,115,58,0.35)',
-        boxShadow: SHADOW.candle,
+        borderRadius: '0 0 28px 28px',
+        boxShadow: '0 8px 32px rgba(26,17,8,0.18), 0 2px 8px rgba(26,17,8,0.10)',
         overflow: 'hidden',
         color: T.cream,
+        zIndex: 1,
       }}>
         {/* Candlelight gold-grain — same texture as ChurchHub, glows on dark */}
         <div className="texture-bg" style={{
@@ -527,7 +528,7 @@ export default function ChurchPage({
       </div>
 
       <div style={{
-        position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 5,
+        position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 4,
         background: T.white,
         borderBottom: `1px solid ${T.line}`,
         display: 'flex',
@@ -541,12 +542,13 @@ export default function ChurchPage({
             key={t.id}
             onClick={() => setTab(t.id)}
             style={{
-              flex: 1, padding: '11px 4px',
+              flex: 1, padding: '13px 4px',
               background: 'transparent', border: 'none',
-              borderBottom: tab === t.id ? '2px solid #6b2438' : '2px solid transparent',
-              fontSize: 13.5, fontWeight: tab === t.id ? 700 : 500,
-              color: tab === t.id ? '#6b2438' : T.inkMuted,
-              cursor: 'pointer',
+              borderBottom: tab === t.id ? `2px solid ${T.goldDark}` : '2px solid transparent',
+              fontSize: 13, fontWeight: tab === t.id ? 700 : 500,
+              color: tab === t.id ? T.goldDark : T.inkMuted,
+              cursor: 'pointer', letterSpacing: tab === t.id ? 0.1 : 0,
+              transition: 'color 0.15s, border-color 0.15s',
             }}
           >{t.label}</button>
         ))}
@@ -632,36 +634,33 @@ export default function ChurchPage({
                 onClick={onOpenWalks}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left',
-                  background: T.parchment, border: `1px solid ${T.goldLight}`,
-                  borderRadius: 14, padding: '14px 16px', marginBottom: SPACE[3], cursor: 'pointer',
+                  background: `linear-gradient(135deg, rgba(184,115,58,0.10) 0%, rgba(184,115,58,0.05) 100%)`,
+                  border: `1px solid ${T.goldLight}`,
+                  borderLeft: `3px solid ${T.gold}`,
+                  borderRadius: 14, padding: '16px 18px', marginBottom: 16, cursor: 'pointer',
                 }}
               >
-                <div style={{
-                  width: 44, height: 44, borderRadius: 12,
-                  background: T.white, border: `1px solid ${T.line}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 22, color: T.goldDark, flexShrink: 0,
-                }}>{featuredWalk.cover_emoji}</div>
+                <div style={{ fontSize: 30, flexShrink: 0, lineHeight: 1 }}>{featuredWalk.cover_emoji}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 10.5, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 2 }}>
-                    ✶ Walking together
+                  <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 3 }}>
+                    Walking together
                   </div>
-                  <div style={{ fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.ink, letterSpacing: '-0.012em', lineHeight: 1.2 }}>
+                  <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.2 }}>
                     {featuredWalk.title}
                   </div>
                   {featuredWalk.subtitle && (
-                    <div style={{ fontSize: 12.5, color: T.inkSoft, fontStyle: 'italic', lineHeight: 1.4, marginTop: 2 }}>
+                    <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.4, marginTop: 3 }}>
                       {featuredWalk.subtitle}
                     </div>
                   )}
                 </div>
-                <div style={{ fontSize: 13, color: T.goldDark, fontWeight: 600, flexShrink: 0 }}>Start →</div>
+                <div style={{ fontSize: 20, color: T.goldDark, flexShrink: 0 }}>→</div>
               </button>
             )}
 
             {/* ── Quick action chips ── */}
             {(isMember || isPastor) && (
-              <div style={{ display: 'flex', gap: SPACE[2], marginBottom: SPACE[5], flexWrap: 'wrap', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 20, overflowX: 'auto', paddingBottom: 2 }}>
                 {onOpenTalkToSomeone && <ActionChip emoji="☎" label="Talk to someone" onClick={onOpenTalkToSomeone} />}
                 {onOpenPrayer && <ActionChip emoji="🙏" label="Pray together"   onClick={onOpenPrayer} />}
                 {onOpenWalks && <ActionChip emoji="✶" label="Pick a walk"      onClick={onOpenWalks} />}
@@ -959,38 +958,26 @@ export default function ChurchPage({
                 <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 12 }}>
                   What's inside
                 </div>
-                <div style={{ display: 'grid', gap: 12 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   {[
                     {
-                      icon: '🙏',
-                      title: 'Prayer wall',
+                      title: 'Sunday’s sermon, all week',
+                      body: 'Daily questions, discussion, and notes tied to what your pastor preached.',
+                    },
+                    {
+                      title: 'Prayer together',
                       body: 'Pray with your church between Sundays. Anonymous when you need it to be.',
                     },
                     {
-                      icon: '✦',
-                      title: 'Sunday\u2019s sermon, all week',
-                      body: 'Go deeper with what your pastor preached — questions, discussion, and notes.',
-                    },
-                    {
-                      icon: '·',
-                      title: 'Quiet space',
-                      body: 'No algorithms, no ads, no strangers. Just our church.',
+                      title: 'A quiet space',
+                      body: 'No algorithms, no ads, no strangers. Just your church.',
                     },
                   ].map((row) => (
                     <div key={row.title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                      <div style={{
-                        width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-                        background: 'rgba(184,115,58,0.10)', border: `1px solid ${T.goldLight}`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 16, color: T.goldDark,
-                      }}>{row.icon}</div>
+                      <div style={{ width: 5, height: 5, borderRadius: '50%', background: T.gold, flexShrink: 0, marginTop: 8 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: T.serif, fontSize: 14.5, fontWeight: 700, color: T.ink, lineHeight: 1.35 }}>
-                          {row.title}
-                        </div>
-                        <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.55, marginTop: 2 }}>
-                          {row.body}
-                        </div>
+                        <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 600, color: T.ink, lineHeight: 1.3 }}>{row.title}</div>
+                        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginTop: 3 }}>{row.body}</div>
                       </div>
                     </div>
                   ))}
@@ -1275,15 +1262,16 @@ function ActionChip({ emoji, label, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="lift"
       style={{
-        display: 'inline-flex', alignItems: 'center', gap: 6,
-        background: T.white, border: `1px solid ${T.line}`, borderRadius: 999,
-        padding: '8px 14px', fontSize: 13, fontWeight: 600, color: T.inkSoft,
-        cursor: 'pointer',
+        display: 'inline-flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap', flexShrink: 0,
+        background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: 999,
+        padding: '9px 16px', fontSize: 13.5, fontWeight: 600, color: T.inkSoft,
+        cursor: 'pointer', transition: 'border-color 0.15s, background 0.15s',
       }}
+      onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.background = `rgba(184,115,58,0.12)`; }}
+      onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.goldLight; e.currentTarget.style.background = T.parchment; }}
     >
-      <span style={{ fontSize: 14 }}>{emoji}</span>
+      <span style={{ fontSize: 15 }}>{emoji}</span>
       {label}
     </button>
   );
