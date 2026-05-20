@@ -651,12 +651,11 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
           </>
         )}
 
-        {/* Embedded mode (inside ChurchAdmin) — same creation hub as full mode. */}
+        {/* Embedded mode — only actions that don't have a dedicated tab. */}
         {embedded && (
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-            <QuickAction emoji="📖" label="New sermon"      hint="Turn Sunday into a week"     onClick={onOpenComposer}              accent={T.goldDark} />
-            <QuickAction emoji="✶"  label="Announce a walk" hint="Post & feature for everyone"  onClick={openWalkModal}               accent={T.goldDark} />
-            <QuickAction emoji="✎"  label="Post to feed"    hint="A note for the congregation"  onClick={() => setPostModalOpen(true)} />
+            <QuickAction emoji="✶" label="Announce a walk" hint="Post & feature for everyone" onClick={openWalkModal} accent={T.goldDark} />
+            <QuickAction emoji="✎" label="Post to feed"    hint="A note for the congregation" onClick={() => setPostModalOpen(true)} />
           </div>
         )}
 
