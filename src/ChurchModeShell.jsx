@@ -1,20 +1,5 @@
 import { T, SHADOW } from './theme.js';
 
-// Sticky church-mode header reused across every page a pastor sees while
-// managing their church (admin tabs, public-page preview, congregation feed,
-// individual sermon view). Keeps the wayfinding consistent so the pastor never
-// loses context after clicking "Public page →" or "Congregation feed →".
-//
-// Tab strip behaviour:
-// - Inside ChurchAdmin: clicking a tab swaps the body inline.
-// - On wrapped non-admin pages: clicking a tab navigates back to ChurchAdmin
-//   with that tab pre-selected (parent owns the navigation).
-//
-// `currentSubpage` tells the shell which outbound link is the page you're
-// currently viewing — that one gets a "current" treatment (filled) and the
-// other stays as a normal outbound link, so the pastor can see at a glance
-// which preview they're in.
-
 const TABS = [
   { id: 'overview', label: 'Overview', emoji: '✦' },
   { id: 'people',   label: 'People',   emoji: '👥' },
@@ -46,33 +31,19 @@ function TabButton({ tab, active, onClick }) {
   );
 }
 
-function OutboundLink({ label, current, onClick }) {
-  if (!onClick) return null;
-  return (
-    <button onClick={onClick} disabled={current} style={{
-      background: current ? T.cream : 'rgba(253,248,240,0.10)',
-      color:      current ? T.ink   : T.cream,
-      border:     current ? 'none'  : '1px solid rgba(253,248,240,0.25)',
-      borderRadius: 999,
-      padding: '5px 12px',
-      fontSize: 12,
-      fontWeight: 600,
-      cursor: current ? 'default' : 'pointer',
-    }}>{label}</button>
-  );
-}
-
 export default function ChurchModeShell({
   church,
-  tab,                  // active admin tab id, or null when on a wrapped sub-page
-  onTabChange,          // (tabId) => void
-  onBack,               // "← My page" handler — required
-  onOpenChurchPage,     // optional — hidden when not provided
-  onOpenChurchHub,      // optional — hidden when not provided
-  currentSubpage,       // 'public' | 'hub' | 'sermon' | null
+  tab,
+  onTabChange,
+  onBack,
+  onOpenChurchPage,
+  onOpenChurchHub,
+  currentSubpage,
   bodyMaxWidth = 760,
   children,
 }) {
+  const isVisitorView = currentSubpage === 'public';
+
   return (
     <div style={{ minHeight: '100vh', background: T.cream, overflowY: 'auto' }}>
       <div style={{
@@ -89,13 +60,31 @@ export default function ChurchModeShell({
               background: 'none', border: 'none', color: T.goldLight, fontSize: 14, cursor: 'pointer', padding: 0,
             }}>← Church page</button>
             <div style={{ flex: 1 }} />
-            <OutboundLink
-              label={currentSubpage === 'public' ? 'Public page' : 'Public page →'}
-              current={currentSubpage === 'public'}
-              onClick={onOpenChurchPage}
-            />
-            <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(253,248,240,0.55)' }}>
-              Pastor view
+            {/* Leader / Visitor view toggle */}
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.16em',
+            }}>
+              <span style={{ color: 'rgba(253,248,240,0.45)' }}>Viewing as</span>
+              <button
+                onClick={() => !isVisitorView ? undefined : onOpenChurchHub?.() ?? onBack?.()}
+                style={{
+                  background: 'none', border: 'none', padding: 0, cursor: isVisitorView ? 'pointer' : 'default',
+                  color: isVisitorView ? 'rgba(253,248,240,0.5)' : T.cream,
+                  fontWeight: isVisitorView ? 400 : 600, fontSize: 10.5,
+                  textTransform: 'uppercase', letterSpacing: '0.16em',
+                }}
+              >Leader</button>
+              <span style={{ color: 'rgba(253,248,240,0.3)' }}>·</span>
+              <button
+                onClick={isVisitorView ? undefined : onOpenChurchPage}
+                style={{
+                  background: 'none', border: 'none', padding: 0, cursor: isVisitorView ? 'default' : 'pointer',
+                  color: isVisitorView ? T.cream : 'rgba(253,248,240,0.5)',
+                  fontWeight: isVisitorView ? 600 : 400, fontSize: 10.5,
+                  textTransform: 'uppercase', letterSpacing: '0.16em',
+                }}
+              >Visitor</button>
             </div>
           </div>
 

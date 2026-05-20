@@ -1438,14 +1438,16 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
           return (
             <button key={t.id} onClick={() => setFeedType(t.id)} style={{
               flex: 1,
-              padding: '11px 4px',
+              padding: '13px 4px',
               background: 'transparent',
               border: 'none',
               borderBottom: isActive ? `2px solid ${TAB_COLOR}` : '2px solid transparent',
-              fontSize: 13.5,
+              marginBottom: -1,
+              fontSize: 13,
               fontWeight: isActive ? 700 : 500,
               color: isActive ? TAB_TEXT : T.inkMuted,
               cursor: 'pointer',
+              transition: 'color 0.15s, border-color 0.15s',
             }}>{t.label}</button>
           );
         })}
