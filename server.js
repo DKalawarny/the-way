@@ -759,7 +759,7 @@ app.post('/api/sermon/generate', requireAuth, limitAuthed({ capacity: 12, refill
   try {
     const resp = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: isSingle ? 700 : (targetKind ? 2000 : 5000),
+      max_tokens: isSingle ? 800 : (targetKind ? 2500 : 6000),
       system: SERMON_SYSTEM,
       messages: [{ role: 'user', content: userContent }],
     });
@@ -769,47 +769,60 @@ app.post('/api/sermon/generate', requireAuth, limitAuthed({ capacity: 12, refill
       .join('')
       .trim();
 
-    // Strip any accidental code fences
-    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/```$/i, '').trim();
-    let parsed;
-    try {
-      parsed = JSON.parse(cleaned);
-    } catch (e) {
-      // Most common failure: the model slipped a raw newline / tab inside a
-      // string value instead of \n / \t. Try a one-shot repair before giving
-      // up — walk the text, escape control characters that appear inside
-      // double-quoted runs only.
-      try {
-        let repaired = '';
-        let inString = false;
-        let prevBackslash = false;
-        for (const ch of cleaned) {
-          if (inString) {
-            if (ch === '\\' && !prevBackslash) {
-              repaired += ch;
-              prevBackslash = true;
-              continue;
-            }
-            if (ch === '"' && !prevBackslash) {
-              inString = false;
-              repaired += ch;
-            } else if (ch === '\n') repaired += '\\n';
-            else if (ch === '\r') repaired += '\\r';
-            else if (ch === '\t') repaired += '\\t';
-            else repaired += ch;
-            prevBackslash = false;
-          } else {
-            if (ch === '"') inString = true;
-            repaired += ch;
-            prevBackslash = false;
-          }
+    // Strip code fences
+    let cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+
+    // If the model added prose before/after the JSON, extract the outermost object
+    const jsonBound = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonBound) cleaned = jsonBound[0];
+
+    function repairJsonString(src) {
+      // Walk char-by-char and escape raw control chars inside JSON string values
+      let out = '';
+      let inStr = false;
+      let prev = '';
+      for (const ch of src) {
+        if (inStr) {
+          if (ch === '\\' && prev !== '\\') { out += ch; prev = ch; continue; }
+          if (ch === '"' && prev !== '\\') { inStr = false; out += ch; prev = ch; continue; }
+          if (ch === '\n') { out += '\\n'; prev = ch; continue; }
+          if (ch === '\r') { out += '\\r'; prev = ch; continue; }
+          if (ch === '\t') { out += '\\t'; prev = ch; continue; }
+        } else {
+          if (ch === '"') inStr = true;
         }
-        parsed = JSON.parse(repaired);
-        console.warn('[the way] sermon JSON repaired (escaped raw control chars).');
-      } catch (e2) {
-        console.error('[the way] sermon JSON parse failed:', cleaned.slice(0, 500));
-        return res.status(500).json({ error: 'Could not parse generated content. Try again.' });
+        out += ch;
+        prev = ch;
       }
+      return out;
+    }
+
+    let parsed;
+    // Attempt 1: direct parse
+    try { parsed = JSON.parse(cleaned); } catch (_) {}
+
+    // Attempt 2: repair raw control chars then parse
+    if (!parsed) {
+      try {
+        parsed = JSON.parse(repairJsonString(cleaned));
+        console.warn('[the way] sermon JSON repaired (control chars).');
+      } catch (_) {}
+    }
+
+    // Attempt 3: strip any trailing truncation and close braces/brackets
+    if (!parsed) {
+      try {
+        // Find last complete item by trimming to last }] or }}
+        const trimmed = cleaned.replace(/,?\s*\{[^{}]*$/, '').replace(/,?\s*$/, '');
+        const closed = trimmed.endsWith(']}') ? trimmed : trimmed + ']}';
+        parsed = JSON.parse(repairJsonString(closed));
+        console.warn('[the way] sermon JSON recovered from truncation.');
+      } catch (_) {}
+    }
+
+    if (!parsed) {
+      console.error('[the way] sermon JSON parse failed after all attempts. First 600 chars:', cleaned.slice(0, 600));
+      return res.status(500).json({ error: 'Could not parse generated content. Try again.' });
     }
     let items = parsed.items ?? [];
     // Drop any retired kinds the model might still emit from old prompt patterns
