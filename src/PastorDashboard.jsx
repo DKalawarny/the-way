@@ -651,11 +651,12 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
           </>
         )}
 
-        {/* Embedded mode — only actions that don't have a dedicated tab. */}
+        {/* Embedded mode — full creation hub. */}
         {embedded && (
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-            <QuickAction emoji="✶" label="Announce a walk" hint="Post & feature for everyone" onClick={openWalkModal} accent={T.goldDark} />
-            <QuickAction emoji="✎" label="Post to feed"    hint="A note for the congregation" onClick={() => setPostModalOpen(true)} />
+            <QuickAction emoji="📖" label="New sermon"      hint="Turn Sunday into a week"     onClick={() => onOpenComposer?.()}    accent={T.goldDark} />
+            <QuickAction emoji="✶"  label="Announce a walk" hint="Post & feature for everyone"  onClick={openWalkModal}               accent={T.goldDark} />
+            <QuickAction emoji="✎"  label="Post to feed"    hint="A note for the congregation"  onClick={() => setPostModalOpen(true)} />
           </div>
         )}
 
@@ -695,8 +696,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
           )}
         </Section>
 
-        {/* Sermons (hidden in embedded mode — handled by parent tab) */}
-        {!embedded && (
+        {/* Sermons — always visible, this is the creation hub */}
         <Section
           title="Sermons"
           hint={sermons.length === 0
@@ -725,7 +725,6 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
             ))
           )}
         </Section>
-        )}
 
         {/* Care team (hidden in embedded mode — Care tab handles it) */}
         {!embedded && (

@@ -17,7 +17,6 @@ import { T, SHADOW } from './theme.js';
 
 const TABS = [
   { id: 'overview', label: 'Overview', emoji: '✦' },
-  { id: 'sermons',  label: 'Sermons',  emoji: '📖' },
   { id: 'people',   label: 'People',   emoji: '👥' },
   { id: 'settings', label: 'Settings', emoji: '⚙' },
 ];

@@ -1863,9 +1863,10 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
 export default function ChurchAdmin({ session, profile, churchId, onBack, onOpenChurchPage, onOpenChurchHub, onOpenSermon, initialTab }) {
   // Allow deep-links into a specific tab (e.g. ChurchPage's "Edit in Pastor
   // settings" lands on Settings, not Overview). Falls back to overview.
-  const VALID_TABS = ['overview', 'sermons', 'people', 'settings'];
+  const VALID_TABS = ['overview', 'people', 'settings'];
   const [tab, setTab] = useState(initialTab && VALID_TABS.includes(initialTab) ? initialTab : 'overview');
   const [church, setChurch] = useState(null);
+  const [composerOpen, setComposerOpen] = useState(initialTab === 'sermons');
   const [composerSermonId, setComposerSermonId] = useState(null);
   // One-shot action that the next mounted panel should execute (e.g. when the
   // setup checklist's "Print your QR code" item fires, we route to Settings
@@ -1892,10 +1893,11 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
 
   function openSermonInComposer(sermonId) {
     setComposerSermonId(sermonId ?? null);
-    setTab('sermons');
+    setComposerOpen(true);
   }
 
   return (
+    <>
     <ChurchModeShell
       church={church}
       tab={tab}
@@ -1917,15 +1919,6 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
             onOpenChurchPage={onOpenChurchPage}
             onOpenSettings={gotoSettings}
             onOpenPeople={() => setTab('people')}
-          />
-        )}
-        {tab === 'sermons' && (
-          <SermonComposer
-            embedded
-            session={session}
-            churchId={churchId}
-            initialSermonId={composerSermonId}
-            onOpenSermon={onOpenSermon}
           />
         )}
         {tab === 'people' && (
@@ -1951,5 +1944,21 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
         )}
       </Suspense>
     </ChurchModeShell>
+
+    {/* Sermon composer — full-screen overlay, opened from the Overview hub */}
+    {composerOpen && (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: T.cream, overflowY: 'auto' }}>
+        <Suspense fallback={<div style={{ textAlign: 'center', padding: 60, color: T.inkMuted }}>Loading…</div>}>
+          <SermonComposer
+            session={session}
+            churchId={churchId}
+            initialSermonId={composerSermonId}
+            onOpenSermon={onOpenSermon}
+            onBack={() => { setComposerOpen(false); setComposerSermonId(null); }}
+          />
+        </Suspense>
+      </div>
+    )}
+    </>
   );
 }
