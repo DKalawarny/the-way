@@ -14,6 +14,21 @@ function qrUrl(url) {
   return `https://quickchart.io/qr?text=${encodeURIComponent(url)}&size=320&margin=2&dark=2C1810&light=FDF8F0`;
 }
 
+const CHURCH_BANNER_PRESETS = [
+  { key: 'ink',    label: 'Ink',    bg: 'linear-gradient(135deg, #2C1810 0%, #1A0F08 55%, #3A2516 100%)' },
+  { key: 'forest', label: 'Forest', bg: 'linear-gradient(135deg, #1a2e1a 0%, #2d4a2d 55%, #3d6b3d 100%)' },
+  { key: 'night',  label: 'Night',  bg: 'linear-gradient(135deg, #0d1b2e 0%, #1a3050 55%, #2a4570 100%)' },
+  { key: 'clay',   label: 'Clay',   bg: 'linear-gradient(135deg, #8b4513 0%, #a0522d 55%, #cd853f 100%)' },
+  { key: 'plum',   label: 'Plum',   bg: 'linear-gradient(135deg, #2d0a2d 0%, #4a1542 55%, #6b2564 100%)' },
+  { key: 'sea',    label: 'Sea',    bg: 'linear-gradient(135deg, #0a2d2d 0%, #0f4a4a 55%, #1a6b6b 100%)' },
+  { key: 'slate',  label: 'Slate',  bg: 'linear-gradient(135deg, #1c1c2e 0%, #2e2e4a 55%, #3d3d6b 100%)' },
+  { key: 'rose',   label: 'Rose',   bg: 'linear-gradient(135deg, #2e0a0a 0%, #501515 55%, #7a2525 100%)' },
+];
+export function churchBannerBg(church) {
+  const preset = CHURCH_BANNER_PRESETS.find((p) => p.key === (church?.banner_preset ?? 'ink'));
+  return preset?.bg ?? CHURCH_BANNER_PRESETS[0].bg;
+}
+
 // Templated announcement copy — paste-ready for group text / pulpit slide.
 // Hoisted so PeoplePanel (invite card) and SettingsPanel (QR modal) stay in
 // sync. Tone: warm and grounded, not salesy. Uses the church's own name as
@@ -401,6 +416,42 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
               />
             </label>
           </div>
+        </div>
+      </div>
+
+      {/* ── Banner background ── */}
+      <div style={{
+        background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
+        padding: '16px 18px',
+      }}>
+        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
+          🎨 Banner background
+        </div>
+        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>
+          The colour behind your church name on your public page.
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          {CHURCH_BANNER_PRESETS.map((p) => {
+            const active = (church?.banner_preset ?? 'ink') === p.key;
+            return (
+              <button
+                key={p.key}
+                title={p.label}
+                onClick={async () => {
+                  const { error } = await supabase.from('churches').update({ banner_preset: p.key }).eq('id', churchId);
+                  if (!error) onChurchUpdate?.({ banner_preset: p.key });
+                }}
+                style={{
+                  width: 40, height: 40, borderRadius: 10, cursor: 'pointer',
+                  background: p.bg,
+                  border: active ? `2px solid ${T.gold}` : `2px solid transparent`,
+                  outline: active ? `2px solid ${T.goldLight}` : 'none',
+                  outlineOffset: 1,
+                  transition: 'border-color 0.12s',
+                }}
+              />
+            );
+          })}
         </div>
       </div>
 

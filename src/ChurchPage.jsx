@@ -6,6 +6,7 @@ import { presetForRole } from './Badge.jsx';
 import { useUiKit } from './uikit.jsx';
 import JoinByCode from './JoinByCode.jsx';
 import { codeToFlag } from './countries.js';
+import { churchBannerBg } from './ChurchAdmin.jsx';
 
 const Feed         = lazy(() => import('./Feed.jsx'));
 const PostComposer = lazy(() => import('./PostComposer.jsx'));
@@ -390,7 +391,7 @@ export default function ChurchPage({
           Back + Share are overlaid at top so there's no white strip break. */}
       <div style={{
         position: 'relative',
-        background: `linear-gradient(135deg, ${T.ink} 0%, #1A0F08 55%, #3A2516 100%)`,
+        background: churchBannerBg(church),
         borderBottom: '1px solid rgba(184,115,58,0.35)',
         boxShadow: SHADOW.candle,
         overflow: 'hidden',
