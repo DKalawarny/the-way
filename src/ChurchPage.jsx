@@ -377,25 +377,11 @@ export default function ChurchPage({
         }}>
           <div style={{
             maxWidth: 640, margin: '0 auto',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
             fontSize: 12, color: T.goldDark,
           }}>
             <span style={{ fontStyle: 'italic' }}>
               Visitor view — this is what people see.
             </span>
-            {isPastor && onOpenAdmin && (
-              <button
-                onClick={() => onOpenAdmin('settings')}
-                style={{
-                  background: 'transparent', border: 'none', padding: 0,
-                  fontSize: 11.5, color: T.goldDark, fontWeight: 600,
-                  cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2,
-                  fontFamily: 'inherit',
-                }}
-              >
-                Edit in Pastor settings →
-              </button>
-            )}
           </div>
         </div>
       )}
