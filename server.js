@@ -239,7 +239,7 @@ async function resolveUrlContext(message) {
     } catch { return null; }
   }));
   const content = results.filter(Boolean).join('\n\n---\n\n');
-  return content ? `\n\n---\nThe user has shared the following content for you to reference:\n\n${content}\n---` : '';
+  return content ? `\n\n---\nThe user has shared the following as a research resource. Use it as a starting point to go deeper — explore the ideas it raises, connect them to scripture, and offer honest perspective where relevant. Do not merely summarize it.\n\n${content}\n---` : '';
 }
 
 // ── Q&A cache (Supabase-backed) + event log ─────────────────────────────────
