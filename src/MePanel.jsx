@@ -1127,7 +1127,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
 
             {/* Name + person type badge */}
             <div style={{ marginBottom: 10 }}>
-              <div className="editorial-h1" style={{ fontSize: 28, marginBottom: 8 }}>
+              <div style={{ fontFamily: T.display, fontSize: 28, fontWeight: 500, letterSpacing: '-0.02em', color: T.ink, lineHeight: 1, marginBottom: 8 }}>
                 {profile?.display_name ?? 'You'}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
@@ -1172,8 +1172,8 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
 
             {/* Stats — frontispiece-style: display numerals + gold-leaf small caps */}
             <div style={{
-              display: 'flex', gap: 28, paddingTop: 14,
-              borderTop: '1px solid rgba(154,99,40,0.20)',
+              display: 'flex', gap: 28, padding: '14px 0',
+              borderTop: `1px solid ${T.line}`, borderBottom: `1px solid ${T.line}`, marginBottom: 14,
             }}>
               {[
                 { value: stats.posts, label: 'Posts' },
@@ -1181,10 +1181,9 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                 { value: stats.followers, label: 'Followers' },
               ].map((s) => (
                 <div key={s.label} style={{ cursor: 'default' }}>
-                  <span className="editorial-h2" style={{ fontSize: 20, marginRight: 6 }}>{s.value}</span>
+                  <span style={{ fontFamily: T.display, fontSize: 20, fontWeight: 500, color: T.ink, marginRight: 5, letterSpacing: '-0.01em' }}>{s.value}</span>
                   <span style={{
-                    fontSize: 10.5, color: T.goldDark, fontWeight: 700,
-                    letterSpacing: '0.08em', textTransform: 'uppercase',
+                    fontSize: 12, color: T.inkSoft, fontWeight: 400,
                   }}>{s.label}</span>
                 </div>
               ))}

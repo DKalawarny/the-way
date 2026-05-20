@@ -198,25 +198,13 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
 
   return (
     <>
-      <div className="lift" style={{
-        '--i': index,
-        background: 'linear-gradient(180deg, #FFFEFA 0%, #FBF4E3 100%)',
+      <div style={{
+        background: T.parchment,
         borderRadius: 14,
-        border: '1px solid rgba(154,99,40,0.18)',
-        marginBottom: 22, overflow: 'hidden',
-        position: 'relative',
-        // Engraved/debossed: top edge catches a soft shadow (looks pressed
-        // into the page), bottom edge a hairline white highlight (the lip
-        // of the depression). No drop shadow — cards live in the page,
-        // not floating on it.
-        boxShadow: 'inset 0 2px 4px rgba(44,24,16,0.07), inset 0 -1px 0 rgba(255,255,255,0.6), 0 1px 0 rgba(255,253,247,0.9)',
+        border: `1px solid ${T.line}`,
+        marginBottom: 14,
+        overflow: 'hidden',
       }}>
-        {/* Kind accent rail — color signals what type of post this is
-            (verse vs prayer vs milestone). Persona stays in the bg gradient. */}
-        <div style={{
-          position: 'absolute', left: 0, top: 0, bottom: 0, width: 6,
-          background: kindTint(post.kind).rail,
-        }} />
         {/* Header */}
         <div style={{ padding: '16px 18px 0' }}>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
@@ -353,18 +341,18 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                 fontWeight: 700,
               }}>“</div>
               <div style={{
-                fontFamily: T.serif, fontSize: 19, fontStyle: 'italic',
-                color: '#1f1410', lineHeight: 1.55, whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word',
-                letterSpacing: '-0.003em',
+                fontFamily: T.display, fontSize: 17, fontStyle: 'italic',
+                color: T.ink, lineHeight: 1.55, whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word',
+                letterSpacing: '-0.01em',
               }}>
                 {bodyExpanded ? post.body : post.body.slice(0, 280) + (post.body.length > 280 ? '…' : '')}
               </div>
             </div>
           ) : (
             <div style={{
-              fontFamily: T.serif, fontSize: 18.5, color: '#1f1410',
-              lineHeight: 1.6, margin: '6px 0 16px', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word',
-              letterSpacing: '-0.003em', fontWeight: 400,
+              fontFamily: T.display, fontSize: 17, color: T.ink,
+              lineHeight: 1.55, margin: '6px 0 16px', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word',
+              letterSpacing: '-0.01em', fontWeight: 400,
             }}>
               {bodyExpanded ? post.body : post.body.slice(0, 280) + (post.body.length > 280 ? '…' : '')}
             </div>
