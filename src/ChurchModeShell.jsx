@@ -94,8 +94,8 @@ export default function ChurchModeShell({
               current={currentSubpage === 'public'}
               onClick={onOpenChurchPage}
             />
-            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldLight, fontWeight: 700 }}>
-              Church mode
+            <div style={{ fontSize: 10.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(253,248,240,0.55)' }}>
+              Pastor view
             </div>
           </div>
 

@@ -52,17 +52,20 @@ function ReactionButton({ kind, count, mine, onToggle }) {
   return (
     <button
       onClick={onToggle}
-      style={{
-        background: mine ? T.parchment : 'transparent',
-        border: `1px solid ${mine ? T.gold : T.line}`,
-        color: mine ? T.goldDark : T.inkSoft,
-        borderRadius: 999, padding: '5px 11px', fontSize: 12.5, fontWeight: 600,
-        cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
-      }}
       title={kind.label}
+      style={{
+        background: 'none', border: 'none',
+        color: mine ? T.goldDark : T.inkSoft,
+        fontSize: 13, cursor: 'pointer',
+        display: 'inline-flex', alignItems: 'center', gap: 5,
+        padding: '6px 8px', transition: 'color 0.15s',
+        fontFamily: T.sans,
+      }}
+      onMouseEnter={(e) => { if (!mine) e.currentTarget.style.color = T.ink; }}
+      onMouseLeave={(e) => { if (!mine) e.currentTarget.style.color = T.inkSoft; }}
     >
       {kind.Icon ? <kind.Icon size={13} strokeWidth={mine ? 0 : 1.75} fill={mine ? T.goldDark : 'none'} /> : <span style={{ fontSize: 13 }}>{kind.emoji}</span>}
-      {count > 0 && <span>{count}</span>}
+      <span>{count > 0 ? count : kind.label}</span>
     </button>
   );
 }
@@ -951,12 +954,14 @@ export default function PostCard({
           <button
             onClick={() => setCommentsOpen((v) => !v)}
             style={{
-              background: commentsOpen ? T.parchment : 'transparent',
-              border: 'none',
+              background: 'none', border: 'none',
               color: commentsOpen ? T.goldDark : T.inkSoft,
-              fontSize: 12.5, fontWeight: commentsOpen ? 600 : 400,
-              cursor: 'pointer', padding: '5px 10px', borderRadius: 999,
+              fontSize: 13, cursor: 'pointer', padding: '6px 8px',
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              transition: 'color 0.15s', fontFamily: T.sans,
             }}
+            onMouseEnter={(e) => { if (!commentsOpen) e.currentTarget.style.color = T.ink; }}
+            onMouseLeave={(e) => { if (!commentsOpen) e.currentTarget.style.color = T.inkSoft; }}
           >
             💬 {localCommentCount > 0 ? localCommentCount : 'Comment'}
           </button>
@@ -966,12 +971,14 @@ export default function PostCard({
             onClick={() => onSaveToggle(item.id, isSaved)}
             title={isSaved ? 'Remove private save' : 'Private save'}
             style={{
-              background: isSaved ? T.parchment : 'transparent',
-              border: 'none',
+              background: 'none', border: 'none',
               color: isSaved ? T.goldDark : T.inkMuted,
-              cursor: 'pointer', padding: '5px 8px', borderRadius: 999,
+              cursor: 'pointer', padding: '6px 8px',
               display: 'flex', alignItems: 'center',
+              transition: 'color 0.15s',
             }}
+            onMouseEnter={(e) => { if (!isSaved) e.currentTarget.style.color = T.ink; }}
+            onMouseLeave={(e) => { if (!isSaved) e.currentTarget.style.color = T.inkMuted; }}
           >
             <Bookmark size={15} strokeWidth={2} fill={isSaved ? T.goldDark : 'none'} />
           </button>

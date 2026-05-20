@@ -448,11 +448,10 @@ export default function ChurchPage({
             <div className="halo" style={{ '--i': 0,
               width: 92, height: 92, borderRadius: '50%',
               background: 'rgba(253,248,240,0.06)',
-              border: `2px solid ${T.gold}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 42,
               overflow: 'hidden',
-              boxShadow: '0 0 32px rgba(184,115,58,0.35), inset 0 1px 0 rgba(253,248,240,0.10)',
+              boxShadow: '0 4px 24px rgba(26,17,8,0.22), inset 0 1px 0 rgba(253,248,240,0.08)',
             }}>
               {church.avatar_url
                 ? <img src={church.avatar_url} alt={church.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -660,10 +659,34 @@ export default function ChurchPage({
 
             {/* ── Quick action chips ── */}
             {(isMember || isPastor) && (
-              <div style={{ display: 'flex', gap: 8, marginBottom: 20, overflowX: 'auto', paddingBottom: 2 }}>
-                {onOpenTalkToSomeone && <ActionChip emoji="☎" label="Talk to someone" onClick={onOpenTalkToSomeone} />}
-                {onOpenPrayer && <ActionChip emoji="🙏" label="Pray together"   onClick={onOpenPrayer} />}
-                {onOpenWalks && <ActionChip emoji="✶" label="Pick a walk"      onClick={onOpenWalks} />}
+              <div style={{ marginBottom: 20 }}>
+                {/* Primary action */}
+                {onOpenPrayer && (
+                  <div style={{ textAlign: 'center', marginBottom: 10 }}>
+                    <button
+                      onClick={onOpenPrayer}
+                      style={{
+                        background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+                        padding: '11px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(26,17,8,0.18)',
+                      }}
+                    >🙏 Pray together</button>
+                  </div>
+                )}
+                {/* Secondary actions */}
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 16, fontSize: 13, color: T.inkSoft }}>
+                  {onOpenTalkToSomeone && (
+                    <button onClick={onOpenTalkToSomeone} style={{ background: 'none', border: 'none', color: T.inkSoft, fontSize: 13, cursor: 'pointer', padding: 0, textDecoration: 'underline', textDecorationColor: 'rgba(90,71,51,0.3)' }}>
+                      Talk to someone
+                    </button>
+                  )}
+                  {onOpenTalkToSomeone && onOpenWalks && <span style={{ opacity: 0.4 }}>·</span>}
+                  {onOpenWalks && (
+                    <button onClick={onOpenWalks} style={{ background: 'none', border: 'none', color: T.inkSoft, fontSize: 13, cursor: 'pointer', padding: 0, textDecoration: 'underline', textDecorationColor: 'rgba(90,71,51,0.3)' }}>
+                      Pick a walk
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 

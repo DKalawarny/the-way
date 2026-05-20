@@ -575,6 +575,45 @@ function PlanCard({ plan, aiUsage, session }) {
   );
 }
 
+function PlanLine({ plan, aiUsage, session }) {
+  const meta  = PLAN_LABELS[plan] ?? PLAN_LABELS.free;
+  const cfg   = PLAN_LIMITS[plan]  ?? PLAN_LIMITS.free;
+  const used  = aiUsage.used ?? 0;
+  const total = cfg.limit + (aiUsage.topup ?? 0);
+  const [opening, setOpening] = useState(false);
+
+  async function openPortal() {
+    if (!session?.user) return;
+    setOpening(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal-session`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ user_id: session.user.id, return_url: window.location.origin }) }
+      );
+      const { url } = await res.json();
+      if (url) window.location.href = url;
+    } catch { window.open('mailto:hello@kinwove.com?subject=Manage%20my%20subscription'); }
+    finally { setOpening(false); }
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: T.inkSoft }}>
+      <span style={{ color: meta.color, fontWeight: 600 }}>{meta.label}</span>
+      <span>·</span>
+      <span>{used} of {total} messages used</span>
+      <span>·</span>
+      {plan === 'free' ? (
+        <a href="/?upgrade=1" style={{ color: T.goldDark, fontWeight: 600, textDecoration: 'none' }}>Upgrade →</a>
+      ) : (
+        <button onClick={openPortal} disabled={opening} style={{ background: 'none', border: 'none', padding: 0, color: T.goldDark, fontWeight: 600, cursor: 'pointer', fontSize: 12.5 }}>
+          {opening ? 'Opening…' : 'Manage →'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function MePanel({ session, profile, onClose, onEditProfile, onSignOut, onDeleteAccount, onOpenBoard, onOpenHistory, onProfileUpdate, onOpenChat, onViewProfile, onFindPeople, onInviteFriends, onFindChurches, onApplyAsPastor, onOpenPastorAdminQueue, onOpenChurchDisputesQueue, onOpenChurch, onOpenSermon, onOpenWalks, onOpenTalkToSomeone, onOpenCareInbox, onOpenMessages, onOpenConnect, onOpenPastorDashboard, hasCareTeamRole, hasPastoredChurch }) {
   const [posts, setPosts] = useState([]);
   const [stats, setStats] = useState({ posts: 0, following: 0, followers: 0 });
@@ -1009,10 +1048,9 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                 <div
                   onClick={() => (profile?.avatar_url || profile?.avatar_config) && setAvatarLightbox(true)}
                   style={{
-                    borderRadius: '50%', padding: 4,
-                    background: `linear-gradient(135deg, ${T.gold}, #e8a050, ${T.gold})`,
+                    borderRadius: '50%',
                     display: 'inline-block',
-                    boxShadow: '0 4px 20px rgba(184,115,58,0.35)',
+                    boxShadow: '0 4px 16px rgba(26,17,8,0.15)',
                     cursor: (profile?.avatar_url || profile?.avatar_config) ? 'zoom-in' : 'default',
                   }}
                 >
@@ -1020,7 +1058,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                     name={profile?.display_name}
                     avatarConfig={profile?.avatar_config} photoUrl={profile?.avatar_url}
                     size={108}
-                    style={{ border: `3px solid ${T.white}`, display: 'block' }}
+                    style={{ display: 'block', borderRadius: '50%' }}
                   />
                 </div>
                 <button onClick={() => setPickingAvatar(true)} style={{
@@ -1170,38 +1208,39 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
         </div>
 
 
-        {/* ── Plan & AI usage card ──────────────────────────────────────────── */}
-        <PlanCard plan={profile?.plan ?? 'free'} aiUsage={aiUsage} session={session} />
+        {/* ── Plan & AI usage — quiet one-liner ────────────────────────────── */}
+        {!aiUsage.loading && (
+          <div style={{ padding: '0 20px 14px' }}>
+            <PlanLine plan={profile?.plan ?? 'free'} aiUsage={aiUsage} session={session} />
+          </div>
+        )}
 
-        {/* Tabs — underline style matching ChurchPage, navy accent for Personal */}
+        {/* Tabs — 4 tabs, gold accent, hairline anchor */}
         <div style={{
           display: 'flex',
           background: T.white,
           borderBottom: `1px solid ${T.line}`,
           marginBottom: 12,
-          overflowX: 'auto',
         }}>
           {[
-            { id: 'posts',     label: `📝 Posts (${stats.posts})` },
-            { id: 'prayers',   label: '🙏 Prayers'                },
-            { id: 'saved',     label: '🔒 Private saves'           },
-            { id: 'friends',   label: `✦ Friends${pendingRequests.length ? ` · ${pendingRequests.length} 🔴` : ` (${friendsList.length})`}` },
-            { id: 'following', label: `↗ Following (${stats.following})` },
-            { id: 'about',     label: '◎ About'                   },
+            { id: 'posts',   label: 'Posts'   },
+            { id: 'prayers', label: 'Prayers' },
+            { id: 'saved',   label: 'Saves'   },
+            { id: 'about',   label: 'About'   },
           ].map((t) => {
             const isActive = tab === t.id;
             return (
               <button key={t.id} onClick={() => { setTab(t.id); if (t.id === 'prayers') loadPrayers(); if (t.id === 'saved') loadSaved(); }} style={{
                 flex: 1,
-                padding: '11px 8px',
+                padding: '13px 8px',
                 background: 'transparent',
                 border: 'none',
-                borderBottom: isActive ? '2px solid #1a3050' : '2px solid transparent',
+                borderBottom: isActive ? `2px solid ${T.goldDark}` : '2px solid transparent',
                 fontSize: 13,
                 fontWeight: isActive ? 700 : 500,
-                color: isActive ? '#1a3050' : T.inkMuted,
+                color: isActive ? T.goldDark : T.inkMuted,
                 cursor: 'pointer',
-                whiteSpace: 'nowrap',
+                transition: 'color 0.15s, border-color 0.15s',
               }}>
                 {t.label}
               </button>

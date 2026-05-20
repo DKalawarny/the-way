@@ -25,7 +25,7 @@ export function resetTips() {
 //
 // <Tip tipId="bible_verse_tap" icon="👆" text="Tap any verse for instant AI insights." />
 //
-export default function Tip({ tipId, text, icon = '✦', style: extraStyle }) {
+export default function Tip({ tipId, text, icon = '✦', dark = false, style: extraStyle }) {
   const [visible, setVisible] = useState(() => !getDismissed().has(tipId));
 
   if (!visible) return null;
@@ -42,8 +42,8 @@ export default function Tip({ tipId, text, icon = '✦', style: extraStyle }) {
         alignItems: 'flex-start',
         gap: 9,
         padding: '10px 12px 10px 14px',
-        background: 'rgba(184,115,58,0.07)',
-        border: '1px solid rgba(184,115,58,0.22)',
+        background: dark ? 'rgba(245,237,216,0.05)' : 'rgba(184,115,58,0.07)',
+        border: dark ? '1px solid rgba(245,237,216,0.12)' : '1px solid rgba(184,115,58,0.22)',
         borderRadius: 12,
         animation: 'tipFadeIn 0.35s ease both',
         ...extraStyle,
@@ -51,13 +51,13 @@ export default function Tip({ tipId, text, icon = '✦', style: extraStyle }) {
     >
       <span style={{
         fontSize: 13, flexShrink: 0, lineHeight: 1.5,
-        color: T.gold, marginTop: 1,
+        color: dark ? 'rgba(245,237,216,0.65)' : T.gold, marginTop: 1,
       }}>{icon}</span>
 
       <span style={{
         flex: 1,
         fontSize: 13,
-        color: T.inkSoft,
+        color: dark ? 'rgba(245,237,216,0.75)' : T.inkSoft,
         lineHeight: 1.6,
         fontFamily: "'Lora', Georgia, serif",
       }}>
