@@ -2795,10 +2795,10 @@ export default function App() {
           onBack={() => goBack('church-admin')}
         />
       )}
-      {stage === 'sermon-composer' && session && pastorChurchId && (
+      {stage === 'sermon-composer' && session && effectiveChurchId && (
         <SermonComposer
           session={session}
-          churchId={pastorChurchId}
+          churchId={effectiveChurchId}
           initialSermonId={composerSermonId}
           userPlan={profile?.plan ?? 'free'}
           onBack={() => goBack('church-admin')}
