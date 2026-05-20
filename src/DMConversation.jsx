@@ -58,6 +58,7 @@ export default function DMConversation({ session, profile, conversationId, other
           system: getSystemPrompt(profile?.person_type ?? 'curious', null, 0),
           messages: newThread,
           personType: profile?.person_type ?? 'curious',
+          plan: profile?.plan ?? 'free',
         }),
       });
       if (!res.ok || !res.body) { setAiLoading(false); return; }
