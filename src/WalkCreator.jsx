@@ -177,10 +177,12 @@ export default function WalkCreator({ session, churchId, onBack, onSaved }) {
     setError(null);
 
     try {
-      // Insert walk
+      // Insert walk — slug must be unique; combine church + title + timestamp
+      const slug = `${churchId}-${form.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)}-${Date.now()}`;
       const { data: walk, error: wErr } = await supabase
         .from('walks')
         .insert({
+          slug,
           title:        form.title,
           subtitle:     form.theme,
           cover_emoji:  form.emoji,

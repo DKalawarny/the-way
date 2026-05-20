@@ -378,15 +378,21 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
     setStaff(s => s.filter(m => m.id !== roleId));
   }
   useEffect(() => {
+    if (!churchId) return;
     let cancelled = false;
+    // Only show walks that belong to this church AND have actual steps —
+    // the global seed library shells have no content so announcing them is broken.
     supabase
       .from('walks')
-      .select('id, title, subtitle, cover_emoji, length_days, sort_order')
+      .select('id, title, subtitle, cover_emoji, length_days, sort_order, walk_steps(id)')
       .eq('is_published', true)
+      .eq('church_id', churchId)
       .order('sort_order', { ascending: true })
-      .then(({ data }) => { if (!cancelled) setWalks(data ?? []); });
+      .then(({ data }) => {
+        if (!cancelled) setWalks((data ?? []).filter((w) => w.walk_steps?.length > 0));
+      });
     return () => { cancelled = true; };
-  }, []);
+  }, [churchId]);
 
   function openWalkModal() {
     setWalkSelected(church?.featured_walk_id ?? null);
@@ -861,9 +867,11 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
               </div>
             </button>
 
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: T.inkMuted, marginBottom: 8 }}>
-              Or choose from the global library
-            </div>
+            {walks.length > 0 && (
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: T.inkMuted, marginBottom: 8 }}>
+                Or choose one you've created
+              </div>
+            )}
 
             <div style={{ display: 'grid', gap: 8, marginBottom: 14 }}>
               {walks.map((w) => {
