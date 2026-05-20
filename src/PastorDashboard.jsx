@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar';
 
 const PostComposer  = lazy(() => import('./PostComposer.jsx'));
 const WalkCreator   = lazy(() => import('./WalkCreator.jsx'));
@@ -650,12 +651,12 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
           </>
         )}
 
-        {/* Embedded mode (inside ChurchAdmin) — surface the publishing pills
-            that don't have a dedicated tab (Walk announce + general post). */}
+        {/* Embedded mode (inside ChurchAdmin) — same creation hub as full mode. */}
         {embedded && (
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-            <QuickAction emoji="✶" label="Announce a walk" hint="Post & feature for everyone" onClick={openWalkModal} accent={T.goldDark} />
-            <QuickAction emoji="✎" label="Post to feed"    hint="A note for the congregation" onClick={() => setPostModalOpen(true)} />
+            <QuickAction emoji="📖" label="New sermon"      hint="Turn Sunday into a week"     onClick={onOpenComposer}              accent={T.goldDark} />
+            <QuickAction emoji="✶"  label="Announce a walk" hint="Post & feature for everyone"  onClick={openWalkModal}               accent={T.goldDark} />
+            <QuickAction emoji="✎"  label="Post to feed"    hint="A note for the congregation"  onClick={() => setPostModalOpen(true)} />
           </div>
         )}
 
@@ -852,8 +853,10 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
                 width: 36, height: 36, borderRadius: 10,
                 background: T.white, border: `1px solid ${T.goldLight}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, flexShrink: 0,
-              }}>✦</div>
+                flexShrink: 0,
+              }}>
+                <KinwoveStar size={18} color={T.goldDark} />
+              </div>
               <div>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: T.ink }}>Create your own walk with AI</div>
                 <div style={{ fontSize: 12, color: T.inkSoft, marginTop: 1 }}>Write a custom devotional journey for your congregation</div>
