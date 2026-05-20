@@ -761,20 +761,20 @@ app.post('/api/sermon/generate', requireAuth, limitAuthed({ capacity: 12, refill
       model: 'claude-sonnet-4-6',
       max_tokens: isSingle ? 800 : (targetKind ? 2500 : 6000),
       system: SERMON_SYSTEM,
-      messages: [{ role: 'user', content: userContent }],
+      messages: [
+        { role: 'user', content: userContent },
+        { role: 'assistant', content: '{"items":[' },  // prefill forces pure JSON — no prose possible
+      ],
     });
-    const text = resp.content
+    // Prepend the prefill since the model continues from it
+    const text = '{"items":[' + resp.content
       .filter((b) => b.type === 'text')
       .map((b) => b.text)
       .join('')
       .trim();
 
-    // Strip code fences
-    let cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
-
-    // If the model added prose before/after the JSON, extract the outermost object
-    const jsonBound = cleaned.match(/\{[\s\S]*\}/);
-    if (jsonBound) cleaned = jsonBound[0];
+    // Strip any trailing code fence the model may have added after the JSON
+    let cleaned = text.replace(/```\s*$/i, '').trim();
 
     function repairJsonString(src) {
       // Walk char-by-char and escape raw control chars inside JSON string values
