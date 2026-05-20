@@ -1907,6 +1907,49 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                 </button>
               </div>
             )}
+
+            {/* Connect settings — moved here from the removed Friends tab */}
+            <div style={{ marginTop: 20, background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '16px 18px', marginBottom: 10 }}>
+              <div style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 600, marginBottom: 14 }}>
+                Connect settings
+              </div>
+              {[
+                { field: 'mentor_open',  label: 'Open to mentoring others', desc: 'Someone further behind on the journey can reach out to you.' },
+                { field: 'connect_open', label: 'Open to conversations',     desc: 'Anyone can start an honest faith conversation with you.' },
+              ].map(({ field, label, desc }) => {
+                const on = !!profile?.[field];
+                return (
+                  <div key={field} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, marginBottom: 2 }}>{label}</div>
+                      <div style={{ fontSize: 12, color: T.inkMuted, lineHeight: 1.5 }}>{desc}</div>
+                    </div>
+                    <button
+                      onClick={() => toggleConnectFlag(field)}
+                      style={{
+                        width: 44, height: 26, borderRadius: 999, border: 'none', cursor: 'pointer',
+                        background: on ? T.gold : T.line,
+                        position: 'relative', flexShrink: 0, transition: 'background 0.2s',
+                      }}
+                    >
+                      <span style={{
+                        position: 'absolute', top: 3, left: on ? 21 : 3,
+                        width: 20, height: 20, borderRadius: '50%', background: T.white,
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s',
+                      }} />
+                    </button>
+                  </div>
+                );
+              })}
+              {onOpenConnect && (
+                <button
+                  onClick={onOpenConnect}
+                  style={{ width: '100%', background: T.ink, color: T.cream, border: 'none', borderRadius: 999, padding: '10px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  🤝 Browse people open to connect
+                </button>
+              )}
+            </div>
           </div>
         )}
 
