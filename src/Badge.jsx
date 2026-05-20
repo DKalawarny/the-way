@@ -1,4 +1,5 @@
 import { T, SEMANTIC } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar';
 
 // ── Role presets ─────────────────────────────────────────────────────
 //
@@ -17,9 +18,12 @@ import { T, SEMANTIC } from './theme.js';
 // call site that hard-codes the key. Both are presets so callers can use
 // the same Badge component everywhere.
 export const ROLE_PRESETS = [
-  { key: 'pastor',  label: 'Pastor',      emoji: '✦',
+  { key: 'pastor',  label: 'Pastor',      emoji: null, useStar: true,
     palette: { bg: 'rgba(184,115,58,0.22)', text: T.goldDark, line: T.gold },
     blurb: 'The pastor of this church.' },
+  { key: 'owner',   label: 'Owner',       emoji: null, useStar: true,
+    palette: { bg: 'rgba(184,115,58,0.22)', text: T.goldDark, line: T.gold },
+    blurb: 'The owner of this church.' },
   { key: 'elder',   label: 'Elder',       emoji: '◆',
     palette: { bg: 'rgba(110,90,140,0.18)', text: '#5A3F8C', line: 'rgba(110,90,140,0.55)' },
     blurb: 'Spiritual oversight — extra moderation gets shown to elders.' },
@@ -63,7 +67,7 @@ export default function Badge({ role, size = 'sm' }) {
   const preset = presetForRole(role.role_key);
   const palette = preset?.palette ?? OTHER_PALETTE;
   const text = role.role_label ?? preset?.label ?? role.role_key;
-  const emoji = preset?.emoji ?? '✦';
+  const emoji = preset?.useStar ? null : (preset?.emoji ?? '✦');
 
   const fontSize = size === 'md' ? 11.5 : 10.5;
   const padX = size === 'md' ? 8 : 7;
@@ -81,7 +85,10 @@ export default function Badge({ role, size = 'sm' }) {
       whiteSpace: 'nowrap',
       lineHeight: 1.1,
     }}>
-      <span style={{ fontSize: fontSize - 0.5 }}>{emoji}</span>
+      {preset?.useStar
+        ? <KinwoveStar size={fontSize - 0.5} color={palette.text} />
+        : <span style={{ fontSize: fontSize - 0.5 }}>{emoji}</span>
+      }
       {text}
     </span>
   );

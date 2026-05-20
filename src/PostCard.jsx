@@ -284,7 +284,7 @@ function bodyForKind(item, onViewProfile, onViewChurch, sessionUserId, onOpenSer
         <div style={{ background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: 12, padding: '12px 14px' }}>
           {/* Eyebrow */}
           <div style={{ fontSize: 10.5, letterSpacing: 1.4, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: b.scripture ? 6 : 8 }}>
-            💬 Day {b.day != null ? b.day : ''}{b.sermon_title ? ` · ${b.sermon_title}` : ''}
+            💬 Sermon Discussion{b.day != null ? ` · Day ${b.day}` : ''}{b.sermon_title ? ` · ${b.sermon_title}` : ''}
           </div>
           {/* Topic heading */}
           {b.scripture && (
