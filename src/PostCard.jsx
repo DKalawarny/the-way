@@ -280,11 +280,18 @@ function bodyForKind(item, onViewProfile, onViewChurch, sessionUserId, onOpenSer
       const contextLines = hasQuestion ? lines.slice(0, -1) : lines;
       const question = hasQuestion ? lastLine : null;
 
+      const ITEM_KIND_LABEL = {
+        going_deeper: 'Going deeper',
+        kid_version:  'For kids',
+        daily_verse:  'Discussion',
+      };
+      const kindLabel = ITEM_KIND_LABEL[b.item_kind] ?? 'Discussion';
+
       return (
         <div style={{ background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: 12, padding: '12px 14px' }}>
           {/* Eyebrow */}
           <div style={{ fontSize: 10.5, letterSpacing: 1.4, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: b.scripture ? 6 : 8 }}>
-            💬 Sermon Discussion{b.day != null ? ` · Day ${b.day}` : ''}{b.sermon_title ? ` · ${b.sermon_title}` : ''}
+            💬 {kindLabel}{b.day != null ? ` · Day ${b.day}` : ''}{b.sermon_title ? ` · ${b.sermon_title}` : ''}
           </div>
           {/* Topic heading */}
           {b.scripture && (
