@@ -379,39 +379,41 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
           <PostImageGrid urls={post.body_data?.image_urls} />
         </div>
 
-        {/* Reaction pills + Comment button — filled chiclets so they read
-            as tactile, not as empty placeholders. Active state lights gold. */}
-        <div style={{ padding: '10px 18px', borderTop: `1px solid ${T.line}`, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-          {REACTIONS.map((r) => {
+        {/* Quiet reaction row — no pill backgrounds */}
+        <div style={{ padding: '10px 18px', borderTop: `1px solid ${T.line}`, display: 'flex', gap: 0, alignItems: 'center', flexWrap: 'wrap' }}>
+          {REACTIONS.map((r, i) => {
             const count  = post.reaction_counts?.[r.kind] ?? 0;
             const active = myReaction === r.kind;
             return (
-              <button key={r.kind} onClick={() => onReact(post.id, r.kind, active)} style={{
-                background: active ? r.activeBg : 'linear-gradient(180deg, #FFFCF4 0%, #F5ECD9 100%)',
-                border: `1px solid ${active ? r.activeBorder : '#D9C9A8'}`,
-                borderRadius: 999, padding: '5px 12px', fontSize: 13,
-                color: active ? r.activeText : '#5a4d3a',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-                fontWeight: active ? 700 : 500,
-                fontFamily: r.serifLabel ? T.serif : T.sans,
-                fontStyle: r.serifLabel && active ? 'italic' : 'normal',
-                boxShadow: active
-                  ? `inset 0 1px 0 rgba(255,255,255,0.7), ${r.activeShadow}`
-                  : 'inset 0 1px 0 rgba(255,255,255,0.7), 0 1px 2px rgba(44,24,16,0.05)',
-                transition: 'all 0.15s',
-              }}>
-                {r.emoji} <span>{r.label}</span>{count > 0 && <span style={{ fontWeight: 700, color: active ? r.activeText : T.ink, fontStyle: 'normal', fontFamily: T.sans }}>{count}</span>}
+              <button
+                key={r.kind}
+                onClick={() => onReact(post.id, r.kind, active)}
+                style={{
+                  background: 'none', border: 'none',
+                  padding: i === 0 ? '6px 8px 6px 0' : '6px 8px',
+                  fontSize: 13,
+                  color: active ? T.gold : T.inkSoft,
+                  cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
+                  fontFamily: T.sans, transition: 'color 0.15s',
+                }}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.color = T.ink; }}
+                onMouseLeave={e => { e.currentTarget.style.color = active ? T.gold : T.inkSoft; }}
+              >
+                {r.emoji} <span>{count > 0 ? count : r.label}</span>
               </button>
             );
           })}
-          <button onClick={() => setShareOpen(true)} style={{
-            background: 'linear-gradient(180deg, #FFFCF4 0%, #F5ECD9 100%)',
-            border: '1px solid #D9C9A8',
-            borderRadius: 999, padding: '5px 12px', fontSize: 13,
-            color: '#5a4d3a', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-            fontWeight: 500,
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.7), 0 1px 2px rgba(44,24,16,0.05)',
-          }}>↗ Share</button>
+          <button
+            onClick={() => setShareOpen(true)}
+            style={{
+              background: 'none', border: 'none',
+              padding: '6px 8px', fontSize: 13,
+              color: T.inkSoft, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
+              fontFamily: T.sans, transition: 'color 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = T.ink}
+            onMouseLeave={e => e.currentTarget.style.color = T.inkSoft}
+          >↗ Share</button>
           <div style={{ flex: 1 }} />
           <button onClick={() => setCommentsOpen(true)} style={{
             background: 'none', border: 'none', color: T.inkMuted,

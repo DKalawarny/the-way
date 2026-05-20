@@ -1236,6 +1236,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                 background: 'transparent',
                 border: 'none',
                 borderBottom: isActive ? `2px solid ${T.goldDark}` : '2px solid transparent',
+                marginBottom: -1,
                 fontSize: 13,
                 fontWeight: isActive ? 700 : 500,
                 color: isActive ? T.goldDark : T.inkMuted,

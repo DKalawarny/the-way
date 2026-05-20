@@ -666,9 +666,9 @@ export default function ChurchPage({
                     <button
                       onClick={onOpenPrayer}
                       style={{
-                        background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+                        background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
                         padding: '11px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                        boxShadow: '0 4px 12px rgba(26,17,8,0.18)',
+                        boxShadow: '0 4px 12px rgba(168,85,48,0.22)',
                       }}
                     >🙏 Pray together</button>
                   </div>
