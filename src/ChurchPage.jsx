@@ -439,7 +439,7 @@ export default function ChurchPage({
           </div>
         )}
 
-        <div className="stagger-in" style={{ position: 'relative', maxWidth: 640, margin: '0 auto', padding: `${chromeless ? 36 : 58}px 16px 28px`, textAlign: 'center' }}>
+        <div className="stagger-in" style={{ position: 'relative', maxWidth: 640, margin: '0 auto', padding: `${chromeless ? 36 : 58}px 16px 40px`, textAlign: 'center' }}>
           {/* Avatar — pastors get an edit overlay that deep-links to Settings */}
           <div style={{ position: 'relative', width: 92, margin: '0 auto 18px', cursor: isPastor ? 'pointer' : 'default' }}
             onClick={isPastor ? () => onOpenAdmin?.('settings') : undefined}
@@ -541,10 +541,10 @@ export default function ChurchPage({
             key={t.id}
             onClick={() => setTab(t.id)}
             style={{
-              flex: 1, padding: '13px 4px',
+              flex: 1, padding: '14px 0',
               background: 'transparent', border: 'none',
               borderBottom: tab === t.id ? `2px solid ${T.goldDark}` : '2px solid transparent',
-              fontSize: 13, fontWeight: tab === t.id ? 700 : 500,
+              fontSize: 14, fontWeight: tab === t.id ? 700 : 500,
               color: tab === t.id ? T.goldDark : T.inkMuted,
               cursor: 'pointer', letterSpacing: tab === t.id ? 0.1 : 0,
               transition: 'color 0.15s, border-color 0.15s',
@@ -659,28 +659,28 @@ export default function ChurchPage({
 
             {/* ── Quick action chips ── */}
             {(isMember || isPastor) && (
-              <div style={{ marginBottom: 20 }}>
+              <div style={{ marginBottom: 28 }}>
                 {/* Primary action */}
-                {onOpenPrayer && (
-                  <div style={{ textAlign: 'center', marginBottom: 10 }}>
+                {onOpenTalkToSomeone && (
+                  <div style={{ textAlign: 'center', marginBottom: 14 }}>
                     <button
-                      onClick={onOpenPrayer}
+                      onClick={onOpenTalkToSomeone}
                       style={{
                         background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
                         padding: '11px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
                         boxShadow: '0 4px 12px rgba(168,85,48,0.22)',
                       }}
-                    >🙏 Pray together</button>
+                    >✉️ Message the team</button>
                   </div>
                 )}
                 {/* Secondary actions */}
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 16, fontSize: 13, color: T.inkSoft }}>
-                  {onOpenTalkToSomeone && (
-                    <button onClick={onOpenTalkToSomeone} style={{ background: 'none', border: 'none', color: T.inkSoft, fontSize: 13, cursor: 'pointer', padding: 0, textDecoration: 'underline', textDecorationColor: 'rgba(90,71,51,0.3)' }}>
-                      Talk to someone
+                  {onOpenPrayer && (
+                    <button onClick={onOpenPrayer} style={{ background: 'none', border: 'none', color: T.inkSoft, fontSize: 13, cursor: 'pointer', padding: 0, textDecoration: 'underline', textDecorationColor: 'rgba(90,71,51,0.3)' }}>
+                      🙏 Pray together
                     </button>
                   )}
-                  {onOpenTalkToSomeone && onOpenWalks && <span style={{ opacity: 0.4 }}>·</span>}
+                  {onOpenPrayer && onOpenWalks && <span style={{ opacity: 0.4 }}>·</span>}
                   {onOpenWalks && (
                     <button onClick={onOpenWalks} style={{ background: 'none', border: 'none', color: T.inkSoft, fontSize: 13, cursor: 'pointer', padding: 0, textDecoration: 'underline', textDecorationColor: 'rgba(90,71,51,0.3)' }}>
                       Pick a walk

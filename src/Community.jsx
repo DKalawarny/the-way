@@ -206,14 +206,14 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
         overflow: 'hidden',
       }}>
         {/* Header */}
-        <div style={{ padding: '16px 18px 0' }}>
+        <div style={{ padding: '20px 22px 0' }}>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
             <button onClick={() => onViewProfile?.(post.author_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0, lineHeight: 0 }}>
               <Avatar name={post.profiles?.display_name} avatarConfig={post.profiles?.avatar_config} photoUrl={post.profiles?.avatar_url} size={38} />
             </button>
             <div style={{ flex: 1, minWidth: 0 }}>
               <button onClick={() => onViewProfile?.(post.author_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 600, fontSize: 15, color: T.ink, letterSpacing: '-0.005em' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 500, fontSize: 14, color: T.ink, letterSpacing: '-0.005em' }}>
                   {post.profiles?.display_name ?? 'Anonymous'}
                   {post.profiles?.show_flag && (post.profiles?.flags ?? []).length > 0 && (
                     <span style={{ fontSize: 14, lineHeight: 1 }}>{codeToFlag(post.profiles.flags[0])}</span>
@@ -222,7 +222,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
               </button>
               {/* Quiet dateline: just place + time. Denomination & person-type
                   become chips below so they don't crowd the byline. */}
-              <div style={{ fontSize: 11.5, color: T.inkMuted, marginTop: 1 }}>
+              <div style={{ fontSize: 12, color: T.inkSoft, marginTop: 1 }}>
                 {post.profiles?.country ? `${post.profiles.country} · ` : ''}
                 {timeAgo(post.created_at)}
               </div>
@@ -343,7 +343,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
               <div style={{
                 fontFamily: T.display, fontSize: 17, fontStyle: 'italic',
                 color: T.ink, lineHeight: 1.55, whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word',
-                letterSpacing: '-0.01em',
+                letterSpacing: '-0.01em', fontVariationSettings: '"opsz" 18',
               }}>
                 {bodyExpanded ? post.body : post.body.slice(0, 280) + (post.body.length > 280 ? '…' : '')}
               </div>
@@ -352,7 +352,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
             <div style={{
               fontFamily: T.display, fontSize: 17, color: T.ink,
               lineHeight: 1.55, margin: '6px 0 16px', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word',
-              letterSpacing: '-0.01em', fontWeight: 400,
+              letterSpacing: '-0.01em', fontWeight: 400, fontVariationSettings: '"opsz" 18',
             }}>
               {bodyExpanded ? post.body : post.body.slice(0, 280) + (post.body.length > 280 ? '…' : '')}
             </div>
@@ -368,7 +368,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
         </div>
 
         {/* Quiet reaction row — no pill backgrounds */}
-        <div style={{ padding: '10px 18px', borderTop: `1px solid ${T.line}`, display: 'flex', gap: 0, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ padding: '10px 22px', borderTop: `1px solid ${T.line}`, display: 'flex', gap: 0, alignItems: 'center', flexWrap: 'wrap' }}>
           {REACTIONS.map((r, i) => {
             const count  = post.reaction_counts?.[r.kind] ?? 0;
             const active = myReaction === r.kind;
@@ -378,7 +378,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                 onClick={() => onReact(post.id, r.kind, active)}
                 style={{
                   background: 'none', border: 'none',
-                  padding: i === 0 ? '6px 8px 6px 0' : '6px 8px',
+                  padding: i === 0 ? '6px 10px 6px 0' : '6px 10px',
                   fontSize: 13,
                   color: active ? T.gold : T.inkSoft,
                   cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -1428,12 +1428,12 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
           return (
             <button key={t.id} onClick={() => setFeedType(t.id)} style={{
               flex: 1,
-              padding: '13px 4px',
+              padding: '14px 0',
               background: 'transparent',
               border: 'none',
               borderBottom: isActive ? `2px solid ${TAB_COLOR}` : '2px solid transparent',
               marginBottom: -1,
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: isActive ? 700 : 500,
               color: isActive ? TAB_TEXT : T.inkMuted,
               cursor: 'pointer',
@@ -1523,7 +1523,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
         );
       })()}
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 90px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 90px' }}>
         <div style={{ maxWidth: 740, margin: '0 auto' }}>
 
           {/* Compose pill — first item in the feed column. Tapping it expands
