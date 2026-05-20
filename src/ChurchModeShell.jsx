@@ -85,15 +85,10 @@ export default function ChurchModeShell({
       }}>
         <div style={{ maxWidth: bodyMaxWidth, margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-            <button onClick={onBack} style={{
+            <button onClick={onOpenChurchHub ?? onBack} style={{
               background: 'none', border: 'none', color: T.goldLight, fontSize: 14, cursor: 'pointer', padding: 0,
-            }}>← My page</button>
+            }}>← Church page</button>
             <div style={{ flex: 1 }} />
-            <OutboundLink
-              label={currentSubpage === 'hub' ? 'Congregation feed' : 'Congregation feed →'}
-              current={currentSubpage === 'hub'}
-              onClick={onOpenChurchHub}
-            />
             <OutboundLink
               label={currentSubpage === 'public' ? 'Public page' : 'Public page →'}
               current={currentSubpage === 'public'}
