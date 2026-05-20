@@ -111,6 +111,17 @@ export default function WalkCreator({ session, churchId, onBack, onSaved }) {
 
   function setF(key, val) { setForm((f) => ({ ...f, [key]: val })); }
 
+  // ── Start blank walk for manual writing ──────────────────────────────────
+  function startManual() {
+    if (!form.title.trim() || !form.theme.trim()) return;
+    setSteps(
+      Array.from({ length: form.length }, (_, i) => ({
+        day: i + 1, title: '', scripture_ref: '', scripture_body: '', body: '',
+      }))
+    );
+    setStage('edit');
+  }
+
   // ── Generate walk via AI ──────────────────────────────────────────────────
   async function generate() {
     if (!form.title.trim() || !form.theme.trim()) return;
@@ -300,18 +311,32 @@ export default function WalkCreator({ session, churchId, onBack, onSaved }) {
         </div>
       </div>
 
-      <button
-        onClick={generate}
-        disabled={!form.title.trim() || !form.theme.trim()}
-        style={{
-          marginTop: 28, width: '100%', background: T.ink, color: T.cream,
-          border: 'none', borderRadius: 999, padding: '14px 20px',
-          fontSize: 15, fontWeight: 600, cursor: (!form.title.trim() || !form.theme.trim()) ? 'not-allowed' : 'pointer',
-          opacity: (!form.title.trim() || !form.theme.trim()) ? 0.5 : 1,
-        }}
-      >
-        Generate {form.length}-day walk with AI ✦
-      </button>
+      <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <button
+          onClick={generate}
+          disabled={!form.title.trim() || !form.theme.trim()}
+          style={{
+            width: '100%', background: T.ink, color: T.cream,
+            border: 'none', borderRadius: 999, padding: '14px 20px',
+            fontSize: 15, fontWeight: 600, cursor: (!form.title.trim() || !form.theme.trim()) ? 'not-allowed' : 'pointer',
+            opacity: (!form.title.trim() || !form.theme.trim()) ? 0.5 : 1,
+          }}
+        >
+          Generate {form.length}-day walk with AI ✦
+        </button>
+        <button
+          onClick={startManual}
+          disabled={!form.title.trim() || !form.theme.trim()}
+          style={{
+            width: '100%', background: 'transparent', color: T.inkSoft,
+            border: `1px solid ${T.line}`, borderRadius: 999, padding: '12px 20px',
+            fontSize: 14, fontWeight: 600, cursor: (!form.title.trim() || !form.theme.trim()) ? 'not-allowed' : 'pointer',
+            opacity: (!form.title.trim() || !form.theme.trim()) ? 0.4 : 1,
+          }}
+        >
+          Write my own
+        </button>
+      </div>
     </div>
   );
 
