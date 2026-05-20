@@ -695,6 +695,60 @@ const TARGET_KIND_INSTRUCTIONS = {
   kid_version:    'Generate ONLY the 1 kid_version item — a kid-friendly retelling of the sermon followed by 2–3 questions geared for kids, in the format described in the system prompt. Do not output daily_verse or going_deeper.',
 };
 
+// ── Walk generation ───────────────────────────────────────────────────────────
+// Dedicated endpoint so we can set max_tokens based on walk length
+// (the general /api/chat cap of 2048 is too low for anything > 3 days).
+app.post('/api/walk/generate', requireAuth, limitAuthed({ capacity: 6, refillPerSec: 6 / 600 }), async (req, res) => {
+  const { title, theme, scripture, audience, length } = req.body ?? {};
+  if (!title || !theme) return res.status(400).json({ error: 'title and theme required' });
+  if (typeof length !== 'number' || length < 1 || length > 30) return res.status(400).json({ error: 'invalid length' });
+  if (title.length > 200 || theme.length > 1000) return res.status(413).json({ error: 'content too long' });
+
+  const prompt = `You are helping a pastor create a ${length}-day devotional walk titled "${title}".
+
+Theme: ${theme}
+Key scripture: ${scripture || 'Choose appropriate scriptures'}
+Target audience: ${audience || 'General congregation'}
+
+Generate exactly ${length} days of devotional content. For EACH day return a JSON object with these exact fields:
+- day: number (1 to ${length})
+- title: short devotional title (5-8 words)
+- scripture_ref: Bible reference (e.g. "John 3:16")
+- scripture_body: the verse text (NIV, 1-3 sentences max)
+- body: devotional reflection (3-4 paragraphs, warm pastoral tone, practical and encouraging)
+
+Return ONLY a valid JSON array of ${length} objects. No markdown, no explanation, just the JSON array starting with [ and ending with ].`;
+
+  // ~600 tokens per day is a safe ceiling for 3-4 paragraph reflections.
+  const maxTokens = Math.min(length * 700 + 300, 16000);
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  const send = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+
+  try {
+    const stream = client.messages.stream({
+      model: 'claude-sonnet-4-6',
+      max_tokens: maxTokens,
+      system: 'You are a pastoral content writer. Return only a valid JSON array as instructed. No markdown fences, no explanation, no text outside the JSON array.',
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    req.on('close', () => stream.controller?.abort?.());
+    stream.on('text', (delta) => send('text', { t: delta }));
+    stream.on('error', (err) => send('error', { message: err?.message || 'stream error' }));
+
+    await stream.finalMessage();
+    send('done', {});
+    res.end();
+  } catch (e) {
+    send('error', { message: e?.message || 'generation failed' });
+    res.end();
+  }
+});
+
 app.post('/api/sermon/generate', requireAuth, limitAuthed({ capacity: 12, refillPerSec: 12 / 300 }), async (req, res) => {
   const { title, scripture_ref, summary, targetKind, singleDay, existingItems } = req.body ?? {};
   if (!summary || typeof summary !== 'string' || !summary.trim()) {

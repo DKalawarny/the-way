@@ -17,23 +17,6 @@ const CATEGORY_LABEL = {
 
 const EMOJIS = ['🌿','✝️','🕊️','🌅','💛','🙏','📖','🌊','🌱','⭐','🕯️','💪'];
 
-// ── AI prompt builder ─────────────────────────────────────────────────────────
-function buildPrompt(form) {
-  return `You are helping a pastor create a ${form.length}-day devotional walk titled "${form.title}".
-
-Theme: ${form.theme}
-Key scripture: ${form.scripture || 'Choose appropriate scriptures'}
-Target audience: ${form.audience || 'General congregation'}
-
-Generate exactly ${form.length} days of devotional content. For EACH day return a JSON object with these exact fields:
-- day: number (1 to ${form.length})
-- title: short devotional title (5-8 words)
-- scripture_ref: Bible reference (e.g. "John 3:16")
-- scripture_body: the verse text (NIV, 1-3 sentences max)
-- body: devotional reflection (3-4 paragraphs, warm pastoral tone, practical and encouraging)
-
-Return ONLY a valid JSON array of ${form.length} objects. No markdown, no explanation, just the JSON array.`;
-}
 
 // ── Day editor card ───────────────────────────────────────────────────────────
 function DayCard({ step, index, onChange }) {
@@ -130,21 +113,19 @@ export default function WalkCreator({ session, churchId, onBack, onSaved }) {
     setProgress(10);
 
     try {
-      const prompt = buildPrompt(form);
       setProgress(30);
 
-      const res = await authedFetch('/api/chat', {
+      const res = await authedFetch('/api/walk/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [{ role: 'user', content: prompt }],
-          personType: 'curious',
-          seekingContext: '',
-          system: 'You are a pastoral content writer. Return only valid JSON arrays as instructed. No markdown fences, no explanation.',
+          title: form.title, theme: form.theme,
+          scripture: form.scripture, audience: form.audience,
+          length: form.length,
         }),
       });
 
-      setProgress(60);
+      setProgress(50);
 
       if (!res.ok) throw new Error('AI generation failed');
 
@@ -165,16 +146,20 @@ export default function WalkCreator({ session, churchId, onBack, onSaved }) {
           if (!line) continue;
           try {
             const payload = JSON.parse(line.slice(6));
-            if (payload.t) full += payload.t;
-          } catch { /* skip */ }
+            if (payload.t) { full += payload.t; setProgress(50 + Math.min(35, Math.floor(full.length / 80))); }
+            if (payload.message) throw new Error(payload.message);
+          } catch (pe) { if (pe.message !== 'skip') throw pe; }
         }
       }
 
-      setProgress(85);
+      setProgress(92);
 
-      // Parse JSON — strip any accidental markdown fences
+      // Parse JSON — strip any accidental markdown fences, extract outermost array
       const clean = full.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      const parsed = JSON.parse(clean);
+      const start = clean.indexOf('[');
+      const end   = clean.lastIndexOf(']');
+      if (start === -1 || end === -1) throw new Error('Could not parse generated content. Try again.');
+      const parsed = JSON.parse(clean.slice(start, end + 1));
       if (!Array.isArray(parsed)) throw new Error('Unexpected AI response format');
       setSteps(parsed.map((s, i) => ({ ...s, day: s.day ?? i + 1 })));
       setProgress(100);
