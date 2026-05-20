@@ -898,42 +898,45 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
 
                 {/* ── Daily-verse week overview strip ───────────────────── */}
                 {activeTab === 'daily_verse' && (
-                  <div style={{
-                    display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
-                    gap: 6, marginBottom: 14,
-                  }}>
-                    {DAY_LABELS.map((lbl, idx) => {
-                      const dayNum = idx + 1;
-                      const verse  = versesByDay[dayNum];
-                      const schedTime = verse?.scheduled_at
-                        ? new Date(verse.scheduled_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-                        : null;
-                      return (
-                        <div
-                          key={dayNum}
-                          style={{
-                            borderRadius: 8, padding: '7px 6px', textAlign: 'center',
-                            background: verse ? T.parchment : T.white,
-                            border: `1px solid ${verse ? T.goldLight : T.line}`,
-                          }}
-                        >
-                          <div style={{ fontSize: 10, fontWeight: 700, color: T.goldDark, marginBottom: 2 }}>
-                            {lbl}
-                          </div>
-                          <div style={{
-                            fontSize: 9, color: verse ? T.inkSoft : T.inkMuted,
-                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                          }}>
-                            {verse?.scripture || (verse ? '✓' : '—')}
-                          </div>
-                          {schedTime && (
-                            <div style={{ fontSize: 8.5, color: T.goldDark, marginTop: 2, fontWeight: 600 }}>
-                              {schedTime}
+                  <div style={{ overflowX: 'auto', marginBottom: 14 }}>
+                    <div style={{
+                      display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))',
+                      gap: 6, minWidth: 420,
+                    }}>
+                      {DAY_LABELS.map((lbl, idx) => {
+                        const dayNum = idx + 1;
+                        const verse  = versesByDay[dayNum];
+                        const schedTime = verse?.scheduled_at
+                          ? new Date(verse.scheduled_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+                          : null;
+                        return (
+                          <div
+                            key={dayNum}
+                            style={{
+                              borderRadius: 8, padding: '7px 6px', textAlign: 'center',
+                              background: verse ? T.parchment : T.white,
+                              border: `1px solid ${verse ? T.goldLight : T.line}`,
+                              minWidth: 0,
+                            }}
+                          >
+                            <div style={{ fontSize: 10, fontWeight: 700, color: T.goldDark, marginBottom: 2 }}>
+                              {lbl}
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                            <div style={{
+                              fontSize: 9, color: verse ? T.inkSoft : T.inkMuted,
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            }}>
+                              {verse?.scripture || (verse ? '✓' : '—')}
+                            </div>
+                            {schedTime && (
+                              <div style={{ fontSize: 8.5, color: T.goldDark, marginTop: 2, fontWeight: 600 }}>
+                                {schedTime}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 
