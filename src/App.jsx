@@ -1257,7 +1257,7 @@ function AppHeader({ onOpenBible, onVerseClick }) {
         display: 'flex', alignItems: 'center', gap: 9,
         borderRight: '1px solid rgba(232,181,99,0.22)',
       }}>
-        <KinwoveWordmark size={28} textColor="#f4e9d4" starColor={T.honey} />
+        <KinwoveWordmark size={32} textColor="#f4e9d4" starColor={T.honey} />
       </div>
       {/* Verse segment */}
       <button
@@ -1308,7 +1308,7 @@ function MobileHeader({ onOpenBible, onVerseClick }) {
       gap: 12,
     }}>
       <div style={{ flexShrink: 0 }}>
-        <KinwoveWordmark size={28} textColor="#f4e9d4" starColor={T.honey} />
+        <KinwoveWordmark size={32} textColor="#f4e9d4" starColor={T.honey} />
       </div>
       <button
         onClick={() => onVerseClick ? onVerseClick() : onOpenBible?.(verse.ref)}

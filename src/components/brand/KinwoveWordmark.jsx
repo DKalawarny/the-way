@@ -7,12 +7,12 @@ export const KinwoveWordmark = ({
 }) => (
   <span
     style={{
-      fontFamily: "'Newsreader', Georgia, serif",
-      fontVariationSettings: '"opsz" 72',
+      fontFamily: "'Fraunces', Georgia, serif",
+      fontVariationSettings: `"opsz" ${Math.min(144, Math.max(9, size * 2.5))}`,
       fontWeight: 500,
       fontSize: size,
       lineHeight: 1,
-      letterSpacing: '-0.018em',
+      letterSpacing: '-0.022em',
       color: textColor,
       display: 'inline-block',
       position: 'relative',
