@@ -48,7 +48,7 @@ export default function ChurchModeShell({
     <div style={{ minHeight: '100vh', background: T.cream, overflowY: 'auto' }}>
       <div style={{
         position: 'sticky', top: 0, zIndex: 20,
-        background: `linear-gradient(135deg, ${T.ink} 0%, #1A0F08 55%, #3A2516 100%)`,
+        background: 'linear-gradient(180deg, #2a1a12 0%, #1c1008 100%)',
         borderBottom: '1px solid rgba(184,115,58,0.35)',
         boxShadow: SHADOW.candle,
         padding: '14px 20px 0',

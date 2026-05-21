@@ -1354,7 +1354,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
               reads as a gold-leaf inscription. The cream feed below becomes
               "lit content" instead of a flat parchment sheet. */}
           <header style={{
-            background: 'linear-gradient(180deg, #2a1a14 0%, #1f1410 100%)',
+            background: 'linear-gradient(180deg, #2a1a12 0%, #1c1008 100%)',
             borderBottom: '1px solid #3a261d',
             boxShadow: '0 4px 14px rgba(20,10,6,0.35), inset 0 -1px 0 rgba(184,115,58,0.18)',
             position: 'sticky', top: 0, zIndex: 10,

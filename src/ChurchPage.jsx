@@ -366,26 +366,9 @@ export default function ChurchPage({
     <div className="scene" style={{ minHeight: '100vh', paddingBottom: 80, paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       {uikitUi}
 
-      {/* Visitor-view banner — when an owner/member lands on their own church
-          page wrapped in ChurchModeShell, the admin chrome above doesn't make
-          it obvious that the body is the *public* view. This thin parchment
-          strip names the frame so they don't read it as their dashboard. */}
-      {chromeless && (isPastor || isMember) && (
-        <div style={{
-          background: T.parchment,
-          borderBottom: `1px solid ${T.goldLight}`,
-          padding: '8px 16px',
-        }}>
-          <div style={{
-            maxWidth: 640, margin: '0 auto',
-            fontSize: 12, color: T.goldDark,
-          }}>
-            <span style={{ fontStyle: 'italic' }}>
-              Visitor view — this is what people see.
-            </span>
-          </div>
-        </div>
-      )}
+      {/* Visitor-view notice removed — ChurchModeShell header already shows
+          "VIEWING AS LEADER · VISITOR" toggle, so the cream strip was
+          redundant and broke the flow between the two dark headers. */}
 
       {/* Sanctuary-doorway hero — shown to visitors/non-members. In chromeless
           (pastor's own view) ChurchModeShell already provides the dark header. */}

@@ -1206,7 +1206,7 @@ export default function Chat({
         style={{
           padding: '12px 16px',
           background: panelMode
-            ? 'linear-gradient(180deg, #2a1a14 0%, #1f1410 100%)'
+            ? 'linear-gradient(180deg, #2a1a12 0%, #1c1008 100%)'
             : C.headerBg,
           borderBottom: panelMode ? '1px solid #3a261d' : `1px solid ${C.border}`,
           boxShadow: panelMode ? 'inset 0 -1px 0 rgba(184,115,58,0.18)' : 'none',
