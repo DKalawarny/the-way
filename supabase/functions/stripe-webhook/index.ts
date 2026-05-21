@@ -29,6 +29,23 @@ const GIFT_PRICE_MAP: Record<string, { plan: string; months: number }> = {
 
 const TOPUP_MESSAGES = 150;
 
+const CHURCH_PLANS = new Set(['church_base', 'church_pro']);
+
+async function syncChurchVerification(userId: string, plan: string, isActive: boolean) {
+  if (!CHURCH_PLANS.has(plan)) return;
+  const { data: role } = await supabase
+    .from('church_roles')
+    .select('church_id')
+    .eq('user_id', userId)
+    .eq('is_owner', true)
+    .maybeSingle();
+  if (!role?.church_id) return;
+  await supabase
+    .from('churches')
+    .update({ verification_status: isActive ? 'verified' : 'pending' })
+    .eq('id', role.church_id);
+}
+
 const CORS = {
   'Access-Control-Allow-Origin':  '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -143,6 +160,7 @@ Deno.serve(async (req) => {
           await supabase.from('profiles')
             .update({ plan, stripe_subscription_id: subscriptionId })
             .eq('id', userId);
+          await syncChurchVerification(userId, plan, true);
         }
       }
 
@@ -153,17 +171,25 @@ Deno.serve(async (req) => {
       const priceId = subscription.items.data[0]?.price.id ?? '';
       const isActive = subscription.status === 'active' || subscription.status === 'trialing';
       const plan = isActive ? (PRICE_TO_PLAN[priceId] ?? 'premium') : 'free';
-      await supabase.from('profiles')
+      const { data: profile } = await supabase.from('profiles')
         .update({ plan, stripe_subscription_id: isActive ? subscription.id : null })
-        .eq('stripe_customer_id', customerId);
+        .eq('stripe_customer_id', customerId)
+        .select('id')
+        .maybeSingle();
+      if (profile?.id) await syncChurchVerification(profile.id, plan, isActive);
 
     } else if (event.type === 'customer.subscription.deleted') {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = typeof subscription.customer === 'string'
         ? subscription.customer : subscription.customer.id;
-      await supabase.from('profiles')
+      const priceId = subscription.items.data[0]?.price.id ?? '';
+      const plan = PRICE_TO_PLAN[priceId] ?? 'free';
+      const { data: profile } = await supabase.from('profiles')
         .update({ plan: 'free', stripe_subscription_id: null })
-        .eq('stripe_customer_id', customerId);
+        .eq('stripe_customer_id', customerId)
+        .select('id')
+        .maybeSingle();
+      if (profile?.id) await syncChurchVerification(profile.id, plan, false);
     }
 
     return new Response(JSON.stringify({ received: true }), {
