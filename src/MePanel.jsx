@@ -1890,7 +1890,6 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
           <div style={{ padding: '0 14px' }}>
             {[
               profile?.tradition       && { label: 'Tradition',         value: profile.tradition },
-              profile?.background      && { label: 'Background',        value: profile.background },
               profile?.age_range       && { label: 'Age range',         value: profile.age_range },
               profile?.exploring_since && { label: 'Exploring since',   value: profile.exploring_since },
               profile?.what_brought    && { label: 'What brought me here', value: `"${profile.what_brought}"`, serif: true },

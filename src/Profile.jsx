@@ -307,19 +307,11 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
               </div>
             </Field>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <Field label="Background">
-                <select style={sStyle} value={form.background} onChange={(e) => set('background', e.target.value)}>
-                  <option value="">Select…</option>
-                  {BACKGROUNDS.map((b) => <option key={b}>{b}</option>)}
-                </select>
-              </Field>
-              <Field label="Tradition" hint="'Still Discovering' is a good answer">
-                <select style={sStyle} value={form.tradition} onChange={(e) => set('tradition', e.target.value)}>
-                  {TRADITIONS.map((t) => <option key={t}>{t}</option>)}
-                </select>
-              </Field>
-            </div>
+            <Field label="Tradition" hint="'Still Discovering' is a good answer">
+              <select style={sStyle} value={form.tradition} onChange={(e) => set('tradition', e.target.value)}>
+                {TRADITIONS.map((t) => <option key={t}>{t}</option>)}
+              </select>
+            </Field>
 
             <Field label="How long have you been exploring?">
               <select style={sStyle} value={form.exploring_since} onChange={(e) => set('exploring_since', e.target.value)}>

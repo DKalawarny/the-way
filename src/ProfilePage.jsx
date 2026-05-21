@@ -480,12 +480,6 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
           )}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-            {profile?.background && (
-              <div style={{ background: T.white, borderRadius: 14, border: `1px solid ${T.line}`, padding: '16px 18px' }}>
-                <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.inkMuted, marginBottom: 8 }}>Background</div>
-                <div style={{ fontSize: 14, color: T.inkSoft }}>{profile.background}</div>
-              </div>
-            )}
             {profile?.age_range && (
               <div style={{ background: T.white, borderRadius: 14, border: `1px solid ${T.line}`, padding: '16px 18px' }}>
                 <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.inkMuted, marginBottom: 8 }}>Age range</div>
