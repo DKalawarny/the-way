@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Lock, Globe, Building2, ArrowLeft } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T, SEMANTIC } from './theme.js';
+import { churchBannerBg } from './ChurchAdmin.jsx';
 import { Avatar } from './ProfilePage.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
 import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
@@ -779,6 +780,17 @@ export default function Prayer({ session, profile, onClose, userGroup, hideHeade
   // belong to one.
   const tabs = userGroup ? ['My prayers', 'Group'] : ['My prayers'];
   const [tab, setTab] = useState('My prayers');
+  const [church, setChurch] = useState(null);
+
+  useEffect(() => {
+    if (!profile?.church_id) return;
+    supabase
+      .from('churches')
+      .select('id, name, avatar_url, banner_preset')
+      .eq('id', profile.church_id)
+      .maybeSingle()
+      .then(({ data }) => setChurch(data ?? null));
+  }, [profile?.church_id]);
 
   return (
     <div style={{ minHeight: '100vh', background: T.parchment, display: 'flex', flexDirection: 'column' }}>
@@ -789,10 +801,33 @@ export default function Prayer({ session, profile, onClose, userGroup, hideHeade
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.inkMuted, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5, fontSize: 13 }}>
             <ArrowLeft size={15} strokeWidth={2} /> Back
           </button>
-          <div style={{ fontFamily: T.display, fontSize: 21, fontWeight: 600, color: T.ink, flex: 1, letterSpacing: '-0.012em' }}>Prayer</div>
+          <div style={{ fontFamily: T.serif, fontSize: 21, fontWeight: 600, color: T.ink, flex: 1, letterSpacing: '-0.012em' }}>Prayer</div>
           {/* Reserved space for fixed FAB cluster (bell + messages + search + menu ≈ 200px from right) */}
           <div style={{ width: 204, flexShrink: 0 }} aria-hidden="true" />
         </header>
+      )}
+
+      {church && (
+        <div style={{
+          height: 160,
+          background: churchBannerBg(church),
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10,
+        }}>
+          <div style={{
+            width: 96, height: 96, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.15)',
+            border: '3px solid rgba(255,255,255,0.25)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 42, overflow: 'hidden',
+          }}>
+            {church.avatar_url
+              ? <img src={church.avatar_url} alt={church.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : '⛪'}
+          </div>
+          <div style={{ fontFamily: T.serif, fontSize: 13, fontWeight: 600, color: 'rgba(253,248,240,0.8)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            {church.name}
+          </div>
+        </div>
       )}
 
       {tabs.length > 1 && (
