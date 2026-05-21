@@ -1435,6 +1435,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
               marginBottom: -1,
               fontSize: 14,
               fontWeight: isActive ? 700 : 500,
+              fontFamily: T.serif,
               color: isActive ? TAB_TEXT : T.inkMuted,
               cursor: 'pointer',
               transition: 'color 0.15s, border-color 0.15s',
