@@ -581,32 +581,46 @@ function PlanLine({ plan, aiUsage, session }) {
   const used  = aiUsage.used ?? 0;
   const total = cfg.limit + (aiUsage.topup ?? 0);
   const [opening, setOpening] = useState(false);
+  const [portalError, setPortalError] = useState(null);
 
   async function openPortal() {
     if (!session?.user) return;
     setOpening(true);
+    setPortalError(null);
     try {
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal-session`,
         { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
           body: JSON.stringify({ user_id: session.user.id, return_url: window.location.origin }) }
       );
-      const { url } = await res.json();
-      if (url) window.location.href = url;
-    } catch { window.open('mailto:hello@kinwove.com?subject=Manage%20my%20subscription'); }
-    finally { setOpening(false); }
+      const json = await res.json();
+      if (json.url) {
+        window.location.href = json.url;
+      } else {
+        setPortalError(json.error ?? 'Could not open billing portal. Email hello@kinwove.com for help.');
+      }
+    } catch (e) {
+      setPortalError('Could not reach billing portal. Email hello@kinwove.com for help.');
+    } finally {
+      setOpening(false);
+    }
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: T.inkSoft }}>
-      <span style={{ color: meta.color, fontWeight: 600 }}>{meta.label}</span>
-      <span>·</span>
-      {plan === 'free' ? (
-        <a href="/?upgrade=1" style={{ color: T.goldDark, fontWeight: 600, textDecoration: 'none' }}>Upgrade →</a>
-      ) : (
-        <button onClick={openPortal} disabled={opening} style={{ background: 'none', border: 'none', padding: 0, color: T.goldDark, fontWeight: 600, cursor: 'pointer', fontSize: 12.5 }}>
-          {opening ? 'Opening…' : 'Manage →'}
-        </button>
+    <div style={{ fontSize: 12.5, color: T.inkSoft }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ color: meta.color, fontWeight: 600 }}>{meta.label}</span>
+        <span>·</span>
+        {plan === 'free' ? (
+          <a href="/?upgrade=1" style={{ color: T.goldDark, fontWeight: 600, textDecoration: 'none' }}>Upgrade →</a>
+        ) : (
+          <button onClick={openPortal} disabled={opening} style={{ background: 'none', border: 'none', padding: 0, color: T.goldDark, fontWeight: 600, cursor: 'pointer', fontSize: 12.5 }}>
+            {opening ? 'Opening…' : 'Manage →'}
+          </button>
+        )}
+      </div>
+      {portalError && (
+        <div style={{ marginTop: 4, color: T.inkMuted, fontSize: 11.5 }}>{portalError}</div>
       )}
     </div>
   );
