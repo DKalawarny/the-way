@@ -562,20 +562,21 @@ export default function ChurchPage({
                   background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
                   padding: '14px 44px', fontSize: 15, fontWeight: 600, cursor: 'pointer',
                   boxShadow: '0 4px 16px rgba(168,85,48,0.28)', letterSpacing: '-0.01em',
-                }}>Message the team</button>
+                }}>Talk to someone</button>
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 16, fontSize: 13, color: T.inkSoft }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
               {onOpenPrayer && (
-                <button onClick={onOpenPrayer} style={{ background: 'none', border: 'none', color: T.inkSoft, fontSize: 13, cursor: 'pointer', padding: 0, textDecoration: 'underline', textDecorationColor: 'rgba(90,71,51,0.3)' }}>
-                  🙏 Pray together
-                </button>
+                <button onClick={onOpenPrayer} style={{
+                  background: 'none', border: `1px solid rgba(168,85,48,0.30)`, borderRadius: 999,
+                  color: T.inkSoft, fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: '8px 18px',
+                }}>🙏 Pray together</button>
               )}
-              {onOpenPrayer && onOpenWalks && <span style={{ opacity: 0.4 }}>·</span>}
               {onOpenWalks && (
-                <button onClick={onOpenWalks} style={{ background: 'none', border: 'none', color: T.inkSoft, fontSize: 13, cursor: 'pointer', padding: 0, textDecoration: 'underline', textDecorationColor: 'rgba(90,71,51,0.3)' }}>
-                  Pick a walk
-                </button>
+                <button onClick={onOpenWalks} style={{
+                  background: 'none', border: `1px solid rgba(168,85,48,0.30)`, borderRadius: 999,
+                  color: T.inkSoft, fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: '8px 18px',
+                }}>Pick a walk</button>
               )}
             </div>
           </div>
@@ -728,21 +729,22 @@ export default function ChurchPage({
                         boxShadow: '0 4px 16px rgba(168,85,48,0.28)',
                         letterSpacing: '-0.01em',
                       }}
-                    >Message the team</button>
+                    >Talk to someone</button>
                   </div>
                 )}
                 {/* Secondary actions */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: 16, fontSize: 13, color: T.inkSoft }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
                   {onOpenPrayer && (
-                    <button onClick={onOpenPrayer} style={{ background: 'none', border: 'none', color: T.inkSoft, fontSize: 13, cursor: 'pointer', padding: 0, textDecoration: 'underline', textDecorationColor: 'rgba(90,71,51,0.3)' }}>
-                      🙏 Pray together
-                    </button>
+                    <button onClick={onOpenPrayer} style={{
+                      background: 'none', border: `1px solid rgba(168,85,48,0.30)`, borderRadius: 999,
+                      color: T.inkSoft, fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: '8px 18px',
+                    }}>🙏 Pray together</button>
                   )}
-                  {onOpenPrayer && onOpenWalks && <span style={{ opacity: 0.4 }}>·</span>}
                   {onOpenWalks && (
-                    <button onClick={onOpenWalks} style={{ background: 'none', border: 'none', color: T.inkSoft, fontSize: 13, cursor: 'pointer', padding: 0, textDecoration: 'underline', textDecorationColor: 'rgba(90,71,51,0.3)' }}>
-                      Pick a walk
-                    </button>
+                    <button onClick={onOpenWalks} style={{
+                      background: 'none', border: `1px solid rgba(168,85,48,0.30)`, borderRadius: 999,
+                      color: T.inkSoft, fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: '8px 18px',
+                    }}>Pick a walk</button>
                   )}
                 </div>
               </div>
