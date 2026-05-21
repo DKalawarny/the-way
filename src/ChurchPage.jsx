@@ -40,6 +40,9 @@ export default function ChurchPage({
   const [isCareTeam, setIsCareTeam] = useState(false);
   const [featuredWalk, setFeaturedWalk] = useState(null);
   const [feedRefresh, setFeedRefresh] = useState(0);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
   // Initialise from props so the first render is never blank.
   // isMember can be computed from props alone; isPastor uses the prop OR
   // falls back to church.pastor_id so it works even when pastorChurchId
@@ -134,6 +137,34 @@ export default function ChurchPage({
       });
     return () => { cancelled = true; };
   }, [session?.user?.id, churchId, isMember]);
+
+  // Follow state + follower count
+  useEffect(() => {
+    if (!churchId) return;
+    const uid = session?.user?.id;
+    Promise.all([
+      uid ? supabase.from('church_follows').select('user_id').eq('church_id', churchId).eq('user_id', uid).maybeSingle() : Promise.resolve({ data: null }),
+      supabase.from('church_follows').select('user_id', { count: 'exact', head: true }).eq('church_id', churchId),
+    ]).then(([followRes, countRes]) => {
+      setIsFollowing(!!followRes.data);
+      setFollowerCount(countRes.count ?? 0);
+    });
+  }, [churchId, session?.user?.id]);
+
+  async function handleFollow() {
+    if (!session?.user?.id) return;
+    setFollowLoading(true);
+    if (isFollowing) {
+      await supabase.from('church_follows').delete().eq('church_id', churchId).eq('user_id', session.user.id);
+      setIsFollowing(false);
+      setFollowerCount((c) => Math.max(0, c - 1));
+    } else {
+      await supabase.from('church_follows').insert({ church_id: churchId, user_id: session.user.id });
+      setIsFollowing(true);
+      setFollowerCount((c) => c + 1);
+    }
+    setFollowLoading(false);
+  }
 
   // Member-only data — pending role invites, care team membership, featured walk.
   // Skipped for visitors so we don't waste round-trips on the public preview.
@@ -485,6 +516,22 @@ export default function ChurchPage({
               </button>
             </div>
           )}
+          {/* Member + follower counts */}
+          {(memberCount > 0 || followerCount > 0) && (
+            <div style={{ '--i': 3, display: 'flex', gap: 16, justifyContent: 'center', marginBottom: 10 }}>
+              {memberCount > 0 && (
+                <span style={{ fontSize: 12, color: 'rgba(253,248,240,0.55)' }}>
+                  <strong style={{ color: 'rgba(253,248,240,0.85)', fontWeight: 600 }}>{memberCount}</strong> {memberCount === 1 ? 'member' : 'members'}
+                </span>
+              )}
+              {followerCount > 0 && (
+                <span style={{ fontSize: 12, color: 'rgba(253,248,240,0.55)' }}>
+                  <strong style={{ color: 'rgba(253,248,240,0.85)', fontWeight: 600 }}>{followerCount}</strong> {followerCount === 1 ? 'follower' : 'followers'}
+                </span>
+              )}
+            </div>
+          )}
+
           {/* Visit info — first thing a QR-scanning visitor needs: when & where. */}
           {(church.service_info || church.street_address) && (
             <div style={{ '--i': 3,
@@ -1098,7 +1145,7 @@ export default function ChurchPage({
                     borderRadius: 999, padding: '13px 20px',
                     fontSize: 15, fontWeight: 600,
                     cursor: (joining || joinRequest === 'pending') ? 'not-allowed' : 'pointer',
-                    opacity: joining ? 0.6 : 1, marginBottom: joinRequest === 'declined' ? 8 : 24,
+                    opacity: joining ? 0.6 : 1, marginBottom: 8,
                   }}
                 >
                   {joining ? '…'
@@ -1107,8 +1154,29 @@ export default function ChurchPage({
                     : church?.open_join === false ? 'Request to join'
                     : 'Join this church'}
                 </button>
+
+                {/* Follow button — non-members only */}
+                {!isMember && joinRequest !== 'pending' && (
+                  <button
+                    onClick={handleFollow}
+                    disabled={followLoading}
+                    style={{
+                      width: '100%', marginTop: 8, marginBottom: 24,
+                      background: isFollowing ? 'transparent' : 'rgba(184,115,58,0.08)',
+                      color: isFollowing ? T.inkMuted : T.gold,
+                      border: `1px solid ${isFollowing ? T.line : 'rgba(184,115,58,0.30)'}`,
+                      borderRadius: 999, padding: '11px 20px',
+                      fontSize: 14, fontWeight: 600, cursor: followLoading ? 'default' : 'pointer',
+                      opacity: followLoading ? 0.6 : 1,
+                    }}
+                  >
+                    {isFollowing ? '✓ Following' : '+ Follow'}
+                  </button>
+                )}
+                {(isMember || joinRequest === 'pending') && <div style={{ marginBottom: 24 }} />}
+
                 {joinRequest === 'declined' && (
-                  <div style={{ fontSize: 13, color: T.inkMuted, textAlign: 'center', marginBottom: 24 }}>
+                  <div style={{ fontSize: 13, color: T.inkMuted, textAlign: 'center', marginBottom: 8 }}>
                     Your request was declined.{' '}
                     <button onClick={handleJoin} style={{ background: 'none', border: 'none', color: T.goldDark, fontWeight: 600, cursor: 'pointer', fontSize: 13, padding: 0 }}>
                       Request again
