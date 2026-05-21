@@ -601,8 +601,6 @@ function PlanLine({ plan, aiUsage, session }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: T.inkSoft }}>
       <span style={{ color: meta.color, fontWeight: 600 }}>{meta.label}</span>
       <span>·</span>
-      <span>{used} of {total} messages used</span>
-      <span>·</span>
       {plan === 'free' ? (
         <a href="/?upgrade=1" style={{ color: T.goldDark, fontWeight: 600, textDecoration: 'none' }}>Upgrade →</a>
       ) : (
