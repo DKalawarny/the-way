@@ -394,7 +394,7 @@ export default function InviteFriends({ onClose, profile }) {
             width: '100%', maxWidth: 480, padding: '20px 22px 22px',
             boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
           }}>
-            <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: 6 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: 6 }}>
               Email a group
             </div>
             <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 14, lineHeight: 1.5 }}>
@@ -463,7 +463,7 @@ export default function InviteFriends({ onClose, profile }) {
             boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
             textAlign: 'center',
           }}>
-            <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: 4 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: 4 }}>
               Scan to open kinwove
             </div>
             <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 18 }}>

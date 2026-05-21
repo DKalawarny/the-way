@@ -180,7 +180,7 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
         <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 8 }}>
           Ask someone
         </div>
-        <h1 style={{ fontFamily: T.display, fontSize: 32, fontWeight: 600, color: T.ink, margin: '0 0 8px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+        <h1 style={{ fontFamily: T.serif, fontSize: 32, fontWeight: 600, color: T.ink, margin: '0 0 8px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
           What's on your mind?
         </h1>
         <p style={{ color: T.inkSoft, fontSize: 14.5, lineHeight: 1.65, margin: '0 0 18px' }}>

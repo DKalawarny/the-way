@@ -530,7 +530,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
       <div style={{ display: 'flex', borderBottom: '1px solid rgba(184,115,58,0.15)', background: T.cream, flexShrink: 0 }}>
         {['study', 'chat'].map((t) => (
           <button key={t} onClick={() => { setTab(t); if (t === 'chat') setTimeout(() => msgEndRef.current?.scrollIntoView(), 100); }}
-            style={{ flex: 1, background: 'none', border: 'none', padding: '12px 0', fontSize: 13, fontWeight: tab === t ? 700 : 500, color: tab === t ? T.gold : T.inkMuted, cursor: 'pointer', borderBottom: tab === t ? `2px solid ${T.gold}` : '2px solid transparent', transition: 'all 0.15s' }}>
+            style={{ flex: 1, background: 'none', border: 'none', padding: '12px 0', fontSize: 13, fontWeight: tab === t ? 700 : 500, fontFamily: T.serif, color: tab === t ? T.gold : T.inkMuted, cursor: 'pointer', borderBottom: tab === t ? `2px solid ${T.gold}` : '2px solid transparent', transition: 'all 0.15s' }}>
             {t === 'study' ? 'Study' : 'Chat'}
           </button>
         ))}

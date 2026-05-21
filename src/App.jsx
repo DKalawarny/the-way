@@ -26,7 +26,7 @@ class PageErrorBoundary extends Component {
     return (
       <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
         <span style={{ color: T.gold, fontSize: 22 }}>✦</span>
-        <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink }}>
+        <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink }}>
           {isChunkError ? 'New version available' : 'Something went wrong'}
         </div>
         <div style={{ fontSize: 14, color: T.inkSoft, textAlign: 'center', maxWidth: 320, lineHeight: 1.6 }}>
@@ -123,7 +123,7 @@ function CommunityPreview({ onBegin }) {
         <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 16 }}>
           See it in action
         </div>
-        <h2 style={{ fontFamily: T.display, fontSize: 'clamp(24px, 3.2vw, 36px)', color: T.cream, fontWeight: 600, margin: 0, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+        <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(24px, 3.2vw, 36px)', color: T.cream, fontWeight: 600, margin: 0, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
           Real questions. Honest answers.
         </h2>
       </div>
@@ -269,7 +269,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
           </div>
         )}
 
-        <h1 style={{ fontFamily: T.display, fontSize: 'clamp(38px, 7vw, 80px)', lineHeight: 1.05, margin: '0 0 22px', fontWeight: 600, letterSpacing: '-0.028em', color: T.cream, maxWidth: 820, position: 'relative' }}>
+        <h1 style={{ fontFamily: T.serif, fontSize: 'clamp(38px, 7vw, 80px)', lineHeight: 1.05, margin: '0 0 22px', fontWeight: 600, letterSpacing: '-0.028em', color: T.cream, maxWidth: 820, position: 'relative' }}>
           You don't have to have it<br />figured out to <em style={{ color: T.gold, fontStyle: 'italic', fontWeight: 500 }}>belong here.</em>
         </h1>
 
@@ -288,7 +288,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
       {/* ── Community ── */}
       <section style={{ padding: '88px 32px 92px', maxWidth: 900, margin: '0 auto', width: '100%', textAlign: 'center' }}>
         <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 18 }}>Real community</div>
-        <h2 style={{ fontFamily: T.display, fontSize: 'clamp(26px, 3.6vw, 40px)', color: T.cream, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.022em', lineHeight: 1.12 }}>
+        <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(26px, 3.6vw, 40px)', color: T.cream, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.022em', lineHeight: 1.12 }}>
           You're not just talking to an AI.<br />
           <em style={{ color: T.gold, fontStyle: 'italic', fontWeight: 500 }}>You're joining people.</em>
         </h2>
@@ -317,7 +317,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
       <section style={{ padding: '88px 32px 92px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 48 }}>
           <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 18 }}>AI built differently</div>
-          <h2 style={{ fontFamily: T.display, fontSize: 'clamp(26px, 3.6vw, 40px)', color: T.cream, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.022em', lineHeight: 1.12, maxWidth: 640 }}>
+          <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(26px, 3.6vw, 40px)', color: T.cream, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.022em', lineHeight: 1.12, maxWidth: 640 }}>
             We know you might not trust AI<br />with something this important.
           </h2>
           <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, maxWidth: 540, lineHeight: 1.75, margin: 0 }}>
@@ -352,7 +352,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
       <section style={{ padding: '88px 32px 92px', maxWidth: 1040, margin: '0 auto', width: '100%' }}>
         <div style={{ textAlign: 'center', marginBottom: 52 }}>
           <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 14 }}>Whoever you are</div>
-          <h2 style={{ fontFamily: T.display, fontSize: 'clamp(26px, 3.4vw, 38px)', color: T.cream, fontWeight: 600, margin: '0 0 16px', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+          <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(26px, 3.4vw, 38px)', color: T.cream, fontWeight: 600, margin: '0 0 16px', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
             There's a place for you here.
           </h2>
           <p style={{ fontFamily: T.serif, fontSize: 16, color: DIM, maxWidth: 440, margin: '0 auto', lineHeight: 1.7 }}>
@@ -380,7 +380,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
       {onPastorIntent && !pastorChurchId && (
         <section style={{ padding: '88px 32px 92px', maxWidth: 900, margin: '0 auto', width: '100%', textAlign: 'center' }}>
           <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 18 }}>For pastors & church leaders</div>
-          <h2 style={{ fontFamily: T.display, fontSize: 'clamp(26px, 3.6vw, 40px)', color: T.cream, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.022em', lineHeight: 1.12 }}>
+          <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(26px, 3.6vw, 40px)', color: T.cream, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.022em', lineHeight: 1.12 }}>
             Your congregation<br />needs a home between Sundays.
           </h2>
           <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, maxWidth: 540, margin: '0 auto 40px', lineHeight: 1.75 }}>
@@ -417,7 +417,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
         <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 700, height: 500, background: 'radial-gradient(ellipse at 50% 0%, rgba(184,115,58,0.09) 0%, transparent 65%)', pointerEvents: 'none' }} />
         <div style={{ maxWidth: 600, margin: '0 auto', position: 'relative' }}>
           <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 22 }}>Begin</div>
-          <h2 style={{ fontFamily: T.display, fontSize: 'clamp(30px, 5vw, 58px)', fontWeight: 600, color: T.cream, lineHeight: 1.05, marginBottom: 20, letterSpacing: '-0.026em' }}>
+          <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(30px, 5vw, 58px)', fontWeight: 600, color: T.cream, lineHeight: 1.05, marginBottom: 20, letterSpacing: '-0.026em' }}>
             Start asking.<br />We'll meet you there.
           </h2>
           <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, lineHeight: 1.72, maxWidth: 400, margin: '0 auto 48px' }}>
@@ -468,7 +468,7 @@ function Onboarding({ onPick, onBack }) {
         <div style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: T.gold, marginBottom: 24, opacity: 0.8 }}>
           Before we begin
         </div>
-        <h2 style={{ fontFamily: T.display, fontSize: 'clamp(34px, 5.2vw, 56px)', margin: '0 0 18px', color: T.cream, fontWeight: 600, letterSpacing: '-0.025em', lineHeight: 1.06 }}>
+        <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(34px, 5.2vw, 56px)', margin: '0 0 18px', color: T.cream, fontWeight: 600, letterSpacing: '-0.025em', lineHeight: 1.06 }}>
           Where are you, honestly?
         </h2>
         <p style={{ fontFamily: T.serif, fontSize: 17.5, color: 'rgba(253,248,240,0.6)', maxWidth: 480, margin: '0 auto', lineHeight: 1.65 }}>
@@ -558,7 +558,7 @@ function DeleteAccountModal({ open, onClose, onDeleted }) {
           padding: 32, border: `1px solid ${T.line}`,
         }}
       >
-        <div style={{ fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 10 }}>
+        <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 10 }}>
           Delete your account?
         </div>
         <div style={{ color: T.inkSoft, fontSize: 15, lineHeight: 1.65, marginBottom: 18 }}>
@@ -637,7 +637,7 @@ function PastorPrompt({ open, onApply, onClose }) {
         }}
       >
         <div style={{ fontSize: 32, marginBottom: 12 }}>✦</div>
-        <div style={{ fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 10 }}>
+        <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 10 }}>
           Are you a pastor?
         </div>
         <div style={{ color: T.inkSoft, fontSize: 15, lineHeight: 1.65, marginBottom: 24 }}>
@@ -739,7 +739,7 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
   });
 
   const labelStyle = (id) => ({
-    fontSize: 11, fontWeight: active === id ? 600 : 500, letterSpacing: 0.25,
+    fontSize: 11, fontWeight: active === id ? 600 : 500, letterSpacing: 0.25, fontFamily: T.serif,
   });
 
   // Accent rail at top edge of active tab, coloured per section
@@ -883,7 +883,7 @@ function ConversationHistory({ open, onClose, conversations, onLoad, onDelete, o
         }}>
           <div>
             <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 4 }}>Your history</div>
-            <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>Conversations</div>
+            <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>Conversations</div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
@@ -1073,7 +1073,7 @@ function Board({ open, onClose, notes, onRemove, onGoDeeper, onSharePublicly }) 
             >
               Your Board
             </div>
-            <div style={{ fontFamily: T.display, fontSize: 24, color: T.ink, fontWeight: 600, letterSpacing: '-0.018em', lineHeight: 1.18 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 24, color: T.ink, fontWeight: 600, letterSpacing: '-0.018em', lineHeight: 1.18 }}>
               {notes.length === 0
                 ? 'Nothing saved yet'
                 : `${notes.length} ${notes.length === 1 ? 'note' : 'notes'}`}
@@ -1398,7 +1398,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
     display: 'flex', alignItems: 'center', gap: 12,
     padding: '10px 14px',
     cursor: 'pointer', background: 'none', border: 'none', width: '100%',
-    textAlign: 'left', fontFamily: T.sans, outline: 'none',
+    textAlign: 'left', fontFamily: T.serif, outline: 'none',
     color: active === id ? T.ink : T.inkSoft,
     borderLeft: 'none',
     backgroundColor: active === id ? T.white : 'transparent',
@@ -1417,7 +1417,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
     display: 'flex', alignItems: 'center', gap: 12,
     padding: '10px 14px',
     cursor: 'pointer', background: 'none', border: 'none', width: '100%',
-    textAlign: 'left', fontFamily: T.sans, outline: 'none',
+    textAlign: 'left', fontFamily: T.serif, outline: 'none',
     color: T.inkMuted, borderLeft: 'none',
     transition: 'color 0.15s, background-color 0.15s',
     borderRadius: 10, marginRight: 8, marginLeft: 8,
@@ -1458,7 +1458,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
           display: 'flex', alignItems: 'center', gap: 12,
           padding: '10px 14px',
           cursor: 'pointer', background: 'none', border: 'none', width: '100%',
-          textAlign: 'left', fontFamily: T.sans, outline: 'none',
+          textAlign: 'left', fontFamily: T.serif, outline: 'none',
           color: chatOpen ? T.ink : T.inkSoft,
           borderLeft: 'none',
           backgroundColor: chatOpen ? T.white : 'transparent',
@@ -1467,7 +1467,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
           marginRight: 8, marginLeft: 8,
           boxShadow: chatOpen ? '0 1px 4px rgba(26,17,8,0.08)' : 'none',
         }}>
-          <span style={{ fontSize: 15, flexShrink: 0, width: 20, textAlign: 'center', lineHeight: 1 }}>+</span>
+          <KinwoveStar size={14} color="currentColor" style={{ flexShrink: 0, width: 20 }} />
           <span style={{ fontSize: 13.5, fontWeight: chatOpen ? 600 : 450 }}>Ask</span>
         </button>
 

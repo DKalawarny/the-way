@@ -20,7 +20,7 @@ function CovenantModal({ onAccept, onDecline }) {
         <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 8 }}>
           Care team covenant
         </div>
-        <h2 style={{ fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.15, margin: '0 0 14px' }}>
+        <h2 style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.15, margin: '0 0 14px' }}>
           Before you step in
         </h2>
         <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink, lineHeight: 1.75 }}>
@@ -224,7 +224,7 @@ export default function CareTeamInbox({ session, profile, churchId, onBack }) {
         <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 8 }}>
           Care Team
         </div>
-        <h1 style={{ fontFamily: T.display, fontSize: 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 8px' }}>
+        <h1 style={{ fontFamily: T.serif, fontSize: 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 8px' }}>
           Conversations
         </h1>
         <p style={{ color: T.inkSoft, fontSize: 14, lineHeight: 1.65, margin: '0 0 20px' }}>

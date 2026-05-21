@@ -210,7 +210,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
                 <div style={{ fontSize: 10, letterSpacing: 2.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 6 }}>
                   {isEdit ? 'Edit your profile' : 'Set up your profile'}
                 </div>
-                <h2 style={{ fontFamily: T.display, fontSize: 28, fontWeight: 600, color: T.ink, margin: '0 0 8px', letterSpacing: '-0.022em', lineHeight: 1.1 }}>
+                <h2 style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 600, color: T.ink, margin: '0 0 8px', letterSpacing: '-0.022em', lineHeight: 1.1 }}>
                   {isEdit ? 'Your profile' : 'Tell us about you'}
                 </h2>
                 <p style={{ color: T.inkMuted, fontSize: 13.5, lineHeight: 1.5, margin: 0 }}>

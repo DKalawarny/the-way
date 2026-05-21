@@ -94,7 +94,7 @@ function JourneyDetail({ journey, currentStep, onStartStep, onBack }) {
           {currentStep >= journey.steps.length && (
             <div style={{ textAlign: 'center', padding: '32px 20px', background: 'rgba(184,115,58,0.08)', border: '1px solid rgba(184,115,58,0.25)', borderRadius: 18, marginTop: 8 }}>
               <div style={{ fontSize: 28, marginBottom: 14 }}>✦</div>
-              <div style={{ fontFamily: T.display, fontSize: 24, color: T.ink, fontWeight: 600, marginBottom: 10, letterSpacing: '-0.015em', lineHeight: 1.15 }}>Path complete.</div>
+              <div style={{ fontFamily: T.serif, fontSize: 24, color: T.ink, fontWeight: 600, marginBottom: 10, letterSpacing: '-0.015em', lineHeight: 1.15 }}>Path complete.</div>
               <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.65 }}>
                 You've walked the whole way. Keep exploring — or start another path.
               </div>
@@ -129,7 +129,7 @@ export default function Journeys({ onClose, onStartStep, progress }) {
         <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.inkMuted, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5, fontSize: 13 }}>
           <ArrowLeft size={14} strokeWidth={2} /> Back
         </button>
-        <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.cream, flex: 1, letterSpacing: '-0.015em' }}>Guided Paths</div>
+        <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.cream, flex: 1, letterSpacing: '-0.015em' }}>Guided Paths</div>
       </header>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '28px 20px 80px' }}>

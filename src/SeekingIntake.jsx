@@ -58,7 +58,7 @@ export default function SeekingIntake({ personType, onComplete, onBack }) {
         <div style={{ fontSize: 11, letterSpacing: 4, color: T.gold, textTransform: 'uppercase', marginBottom: 24, opacity: 0.7 }}>
           A few quick questions
         </div>
-        <h2 style={{ fontFamily: T.display, fontSize: 'clamp(24px, 4vw, 36px)', color: T.cream, fontWeight: 600, lineHeight: 1.15, marginBottom: 40, letterSpacing: '-0.02em' }}>
+        <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(24px, 4vw, 36px)', color: T.cream, fontWeight: 600, lineHeight: 1.15, marginBottom: 40, letterSpacing: '-0.02em' }}>
           {q.q}
         </h2>
 

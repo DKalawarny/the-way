@@ -371,7 +371,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
               background: 'none', border: 'none', color: T.goldDark,
               fontSize: 14, cursor: 'pointer', padding: 0, marginBottom: 12,
             }}>← Back</button>
-            <h1 style={{ fontFamily: T.display, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 14px' }}>
+            <h1 style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 14px' }}>
               Messages
             </h1>
             <input

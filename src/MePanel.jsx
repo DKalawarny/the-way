@@ -1127,7 +1127,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
 
             {/* Name + person type badge */}
             <div style={{ marginBottom: 10 }}>
-              <div style={{ fontFamily: T.display, fontSize: 28, fontWeight: 500, letterSpacing: '-0.02em', color: T.ink, lineHeight: 1, marginBottom: 8 }}>
+              <div style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 500, letterSpacing: '-0.02em', color: T.ink, lineHeight: 1, marginBottom: 8 }}>
                 {profile?.display_name ?? 'You'}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
@@ -1238,6 +1238,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                 marginBottom: -1,
                 fontSize: 13,
                 fontWeight: isActive ? 700 : 500,
+                fontFamily: T.serif,
                 color: isActive ? T.goldDark : T.inkMuted,
                 cursor: 'pointer',
                 transition: 'color 0.15s, border-color 0.15s',

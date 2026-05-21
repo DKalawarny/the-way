@@ -390,7 +390,7 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
               <div style={{ textAlign: 'center' }}>
                 {questionCount < 3 ? (
                   <>
-                    <div style={{ fontFamily: T.display, fontSize: 22, color: T.cream, fontWeight: 600, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: 8 }}>
+                    <div style={{ fontFamily: T.serif, fontSize: 22, color: T.cream, fontWeight: 600, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: 8 }}>
                       What else are you wondering?
                     </div>
                     <div style={{ fontSize: 13, color: 'rgba(253,248,240,0.55)', marginBottom: 22, lineHeight: 1.6 }}>
@@ -440,7 +440,7 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
                   </>
                 ) : (
                   <>
-                    <div style={{ fontFamily: T.display, fontSize: 22, color: T.cream, fontWeight: 600, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: 8 }}>
+                    <div style={{ fontFamily: T.serif, fontSize: 22, color: T.cream, fontWeight: 600, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: 8 }}>
                       You're asking the right questions.
                     </div>
                     <div style={{ fontSize: 13, color: 'rgba(253,248,240,0.55)', marginBottom: 6, lineHeight: 1.6 }}>

@@ -1148,7 +1148,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
             <div style={{ fontSize: 10, letterSpacing: '0.26em', textTransform: 'uppercase', color: T.goldLight, fontWeight: 700, marginBottom: 8 }}>
               Book Complete
             </div>
-            <div style={{ fontFamily: T.display, fontSize: 30, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 30, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
               {newBookDone.name}
             </div>
             <div style={{ fontSize: 12, color: 'rgba(253,248,240,0.4)', marginTop: 8, letterSpacing: '0.03em' }}>
@@ -1228,7 +1228,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <div>
-              <div style={{ fontFamily: T.display, fontSize: 24, fontWeight: 600, color: C.text, marginBottom: 4, letterSpacing: '-0.018em', lineHeight: 1.1 }}>
+              <div style={{ fontFamily: T.serif, fontSize: 24, fontWeight: 600, color: C.text, marginBottom: 4, letterSpacing: '-0.018em', lineHeight: 1.1 }}>
                 {book.name}
               </div>
               <div style={{ fontSize: 14, color: C.muted }}>
@@ -1857,7 +1857,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
         {/* Back to chapters */}
         <button
           onClick={() => { setChapBook(book); setView('chapters'); }}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: C.verse, fontSize: 13, fontWeight: 600, flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: C.verse, fontSize: 13, fontWeight: 600, fontFamily: T.serif, flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}
         >
           <ArrowLeft size={15} strokeWidth={2} /> {book.name}
         </button>
@@ -1871,7 +1871,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
           </div>
         ) : (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: C.text, letterSpacing: '-0.01em', lineHeight: 1.15 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 600, color: C.text, letterSpacing: '-0.01em', lineHeight: 1.15 }}>
               Chapter {chNum}
             </div>
             <div style={{ fontSize: 10, letterSpacing: 1.2, textTransform: 'uppercase', color: C.muted, fontWeight: 600, lineHeight: 1, marginTop: 1 }}>

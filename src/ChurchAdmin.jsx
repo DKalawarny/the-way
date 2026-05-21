@@ -1006,7 +1006,7 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
             <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
               Scan to join
             </div>
-            <div style={{ fontFamily: T.display, fontSize: 24, fontWeight: 600, color: T.ink, letterSpacing: '-0.018em', lineHeight: 1.12, marginBottom: 16 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 24, fontWeight: 600, color: T.ink, letterSpacing: '-0.018em', lineHeight: 1.12, marginBottom: 16 }}>
               {church?.name}
             </div>
             <div style={{
@@ -1118,7 +1118,7 @@ function InviteModal({ member, existingRoles, onClose, onSubmit }) {
         background: T.cream, borderRadius: 16, maxWidth: 480, width: '100%',
         padding: 'clamp(20px, 4vw, 26px)', border: `1px solid ${T.line}`,
       }}>
-        <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, marginBottom: 6 }}>
+        <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, marginBottom: 6 }}>
           Invite to a role
         </div>
         <p style={{ fontSize: 14, color: T.inkSoft, lineHeight: 1.55, margin: '0 0 14px' }}>
@@ -1839,7 +1839,7 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
             background: T.cream, borderRadius: 16, maxWidth: 420, width: '100%',
             padding: 26, border: `1px solid ${T.line}`,
           }}>
-            <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, marginBottom: 8 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, marginBottom: 8 }}>
               Reset invite code?
             </div>
             <p style={{ fontSize: 14.5, color: T.inkSoft, lineHeight: 1.6, margin: '0 0 18px' }}>
@@ -1869,7 +1869,7 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
             background: T.cream, borderRadius: 16, maxWidth: 440, width: '100%',
             padding: 26, border: `1px solid ${T.line}`,
           }}>
-            <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, marginBottom: 8 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, marginBottom: 8 }}>
               Remove {removingMember.display_name ?? 'this member'}?
             </div>
             <p style={{ fontSize: 14.5, color: T.inkSoft, lineHeight: 1.6, margin: '0 0 14px' }}>

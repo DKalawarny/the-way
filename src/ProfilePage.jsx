@@ -354,7 +354,7 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
                 </div>
               )}
 
-              <div style={{ fontFamily: T.display, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 4 }}>
+              <div style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 4 }}>
                 {profile?.display_name ?? 'Friend'}
               </div>
 
@@ -389,7 +389,7 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
                     padding: '14px 8px',
                     borderRight: i < 2 ? `1px solid ${T.line}` : 'none',
                   }}>
-                    <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>{s.value}</div>
+                    <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>{s.value}</div>
                     <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 2 }}>{s.label}</div>
                   </div>
                 ))}
@@ -531,7 +531,7 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
 
           {posts.length === 0 && (
             <div style={{ background: T.white, borderRadius: 14, border: `1px solid ${T.line}`, padding: '32px 20px', textAlign: 'center' }}>
-              <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: 8 }}>Nothing shared yet.</div>
+              <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: 8 }}>Nothing shared yet.</div>
               <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.6 }}>
                 Save a note from chat and tap "Share publicly" to post it.
               </div>

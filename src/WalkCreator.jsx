@@ -228,7 +228,7 @@ export default function WalkCreator({ session, churchId, onBack, onSaved }) {
       <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 6 }}>
         Create a Walk
       </div>
-      <h2 style={{ fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.ink, margin: '0 0 20px', letterSpacing: '-0.02em' }}>
+      <h2 style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.ink, margin: '0 0 20px', letterSpacing: '-0.02em' }}>
         What journey will you lead?
       </h2>
 
@@ -331,7 +331,7 @@ export default function WalkCreator({ session, churchId, onBack, onSaved }) {
   if (stage === 'generating') return (
     <div style={{ maxWidth: 560, margin: '0 auto', padding: '60px 0', textAlign: 'center' }}>
       <div style={{ fontSize: 36, marginBottom: 20 }}>{form.emoji}</div>
-      <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, marginBottom: 10 }}>
+      <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, marginBottom: 10 }}>
         Crafting "{form.title}"
       </div>
       <div style={{ fontSize: 14, color: T.inkSoft, marginBottom: 28 }}>
@@ -356,7 +356,7 @@ export default function WalkCreator({ session, churchId, onBack, onSaved }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
         <div style={{ fontSize: 28 }}>{form.emoji}</div>
         <div>
-          <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>{form.title}</div>
+          <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>{form.title}</div>
           <div style={{ fontSize: 13, color: T.inkSoft }}>{form.length} days · {CATEGORY_LABEL[form.category]}</div>
         </div>
       </div>

@@ -26,7 +26,7 @@ export default function SharedView({ shareId, onBegin }) {
     return (
       <div style={{ minHeight: '100vh', background: T.ink, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 12 }}>This link has expired.</div>
+          <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 12 }}>This link has expired.</div>
           <div style={{ fontSize: 14, color: 'rgba(253,248,240,0.4)', marginBottom: 28 }}>Shared conversations aren't stored forever.</div>
           <button onClick={onBegin} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '12px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
             Start your own →
@@ -55,7 +55,7 @@ export default function SharedView({ shareId, onBegin }) {
       {/* Header */}
       <header style={{ padding: '16px 24px', background: T.white, borderBottom: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 500, color: T.ink, letterSpacing: '-0.025em' }}>kinwove</div>
+          <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 500, color: T.ink, letterSpacing: '-0.025em' }}>kinwove</div>
           {person && (
             <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2 }}>{person.emoji} {person.label}</div>
           )}
@@ -121,7 +121,7 @@ export default function SharedView({ shareId, onBegin }) {
       <div style={{ background: T.ink, padding: '48px 24px 56px' }}>
         <div style={{ height: 1, background: `linear-gradient(90deg, transparent, rgba(184,115,58,0.4), transparent)`, marginBottom: 40 }} />
         <div style={{ maxWidth: 640, margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 8 }}>
+          <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 8 }}>
             Ask your own question.
           </div>
           <div style={{ fontSize: 14, color: 'rgba(253,248,240,0.45)', lineHeight: 1.7, marginBottom: 32 }}>

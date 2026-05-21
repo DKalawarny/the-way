@@ -309,7 +309,7 @@ function GuestWall({ onSignUp }) {
           <line x1="14" y1="0" x2="14" y2="28" stroke="#B8733A" strokeWidth="2"/>
           <line x1="0" y1="14" x2="28" y2="14" stroke="#B8733A" strokeWidth="2"/>
         </svg>
-        <div style={{ fontFamily: T.display, fontSize: 30, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.12, marginBottom: 14 }}>
+        <div style={{ fontFamily: T.serif, fontSize: 30, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.12, marginBottom: 14 }}>
           This conversation is worth keeping.
         </div>
         <div style={{ fontSize: 15, color: 'rgba(253,248,240,0.5)', lineHeight: 1.7, marginBottom: 32 }}>

@@ -144,7 +144,7 @@ export default function ConnectScreen({ session, profile, onClose, onStartDM }) 
               <button key={f.id} onClick={() => setFilter(f.id)} style={{
                 flex: 1, padding: '10px 4px', background: 'transparent', border: 'none',
                 borderBottom: active ? `2px solid ${T.gold}` : '2px solid transparent',
-                fontSize: 13, fontWeight: active ? 700 : 500,
+                fontSize: 13, fontWeight: active ? 700 : 500, fontFamily: T.serif,
                 color: active ? T.goldDark : T.inkMuted, cursor: 'pointer',
               }}>
                 {f.label}

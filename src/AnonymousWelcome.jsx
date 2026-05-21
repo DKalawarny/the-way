@@ -134,7 +134,7 @@ export default function AnonymousWelcome({ churchId, churchName, onSignUp, onTal
               }}>✦</div>
 
               <div style={{ '--i': 1, textAlign: 'center', maxWidth: 420, margin: '0 auto 22px' }}>
-                <div style={{ fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.12, marginBottom: 8 }}>
+                <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.12, marginBottom: 8 }}>
                   No sign-up. No name. Nobody sees this.
                 </div>
                 <div style={{ fontSize: 14, color: T.inkSoft, lineHeight: 1.65 }}>

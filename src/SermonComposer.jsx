@@ -568,7 +568,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
               This week's content
             </div>
           )}
-          <h1 style={{ fontFamily: T.display, fontSize: embedded ? 24 : 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 8px' }}>
+          <h1 style={{ fontFamily: T.serif, fontSize: embedded ? 24 : 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 8px' }}>
             {editing ? 'Edit sermon' : 'New sermon'}
           </h1>
           <p style={{ color: T.inkSoft, fontSize: 14.5, lineHeight: 1.65, margin: '0 0 22px' }}>
@@ -1028,7 +1028,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
             <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 8 }}>
               Sermons
             </div>
-            <h1 style={{ fontFamily: T.display, fontSize: 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 8px' }}>
+            <h1 style={{ fontFamily: T.serif, fontSize: 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 8px' }}>
               Sunday → the week
             </h1>
             <p style={{ color: T.inkSoft, fontSize: 14.5, lineHeight: 1.65, margin: '0 0 20px' }}>

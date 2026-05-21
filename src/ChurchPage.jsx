@@ -447,7 +447,7 @@ export default function ChurchPage({
               </div>
             )}
           </div>
-          <h1 style={{ '--i': 1, fontFamily: T.display, fontSize: 34, fontWeight: 600, color: T.cream, margin: '0 0 4px', lineHeight: 1.08, letterSpacing: '-0.022em' }}>
+          <h1 style={{ '--i': 1, fontFamily: T.serif, fontSize: 34, fontWeight: 600, color: T.cream, margin: '0 0 4px', lineHeight: 1.08, letterSpacing: '-0.022em' }}>
             {church.name}
             {church.verification_status === 'verified' && (
               <span title="Verified church" style={{ marginLeft: 8, color: T.gold, fontSize: 19, verticalAlign: 'middle' }}>✓</span>
@@ -525,7 +525,7 @@ export default function ChurchPage({
 
           <div style={{ textAlign: 'center', padding: '24px 20px 20px', background: T.cream, borderBottom: `1px solid ${T.line}` }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 6 }}>
-              <h1 style={{ fontFamily: T.display, fontSize: 30, fontWeight: 600, color: T.ink, margin: 0, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+              <h1 style={{ fontFamily: T.serif, fontSize: 30, fontWeight: 600, color: T.ink, margin: 0, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
                 {church.name}
               </h1>
               {church.verification_status === 'verified' && (
@@ -599,7 +599,7 @@ export default function ChurchPage({
               flex: 1, padding: '14px 0',
               background: 'transparent', border: 'none',
               borderBottom: tab === t.id ? `2px solid ${T.goldDark}` : '2px solid transparent',
-              fontSize: 14, fontWeight: tab === t.id ? 700 : 500,
+              fontSize: 14, fontWeight: tab === t.id ? 700 : 500, fontFamily: T.serif,
               color: tab === t.id ? T.goldDark : T.inkMuted,
               cursor: 'pointer', letterSpacing: tab === t.id ? 0.1 : 0,
               transition: 'color 0.15s, border-color 0.15s',

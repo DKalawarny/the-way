@@ -149,7 +149,7 @@ function StatTile({ label, value, sublabel, accent }) {
         {label}
       </div>
       <div style={{
-        fontFamily: T.display, fontSize: 34, fontWeight: 600, letterSpacing: '-0.02em',
+        fontFamily: T.serif, fontSize: 34, fontWeight: 600, letterSpacing: '-0.02em',
         color: accent ?? T.ink, lineHeight: 1, marginBottom: 4,
       }}>
         {value}
@@ -639,7 +639,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
             <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 8 }}>
               Pastor dashboard
             </div>
-            <h1 style={{ fontFamily: T.display, fontSize: 34, fontWeight: 600, color: T.ink, letterSpacing: '-0.022em', lineHeight: 1.08, margin: '0 0 8px' }}>
+            <h1 style={{ fontFamily: T.serif, fontSize: 34, fontWeight: 600, color: T.ink, letterSpacing: '-0.022em', lineHeight: 1.08, margin: '0 0 8px' }}>
               {church?.name ?? 'Your church'} · this week
             </h1>
             <p style={{ color: T.inkSoft, fontSize: 14.5, lineHeight: 1.65, margin: '0 0 18px' }}>
@@ -836,7 +836,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
             <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 6 }}>
               ✶ Announce a walk
             </div>
-            <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.018em', marginBottom: 6 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.018em', marginBottom: 6 }}>
               Pick one for the whole church
             </div>
             <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.55, marginBottom: 14 }}>
@@ -986,7 +986,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
             <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 4 }}>
               {editingStaff ? 'Edit team member' : '+ Add team member'}
             </div>
-            <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.018em', marginBottom: 16 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.018em', marginBottom: 16 }}>
               {editingStaff ? editingStaff.display_name : 'Who are you adding?'}
             </div>
 

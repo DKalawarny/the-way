@@ -375,7 +375,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
 
           {/* Name + badge */}
           <div style={{ marginBottom: 10 }}>
-            <div style={{ fontFamily: T.display, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 8 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 8 }}>
               {profile?.display_name ?? ''}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
@@ -556,7 +556,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
           {publicPrayers.length === 0 && (
             <div style={{ textAlign: 'center', padding: '48px 20px', background: T.white, borderRadius: 14, border: `1px solid ${T.line}` }}>
               <div style={{ fontSize: 28, marginBottom: 10 }}>🕯️</div>
-              <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: 6 }}>No public prayers yet.</div>
+              <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: 6 }}>No public prayers yet.</div>
               <div style={{ fontSize: 13, color: T.inkMuted }}>{profile?.display_name?.split(' ')[0] ?? 'They'} hasn't shared any prayer requests.</div>
             </div>
           )}
@@ -601,7 +601,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
         <div>
           {followingList.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.15 }}>Not following anyone yet.</div>
+              <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.15 }}>Not following anyone yet.</div>
             </div>
           )}
           {followingList.map((f) => {

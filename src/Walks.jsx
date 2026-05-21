@@ -132,7 +132,7 @@ function WalkOverview({ walk, progress, steps, onStart, onResume, onOpenDay, onB
           <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 4 }}>
             {CATEGORY_LABEL[walk.category]} · {walk.length_days} days
           </div>
-          <h2 style={{ fontFamily: T.display, fontSize: 30, fontWeight: 600, color: T.ink, margin: 0, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+          <h2 style={{ fontFamily: T.serif, fontSize: 30, fontWeight: 600, color: T.ink, margin: 0, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
             {walk.title}
           </h2>
           {walk.subtitle && (
@@ -300,7 +300,7 @@ function WalkDay({ walk, step, progress, day, onAdvance, onPrev, onNext, onBack,
       <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 6 }}>
         Day {day} of {total}
       </div>
-      <h2 style={{ fontFamily: T.display, fontSize: 30, fontWeight: 600, color: T.ink, margin: '0 0 14px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+      <h2 style={{ fontFamily: T.serif, fontSize: 30, fontWeight: 600, color: T.ink, margin: '0 0 14px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
         {step.title}
       </h2>
 
@@ -513,7 +513,7 @@ export default function Walks({ session, onClose }) {
             <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 8 }}>
               Journeys
             </div>
-            <h1 style={{ fontFamily: T.display, fontSize: 34, fontWeight: 600, color: T.ink, margin: '0 0 8px', letterSpacing: '-0.022em', lineHeight: 1.08 }}>
+            <h1 style={{ fontFamily: T.serif, fontSize: 34, fontWeight: 600, color: T.ink, margin: '0 0 8px', letterSpacing: '-0.022em', lineHeight: 1.08 }}>
               Pick a journey
             </h1>
             <p style={{ color: T.inkSoft, fontSize: 15, lineHeight: 1.65, margin: '0 0 22px' }}>

@@ -176,7 +176,7 @@ export default function PastorApply({ session, profile, onClose, onBecamePastor 
       <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <div style={{ textAlign: 'center', maxWidth: 400 }}>
           <div style={{ fontSize: 52, marginBottom: 20 }}>✦</div>
-          <div style={{ fontFamily: T.display, fontSize: 28, fontWeight: 600, color: T.ink, marginBottom: 12, letterSpacing: '-0.02em' }}>
+          <div style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 600, color: T.ink, marginBottom: 12, letterSpacing: '-0.02em' }}>
             You're verified.
           </div>
           <div style={{ fontFamily: T.serif, fontSize: 16, color: T.inkSoft, lineHeight: 1.65 }}>
@@ -193,7 +193,7 @@ export default function PastorApply({ session, profile, onClose, onBecamePastor 
       <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <div style={{ textAlign: 'center', maxWidth: 440 }}>
           <div style={{ fontSize: 40, marginBottom: 20 }}>🏛</div>
-          <div style={{ fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.ink, marginBottom: 12, letterSpacing: '-0.02em' }}>
+          <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.ink, marginBottom: 12, letterSpacing: '-0.02em' }}>
             You're in — with one note.
           </div>
           <div style={{ fontFamily: T.serif, fontSize: 15, color: T.inkSoft, lineHeight: 1.7, marginBottom: 16 }}>
@@ -221,7 +221,7 @@ export default function PastorApply({ session, profile, onClose, onBecamePastor 
           <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 10 }}>
             Step 2 of 2
           </div>
-          <h2 style={{ fontFamily: T.display, fontSize: 30, fontWeight: 600, color: T.ink, letterSpacing: '-0.022em', lineHeight: 1.08, margin: '0 0 10px' }}>
+          <h2 style={{ fontFamily: T.serif, fontSize: 30, fontWeight: 600, color: T.ink, letterSpacing: '-0.022em', lineHeight: 1.08, margin: '0 0 10px' }}>
             Verify your church
           </h2>
           <p style={{ color: T.inkSoft, fontSize: 15, lineHeight: 1.65, margin: '0 0 28px' }}>
@@ -378,7 +378,7 @@ export default function PastorApply({ session, profile, onClose, onBecamePastor 
         <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 10 }}>
           Step 1 of 2 — About your church
         </div>
-        <h2 style={{ fontFamily: T.display, fontSize: 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.022em', lineHeight: 1.08, margin: '0 0 10px' }}>
+        <h2 style={{ fontFamily: T.serif, fontSize: 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.022em', lineHeight: 1.08, margin: '0 0 10px' }}>
           Bring your church to kinwove
         </h2>
         <p style={{ color: T.inkSoft, fontSize: 15, lineHeight: 1.65, margin: '0 0 28px' }}>

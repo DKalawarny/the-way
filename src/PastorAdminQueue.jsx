@@ -184,7 +184,7 @@ export default function PastorAdminQueue({ session, profile, onClose }) {
         }}>← Back</button>
 
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 12 }}>
-          <h1 style={{ fontFamily: T.display, fontSize: 30, fontWeight: 600, color: T.ink, letterSpacing: '-0.022em', lineHeight: 1.1, margin: 0 }}>
+          <h1 style={{ fontFamily: T.serif, fontSize: 30, fontWeight: 600, color: T.ink, letterSpacing: '-0.022em', lineHeight: 1.1, margin: 0 }}>
             Pastor applications
           </h1>
           <div style={{ display: 'inline-flex', gap: 4, background: T.cream, padding: 3, borderRadius: 999, border: `1px solid ${T.line}` }}>

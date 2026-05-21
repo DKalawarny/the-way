@@ -18,6 +18,7 @@ function TabButton({ tab, active, onClick }) {
         padding: '8px 14px',
         fontSize: 13,
         fontWeight: 600,
+        fontFamily: T.serif,
         cursor: 'pointer',
         whiteSpace: 'nowrap',
         display: 'inline-flex',
@@ -88,7 +89,7 @@ export default function ChurchModeShell({
           </div>
 
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-            <h1 style={{ fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.1, margin: 0 }}>
+            <h1 style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.1, margin: 0 }}>
               {church?.name ?? 'Your church'}
             </h1>
             {church?.city && (

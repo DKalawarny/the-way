@@ -100,13 +100,13 @@ export default function GroupSetup({ session, onJoined, onClose }) {
       <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
         <div style={{ maxWidth: 440, width: '100%', textAlign: 'center' }}>
           <div style={{ fontSize: 11, letterSpacing: 4, color: T.gold, textTransform: 'uppercase', marginBottom: 18, opacity: 0.8 }}>Group created</div>
-          <div style={{ fontFamily: T.display, fontSize: 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 10 }}>{created.group.name}</div>
+          <div style={{ fontFamily: T.serif, fontSize: 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 10 }}>{created.group.name}</div>
           <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.65, marginBottom: 36 }}>
             Share this code with your group members so they can join.
           </div>
           <div style={{ background: 'rgba(184,115,58,0.1)', border: '1px solid rgba(184,115,58,0.35)', borderRadius: 16, padding: '28px 24px', marginBottom: 32 }}>
             <div style={{ fontSize: 11, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', marginBottom: 12, opacity: 0.7 }}>Invite code</div>
-            <div style={{ fontFamily: T.display, fontSize: 44, fontWeight: 600, color: T.ink, letterSpacing: 8 }}>{created.inviteCode}</div>
+            <div style={{ fontFamily: T.serif, fontSize: 44, fontWeight: 600, color: T.ink, letterSpacing: 8 }}>{created.inviteCode}</div>
           </div>
           <button
             onClick={() => navigator.clipboard.writeText(created.inviteCode).catch(() => {})}
@@ -139,7 +139,7 @@ export default function GroupSetup({ session, onJoined, onClose }) {
         >
           ← Back
         </button>
-        <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', flex: 1 }}>Church</div>
+        <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', flex: 1 }}>Church</div>
       </header>
 
       {/* Tabs */}
@@ -161,7 +161,7 @@ export default function GroupSetup({ session, onJoined, onClose }) {
         {/* ── JOIN TAB ── */}
         {tab === 'join' && (
           <>
-            <div style={{ fontFamily: T.display, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.12, marginBottom: 10 }}>Join your group</div>
+            <div style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.12, marginBottom: 10 }}>Join your group</div>
             <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.65, marginBottom: 32 }}>
               Your pastor or group leader will have a 6-character invite code. Enter it below.
             </div>
@@ -195,7 +195,7 @@ export default function GroupSetup({ session, onJoined, onClose }) {
         {tab === 'create' && !selectedPlan && (
           <>
             <div style={{ fontSize: 11, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', marginBottom: 12, opacity: 0.8 }}>Church plans</div>
-            <div style={{ fontFamily: T.display, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.12, marginBottom: 8 }}>Choose your plan</div>
+            <div style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.12, marginBottom: 8 }}>Choose your plan</div>
             <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.6, marginBottom: 28 }}>
               All plans include the full AI companion, group space, weekly focus, and live study sessions.
             </div>
@@ -225,7 +225,7 @@ export default function GroupSetup({ session, onJoined, onClose }) {
                       <div style={{ fontSize: 12, color: T.inkMuted }}>{p.members}</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontFamily: T.display, fontSize: 24, fontWeight: 600, color: T.gold, letterSpacing: '-0.018em' }}>{p.price}</div>
+                      <div style={{ fontFamily: T.serif, fontSize: 24, fontWeight: 600, color: T.gold, letterSpacing: '-0.018em' }}>{p.price}</div>
                       <div style={{ fontSize: 11, color: T.inkMuted }}>CAD / month</div>
                     </div>
                   </div>
@@ -255,7 +255,7 @@ export default function GroupSetup({ session, onJoined, onClose }) {
               </button>
             </div>
 
-            <div style={{ fontFamily: T.display, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.12, marginBottom: 10 }}>Name your group</div>
+            <div style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.12, marginBottom: 10 }}>Name your group</div>
             <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.65, marginBottom: 28 }}>
               You'll get an invite code to share with your members.
             </div>
@@ -313,7 +313,7 @@ export default function GroupSetup({ session, onJoined, onClose }) {
             style={{ background: '#1A0F07', border: '1px solid rgba(184,115,58,0.3)', borderRadius: 20, padding: 32, maxWidth: 400, width: '100%', textAlign: 'center' }}
           >
             <div style={{ fontSize: 11, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', marginBottom: 14, opacity: 0.8 }}>Coming soon</div>
-            <div style={{ fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 12 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 12 }}>
               {plan?.label} — {plan?.price} CAD/mo
             </div>
             <div style={{ fontSize: 14, color: '#4A3828', lineHeight: 1.65, marginBottom: 28 }}>

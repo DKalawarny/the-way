@@ -336,7 +336,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
             }}>
               <div style={{
                 position: 'absolute', left: -8, top: -6,
-                fontFamily: T.display, fontSize: 36, lineHeight: 1,
+                fontFamily: T.serif, fontSize: 36, lineHeight: 1,
                 color: kindTint('verse').rail, opacity: 0.35,
                 fontWeight: 700,
               }}>“</div>
@@ -749,7 +749,7 @@ function FeaturedThread({ thread, onRespond, tabColor = '#B8733A' }) {
             This Week's Thread
           </span>
         </div>
-        <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.cream, letterSpacing: '-0.015em', lineHeight: 1.2, marginBottom: 14 }}>
+        <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.cream, letterSpacing: '-0.015em', lineHeight: 1.2, marginBottom: 14 }}>
           {thread.question}
         </div>
         {thread.context && (
@@ -1933,7 +1933,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
                     fontSize: 26, color: SEMANTIC.prayer.text, marginBottom: 18,
                     boxShadow: `0 0 0 8px ${SEMANTIC.prayer.bg}`,
                   }}>🕯️</div>
-                  <div style={{ fontFamily: T.display, fontSize: 24, fontWeight: 600, color: T.ink, marginBottom: 10, letterSpacing: '-0.018em', lineHeight: 1.15 }}>No public prayers yet.</div>
+                  <div style={{ fontFamily: T.serif, fontSize: 24, fontWeight: 600, color: T.ink, marginBottom: 10, letterSpacing: '-0.018em', lineHeight: 1.15 }}>No public prayers yet.</div>
                   <div style={{ fontSize: 15, color: T.inkMuted, lineHeight: 1.6, maxWidth: 360, margin: '0 auto' }}>Share a prayer request and the community will stand with you.</div>
                 </div>
               )}

@@ -36,7 +36,7 @@ export default function StudySession({ sessionId, onBegin }) {
   if (notFound) {
     return (
       <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
-        <div style={{ fontFamily: T.display, fontSize: 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 12 }}>Session ended</div>
+        <div style={{ fontFamily: T.serif, fontSize: 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 12 }}>Session ended</div>
         <div style={{ fontSize: 15, color: T.inkMuted, marginBottom: 32, lineHeight: 1.6 }}>
           This study session has ended or the link is no longer valid.
         </div>
@@ -62,7 +62,7 @@ export default function StudySession({ sessionId, onBegin }) {
       <div style={{ height: 3, background: `linear-gradient(90deg, transparent, ${T.gold}, transparent)` }} />
 
       <header style={{ padding: '14px 20px', background: T.white, borderBottom: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-        <div style={{ fontFamily: T.display, fontSize: 24, fontWeight: 500, color: T.ink, letterSpacing: '-0.025em' }}>kinwove</div>
+        <div style={{ fontFamily: T.serif, fontSize: 24, fontWeight: 500, color: T.ink, letterSpacing: '-0.025em' }}>kinwove</div>
         <div style={{ width: 1, height: 18, background: T.line }} />
         <div style={{ fontSize: 13, color: T.inkMuted }}>Live Group Study</div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -75,7 +75,7 @@ export default function StudySession({ sessionId, onBegin }) {
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
           {messages.length === 0 && (
             <div style={{ textAlign: 'center', padding: '64px 20px' }}>
-              <div style={{ fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 10 }}>
+              <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 10 }}>
                 Waiting for the session to begin…
               </div>
               <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.6 }}>

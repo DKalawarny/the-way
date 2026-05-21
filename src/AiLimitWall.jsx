@@ -258,7 +258,7 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
             borderRadius: 14, padding: '16px 20px', width: '100%', maxWidth: 320,
             textAlign: 'center',
           }}>
-            <div style={{ fontSize: 28, fontWeight: 700, fontFamily: T.display, color: T.ink, letterSpacing: '-0.02em' }}>
+            <div style={{ fontSize: 28, fontWeight: 700, fontFamily: T.serif, color: T.ink, letterSpacing: '-0.02em' }}>
               {TOPUP_PRICE}
             </div>
             <div style={{ fontSize: 13, color: T.inkSoft, marginTop: 2 }}>

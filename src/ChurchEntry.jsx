@@ -34,7 +34,7 @@ export default function ChurchEntry({ churchId, session, onAskAI, onAskSomeone, 
     return (
       <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
         <div style={{ fontSize: 38, marginBottom: 12 }}>⛪</div>
-        <div style={{ fontFamily: T.display, fontSize: 26, color: T.ink, fontWeight: 600, letterSpacing: '-0.018em', lineHeight: 1.15, marginBottom: 10 }}>
+        <div style={{ fontFamily: T.serif, fontSize: 26, color: T.ink, fontWeight: 600, letterSpacing: '-0.018em', lineHeight: 1.15, marginBottom: 10 }}>
           This church isn't live yet.
         </div>
         <div style={{ fontSize: 15, color: T.inkSoft, lineHeight: 1.65, maxWidth: 380, marginBottom: 28 }}>
@@ -69,7 +69,7 @@ export default function ChurchEntry({ churchId, session, onAskAI, onAskSomeone, 
             fontSize: 30, margin: '0 auto 22px',
           }}>⛪</div>
 
-          <h1 style={{ '--i': 1, fontFamily: T.display, fontSize: 34, fontWeight: 600, color: T.ink, margin: '0 0 6px', lineHeight: 1.08, letterSpacing: '-0.022em' }}>
+          <h1 style={{ '--i': 1, fontFamily: T.serif, fontSize: 34, fontWeight: 600, color: T.ink, margin: '0 0 6px', lineHeight: 1.08, letterSpacing: '-0.022em' }}>
             {church.name}
           </h1>
           {subline && (
