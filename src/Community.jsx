@@ -811,13 +811,13 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tab
         position: 'relative',
         background: prayer.is_answered
           ? 'linear-gradient(180deg, #FFF8E8 0%, #F8E9C8 100%)'
-          : 'linear-gradient(180deg, #F4F8F0 0%, #E5EFD9 100%)',
+          : 'linear-gradient(180deg, #FDF6EC 0%, #F5E9D4 100%)',
         borderRadius: 14,
-        border: `1px solid ${prayer.is_answered ? 'rgba(154,99,40,0.32)' : 'rgba(90,128,100,0.28)'}`,
+        border: `1px solid ${prayer.is_answered ? 'rgba(154,99,40,0.32)' : 'rgba(168,120,64,0.28)'}`,
         marginBottom: 22, overflow: 'hidden',
         boxShadow: prayer.is_answered
           ? 'inset 0 2px 4px rgba(154,99,40,0.10), inset 0 -1px 0 rgba(255,255,255,0.6), 0 1px 0 rgba(255,253,247,0.9)'
-          : 'inset 0 2px 4px rgba(90,128,100,0.10), inset 0 -1px 0 rgba(255,255,255,0.6), 0 1px 0 rgba(255,253,247,0.9)',
+          : 'inset 0 2px 4px rgba(168,120,64,0.10), inset 0 -1px 0 rgba(255,255,255,0.6), 0 1px 0 rgba(255,253,247,0.9)',
       }}>
         {/* Semantic accent rail — sage for prayer, gold for answered */}
         <div style={{
@@ -1843,13 +1843,13 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
                       </div>
                       <div style={{
                         flex: 1, minWidth: 0,
-                        background: 'linear-gradient(180deg, #F4F8F0 0%, #E5EFD9 100%)',
+                        background: 'linear-gradient(180deg, #FDF6EC 0%, #F5E9D4 100%)',
                         border: `1px solid ${SEMANTIC.prayer.line}`,
                         borderRadius: 999, padding: '11px 16px',
                         fontSize: 14.5, fontFamily: T.serif, fontStyle: 'italic',
                         color: '#5a6b58',
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        boxShadow: 'inset 0 2px 4px rgba(90,128,100,0.10), inset 0 -1px 0 rgba(255,255,255,0.6)',
+                        boxShadow: 'inset 0 2px 4px rgba(168,120,64,0.10), inset 0 -1px 0 rgba(255,255,255,0.6)',
                       }}>
                         <span>Share a prayer request…</span>
                         <span style={{
@@ -1858,17 +1858,17 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
                           borderRadius: '50%',
                           background: SEMANTIC.prayer.rail,
                           color: T.cream, fontSize: 14,
-                          boxShadow: '0 2px 6px rgba(90,128,100,0.30)',
+                          boxShadow: '0 2px 6px rgba(168,120,64,0.30)',
                         }}>🙏</span>
                       </div>
                     </button>
                   ) : (
                     <form onSubmit={submitPrayer} style={{
                       display: 'flex', gap: 12, alignItems: 'flex-start',
-                      background: 'linear-gradient(180deg, #F4F8F0 0%, #E5EFD9 100%)',
+                      background: 'linear-gradient(180deg, #FDF6EC 0%, #F5E9D4 100%)',
                       border: `1px solid ${SEMANTIC.prayer.line}`,
                       borderRadius: 14, padding: '14px',
-                      boxShadow: 'inset 0 2px 4px rgba(90,128,100,0.08), inset 0 -1px 0 rgba(255,255,255,0.6)',
+                      boxShadow: 'inset 0 2px 4px rgba(168,120,64,0.08), inset 0 -1px 0 rgba(255,255,255,0.6)',
                     }}>
                       <div style={{
                         borderRadius: '50%',
