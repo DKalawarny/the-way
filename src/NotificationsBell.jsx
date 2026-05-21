@@ -191,7 +191,7 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
     // Mobile: clear the safe-area notch
     top: isDesktop ? 6 : 'calc(env(safe-area-inset-top, 0px) + 10px)',
     width: 44, height: 44, borderRadius: '50%',
-    background: T.white, border: `1px solid ${T.line}`,
+    background: T.cream, border: `1px solid rgba(26,17,8,0.08)`,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     cursor: 'pointer', zIndex: 160,
     boxShadow: '0 2px 8px rgba(44,24,16,0.10)',

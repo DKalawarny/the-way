@@ -662,15 +662,16 @@ export default function ChurchPage({
               <div style={{ marginBottom: 28 }}>
                 {/* Primary action */}
                 {onOpenTalkToSomeone && (
-                  <div style={{ textAlign: 'center', marginBottom: 14 }}>
+                  <div style={{ textAlign: 'center', marginBottom: 16 }}>
                     <button
                       onClick={onOpenTalkToSomeone}
                       style={{
                         background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
-                        padding: '11px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                        boxShadow: '0 4px 12px rgba(168,85,48,0.22)',
+                        padding: '15px 44px', fontSize: 15, fontWeight: 600, cursor: 'pointer',
+                        boxShadow: '0 4px 16px rgba(168,85,48,0.28)',
+                        letterSpacing: '-0.01em',
                       }}
-                    >✉️ Message the team</button>
+                    >Message the team</button>
                   </div>
                 )}
                 {/* Secondary actions */}

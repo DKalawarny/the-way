@@ -1396,15 +1396,16 @@ function SidebarNav({ stage, session, profile, chatOpen,
 
   const itemSt = (id) => ({
     display: 'flex', alignItems: 'center', gap: 12,
-    padding: '11px 16px 11px 14px',
+    padding: '10px 14px',
     cursor: 'pointer', background: 'none', border: 'none', width: '100%',
     textAlign: 'left', fontFamily: T.sans, outline: 'none',
-    color: active === id ? sc(id) : T.inkMuted,
-    borderLeft: `3px solid ${active === id ? sc(id) : 'transparent'}`,
-    backgroundColor: active === id ? `${sc(id)}12` : 'transparent',
-    transition: 'color 0.15s, background-color 0.15s, border-color 0.15s',
-    borderRadius: '0 8px 8px 0',
-    marginRight: 8,
+    color: active === id ? T.ink : T.inkSoft,
+    borderLeft: 'none',
+    backgroundColor: active === id ? T.white : 'transparent',
+    transition: 'color 0.15s, background-color 0.15s',
+    borderRadius: 10,
+    marginRight: 8, marginLeft: 8,
+    boxShadow: active === id ? '0 1px 4px rgba(26,17,8,0.08)' : 'none',
   });
 
   const labelSt = (id) => ({
@@ -1414,12 +1415,12 @@ function SidebarNav({ stage, session, profile, chatOpen,
   // Muted non-active item (Settings, etc.)
   const mutedItemSt = {
     display: 'flex', alignItems: 'center', gap: 12,
-    padding: '11px 16px 11px 14px',
+    padding: '10px 14px',
     cursor: 'pointer', background: 'none', border: 'none', width: '100%',
     textAlign: 'left', fontFamily: T.sans, outline: 'none',
-    color: T.inkMuted, borderLeft: '3px solid transparent',
+    color: T.inkMuted, borderLeft: 'none',
     transition: 'color 0.15s, background-color 0.15s',
-    borderRadius: '0 8px 8px 0', marginRight: 8,
+    borderRadius: 10, marginRight: 8, marginLeft: 8,
   };
 
   // Settings menu items — mirrors TopRightMenu but lives in sidebar
@@ -1444,7 +1445,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
   return (
     <div style={{
       position: 'fixed', top: 56, left: 0, bottom: 0, width: 240,
-      background: T.white, borderRight: `1px solid ${T.line}`,
+      background: T.cream, borderRight: `1px solid ${T.line}`,
       display: 'flex', flexDirection: 'column', zIndex: 100,
       boxShadow: '1px 0 12px rgba(44,24,16,0.05)',
     }}>
@@ -1452,57 +1453,39 @@ function SidebarNav({ stage, session, profile, chatOpen,
       {/* Primary nav items — no logo here; AppHeader owns the brand */}
       <nav style={{ flex: 1, padding: '8px 0', overflowY: 'auto' }}>
 
-        {/* Ask — gold featured item, top of sidebar */}
+        {/* Ask — top of sidebar */}
         <button onClick={onToggleChat} style={{
           display: 'flex', alignItems: 'center', gap: 12,
-          padding: '11px 16px 11px 14px',
+          padding: '10px 14px',
           cursor: 'pointer', background: 'none', border: 'none', width: '100%',
           textAlign: 'left', fontFamily: T.sans, outline: 'none',
-          color: chatOpen ? T.goldDark : T.inkSoft,
-          borderLeft: `3px solid ${chatOpen ? T.gold : 'transparent'}`,
-          backgroundColor: chatOpen ? 'rgba(184,115,58,0.08)' : 'transparent',
-          transition: 'color 0.15s, background-color 0.15s, border-color 0.15s',
-          borderRadius: '0 8px 8px 0',
-          marginRight: 8,
+          color: chatOpen ? T.ink : T.inkSoft,
+          borderLeft: 'none',
+          backgroundColor: chatOpen ? T.white : 'transparent',
+          transition: 'color 0.15s, background-color 0.15s',
+          borderRadius: 10,
+          marginRight: 8, marginLeft: 8,
+          boxShadow: chatOpen ? '0 1px 4px rgba(26,17,8,0.08)' : 'none',
         }}>
-          <span style={{
-            width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            background: chatOpen
-              ? 'radial-gradient(circle, rgba(184,115,58,0.28) 0%, rgba(184,115,58,0.08) 60%, transparent 100%)'
-              : 'radial-gradient(circle, rgba(184,115,58,0.16) 0%, rgba(184,115,58,0.04) 60%, transparent 100%)',
-          }}>
-            <KinwoveStar size={16} color={chatOpen ? T.goldDark : T.gold} style={{ filter: chatOpen ? 'drop-shadow(0 0 7px rgba(168,85,48,0.75))' : 'drop-shadow(0 0 5px rgba(168,85,48,0.50))' }} />
-          </span>
-          <span style={{ fontSize: 13.5, fontWeight: chatOpen ? 600 : 500, color: chatOpen ? T.goldDark : T.inkSoft }}>Ask</span>
+          <span style={{ fontSize: 15, flexShrink: 0, width: 20, textAlign: 'center', lineHeight: 1 }}>+</span>
+          <span style={{ fontSize: 13.5, fontWeight: chatOpen ? 600 : 450 }}>Ask</span>
         </button>
 
         {/* Feed */}
         <button onClick={onGoHome} style={itemSt('home')}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-            <polyline points="9 22 9 12 15 12 15 22"/>
-          </svg>
+          <span style={{ fontSize: 17, flexShrink: 0, width: 20, textAlign: 'center', lineHeight: 1 }}>🏠</span>
           <span style={labelSt('home')}>Feed</span>
         </button>
 
         {/* Church */}
         <button onClick={onGoChurch} style={itemSt('church')}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-          </svg>
+          <span style={{ fontSize: 17, flexShrink: 0, width: 20, textAlign: 'center', lineHeight: 1 }}>👥</span>
           <span style={labelSt('church')}>Church</span>
         </button>
 
         {/* Bible */}
         <button onClick={onGoRead} style={itemSt('read')}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-          </svg>
+          <span style={{ fontSize: 17, flexShrink: 0, width: 20, textAlign: 'center', lineHeight: 1 }}>📖</span>
           <span style={labelSt('read')}>Bible</span>
         </button>
 
@@ -1528,10 +1511,11 @@ function SidebarNav({ stage, session, profile, chatOpen,
           style={{
             ...mutedItemSt,
             color: settingsOpen ? T.ink : T.inkMuted,
-            backgroundColor: settingsOpen ? 'rgba(44,24,16,0.05)' : 'transparent',
+            backgroundColor: settingsOpen ? T.white : 'transparent',
+            boxShadow: settingsOpen ? '0 1px 4px rgba(26,17,8,0.08)' : 'none',
           }}
         >
-          <SettingsIcon size={18} strokeWidth={1.75} style={{ flexShrink: 0, opacity: 0.65 }} />
+          <span style={{ fontSize: 16, flexShrink: 0, width: 20, textAlign: 'center', lineHeight: 1 }}>⚙</span>
           <span style={{ fontSize: 13.5, fontWeight: settingsOpen ? 600 : 450, letterSpacing: 0.05 }}>Settings</span>
         </button>
       </div>

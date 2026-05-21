@@ -1523,7 +1523,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
         );
       })()}
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 90px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px 90px' }}>
         <div style={{ maxWidth: 740, margin: '0 auto' }}>
 
           {/* Compose pill — first item in the feed column. Tapping it expands
