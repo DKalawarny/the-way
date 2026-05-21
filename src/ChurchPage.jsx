@@ -506,16 +506,17 @@ export default function ChurchPage({
       {chromeless && (
         <>
           <div style={{
-            height: 140,
+            height: 200,
             background: churchBannerBg(church),
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             overflow: 'hidden', position: 'relative',
           }}>
             <div style={{
-              width: 80, height: 80, borderRadius: '50%',
+              width: 116, height: 116, borderRadius: '50%',
               background: 'rgba(255,255,255,0.15)',
+              border: '3px solid rgba(255,255,255,0.25)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 40, overflow: 'hidden',
+              fontSize: 52, overflow: 'hidden',
             }}>
               {church.avatar_url
                 ? <img src={church.avatar_url} alt={church.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

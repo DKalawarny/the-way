@@ -88,8 +88,8 @@ export default function ChurchModeShell({
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
-            <h1 style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.1, margin: 0 }}>
+          <div style={{ textAlign: 'center', marginBottom: 12 }}>
+            <h1 style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 4px' }}>
               {church?.name ?? 'Your church'}
             </h1>
             {church?.city && (
@@ -97,7 +97,7 @@ export default function ChurchModeShell({
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, overflowX: 'auto', paddingBottom: 10 }}>
             {TABS.map((t) => (
               <TabButton
                 key={t.id}
