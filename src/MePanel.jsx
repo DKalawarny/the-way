@@ -999,7 +999,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
         </div></div>
 
         {/* Hero cover */}
-        <div style={{ background: T.white, marginBottom: 10 }}>
+        <div style={{ background: T.cream, marginBottom: 10 }}>
           <div style={{ position: 'relative' }}>
             {/* Banner strip */}
             <div style={{
@@ -1023,7 +1023,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
             </div>
             {/* Colour picker panel */}
             {bannerPickerOpen && (
-              <div style={{ background: T.white, borderBottom: `1px solid ${T.line}`, padding: '14px 16px' }}>
+              <div style={{ background: T.cream, borderBottom: `1px solid ${T.line}`, padding: '14px 16px' }}>
                 <div style={{ fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 10 }}>Choose a colour</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {BANNER_PRESETS.map((p) => {
@@ -1217,7 +1217,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
         {/* Tabs — 4 tabs, gold accent, hairline anchor */}
         <div style={{
           display: 'flex',
-          background: T.white,
+          background: T.cream,
           borderBottom: `1px solid ${T.line}`,
           marginBottom: 12,
         }}>

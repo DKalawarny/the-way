@@ -387,9 +387,9 @@ export default function ChurchPage({
         </div>
       )}
 
-      {/* Sanctuary-doorway hero — flows directly from the global dark header.
-          Back + Share are overlaid at top so there's no white strip break. */}
-      <div style={{
+      {/* Sanctuary-doorway hero — shown to visitors/non-members. In chromeless
+          (pastor's own view) ChurchModeShell already provides the dark header. */}
+      {!chromeless && <div style={{
         position: 'relative',
         background: churchBannerBg(church),
         borderRadius: '0 0 28px 28px',
@@ -524,11 +524,11 @@ export default function ChurchPage({
           )}
 
         </div>
-      </div>
+      </div>}
 
       <div style={{
         position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 4,
-        background: T.white,
+        background: T.cream,
         borderBottom: `1px solid ${T.line}`,
         display: 'flex',
       }}>
