@@ -20,11 +20,9 @@ export default function JoinByCode({ session, profile, onJoined, prefilledCode =
     setBusy(true);
     setError(null);
 
-    const { data: ch, error: lookupErr } = await supabase
-      .from('churches')
-      .select('id, name')
-      .eq('invite_code', cleaned)
-      .maybeSingle();
+    const { data: rows, error: lookupErr } = await supabase
+      .rpc('church_by_invite_code', { p_code: cleaned });
+    const ch = rows?.[0] ?? null;
 
     if (lookupErr || !ch) {
       setBusy(false);

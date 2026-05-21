@@ -1090,6 +1090,22 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
     supabase.from('sponsored_posts').select('*').eq('is_active', true).order('sort_order')
       .then(({ data }) => setSponsors(data ?? []));
   }, []);
+  const [suggestedPeople, setSuggestedPeople] = useState([]);
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    const uid = session.user.id;
+    if (!profile?.church_id && !profile?.tradition) return;
+    const conditions = [];
+    if (profile.church_id) conditions.push(`church_id.eq.${profile.church_id}`);
+    if (profile.tradition) conditions.push(`tradition.eq."${profile.tradition.replace(/"/g, '')}"`);
+    supabase
+      .from('profiles')
+      .select('id, display_name, city, country, tradition, person_type, avatar_config, avatar_url')
+      .neq('id', uid)
+      .or(conditions.join(','))
+      .limit(15)
+      .then(({ data }) => setSuggestedPeople(data ?? []));
+  }, [session?.user?.id, profile?.church_id, profile?.tradition]);
   const [qotd, setQotd] = useState(null);
   useEffect(() => {
     if (!profile?.church_id) return;
@@ -1421,6 +1437,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
       }}>
         {[
           { id: 'posts',      label: '📝 Posts'     },
+          { id: 'following',  label: '👥 Following'  },
           { id: 'prayers',    label: '🙏 Prayers'   },
           { id: 'milestones', label: '✦ Milestones' },
         ].map(t => {
@@ -1447,7 +1464,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
       {/* Persona filter — collapsed behind a toggle so the tabs breathe.
           Active filter pill is summarized in the toggle label so the user
           always sees what's filtered without expanding. */}
-      {feedType === 'posts' && (() => {
+      {(feedType === 'posts') && (() => {
         const activePersona = filter === 'all'
           ? null
           : PERSON_TYPES.find((p) => p.id === filter);
@@ -1751,10 +1768,116 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
                             {...sponsors[Math.floor(i / 10) % sponsors.length]}
                           />
                         )}
+                        {i === 3 && session && (() => {
+                          const suggestions = suggestedPeople
+                            .filter((sp) => !following.has(sp.id) && !blockedIds.includes(sp.id))
+                            .slice(0, 4);
+                          if (!suggestions.length) return null;
+                          return (
+                            <div key="suggested-people" style={{
+                              margin: '12px 0',
+                              background: T.white,
+                              border: `1px solid ${T.line}`,
+                              borderRadius: 16,
+                              padding: '16px 18px',
+                            }}>
+                              <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.gold, fontWeight: 700, marginBottom: 14 }}>
+                                People you might know
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                {suggestions.map((sp) => (
+                                  <div key={sp.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                    <button
+                                      onClick={() => onViewProfile?.(sp.id)}
+                                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }}
+                                    >
+                                      <Avatar name={sp.display_name} avatarConfig={sp.avatar_config} photoUrl={sp.avatar_url} size={38} />
+                                    </button>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <button
+                                        onClick={() => onViewProfile?.(sp.id)}
+                                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
+                                      >
+                                        <div style={{ fontWeight: 600, fontSize: 14, color: T.ink }}>{sp.display_name}</div>
+                                        {sp.tradition && <div style={{ fontSize: 12, color: T.inkMuted }}>{sp.tradition}</div>}
+                                      </button>
+                                    </div>
+                                    <button
+                                      onClick={() => handleFollow(sp.id, false)}
+                                      style={{
+                                        background: 'rgba(184,115,58,0.08)',
+                                        color: T.gold, border: '1px solid rgba(184,115,58,0.30)',
+                                        borderRadius: 999, padding: '6px 14px',
+                                        fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0,
+                                      }}
+                                    >
+                                      + Follow
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
                         {i < filtered.length - 1 && <CardSeparator />}
                       </Fragment>
                     ));
                   })()}
+                </div>
+              </>
+            );
+          })()}
+
+          {/* ── Following feed ── */}
+          {feedType === 'following' && (() => {
+            if (following.size === 0) {
+              return (
+                <EmptyState
+                  icon="👥"
+                  title="Nobody followed yet."
+                  body="Follow people from the Posts feed and their posts will appear here."
+                />
+              );
+            }
+            const followed = posts
+              .filter((p) => following.has(p.author_id))
+              .filter((p) => !blockedIds.includes(p.author_id));
+            return (
+              <>
+                {loading && <div style={{ textAlign: 'center', color: T.inkMuted, padding: 40, fontFamily: T.serif, fontSize: 16 }}>Loading…</div>}
+                {!loading && followed.length === 0 && (
+                  <EmptyState
+                    icon="👥"
+                    title="Nothing from your following yet."
+                    body="The people you follow haven't posted publicly. Check back soon."
+                  />
+                )}
+                <div className="stagger-in">
+                  {followed.map((p, i) => (
+                    <Fragment key={`post:${p.id}`}>
+                      <PostCard
+                        post={p}
+                        index={Math.min(i, 6)}
+                        session={session}
+                        currentUserId={session?.user?.id}
+                        userProfile={profile}
+                        userGroup={userGroup}
+                        onReact={handleReact}
+                        onReplySubmit={handleReply}
+                        onRepost={handleRepost}
+                        isFollowing={true}
+                        onFollow={handleFollow}
+                        onViewProfile={onViewProfile}
+                        tabColor={TAB_COLOR}
+                        tabText={TAB_TEXT}
+                        isSaved={savedPostIds.has(p.id)}
+                        onSaveToggle={session ? handleSaveToggle : undefined}
+                        isAuthorBlocked={blockedIds.includes(p.author_id)}
+                        onBlockAuthor={session ? handleBlockAuthor : undefined}
+                      />
+                      {i < followed.length - 1 && <CardSeparator />}
+                    </Fragment>
+                  ))}
                 </div>
               </>
             );

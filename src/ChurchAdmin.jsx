@@ -44,150 +44,31 @@ function buildAnnouncementText(churchName, link) {
   ].join('\n');
 }
 
-function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUpdate, onTransferComplete, pendingAction, onActionConsumed }) {
-  const { showToast, ui: uikitUi } = useUiKit();
-  const publicUrl = typeof window !== 'undefined' && church?.id
-    ? `${window.location.origin}/?church=${church.id}`
-    : '';
-
-  // Church photo upload
-  const [avatarUploading, setAvatarUploading] = useState(false);
-
-  async function uploadChurchPhoto(file) {
-    if (!file || !churchId) return;
-    if (!file.type.startsWith('image/')) { showToast('Please pick an image file.', 'error'); return; }
-    if (file.size > 5 * 1024 * 1024) { showToast('Image must be under 5 MB.', 'error'); return; }
-    setAvatarUploading(true);
-    const ext = file.name.split('.').pop() || 'jpg';
-    const path = `${churchId}/avatar.${ext}`;
-    const { error: upErr } = await supabase.storage
-      .from('church-avatars')
-      .upload(path, file, { upsert: true, contentType: file.type });
-    if (upErr) { showToast(`Upload failed: ${upErr.message}`, 'error'); setAvatarUploading(false); return; }
-    const { data: { publicUrl: url } } = supabase.storage.from('church-avatars').getPublicUrl(path);
-    const busted = `${url}?t=${Date.now()}`;
-    const { error: dbErr } = await supabase.from('churches').update({ avatar_url: busted }).eq('id', churchId);
-    setAvatarUploading(false);
-    if (dbErr) { showToast(`Couldn't save: ${dbErr.message}`, 'error'); return; }
-    onChurchUpdate?.({ avatar_url: busted });
-    showToast('Church photo updated.', 'success');
-  }
-
-  // Ownership transfer
-  const [transferOpen, setTransferOpen]       = useState(false);
-  const [transferSearch, setTransferSearch]   = useState('');
-  const [transferResults, setTransferResults] = useState([]);
-  const [transferTarget, setTransferTarget]   = useState(null);
-  const [transferConfirm, setTransferConfirm] = useState(false);
-  const [transferBusy, setTransferBusy]       = useState(false);
-  const [transferError, setTransferError]     = useState(null);
-
-  useEffect(() => {
-    if (!transferSearch.trim() || !churchId) { setTransferResults([]); return; }
-    const t = setTimeout(async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, display_name')
-        .eq('church_id', churchId)
-        .neq('id', session?.user?.id ?? '')
-        .ilike('display_name', `%${transferSearch.trim()}%`)
-        .limit(8);
-      setTransferResults(data ?? []);
-    }, 250);
-    return () => clearTimeout(t);
-  }, [transferSearch, churchId, session?.user?.id]);
-
-  function openTransfer() {
-    setTransferSearch(''); setTransferResults([]);
-    setTransferTarget(null); setTransferConfirm(false);
-    setTransferError(null); setTransferOpen(true);
-  }
-
-  async function executeTransfer() {
-    if (!transferTarget || !churchId || !session?.user?.id) return;
-    setTransferBusy(true); setTransferError(null);
-    const userId = session.user.id;
-
-    // 1. Upsert new owner row (insert or update existing staff row)
-    const { error: e1 } = await supabase.from('church_roles').upsert({
-      church_id: churchId, user_id: transferTarget.id,
-      role_key: 'owner', role_title: 'Lead Pastor', is_owner: true,
-      can_post_sermons: true, can_post_announcements: true,
-      can_moderate: true, can_view_prayers: true,
-      can_manage_staff: true, can_edit_church: true,
-    }, { onConflict: 'church_id,user_id,role_key' });
-
-    if (e1) { setTransferError(e1.message); setTransferBusy(false); return; }
-
-    // 2. Demote current owner — keep them as staff, strip owner flag
-    const { error: e2 } = await supabase
-      .from('church_roles')
-      .update({ is_owner: false, role_key: 'staff' })
-      .eq('church_id', churchId)
-      .eq('user_id', userId)
-      .eq('is_owner', true);
-
-    setTransferBusy(false);
-    if (e2) { setTransferError(e2.message); return; }
-
-    // 3. Update display pastor_id on the church record
-    await supabase.from('churches').update({ pastor_id: transferTarget.id }).eq('id', churchId);
-
-    setTransferOpen(false);
-    onTransferComplete?.();
-  }
-
-  // Membership approval toggle
-  const [openJoin, setOpenJoin]     = useState(church?.open_join ?? true);
-  const [savingJoin, setSavingJoin] = useState(false);
-
-  async function saveOpenJoin(val) {
-    setSavingJoin(true);
-    const { error } = await supabase.from('churches').update({ open_join: val }).eq('id', churchId);
-    setSavingJoin(false);
-    if (error) { showToast(`Couldn't save: ${error.message}`, 'error'); return; }
-    setOpenJoin(val);
-    onChurchUpdate?.({ open_join: val });
-    showToast(val ? 'Open joining on — no approval needed.' : 'Approval required for new members.', 'success');
-  }
+function EngageCards({ church, churchId, session, onChurchUpdate }) {
+  const { showToast } = useUiKit();
 
   // Question of the Day
   const [qotdDraft, setQotdDraft]   = useState(church?.question_of_day ?? '');
   const [savingQotd, setSavingQotd] = useState(false);
-
   useEffect(() => { setQotdDraft(church?.question_of_day ?? ''); }, [church?.question_of_day]);
 
   async function saveQotd() {
     if (!churchId || !qotdDraft.trim()) return;
     setSavingQotd(true);
     const question = qotdDraft.trim();
-    const { error } = await supabase
-      .from('churches')
-      .update({
-        question_of_day: question,
-        question_of_day_set_at: new Date().toISOString(),
-        question_of_day_set_by: session?.user?.id,
-      })
-      .eq('id', churchId);
+    const { error } = await supabase.from('churches').update({
+      question_of_day: question,
+      question_of_day_set_at: new Date().toISOString(),
+      question_of_day_set_by: session?.user?.id,
+    }).eq('id', churchId);
     if (error) { showToast(`Couldn't save: ${error.message}`, 'error'); setSavingQotd(false); return; }
-
-    // Notify all church members (excluding current user)
-    const { data: members } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('church_id', churchId)
-      .neq('id', session?.user?.id ?? '');
+    const { data: members } = await supabase.from('profiles').select('id').eq('church_id', churchId).neq('id', session?.user?.id ?? '');
     if (members?.length) {
-      await supabase.from('notifications').insert(
-        members.map(m => ({
-          recipient_id: m.id,
-          actor_id: session?.user?.id,
-          kind: 'church_question_of_day',
-          data: { church_id: churchId, question },
-        }))
-      );
+      await supabase.from('notifications').insert(members.map(m => ({
+        recipient_id: m.id, actor_id: session?.user?.id,
+        kind: 'church_question_of_day', data: { church_id: churchId, question },
+      })));
     }
-
     onChurchUpdate?.({ question_of_day: question, question_of_day_set_at: new Date().toISOString() });
     setSavingQotd(false);
     showToast('Question set \u2014 your church has been notified.', 'success');
@@ -195,56 +76,19 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
 
   async function clearQotd() {
     if (!churchId) return;
-    const { error } = await supabase
-      .from('churches')
-      .update({ question_of_day: null, question_of_day_set_at: null, question_of_day_set_by: null })
-      .eq('id', churchId);
+    const { error } = await supabase.from('churches').update({ question_of_day: null, question_of_day_set_at: null, question_of_day_set_by: null }).eq('id', churchId);
     if (error) { showToast(`Couldn't clear: ${error.message}`, 'error'); return; }
     setQotdDraft('');
     onChurchUpdate?.({ question_of_day: null, question_of_day_set_at: null });
     showToast('Question cleared.', 'success');
   }
 
-  // Welcome-note editor — moved here from ChurchPage so the public page is
-  // truly visitor-only. Pastor edits live in admin; the public page just shows.
-  const [pinDraft, setPinDraft]   = useState(church?.pinned_post ?? '');
-  const [savingPin, setSavingPin] = useState(false);
-  const [showQr, setShowQr]       = useState(false);
-  const [copied, setCopied]       = useState(false);
-  const [announceCopied, setAnnounceCopied] = useState(false);
-  const [downloadingQr, setDownloadingQr]   = useState(false);
-
-  // Setup checklist deep-link: "Print your QR code" routes here AND asks us
-  // to open the QR modal directly. Without this, the pastor lands on Settings
-  // and has to click QR again — friction at the moment that matters most
-  // (sharing with their congregation Sunday morning).
-  useEffect(() => {
-    if (pendingAction === 'open-qr') {
-      setShowQr(true);
-      onActionConsumed?.();
-    }
-  }, [pendingAction, onActionConsumed]);
-
-  // Visit-info editor (service times + street address). Optional; both null
-  // by default. Renders as a single row on the public page when present.
-  const [serviceDraft, setServiceDraft] = useState(church?.service_info ?? '');
-  const [addressDraft, setAddressDraft] = useState(church?.street_address ?? '');
-  const [savingVisit, setSavingVisit]   = useState(false);
-
-  // Countries we serve — up to 2 ISO codes.
-  const [countriesDraft, setCountriesDraft] = useState(church?.countries_open_to ?? []);
-  const [savingCountries, setSavingCountries] = useState(false);
-  const countriesDirty = JSON.stringify(countriesDraft) !== JSON.stringify(church?.countries_open_to ?? []);
-
+  // Featured Walk
   const [walks, setWalks] = useState([]);
   const [savingFeatured, setSavingFeatured] = useState(false);
   useEffect(() => {
     let cancelled = false;
-    supabase
-      .from('walks')
-      .select('id, title, subtitle, cover_emoji, length_days, sort_order')
-      .eq('is_published', true)
-      .order('sort_order', { ascending: true })
+    supabase.from('walks').select('id, title, subtitle, cover_emoji, length_days, sort_order').eq('is_published', true).order('sort_order', { ascending: true })
       .then(({ data }) => { if (!cancelled) setWalks(data ?? []); });
     return () => { cancelled = true; };
   }, []);
@@ -252,570 +96,15 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
   async function setFeaturedWalk(nextId) {
     if (!churchId) return;
     setSavingFeatured(true);
-    const { error } = await supabase
-      .from('churches')
-      .update({ featured_walk_id: nextId })
-      .eq('id', churchId);
+    const { error } = await supabase.from('churches').update({ featured_walk_id: nextId }).eq('id', churchId);
     setSavingFeatured(false);
     if (error) { showToast(`Couldn't save: ${error.message}`, 'error'); return; }
     onChurchUpdate?.({ featured_walk_id: nextId });
-    showToast(nextId ? 'Featured walk updated.' : 'Featured walk cleared.', 'success');
-  }
-
-  // Keep the drafts in sync if the parent's church state hot-swaps under us.
-  useEffect(() => { setPinDraft(church?.pinned_post ?? ''); }, [church?.pinned_post]);
-  useEffect(() => { setServiceDraft(church?.service_info ?? ''); }, [church?.service_info]);
-  useEffect(() => { setAddressDraft(church?.street_address ?? ''); }, [church?.street_address]);
-  useEffect(() => { setCountriesDraft(church?.countries_open_to ?? []); }, [church?.countries_open_to]);
-
-  const dirty      = (pinDraft.trim() || '') !== (church?.pinned_post ?? '');
-  const visitDirty = (serviceDraft.trim() || '') !== (church?.service_info ?? '')
-                  || (addressDraft.trim() || '') !== (church?.street_address ?? '');
-
-  async function savePin() {
-    if (!churchId) return;
-    setSavingPin(true);
-    const next = pinDraft.trim() || null;
-    const { error } = await supabase
-      .from('churches')
-      .update({ pinned_post: next })
-      .eq('id', churchId);
-    setSavingPin(false);
-    if (error) { showToast(`Couldn't save: ${error.message}`, 'error'); return; }
-    onChurchUpdate?.({ pinned_post: next });
-    showToast('Welcome note saved.', 'success');
-  }
-
-  async function saveVisit() {
-    if (!churchId) return;
-    setSavingVisit(true);
-    const nextService = serviceDraft.trim() || null;
-    const nextAddress = addressDraft.trim() || null;
-    const { error } = await supabase
-      .from('churches')
-      .update({ service_info: nextService, street_address: nextAddress })
-      .eq('id', churchId);
-    setSavingVisit(false);
-    if (error) { showToast(`Couldn't save: ${error.message}`, 'error'); return; }
-    onChurchUpdate?.({ service_info: nextService, street_address: nextAddress });
-    showToast('Visit info saved.', 'success');
-  }
-
-  async function saveCountries() {
-    if (!churchId) return;
-    setSavingCountries(true);
-    const { error } = await supabase
-      .from('churches')
-      .update({ countries_open_to: countriesDraft })
-      .eq('id', churchId);
-    setSavingCountries(false);
-    if (error) { showToast(`Couldn't save: ${error.message}`, 'error'); return; }
-    onChurchUpdate?.({ countries_open_to: countriesDraft });
-    showToast('Countries saved.', 'success');
-  }
-
-  async function copyLink() {
-    if (!publicUrl) return;
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    } catch (_) { /* ignore */ }
-  }
-
-  async function copyAnnouncement() {
-    if (!publicUrl) return;
-    try {
-      await navigator.clipboard.writeText(buildAnnouncementText(church?.name, publicUrl));
-      setAnnounceCopied(true);
-      setTimeout(() => setAnnounceCopied(false), 2200);
-    } catch (_) {
-      showToast("Couldn't copy — long-press to copy manually.", 'error');
-    }
-  }
-
-  // Download the QR as a PNG file. We fetch the quickchart.io image as a
-  // blob (vs. just linking it with a download attribute) so the file lands
-  // in Downloads with a sensible name instead of a random hash. Filename
-  // uses the church's slug so the bulletin folder stays tidy.
-  async function downloadQr() {
-    if (!publicUrl) return;
-    setDownloadingQr(true);
-    try {
-      const res = await fetch(qrUrl(publicUrl));
-      if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
-      const blob = await res.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      const slug = (church?.name || 'church')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '') || 'church';
-      a.href = objectUrl;
-      a.download = `${slug}-qr.png`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      // Revoke the object URL on the next tick so the browser has time to
-      // start the download. (Some browsers cancel the download if revoked
-      // synchronously.)
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
-    } catch (e) {
-      showToast(`Couldn't download — ${e?.message || 'try again'}`, 'error');
-    } finally {
-      setDownloadingQr(false);
-    }
   }
 
   return (
-    <div style={{ display: 'grid', gap: 14 }}>
-      {uikitUi}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '20px 20px 80px', maxWidth: 640, margin: '0 auto' }}>
 
-      {/* ── Church photo ── */}
-      <div style={{
-        background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
-        padding: '16px 18px',
-      }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-          ⛪ Church photo
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: '50%', flexShrink: 0,
-            background: 'rgba(253,248,240,0.06)',
-            border: `2px solid ${T.goldLight}`,
-            overflow: 'hidden',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 32,
-          }}>
-            {church?.avatar_url
-              ? <img src={church.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : '⛪'}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 10 }}>
-              Shows in your banner and directory listing. Square images work best. Max 5 MB.
-            </div>
-            <label style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              background: avatarUploading ? T.parchment : T.ink,
-              color: avatarUploading ? T.inkMuted : T.cream,
-              border: 'none', borderRadius: 999,
-              padding: '8px 16px', fontSize: 13, fontWeight: 600,
-              cursor: avatarUploading ? 'wait' : 'pointer',
-              opacity: avatarUploading ? 0.7 : 1,
-              transition: 'opacity 0.15s',
-            }}>
-              {avatarUploading ? 'Uploading…' : (church?.avatar_url ? 'Change photo' : 'Upload photo')}
-              <input
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                disabled={avatarUploading}
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadChurchPhoto(f); e.target.value = ''; }}
-              />
-            </label>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Banner background ── */}
-      <div style={{
-        background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
-        padding: '16px 18px',
-      }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-          🎨 Banner background
-        </div>
-        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>
-          The colour behind your church name on your public page.
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {CHURCH_BANNER_PRESETS.map((p) => {
-            const active = (church?.banner_preset ?? 'ink') === p.key;
-            return (
-              <button
-                key={p.key}
-                title={p.label}
-                onClick={async () => {
-                  const { error } = await supabase.from('churches').update({ banner_preset: p.key }).eq('id', churchId);
-                  if (!error) onChurchUpdate?.({ banner_preset: p.key });
-                }}
-                style={{
-                  width: 40, height: 40, borderRadius: 10, cursor: 'pointer',
-                  background: p.bg,
-                  border: active ? `2px solid ${T.gold}` : `2px solid transparent`,
-                  outline: active ? `2px solid ${T.goldLight}` : 'none',
-                  outlineOffset: 1,
-                  transition: 'border-color 0.12s',
-                }}
-              />
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Welcome note (formerly inline-edited on the public page) ── */}
-      <div style={{
-        background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
-        padding: '16px 18px',
-      }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-          ✦ Welcome note
-        </div>
-        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 10 }}>
-          A short greeting for visitors and members — appears at the top of your public page. A sentence or two is plenty.
-        </div>
-        <textarea
-          value={pinDraft}
-          onChange={(e) => setPinDraft(e.target.value.slice(0, 500))}
-          placeholder="A welcome note, this week's focus, an invitation…"
-          rows={4}
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 12px',
-            fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.6,
-            background: T.cream, outline: 'none', resize: 'vertical',
-          }}
-        />
-        <div style={{ display: 'flex', alignItems: 'center', marginTop: 10, gap: 8 }}>
-          <span style={{ fontSize: 11.5, color: T.inkMuted }}>
-            {pinDraft.length}/500
-          </span>
-          <div style={{ flex: 1 }} />
-          {dirty && (
-            <button onClick={() => setPinDraft(church?.pinned_post ?? '')} style={{
-              background: 'none', border: `1px solid ${T.line}`, borderRadius: 999,
-              padding: '7px 14px', fontSize: 13, color: T.inkMuted, cursor: 'pointer',
-            }}>Discard</button>
-          )}
-          <button
-            onClick={savePin}
-            disabled={!dirty || savingPin}
-            style={{
-              background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
-              padding: '7px 18px', fontSize: 13, fontWeight: 600,
-              cursor: (!dirty || savingPin) ? 'not-allowed' : 'pointer',
-              opacity: (!dirty || savingPin) ? 0.45 : 1,
-            }}
-          >{savingPin ? 'Saving…' : 'Save'}</button>
-        </div>
-      </div>
-
-      {/* ── Visit info — service times + street address ────────────
-          Both optional. When set, a single line appears on the public page
-          telling first-time visitors when to come and where to drive. */}
-      <div style={{
-        background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
-        padding: '16px 18px',
-      }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-          📍 For visitors
-        </div>
-        <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, marginBottom: 4 }}>
-          Service times &amp; location
-        </div>
-        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>
-          Optional. Anyone scanning your QR sees this so they know when and where to show up.
-        </div>
-
-        <label style={{ display: 'block', fontSize: 12, color: T.inkSoft, fontWeight: 600, marginBottom: 4 }}>
-          When you meet
-        </label>
-        <input
-          type="text"
-          value={serviceDraft}
-          onChange={(e) => setServiceDraft(e.target.value.slice(0, 120))}
-          placeholder="e.g. Sundays · 9am &amp; 11am"
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 12px',
-            fontFamily: T.serif, fontSize: 14, color: T.ink,
-            background: T.cream, outline: 'none', marginBottom: 10,
-          }}
-        />
-
-        <label style={{ display: 'block', fontSize: 12, color: T.inkSoft, fontWeight: 600, marginBottom: 4 }}>
-          Where you meet
-        </label>
-        <input
-          type="text"
-          value={addressDraft}
-          onChange={(e) => setAddressDraft(e.target.value.slice(0, 200))}
-          placeholder="Street address — leave blank if you'd rather not list it"
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 12px',
-            fontFamily: T.serif, fontSize: 14, color: T.ink,
-            background: T.cream, outline: 'none',
-          }}
-        />
-
-        <div style={{ display: 'flex', alignItems: 'center', marginTop: 12, gap: 8 }}>
-          <div style={{ flex: 1 }} />
-          {visitDirty && (
-            <button onClick={() => {
-              setServiceDraft(church?.service_info ?? '');
-              setAddressDraft(church?.street_address ?? '');
-            }} style={{
-              background: 'none', border: `1px solid ${T.line}`, borderRadius: 999,
-              padding: '7px 14px', fontSize: 13, color: T.inkMuted, cursor: 'pointer',
-            }}>Discard</button>
-          )}
-          <button
-            onClick={saveVisit}
-            disabled={!visitDirty || savingVisit}
-            style={{
-              background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
-              padding: '7px 18px', fontSize: 13, fontWeight: 600,
-              cursor: (!visitDirty || savingVisit) ? 'not-allowed' : 'pointer',
-              opacity: (!visitDirty || savingVisit) ? 0.45 : 1,
-            }}
-          >{savingVisit ? 'Saving…' : 'Save'}</button>
-        </div>
-      </div>
-
-      {/* ── Countries we serve ──────────────────────────────────── */}
-      <div style={{
-        background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
-        padding: '16px 18px',
-      }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-          🌍 Countries we serve
-        </div>
-        <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, marginBottom: 4 }}>
-          Countries we serve (up to 2)
-        </div>
-        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>
-          Optional. Shown on your public page to help people from those countries find you.
-        </div>
-        <FlagPicker value={countriesDraft} onChange={setCountriesDraft} />
-        <div style={{ display: 'flex', alignItems: 'center', marginTop: 12, gap: 8 }}>
-          <div style={{ flex: 1 }} />
-          {countriesDirty && (
-            <button onClick={() => setCountriesDraft(church?.countries_open_to ?? [])} style={{
-              background: 'none', border: `1px solid ${T.line}`, borderRadius: 999,
-              padding: '7px 14px', fontSize: 13, color: T.inkMuted, cursor: 'pointer',
-            }}>Discard</button>
-          )}
-          <button
-            onClick={saveCountries}
-            disabled={!countriesDirty || savingCountries}
-            style={{
-              background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
-              padding: '7px 18px', fontSize: 13, fontWeight: 600,
-              cursor: (!countriesDirty || savingCountries) ? 'not-allowed' : 'pointer',
-              opacity: (!countriesDirty || savingCountries) ? 0.45 : 1,
-            }}
-          >{savingCountries ? 'Saving…' : 'Save'}</button>
-        </div>
-      </div>
-
-      {/* ── Public page + share + QR ─────────────────────────────── */}
-      <div style={{
-        background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
-        padding: '16px 18px',
-      }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 8 }}>
-          Public church page
-        </div>
-        <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, marginBottom: 4 }}>
-          {church?.name ?? 'Your church'}
-        </div>
-        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 10 }}>
-          What visitors see when they scan a QR or open a shared link. Preview it, share it, or print a QR for your bulletin.
-        </div>
-        {publicUrl && (
-          <div style={{
-            fontSize: 12, color: T.inkSoft, fontFamily: 'ui-monospace, monospace',
-            background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 8,
-            padding: '8px 10px', marginTop: 8, wordBreak: 'break-all',
-          }}>
-            {publicUrl}
-          </div>
-        )}
-        <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-          <button onClick={onOpenChurchPage} style={{
-            background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
-            padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-          }}>Preview public page →</button>
-          {publicUrl && (
-            <button onClick={copyLink} style={{
-              background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
-              padding: '9px 16px', fontSize: 13, color: T.inkSoft, cursor: 'pointer',
-            }}>{copied ? '✓ Copied' : 'Copy link'}</button>
-          )}
-          {publicUrl && (
-            <button onClick={() => setShowQr(true)} style={{
-              background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
-              padding: '9px 16px', fontSize: 13, color: T.goldDark, fontWeight: 600, cursor: 'pointer',
-            }}>⌘ QR code</button>
-          )}
-        </div>
-      </div>
-
-      {/* ── Featured walk — pick one for the whole church ────────── */}
-      <div style={{
-        background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
-        padding: '16px 18px',
-      }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-          ✶ Featured walk
-        </div>
-        <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, marginBottom: 4 }}>
-          A walk for the whole church
-        </div>
-        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>
-          Pick one walk from the library to highlight on your ChurchHub. Members still pace it privately — you won't see who started or finished. Change or clear anytime.
-        </div>
-
-        <div style={{ display: 'grid', gap: 8 }}>
-          {walks.map((w) => {
-            const active = church?.featured_walk_id === w.id;
-            return (
-              <button
-                key={w.id}
-                onClick={() => setFeaturedWalk(active ? null : w.id)}
-                disabled={savingFeatured}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  textAlign: 'left',
-                  background: active ? T.parchment : T.cream,
-                  border: `1px solid ${active ? T.goldDark : T.line}`,
-                  borderRadius: 12, padding: '10px 12px',
-                  cursor: savingFeatured ? 'wait' : 'pointer',
-                }}
-              >
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: T.white, border: `1px solid ${T.line}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 18, color: T.goldDark, flexShrink: 0,
-                }}>{w.cover_emoji}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, lineHeight: 1.25 }}>{w.title}</div>
-                  {w.subtitle && (
-                    <div style={{ fontSize: 12, color: T.inkSoft, fontStyle: 'italic', lineHeight: 1.4, marginTop: 2 }}>{w.subtitle}</div>
-                  )}
-                  <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 2 }}>{w.length_days}-day walk</div>
-                </div>
-                {active && (
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase',
-                    background: T.goldDark, color: T.cream, borderRadius: 999, padding: '3px 9px',
-                  }}>Featured</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-        {church?.featured_walk_id && (
-          <button
-            onClick={() => setFeaturedWalk(null)}
-            disabled={savingFeatured}
-            style={{
-              marginTop: 10, background: 'none', border: `1px solid ${T.line}`,
-              borderRadius: 999, padding: '7px 14px', fontSize: 12,
-              color: T.inkMuted, cursor: savingFeatured ? 'wait' : 'pointer',
-            }}
-          >Clear featured walk</button>
-        )}
-      </div>
-
-      {/* ── Membership approval ─────────────────────────────────────── */}
-      <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '16px 18px' }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-          👥 Membership
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.ink, marginBottom: 3 }}>
-              Require approval to join
-            </div>
-            <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.55 }}>
-              {openJoin
-                ? 'Anyone can join instantly. Turn this on to review requests before they become members.'
-                : 'New members need your approval. Requests appear in People → Join requests.'}
-            </div>
-          </div>
-          <button
-            onClick={() => !savingJoin && saveOpenJoin(!openJoin)}
-            disabled={savingJoin}
-            style={{
-              width: 44, height: 24, borderRadius: 999, flexShrink: 0,
-              background: openJoin ? T.line : T.goldDark,
-              border: 'none', cursor: savingJoin ? 'wait' : 'pointer',
-              position: 'relative', transition: 'background 0.2s',
-            }}
-          >
-            <div style={{
-              position: 'absolute', top: 3,
-              left: openJoin ? 3 : 23,
-              width: 18, height: 18, borderRadius: '50%',
-              background: '#fff', transition: 'left 0.2s',
-            }} />
-          </button>
-        </div>
-      </div>
-
-      {/* ── Question of the Day ───────────────────────────── */}
-      <div style={{ background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: 14, padding: '16px 18px' }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-          💬 Question of the Day
-        </div>
-        <div style={{ fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.ink, marginBottom: 4 }}>
-          Spark a conversation
-        </div>
-        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>
-          Post a question for your whole church. It appears as a banner in the community feed and members get notified.
-        </div>
-        {church?.question_of_day && (
-          <div style={{
-            fontFamily: T.serif, fontSize: 14, fontStyle: 'italic', color: T.inkSoft,
-            background: 'rgba(184,115,58,0.08)', border: `1px solid rgba(184,115,58,0.18)`,
-            borderRadius: 10, padding: '10px 12px', marginBottom: 12, lineHeight: 1.55,
-          }}>
-            Current: “{church.question_of_day}”
-          </div>
-        )}
-        <textarea
-          value={qotdDraft}
-          onChange={(e) => setQotdDraft(e.target.value.slice(0, 300))}
-          placeholder="Ask your church a question…"
-          rows={3}
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 12px',
-            fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.6,
-            background: T.cream, outline: 'none', resize: 'vertical',
-          }}
-        />
-        <div style={{ fontSize: 11.5, color: T.inkMuted, marginTop: 4, marginBottom: 10 }}>
-          {qotdDraft.length}/300
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          {church?.question_of_day && (
-            <button
-              onClick={clearQotd}
-              style={{
-                background: 'none', border: `1px solid ${T.line}`, borderRadius: 999,
-                padding: '7px 14px', fontSize: 12, color: T.inkMuted, cursor: 'pointer',
-              }}
-            >Clear</button>
-          )}
-          <div style={{ flex: 1 }} />
-          <button
-            onClick={saveQotd}
-            disabled={!qotdDraft.trim() || savingQotd}
-            style={{
-              background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
-              padding: '7px 18px', fontSize: 13, fontWeight: 600,
-              cursor: (!qotdDraft.trim() || savingQotd) ? 'not-allowed' : 'pointer',
-              opacity: (!qotdDraft.trim() || savingQotd) ? 0.45 : 1,
-            }}
-          >{savingQotd ? 'Saving…' : 'Set Question'}</button>
-        </div>
-      </div>
 
       {/* ── Danger zone — ownership transfer ───────────────────────── */}
       <div style={{
@@ -1084,7 +373,6 @@ const FILTERS = [
 function InviteModal({ member, existingRoles, onClose, onSubmit }) {
   const [roleKey, setRoleKey] = useState(INVITABLE_ROLES[0].key);
   const [customLabel, setCustomLabel] = useState('');
-  const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
 
@@ -1101,9 +389,8 @@ function InviteModal({ member, existingRoles, onClose, onSubmit }) {
     setBusy(true);
     const payload = isCustom
       ? { role_key: customLabel.trim().toLowerCase().replace(/\s+/g, '_').slice(0, 32),
-          role_label: customLabel.trim().slice(0, 40),
-          message: message.trim() || null }
-      : { role_key: roleKey, role_label: null, message: message.trim() || null };
+          role_label: customLabel.trim().slice(0, 40) }
+      : { role_key: roleKey, role_label: null };
     const r = await onSubmit(payload);
     setBusy(false);
     if (r?.error) setErr(r.error);
@@ -1119,11 +406,11 @@ function InviteModal({ member, existingRoles, onClose, onSubmit }) {
         padding: 'clamp(20px, 4vw, 26px)', border: `1px solid ${T.line}`,
       }}>
         <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, marginBottom: 6 }}>
-          Invite to a role
+          Assign a role
         </div>
         <p style={{ fontSize: 14, color: T.inkSoft, lineHeight: 1.55, margin: '0 0 14px' }}>
-          {member.display_name ?? 'This member'} will see a banner and can accept or decline.
-          A badge appears next to their name everywhere they show up in the church.
+          <strong>{member.display_name ?? 'This member'}</strong> will be assigned this role immediately.
+          A badge appears next to their name in your church.
         </p>
 
         <div style={{ fontSize: 11.5, letterSpacing: 1.4, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 8 }}>
@@ -1174,23 +461,6 @@ function InviteModal({ member, existingRoles, onClose, onSubmit }) {
           </p>
         )}
 
-        <div style={{ fontSize: 11.5, letterSpacing: 1.4, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 8 }}>
-          Optional note
-        </div>
-        <textarea
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          rows={3}
-          placeholder="Why you'd like them to take this on…"
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 12px',
-            fontSize: 14, fontFamily: T.serif, background: T.white, color: T.ink, outline: 'none',
-            lineHeight: 1.55, resize: 'vertical',
-            marginBottom: 12,
-          }}
-        />
-
         {alreadyHas && (
           <div style={{
             fontSize: 13, color: T.goldDark, padding: '8px 10px', background: T.parchment,
@@ -1218,7 +488,7 @@ function InviteModal({ member, existingRoles, onClose, onSubmit }) {
             background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
             padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
             opacity: (busy || alreadyHas) ? 0.5 : 1,
-          }}>{busy ? 'Sending…' : 'Send invite'}</button>
+          }}>{busy ? 'Assigning…' : 'Assign role'}</button>
         </div>
       </div>
     </div>
@@ -1460,24 +730,17 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
     showToast(`${presetLabel} revoked.`, 'success');
   }
 
-  async function sendInvite({ user_id, role_key, role_label, message }) {
+  async function grantRole({ user_id, role_key, role_label }) {
     const { error } = await supabase
-      .from('church_role_invites')
-      .insert({
+      .from('church_roles')
+      .upsert({
         church_id:  churchId,
         user_id,
         role_key,
         role_label: role_label ?? null,
-        message:    message ?? null,
-        invited_by: session?.user?.id ?? null,
-      });
-    if (error) {
-      // Most likely cause: pending invite already exists for this role
-      if ((error.message || '').includes('church_role_invites_one_pending')) {
-        return { error: 'There is already a pending invite for this role.' };
-      }
-      return { error: error.message };
-    }
+        granted_by: session?.user?.id ?? null,
+      }, { onConflict: 'church_id,user_id,role_key' });
+    if (error) return { error: error.message };
     loadAll();
     return { error: null };
   }
@@ -1736,6 +999,8 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
             <div style={{ color: T.inkMuted, fontStyle: 'italic', padding: 16, lineHeight: 1.6 }}>
               {filter === 'all'
                 ? "No one's joined yet. Share the code above to bring people in."
+                : filter === 'roles' || filter === 'care'
+                ? <span>No one assigned yet. Go to <button onClick={() => {}} style={{ background: 'none', border: 'none', color: T.goldDark, cursor: 'pointer', fontWeight: 600, fontSize: 'inherit', padding: 0, textDecoration: 'underline' }} onClick={() => setFilter('all')}>All members</button> and tap &ldquo;Assign role&rdquo; on someone.</span>
                 : 'Nobody fits this filter yet.'}
             </div>
           ) : (
@@ -1797,7 +1062,7 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
                           background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: 999,
                           padding: '6px 12px', fontSize: 12, color: T.goldDark, cursor: 'pointer', fontWeight: 600,
                         }}>
-                          Invite to role
+                          Assign role
                         </button>
                         <button onClick={() => setRemovingId(m.id)} style={{
                           background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
@@ -1822,7 +1087,7 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
           existingRoles={rolesByUser[invitingMember.id] ?? []}
           onClose={() => setInvitingMember(null)}
           onSubmit={async (payload) => {
-            const r = await sendInvite({ user_id: invitingMember.id, ...payload });
+            const r = await grantRole({ user_id: invitingMember.id, ...payload });
             if (!r.error) setInvitingMember(null);
             return r;
           }}
@@ -1914,7 +1179,7 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
 export default function ChurchAdmin({ session, profile, churchId, onBack, onOpenChurchPage, onOpenChurchHub, onOpenSermon, initialTab }) {
   // Allow deep-links into a specific tab (e.g. ChurchPage's "Edit in Pastor
   // settings" lands on Settings, not Overview). Falls back to overview.
-  const VALID_TABS = ['overview', 'people', 'settings'];
+  const VALID_TABS = ['overview', 'people', 'engage', 'settings'];
   const [tab, setTab] = useState(initialTab && VALID_TABS.includes(initialTab) ? initialTab : 'overview');
   const [church, setChurch] = useState(null);
   const [composerOpen, setComposerOpen] = useState(initialTab === 'sermons');
@@ -1979,6 +1244,14 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
             churchId={churchId}
             onChurchUpdate={(c) => setChurch((prev) => ({ ...prev, ...c }))}
             onShowQr={() => gotoSettings('open-qr')}
+          />
+        )}
+        {tab === 'engage' && (
+          <EngageCards
+            church={church}
+            churchId={churchId}
+            session={session}
+            onChurchUpdate={(c) => setChurch((prev) => ({ ...prev, ...c }))}
           />
         )}
         {tab === 'settings' && (

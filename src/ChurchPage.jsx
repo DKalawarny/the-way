@@ -24,6 +24,7 @@ export default function ChurchPage({
   const [loading, setLoading] = useState(true);
   const [memberCount, setMemberCount] = useState(0);
   const [joining, setJoining] = useState(false);
+  const [leaveConfirm, setLeaveConfirm] = useState(false);
   const [joinRequest, setJoinRequest] = useState(null); // null | 'pending' | 'declined'
   const [copied, setCopied] = useState(false);
   const [latestSermon, setLatestSermon] = useState(null); // newest is_published=true sermon
@@ -265,6 +266,16 @@ export default function ChurchPage({
     }
     onProfileUpdate?.({ ...profile, church_id: churchId });
     setMemberCount((c) => c + 1);
+    // Auto-follow the church so its public posts appear in the user's feed
+    if (!isFollowing) {
+      supabase.from('church_follows').upsert(
+        { church_id: churchId, user_id: session.user.id },
+        { onConflict: 'user_id,church_id' }
+      ).then(() => {
+        setIsFollowing(true);
+        setFollowerCount((c) => c + 1);
+      });
+    }
     showToast("Welcome \u2014 you\u2019re now a member.", 'success');
   }
 
@@ -1134,26 +1145,87 @@ export default function ChurchPage({
             {/* Join / Leave button */}
             {session && !isPastor && (
               <>
-                <button
-                  onClick={isMember ? handleLeave : joinRequest === 'pending' ? undefined : handleJoin}
-                  disabled={joining || joinRequest === 'pending'}
-                  style={{
-                    width: '100%',
-                    background: isMember ? 'transparent' : joinRequest === 'pending' ? T.parchment : T.ink,
-                    color: isMember ? T.inkMuted : joinRequest === 'pending' ? T.inkSoft : T.cream,
-                    border: (isMember || joinRequest === 'pending') ? `1px solid ${T.line}` : 'none',
-                    borderRadius: 999, padding: '13px 20px',
-                    fontSize: 15, fontWeight: 600,
-                    cursor: (joining || joinRequest === 'pending') ? 'not-allowed' : 'pointer',
-                    opacity: joining ? 0.6 : 1, marginBottom: 8,
-                  }}
-                >
-                  {joining ? '…'
-                    : isMember ? '✓ You\u2019re a member'
-                    : joinRequest === 'pending' ? '✉ Request sent — awaiting approval'
-                    : church?.open_join === false ? 'Request to join'
-                    : 'Join this church'}
-                </button>
+                {isMember ? (
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{
+                      width: '100%', textAlign: 'center',
+                      background: 'transparent', border: `1px solid ${T.line}`,
+                      borderRadius: 999, padding: '13px 20px',
+                      fontSize: 15, fontWeight: 600, color: T.inkMuted,
+                      boxSizing: 'border-box',
+                    }}>
+                      ✓ You&rsquo;re a member
+                    </div>
+                    {!leaveConfirm ? (
+                      <button
+                        onClick={() => setLeaveConfirm(true)}
+                        style={{
+                          display: 'block', margin: '10px auto 0',
+                          background: 'none', border: 'none',
+                          color: T.inkMuted, fontSize: 13, cursor: 'pointer',
+                          textDecoration: 'underline', textDecorationColor: 'rgba(0,0,0,0.2)',
+                        }}
+                      >
+                        Leave this church
+                      </button>
+                    ) : (
+                      <div style={{
+                        marginTop: 12, padding: '14px 16px',
+                        background: 'rgba(200,60,60,0.05)',
+                        border: '1px solid rgba(200,60,60,0.18)',
+                        borderRadius: 12, textAlign: 'center',
+                      }}>
+                        <div style={{ fontSize: 14, color: T.ink, marginBottom: 12, lineHeight: 1.5 }}>
+                          Leave <strong>{church?.name}</strong>? You can always rejoin or find another.
+                        </div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button
+                            onClick={() => setLeaveConfirm(false)}
+                            style={{
+                              flex: 1, background: 'transparent', border: `1px solid ${T.line}`,
+                              borderRadius: 999, padding: '10px 0', fontSize: 14,
+                              color: T.inkMuted, cursor: 'pointer', fontWeight: 600,
+                            }}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={async () => { setLeaveConfirm(false); await handleLeave(); onFindChurches?.(); }}
+                            disabled={joining}
+                            style={{
+                              flex: 1, background: 'rgba(200,60,60,0.85)', border: 'none',
+                              borderRadius: 999, padding: '10px 0', fontSize: 14,
+                              color: '#fff', cursor: joining ? 'not-allowed' : 'pointer', fontWeight: 600,
+                              opacity: joining ? 0.6 : 1,
+                            }}
+                          >
+                            {joining ? '…' : 'Leave & find a new church'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={joinRequest === 'pending' ? undefined : handleJoin}
+                    disabled={joining || joinRequest === 'pending'}
+                    style={{
+                      width: '100%',
+                      background: joinRequest === 'pending' ? T.parchment : T.ink,
+                      color: joinRequest === 'pending' ? T.inkSoft : T.cream,
+                      border: joinRequest === 'pending' ? `1px solid ${T.line}` : 'none',
+                      borderRadius: 999, padding: '13px 20px',
+                      fontSize: 15, fontWeight: 600,
+                      cursor: (joining || joinRequest === 'pending') ? 'not-allowed' : 'pointer',
+                      opacity: joining ? 0.6 : 1, marginBottom: 8,
+                    }}
+                  >
+                    {joining ? '…'
+                      : joinRequest === 'pending' ? '✉ Request sent — awaiting approval'
+                      : church?.open_join === false ? 'Request to join'
+                      : 'Join this church'}
+                  </button>
+                )}
 
                 {/* Follow button — non-members only */}
                 {!isMember && joinRequest !== 'pending' && (
