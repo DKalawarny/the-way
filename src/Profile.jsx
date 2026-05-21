@@ -116,7 +116,251 @@ function Toggle({ checked, onChange, label }) {
   );
 }
 
+// ── iPhone-style first-time wizard ───────────────────────────────────────────
+const WIZARD_STEPS = [
+  { key: 'display_name',   question: 'What should we call you?',           hint: 'This is how you\'ll appear to others.' },
+  { key: 'person_type',    question: 'Where are you at right now?',         hint: 'Be honest — there\'s no wrong answer here.' },
+  { key: 'tradition',      question: 'Any tradition you identify with?',    hint: null },
+  { key: 'exploring_since',question: 'How long have you been on this path?',hint: null },
+  { key: 'what_brought',   question: 'What brought you here?',              hint: 'One honest line — or skip.', optional: true },
+];
+
+function WizardDots({ step, total }) {
+  return (
+    <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 40 }}>
+      {Array.from({ length: total }).map((_, i) => (
+        <div key={i} style={{
+          width: i === step ? 20 : 6, height: 6, borderRadius: 999,
+          background: i === step ? T.gold : 'rgba(184,115,58,0.25)',
+          transition: 'all 0.3s',
+        }} />
+      ))}
+    </div>
+  );
+}
+
+function ProfileWizard({ user, existing, onSave }) {
+  const [step, setStep] = useState(0);
+  const [form, setForm] = useState({
+    display_name:    existing?.display_name ?? user?.user_metadata?.display_name ?? '',
+    person_type:     existing?.person_type ?? '',
+    tradition:       existing?.tradition ?? 'Still Discovering',
+    exploring_since: existing?.exploring_since ?? '',
+    what_brought:    existing?.what_brought ?? '',
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError]   = useState(null);
+  const [animDir, setAnimDir] = useState(1);
+
+  const current = WIZARD_STEPS[step];
+  const isLast  = step === WIZARD_STEPS.length - 1;
+
+  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  function canAdvance() {
+    if (current.optional) return true;
+    const v = form[current.key];
+    return v && v !== '';
+  }
+
+  async function advance() {
+    if (!canAdvance() && !current.optional) return;
+    if (isLast) return finish();
+    setAnimDir(1);
+    setStep((s) => s + 1);
+  }
+
+  async function finish() {
+    setSaving(true);
+    setError(null);
+    const payload = {
+      id: user.id,
+      display_name:    form.display_name,
+      person_type:     form.person_type,
+      tradition:       form.tradition,
+      exploring_since: form.exploring_since,
+      what_brought:    form.what_brought,
+      tts_voice:       existing?.tts_voice ?? 'onyx',
+      flags:           existing?.flags ?? [],
+      show_flag:       existing?.show_flag ?? false,
+      preferred_language: existing?.preferred_language ?? (navigator.language?.split('-')[0] ?? 'en'),
+      updated_at: new Date().toISOString(),
+    };
+    const { error: err } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
+    setSaving(false);
+    if (err) return setError(err.message);
+    onSave(payload);
+  }
+
+  return (
+    <div style={{
+      minHeight: '100vh', background: T.cream,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '24px 24px 48px',
+    }}>
+      {/* Wordmark */}
+      <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 500, color: T.ink, letterSpacing: '-0.02em', marginBottom: 48 }}>
+        kinwove
+      </div>
+
+      <div style={{ width: '100%', maxWidth: 480 }}>
+        <WizardDots step={step} total={WIZARD_STEPS.length} />
+
+        {/* Question */}
+        <h1 style={{
+          fontFamily: T.serif, fontSize: 30, fontWeight: 600, color: T.ink,
+          letterSpacing: '-0.025em', lineHeight: 1.15, margin: '0 0 8px', textAlign: 'center',
+        }}>
+          {current.question}
+        </h1>
+        {current.hint && (
+          <p style={{ fontSize: 14, color: T.inkMuted, textAlign: 'center', margin: '0 0 36px', lineHeight: 1.5 }}>
+            {current.hint}
+          </p>
+        )}
+        {!current.hint && <div style={{ marginBottom: 36 }} />}
+
+        {/* Step inputs */}
+        {current.key === 'display_name' && (
+          <input
+            autoFocus
+            value={form.display_name}
+            onChange={(e) => set('display_name', e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && canAdvance() && advance()}
+            placeholder="Your name"
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              border: 'none', borderBottom: `2px solid ${T.gold}`,
+              background: 'transparent', fontSize: 24, fontFamily: T.serif,
+              color: T.ink, padding: '8px 0', outline: 'none', textAlign: 'center',
+            }}
+          />
+        )}
+
+        {current.key === 'person_type' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {PERSON_TYPES.filter((p) => PROFILE_PERSON_TYPES.includes(p.id)).map((p) => (
+              <button
+                key={p.id}
+                onClick={() => set('person_type', p.id)}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '14px 18px',
+                  background: form.person_type === p.id ? 'rgba(184,115,58,0.12)' : T.white,
+                  border: form.person_type === p.id ? `2px solid ${T.gold}` : `1px solid ${T.line}`,
+                  borderRadius: 12, fontSize: 15, cursor: 'pointer',
+                  color: T.ink, fontFamily: T.serif, fontWeight: form.person_type === p.id ? 600 : 400,
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  transition: 'all 0.15s',
+                }}
+              >
+                <span style={{ fontSize: 20 }}>{p.emoji}</span>
+                {p.label}
+                {form.person_type === p.id && <Check size={16} color={T.gold} style={{ marginLeft: 'auto' }} />}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {current.key === 'tradition' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {TRADITIONS.map((t) => (
+              <button
+                key={t}
+                onClick={() => set('tradition', t)}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '13px 18px',
+                  background: form.tradition === t ? 'rgba(184,115,58,0.12)' : T.white,
+                  border: form.tradition === t ? `2px solid ${T.gold}` : `1px solid ${T.line}`,
+                  borderRadius: 12, fontSize: 14, cursor: 'pointer',
+                  color: T.ink, fontFamily: T.serif, fontWeight: form.tradition === t ? 600 : 400,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {t}
+                {form.tradition === t && <Check size={15} color={T.gold} />}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {current.key === 'exploring_since' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {EXPLORING_SINCE.map((o) => (
+              <button
+                key={o}
+                onClick={() => set('exploring_since', o)}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '13px 18px',
+                  background: form.exploring_since === o ? 'rgba(184,115,58,0.12)' : T.white,
+                  border: form.exploring_since === o ? `2px solid ${T.gold}` : `1px solid ${T.line}`,
+                  borderRadius: 12, fontSize: 14, cursor: 'pointer',
+                  color: T.ink, fontFamily: T.serif, fontWeight: form.exploring_since === o ? 600 : 400,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {o}
+                {form.exploring_since === o && <Check size={15} color={T.gold} />}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {current.key === 'what_brought' && (
+          <textarea
+            autoFocus
+            value={form.what_brought}
+            onChange={(e) => set('what_brought', e.target.value)}
+            placeholder="e.g. A conversation that wouldn't leave me alone."
+            rows={3}
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              border: `1px solid ${T.line}`, borderRadius: 12,
+              background: T.white, fontSize: 15, fontFamily: T.serif,
+              color: T.ink, padding: '14px 16px', outline: 'none', resize: 'none',
+              lineHeight: 1.6,
+            }}
+          />
+        )}
+
+        {error && <div style={{ color: '#c0392b', fontSize: 13, marginTop: 12, textAlign: 'center' }}>{error}</div>}
+
+        {/* Actions */}
+        <div style={{ marginTop: 28 }}>
+          <button
+            onClick={advance}
+            disabled={saving || (!canAdvance() && !current.optional)}
+            style={{
+              width: '100%', padding: '15px', borderRadius: 999,
+              background: (canAdvance() || current.optional) ? T.gold : T.line,
+              color: T.cream, border: 'none', fontSize: 16, fontWeight: 600,
+              fontFamily: T.serif, cursor: (canAdvance() || current.optional) ? 'pointer' : 'default',
+              transition: 'background 0.2s',
+              opacity: saving ? 0.7 : 1,
+            }}
+          >
+            {saving ? 'Saving…' : isLast ? 'Finish' : 'Continue'}
+          </button>
+          {current.optional && (
+            <button onClick={advance} style={{
+              width: '100%', marginTop: 12, background: 'none', border: 'none',
+              color: T.inkMuted, fontSize: 13, cursor: 'pointer', padding: '8px',
+            }}>
+              Skip for now
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfileSetup({ user, existing, onSave, onCancel }) {
+  // New users get the step-by-step wizard
+  if (!existing?.display_name) {
+    return <ProfileWizard user={user} existing={existing} onSave={onSave} />;
+  }
   const [form, setForm] = useState({
     display_name:       existing?.display_name ?? user?.user_metadata?.display_name ?? '',
     age_range:          existing?.age_range ?? '',
