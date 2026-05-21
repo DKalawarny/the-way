@@ -103,20 +103,52 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
         .select('name, pastor_id')
         .eq('id', churchId)
         .maybeSingle(),
-    ]).then(async ([{ data: members }, { data: church }]) => {
-      // Filter out the current user — pastors/care team members shouldn't see themselves
-      const filtered = (members ?? []).filter(m => m.user_id !== session?.user?.id);
-      setCareTeam(filtered);
+      // Also pull anyone assigned the 'care' role via church_roles so that
+      // the People → Assign role flow is enough to show up here.
+      supabase
+        .from('church_roles')
+        .select('user_id, profile:profiles!user_id(id, display_name, avatar_config, avatar_url)')
+        .eq('church_id', churchId)
+        .eq('role_key', 'care'),
+    ]).then(async ([{ data: members }, { data: church }, { data: roleRows }]) => {
+      const uid = session?.user?.id;
+
+      // Merge care_team_members + church_roles care members, deduplicate by user_id
+      const fromTable = (members ?? []).filter(m => m.user_id !== uid);
+      const fromRoles = (roleRows ?? [])
+        .filter(r => r.user_id !== uid && !fromTable.some(m => m.user_id === r.user_id))
+        .map(r => ({ user_id: r.user_id, profile: r.profile, role_label: 'Care team', specialty_tags: [] }));
+      const merged = [...fromTable, ...fromRoles];
+
+      setCareTeam(merged);
       setChurchName(church?.name ?? null);
-      setIsCurrentUserPastor(!!church?.pastor_id && church.pastor_id === session?.user?.id);
-      if (filtered.length === 0 && church?.pastor_id) {
-        const { data: pastor } = await supabase
-          .from('profiles')
-          .select('id, display_name, avatar_config, avatar_url')
-          .eq('id', church.pastor_id)
-          .maybeSingle();
-        // Only set the pastor fallback if it's not the current user
-        if (pastor && pastor.id !== session?.user?.id) setPastorFallback(pastor);
+      setIsCurrentUserPastor(!!church?.pastor_id && church.pastor_id === uid);
+
+      if (merged.length === 0) {
+        // Try pastor_id first, then fall back to church_roles owner
+        const pastorId = church?.pastor_id ?? null;
+        const ownerId = !pastorId
+          ? (await supabase.from('church_roles').select('user_id').eq('church_id', churchId).eq('is_owner', true).maybeSingle()).data?.user_id ?? null
+          : null;
+        const lookupId = pastorId ?? ownerId;
+        if (lookupId && lookupId !== uid) {
+          const { data: pastor } = await supabase
+            .from('profiles')
+            .select('id, display_name, avatar_config, avatar_url')
+            .eq('id', lookupId)
+            .maybeSingle();
+          if (pastor) setPastorFallback(pastor);
+        } else if (!lookupId) {
+          // No pastor found at all — check if current user is the owner
+          const { data: selfOwner } = await supabase
+            .from('church_roles')
+            .select('user_id')
+            .eq('church_id', churchId)
+            .eq('is_owner', true)
+            .eq('user_id', uid)
+            .maybeSingle();
+          if (selfOwner) setIsCurrentUserPastor(true);
+        }
       }
       setLoading(false);
     });
