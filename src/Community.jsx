@@ -47,7 +47,7 @@ const KIND_TINTS = {
   text:              { rail: '#8c7a5e', bg: 'rgba(140,122,94,0.06)'  }, // dark clay — neutral thoughts
   verse:             { rail: '#c4813a', bg: 'rgba(184,115,58,0.08)'  }, // gold — scripture
   question:          { rail: '#3a6b8a', bg: 'rgba(58,107,138,0.08)'  }, // deep blue — seeking
-  prayer:            { rail: '#5a8064', bg: 'rgba(90,128,100,0.08)'  }, // forest sage — prayer
+  prayer:            { rail: '#A87840', bg: 'rgba(180,130,60,0.08)'  }, // warm amber — prayer
   share:             { rail: '#8c7a5e', bg: 'rgba(140,122,94,0.06)'  }, // same as text
   journey:           { rail: '#a05870', bg: 'rgba(160,88,112,0.08)'  }, // saturated rose — journey
   journey_milestone: { rail: '#a05870', bg: 'rgba(160,88,112,0.08)'  }, // same as journey
@@ -311,7 +311,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
               journey_milestone: { label: '✦ A STEP ON THE WAY', color: '#a05870' },
               verse:             { label: '📖 SCRIPTURE',         color: '#9c5a1f' },
               question:          { label: '? ASKING',             color: '#3a6b8a' },
-              prayer:            { label: '🙏 A PRAYER',           color: '#5a8064' },
+              prayer:            { label: '🙏 A PRAYER',           color: '#A87840' },
             }[post.kind];
             if (!eyebrowFor) return null;
             return (
@@ -1908,7 +1908,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
                               type="submit"
                               disabled={!prayerText.trim() || prayerSubmitting}
                               style={{
-                                background: prayerText.trim() ? `linear-gradient(135deg, ${SEMANTIC.prayer.rail} 0%, #4a6b50 100%)` : T.line,
+                                background: prayerText.trim() ? `linear-gradient(135deg, ${SEMANTIC.prayer.rail} 0%, #7A4E20 100%)` : T.line,
                                 color: T.cream, border: 'none', borderRadius: 999,
                                 padding: '8px 22px', fontSize: 13, fontWeight: 600,
                                 cursor: prayerText.trim() ? 'pointer' : 'not-allowed',

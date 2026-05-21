@@ -1429,7 +1429,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                           type="submit"
                           disabled={!prayerText.trim() || prayerSubmitting}
                           style={{
-                            background: prayerText.trim() ? `linear-gradient(135deg, ${SEMANTIC.prayer.rail} 0%, #4a6b50 100%)` : T.line,
+                            background: prayerText.trim() ? `linear-gradient(135deg, ${SEMANTIC.prayer.rail} 0%, #7A4E20 100%)` : T.line,
                             color: T.cream, border: 'none', borderRadius: 999,
                             padding: '8px 22px', fontSize: 13, fontWeight: 600,
                             cursor: prayerText.trim() ? 'pointer' : 'not-allowed',

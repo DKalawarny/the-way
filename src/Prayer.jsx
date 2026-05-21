@@ -250,7 +250,7 @@ function MyPrayers({ session, profile }) {
                     <button type="button" onClick={() => setNewIsPublic(false)} style={{
                       background: !newIsPublic ? T.white : 'transparent',
                       border: 'none', borderRadius: 999, padding: '8px 14px', fontSize: 12,
-                      color: !newIsPublic ? T.ink : '#5a7a5a',
+                      color: !newIsPublic ? T.ink : '#9A6A38',
                       cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
                       fontWeight: !newIsPublic ? 600 : 400, transition: 'all 0.15s',
                       boxShadow: !newIsPublic ? '0 1px 2px rgba(44,24,16,0.06)' : 'none',
@@ -260,7 +260,7 @@ function MyPrayers({ session, profile }) {
                     <button type="button" onClick={() => setNewIsPublic(true)} style={{
                       background: newIsPublic ? 'rgba(90,128,100,0.25)' : 'transparent',
                       border: 'none', borderRadius: 999, padding: '8px 14px', fontSize: 12,
-                      color: newIsPublic ? SEMANTIC.prayer.text : '#5a7a5a',
+                      color: newIsPublic ? SEMANTIC.prayer.text : '#9A6A38',
                       cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
                       fontWeight: newIsPublic ? 600 : 400, transition: 'all 0.15s',
                     }}>
@@ -273,7 +273,7 @@ function MyPrayers({ session, profile }) {
                       Cancel
                     </button>
                     <button type="submit" disabled={submitting || !text.trim()} style={{
-                      background: text.trim() ? `linear-gradient(135deg, ${SEMANTIC.prayer.rail} 0%, #4a6b50 100%)` : T.line,
+                      background: text.trim() ? `linear-gradient(135deg, ${SEMANTIC.prayer.rail} 0%, #7A4E20 100%)` : T.line,
                       color: T.cream, border: 'none', borderRadius: 999,
                       padding: '8px 22px', fontSize: 13, fontWeight: 600,
                       cursor: text.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.15s',

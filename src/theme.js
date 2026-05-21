@@ -71,12 +71,12 @@ export const TYPE = {
 // `rail` is the 3px accent edge that gives a card its identity.
 export const SEMANTIC = {
   prayer: {
-    bg:       'rgba(122,149,104,0.18)',
-    bgActive: 'rgba(122,149,104,0.32)',
-    rail:     '#6B8758',
-    line:     'rgba(122,149,104,0.55)',
-    text:     '#3F5635',
-    textSoft: '#5E7A4D',
+    bg:       'rgba(180,130,60,0.15)',
+    bgActive: 'rgba(180,130,60,0.28)',
+    rail:     '#A87840',
+    line:     'rgba(180,130,60,0.50)',
+    text:     '#7A4E20',
+    textSoft: '#9A6A38',
   },
   connection: {
     bg:       'rgba(166,107,82,0.16)',
