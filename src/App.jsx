@@ -1246,9 +1246,9 @@ function AppHeader({ onOpenBible, onVerseClick }) {
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0,
       height: 56, zIndex: 110,
-      background: 'linear-gradient(180deg, #2a1a12 0%, #1c1008 100%)',
-      borderBottom: '1px solid #3a261d',
-      boxShadow: '0 4px 14px rgba(20,10,6,0.35), inset 0 -1px 0 rgba(184,115,58,0.18)',
+      background: '#1e1208',
+      borderBottom: 'none',
+      boxShadow: '0 1px 0 rgba(255,255,255,0.04)',
       display: 'flex', alignItems: 'center',
     }}>
       {/* Brand segment — sits exactly over the sidebar column */}
@@ -1300,9 +1300,9 @@ function MobileHeader({ onOpenBible, onVerseClick }) {
       top: 'env(safe-area-inset-top, 0px)',
       left: 0, right: 0,
       height: 56, zIndex: 110,
-      background: 'linear-gradient(180deg, #2a1a12 0%, #1c1008 100%)',
-      borderBottom: '1px solid #3a261d',
-      boxShadow: '0 4px 14px rgba(20,10,6,0.35), inset 0 -1px 0 rgba(184,115,58,0.18)',
+      background: '#1e1208',
+      borderBottom: 'none',
+      boxShadow: '0 1px 0 rgba(255,255,255,0.04)',
       display: 'flex', alignItems: 'center',
       padding: '0 164px 0 16px', // right: room for 3 FABs (3×44 + 2×8 gaps + 12px edge)
       gap: 12,

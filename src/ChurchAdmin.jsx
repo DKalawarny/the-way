@@ -15,14 +15,14 @@ function qrUrl(url) {
 }
 
 const CHURCH_BANNER_PRESETS = [
-  { key: 'ink',    label: 'Ink',    bg: 'linear-gradient(135deg, #2C1810 0%, #1A0F08 55%, #3A2516 100%)' },
-  { key: 'forest', label: 'Forest', bg: 'linear-gradient(135deg, #1a2e1a 0%, #2d4a2d 55%, #3d6b3d 100%)' },
-  { key: 'night',  label: 'Night',  bg: 'linear-gradient(135deg, #0d1b2e 0%, #1a3050 55%, #2a4570 100%)' },
-  { key: 'clay',   label: 'Clay',   bg: 'linear-gradient(135deg, #8b4513 0%, #a0522d 55%, #cd853f 100%)' },
-  { key: 'plum',   label: 'Plum',   bg: 'linear-gradient(135deg, #2d0a2d 0%, #4a1542 55%, #6b2564 100%)' },
-  { key: 'sea',    label: 'Sea',    bg: 'linear-gradient(135deg, #0a2d2d 0%, #0f4a4a 55%, #1a6b6b 100%)' },
-  { key: 'slate',  label: 'Slate',  bg: 'linear-gradient(135deg, #1c1c2e 0%, #2e2e4a 55%, #3d3d6b 100%)' },
-  { key: 'rose',   label: 'Rose',   bg: 'linear-gradient(135deg, #2e0a0a 0%, #501515 55%, #7a2525 100%)' },
+  { key: 'ink',    label: 'Ink',    bg: '#1e1208' },
+  { key: 'forest', label: 'Forest', bg: '#2d4a2d' },
+  { key: 'night',  label: 'Night',  bg: '#1a3050' },
+  { key: 'clay',   label: 'Clay',   bg: '#8b4513' },
+  { key: 'plum',   label: 'Plum',   bg: '#4a1542' },
+  { key: 'sea',    label: 'Sea',    bg: '#0f4a4a' },
+  { key: 'slate',  label: 'Slate',  bg: '#2e2e4a' },
+  { key: 'rose',   label: 'Rose',   bg: '#501515' },
 ];
 export function churchBannerBg(church) {
   const preset = CHURCH_BANNER_PRESETS.find((p) => p.key === (church?.banner_preset ?? 'ink'));

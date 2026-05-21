@@ -381,14 +381,6 @@ export default function ChurchPage({
         color: T.cream,
         zIndex: 1,
       }}>
-        {/* Candlelight gold-grain — same texture as ChurchHub, glows on dark */}
-        <div className="texture-bg" style={{
-          position: 'absolute', inset: 0,
-          opacity: 0.55,
-          maskImage: 'radial-gradient(ellipse 70% 80% at 50% 30%, #000 30%, transparent 75%)',
-          WebkitMaskImage: 'radial-gradient(ellipse 70% 80% at 50% 30%, #000 30%, transparent 75%)',
-          pointerEvents: 'none',
-        }} />
 
         {/* Back + Share overlaid on the hero — no white strip */}
         {!chromeless && (
@@ -521,10 +513,9 @@ export default function ChurchPage({
           }}>
             <div style={{
               width: 80, height: 80, borderRadius: '50%',
-              background: 'rgba(253,248,240,0.08)',
+              background: 'rgba(255,255,255,0.15)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 40, overflow: 'hidden',
-              boxShadow: '0 4px 20px rgba(26,17,8,0.25)',
             }}>
               {church.avatar_url
                 ? <img src={church.avatar_url} alt={church.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
