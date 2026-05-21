@@ -190,18 +190,26 @@ function ProfileWizard({ user, existing, onSave }) {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh', background: T.cream,
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      padding: '24px 24px 48px',
-    }}>
-      {/* Wordmark */}
-      <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 500, color: T.ink, letterSpacing: '-0.02em', marginBottom: 48 }}>
-        kinwove
+    <div style={{ height: '100dvh', background: T.cream, display: 'flex', flexDirection: 'column' }}>
+
+      {/* Fixed header */}
+      <div style={{ flexShrink: 0, padding: '20px 24px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+        {step > 0 && (
+          <button onClick={() => setStep((s) => s - 1)} style={{
+            position: 'absolute', left: 24, background: 'none', border: 'none',
+            color: T.gold, fontSize: 14, fontWeight: 500, cursor: 'pointer', padding: '4px 0',
+            fontFamily: T.serif,
+          }}>← Back</button>
+        )}
+        <div style={{ fontFamily: T.serif, fontSize: 20, fontWeight: 500, color: T.ink, letterSpacing: '-0.02em' }}>
+          kinwove
+        </div>
       </div>
 
-      <div style={{ width: '100%', maxWidth: 480 }}>
-        <WizardDots step={step} total={WIZARD_STEPS.length} />
+      {/* Scrollable content */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 0' }}>
+        <div style={{ maxWidth: 480, margin: '0 auto' }}>
+          <WizardDots step={step} total={WIZARD_STEPS.length} />
 
         {/* Question */}
         <h1 style={{
@@ -322,9 +330,13 @@ function ProfileWizard({ user, existing, onSave }) {
         )}
 
         {error && <div style={{ color: '#c0392b', fontSize: 13, marginTop: 12, textAlign: 'center' }}>{error}</div>}
+        <div style={{ height: 24 }} />
+        </div>
+      </div>
 
-        {/* Actions */}
-        <div style={{ marginTop: 28 }}>
+      {/* Sticky footer with Continue button */}
+      <div style={{ flexShrink: 0, padding: '12px 24px 32px', background: T.cream, borderTop: `1px solid rgba(184,115,58,0.10)` }}>
+        <div style={{ maxWidth: 480, margin: '0 auto' }}>
           <button
             onClick={advance}
             disabled={saving || (!canAdvance() && !current.optional)}
