@@ -1845,6 +1845,12 @@ export default function App() {
               loadProfile(s.user.id);
             } else {
               loadProfile(s.user.id).then((prof) => {
+                // New user arriving via email confirmation link — no profile yet.
+                // Show the wizard instead of sending them to the feed.
+                if (!prof && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
+                  setAuthStage('profile-setup');
+                  return;
+                }
                 const local2 = localStorage.getItem('kw:stage');
                 if (!local2 && prof?.last_stage && STAGE_SAFE.has(prof.last_stage)) {
                   setStage(prof.last_stage);

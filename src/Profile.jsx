@@ -14,13 +14,10 @@ const PROFILE_PERSON_TYPES = ['curious','seeking','skeptic','heard-things','new-
 const AGE_RANGES = ['Under 18','18–24','25–34','35–49','50–64','65+'];
 
 const EXPLORING_SINCE = [
-  'Just starting out',
-  'A few weeks',
+  'Just started',
   'A few months',
   'About a year',
-  '2–5 years',
-  'More than 5 years',
-  'Grew up in it',
+  'Several years',
 ];
 
 const TRADITIONS = [

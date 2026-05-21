@@ -82,10 +82,11 @@ export default function Auth({ onAuth, onBack }) {
     setLoading(true);
     setError(null);
     const utm = getStoredUtm();
-    const { error: err } = await supabase.auth.signUp({
+    const { data: signUpData, error: err } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        emailRedirectTo: window.location.origin,
         data: {
           display_name: name,
           // First-touch attribution — stored in raw_user_meta_data,
@@ -101,7 +102,13 @@ export default function Auth({ onAuth, onBack }) {
     setLoading(false);
     if (err) return setError(err.message);
     clearStoredUtm(); // attribution captured — clean up
-    setMode('verify');
+    // If Supabase returns a session immediately (email confirmation disabled),
+    // hand it to App.jsx so the wizard can run. Otherwise show the verify screen.
+    if (signUpData?.session) {
+      onAuth(signUpData.session);
+    } else {
+      setMode('verify');
+    }
   }
 
   async function handleSignIn(e) {
