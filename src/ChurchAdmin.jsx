@@ -15,14 +15,14 @@ function qrUrl(url) {
 }
 
 const CHURCH_BANNER_PRESETS = [
-  { key: 'ink',    label: 'Ink',    bg: '#1e1208' },
-  { key: 'forest', label: 'Forest', bg: '#2d4a2d' },
-  { key: 'night',  label: 'Night',  bg: '#1a3050' },
-  { key: 'clay',   label: 'Clay',   bg: '#8b4513' },
-  { key: 'plum',   label: 'Plum',   bg: '#4a1542' },
-  { key: 'sea',    label: 'Sea',    bg: '#0f4a4a' },
-  { key: 'slate',  label: 'Slate',  bg: '#2e2e4a' },
-  { key: 'rose',   label: 'Rose',   bg: '#501515' },
+  { key: 'ink',    label: 'Ink',      bg: '#1e1208' },
+  { key: 'forest', label: 'Sage',     bg: '#2e3e28' },
+  { key: 'night',  label: 'Midnight', bg: '#1c2a38' },
+  { key: 'clay',   label: 'Cedar',    bg: '#4a2a14' },
+  { key: 'plum',   label: 'Plum',     bg: '#32183a' },
+  { key: 'sea',    label: 'Teal',     bg: '#163430' },
+  { key: 'slate',  label: 'Stone',    bg: '#2e2a22' },
+  { key: 'rose',   label: 'Burgundy', bg: '#3a1618' },
 ];
 export function churchBannerBg(church) {
   const preset = CHURCH_BANNER_PRESETS.find((p) => p.key === (church?.banner_preset ?? 'ink'));
