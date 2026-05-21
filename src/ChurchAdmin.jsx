@@ -44,216 +44,6 @@ function buildAnnouncementText(churchName, link) {
   ].join('\n');
 }
 
-function EngageCards({ church, churchId, session, onChurchUpdate }) {
-  const { showToast } = useUiKit();
-
-  const [qotdDraft, setQotdDraft]   = useState(church?.question_of_day ?? '');
-  const [savingQotd, setSavingQotd] = useState(false);
-
-  useEffect(() => { setQotdDraft(church?.question_of_day ?? ''); }, [church?.question_of_day]);
-
-  async function saveQotd() {
-    if (!churchId || !qotdDraft.trim()) return;
-    setSavingQotd(true);
-    const question = qotdDraft.trim();
-    const { error } = await supabase
-      .from('churches')
-      .update({
-        question_of_day: question,
-        question_of_day_set_at: new Date().toISOString(),
-        question_of_day_set_by: session?.user?.id,
-      })
-      .eq('id', churchId);
-    if (error) { showToast(`Couldn't save: ${error.message}`, 'error'); setSavingQotd(false); return; }
-
-    const { data: members } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('church_id', churchId)
-      .neq('id', session?.user?.id ?? '');
-    if (members?.length) {
-      await supabase.from('notifications').insert(
-        members.map(m => ({
-          recipient_id: m.id,
-          actor_id: session?.user?.id,
-          kind: 'church_question_of_day',
-          data: { church_id: churchId, question },
-        }))
-      );
-    }
-
-    onChurchUpdate?.({ question_of_day: question, question_of_day_set_at: new Date().toISOString() });
-    setSavingQotd(false);
-    showToast('Question set — your church has been notified.', 'success');
-  }
-
-  async function clearQotd() {
-    if (!churchId) return;
-    const { error } = await supabase
-      .from('churches')
-      .update({ question_of_day: null, question_of_day_set_at: null, question_of_day_set_by: null })
-      .eq('id', churchId);
-    if (error) { showToast(`Couldn't clear: ${error.message}`, 'error'); return; }
-    setQotdDraft('');
-    onChurchUpdate?.({ question_of_day: null, question_of_day_set_at: null });
-    showToast('Question cleared.', 'success');
-  }
-
-  const [walks, setWalks] = useState([]);
-  const [savingFeatured, setSavingFeatured] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    supabase
-      .from('walks')
-      .select('id, title, subtitle, cover_emoji, length_days, sort_order')
-      .eq('is_published', true)
-      .order('sort_order', { ascending: true })
-      .then(({ data }) => { if (!cancelled) setWalks(data ?? []); });
-    return () => { cancelled = true; };
-  }, []);
-
-  async function setFeaturedWalk(nextId) {
-    if (!churchId) return;
-    setSavingFeatured(true);
-    const { error } = await supabase
-      .from('churches')
-      .update({ featured_walk_id: nextId })
-      .eq('id', churchId);
-    setSavingFeatured(false);
-    if (error) { showToast(`Couldn't save: ${error.message}`, 'error'); return; }
-    onChurchUpdate?.({ featured_walk_id: nextId });
-    showToast(nextId ? 'Featured walk updated.' : 'Featured walk cleared.', 'success');
-  }
-
-  return (
-    <div style={{ display: 'grid', gap: 14 }}>
-      {/* Question of the Day */}
-      <div style={{ background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: 14, padding: '16px 18px' }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-          💬 Question of the Day
-        </div>
-        <div style={{ fontFamily: T.serif, fontSize: 17, fontWeight: 600, color: T.ink, marginBottom: 4 }}>
-          Spark a conversation
-        </div>
-        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>
-          Post a question for your whole church. It appears as a banner in the community feed and members get notified.
-        </div>
-        {church?.question_of_day && (
-          <div style={{
-            fontFamily: T.serif, fontSize: 14, fontStyle: 'italic', color: T.inkSoft,
-            background: 'rgba(184,115,58,0.08)', border: `1px solid rgba(184,115,58,0.18)`,
-            borderRadius: 10, padding: '10px 12px', marginBottom: 12, lineHeight: 1.55,
-          }}>
-            Current: &ldquo;{church.question_of_day}&rdquo;
-          </div>
-        )}
-        <textarea
-          value={qotdDraft}
-          onChange={(e) => setQotdDraft(e.target.value.slice(0, 300))}
-          placeholder="Ask your church a question…"
-          rows={3}
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 12px',
-            fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.6,
-            background: T.cream, outline: 'none', resize: 'vertical',
-          }}
-        />
-        <div style={{ fontSize: 11.5, color: T.inkMuted, marginTop: 4, marginBottom: 10 }}>
-          {qotdDraft.length}/300
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          {church?.question_of_day && (
-            <button onClick={clearQotd} style={{
-              background: 'none', border: `1px solid ${T.line}`, borderRadius: 999,
-              padding: '7px 14px', fontSize: 12, color: T.inkMuted, cursor: 'pointer',
-            }}>Clear</button>
-          )}
-          <div style={{ flex: 1 }} />
-          <button
-            onClick={saveQotd}
-            disabled={!qotdDraft.trim() || savingQotd}
-            style={{
-              background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
-              padding: '7px 18px', fontSize: 13, fontWeight: 600,
-              cursor: (!qotdDraft.trim() || savingQotd) ? 'not-allowed' : 'pointer',
-              opacity: (!qotdDraft.trim() || savingQotd) ? 0.45 : 1,
-            }}
-          >{savingQotd ? 'Saving…' : 'Set Question'}</button>
-        </div>
-      </div>
-
-      {/* Featured walk */}
-      <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '16px 18px' }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-          ✶ Featured walk
-        </div>
-        <div style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 600, color: T.ink, marginBottom: 4 }}>
-          A walk for the whole church
-        </div>
-        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>
-          Pick one walk from the library to highlight on your church page. Members still pace it privately. Change or clear anytime.
-        </div>
-        <div style={{ display: 'grid', gap: 8 }}>
-          {walks.map((w) => {
-            const active = church?.featured_walk_id === w.id;
-            return (
-              <button
-                key={w.id}
-                onClick={() => setFeaturedWalk(active ? null : w.id)}
-                disabled={savingFeatured}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
-                  background: active ? T.parchment : T.cream,
-                  border: `1px solid ${active ? T.goldDark : T.line}`,
-                  borderRadius: 12, padding: '10px 12px',
-                  cursor: savingFeatured ? 'wait' : 'pointer',
-                }}
-              >
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: T.white, border: `1px solid ${T.line}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 18, color: T.goldDark, flexShrink: 0,
-                }}>{w.cover_emoji}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, lineHeight: 1.25 }}>{w.title}</div>
-                  {w.subtitle && (
-                    <div style={{ fontSize: 12, color: T.inkSoft, fontStyle: 'italic', lineHeight: 1.4, marginTop: 2 }}>{w.subtitle}</div>
-                  )}
-                  <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 2 }}>{w.length_days}-day walk</div>
-                </div>
-                {active && (
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase',
-                    background: T.goldDark, color: T.cream, borderRadius: 999, padding: '3px 9px',
-                  }}>Featured</span>
-                )}
-              </button>
-            );
-          })}
-          {walks.length === 0 && (
-            <div style={{ color: T.inkMuted, fontStyle: 'italic', fontSize: 13.5, padding: '8px 0' }}>
-              No published walks yet.
-            </div>
-          )}
-        </div>
-        {church?.featured_walk_id && (
-          <button
-            onClick={() => setFeaturedWalk(null)}
-            disabled={savingFeatured}
-            style={{
-              marginTop: 10, background: 'none', border: `1px solid ${T.line}`,
-              borderRadius: 999, padding: '7px 14px', fontSize: 12,
-              color: T.inkMuted, cursor: savingFeatured ? 'wait' : 'pointer',
-            }}
-          >Clear featured walk</button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUpdate, onTransferComplete, pendingAction, onActionConsumed }) {
   const { showToast, ui: uikitUi } = useUiKit();
   const publicUrl = typeof window !== 'undefined' && church?.id
@@ -391,6 +181,29 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
   const [countriesDraft, setCountriesDraft] = useState(church?.countries_open_to ?? []);
   const [savingCountries, setSavingCountries] = useState(false);
   const countriesDirty = JSON.stringify(countriesDraft) !== JSON.stringify(church?.countries_open_to ?? []);
+
+  const [walks, setWalks] = useState([]);
+  const [savingFeatured, setSavingFeatured] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from('walks')
+      .select('id, title, subtitle, cover_emoji, length_days, sort_order')
+      .eq('is_published', true)
+      .order('sort_order', { ascending: true })
+      .then(({ data }) => { if (!cancelled) setWalks(data ?? []); });
+    return () => { cancelled = true; };
+  }, []);
+
+  async function setFeaturedWalk(nextId) {
+    if (!churchId) return;
+    setSavingFeatured(true);
+    const { error } = await supabase.from('churches').update({ featured_walk_id: nextId }).eq('id', churchId);
+    setSavingFeatured(false);
+    if (error) { showToast(`Couldn't save: ${error.message}`, 'error'); return; }
+    onChurchUpdate?.({ featured_walk_id: nextId });
+    showToast(nextId ? 'Featured walk updated.' : 'Featured walk cleared.', 'success');
+  }
 
   // Keep the drafts in sync if the parent's church state hot-swaps under us.
   useEffect(() => { setPinDraft(church?.pinned_post ?? ''); }, [church?.pinned_post]);
@@ -818,6 +631,58 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
             }} />
           </button>
         </div>
+      </div>
+
+      {/* ── Featured walk ── */}
+      <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '16px 18px' }}>
+        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
+          ✶ Featured walk
+        </div>
+        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>
+          Pick one walk to highlight on your church page. Members pace it privately. Change or clear anytime.
+        </div>
+        <div style={{ display: 'grid', gap: 8 }}>
+          {walks.map((w) => {
+            const active = church?.featured_walk_id === w.id;
+            return (
+              <button
+                key={w.id}
+                onClick={() => setFeaturedWalk(active ? null : w.id)}
+                disabled={savingFeatured}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
+                  background: active ? T.parchment : T.cream,
+                  border: `1px solid ${active ? T.goldDark : T.line}`,
+                  borderRadius: 12, padding: '10px 12px',
+                  cursor: savingFeatured ? 'wait' : 'pointer',
+                }}
+              >
+                <div style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  background: T.white, border: `1px solid ${T.line}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 18, color: T.goldDark, flexShrink: 0,
+                }}>{w.cover_emoji}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, lineHeight: 1.25 }}>{w.title}</div>
+                  {w.subtitle && <div style={{ fontSize: 12, color: T.inkSoft, fontStyle: 'italic', lineHeight: 1.4, marginTop: 2 }}>{w.subtitle}</div>}
+                  <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 2 }}>{w.length_days}-day walk</div>
+                </div>
+                {active && (
+                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', background: T.goldDark, color: T.cream, borderRadius: 999, padding: '3px 9px' }}>Featured</span>
+                )}
+              </button>
+            );
+          })}
+          {walks.length === 0 && <div style={{ color: T.inkMuted, fontStyle: 'italic', fontSize: 13.5 }}>No published walks yet.</div>}
+        </div>
+        {church?.featured_walk_id && (
+          <button onClick={() => setFeaturedWalk(null)} disabled={savingFeatured} style={{
+            marginTop: 10, background: 'none', border: `1px solid ${T.line}`,
+            borderRadius: 999, padding: '7px 14px', fontSize: 12,
+            color: T.inkMuted, cursor: savingFeatured ? 'wait' : 'pointer',
+          }}>Clear featured walk</button>
+        )}
       </div>
 
       {/* ── Danger zone — ownership transfer ───────────────────────── */}
@@ -1914,7 +1779,7 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
 export default function ChurchAdmin({ session, profile, churchId, onBack, onOpenChurchPage, onOpenChurchHub, onOpenSermon, initialTab }) {
   // Allow deep-links into a specific tab (e.g. ChurchPage's "Edit in Pastor
   // settings" lands on Settings, not Overview). Falls back to overview.
-  const VALID_TABS = ['overview', 'people', 'engage', 'settings'];
+  const VALID_TABS = ['overview', 'people', 'settings'];
   const [tab, setTab] = useState(initialTab && VALID_TABS.includes(initialTab) ? initialTab : 'overview');
   const [church, setChurch] = useState(null);
   const [composerOpen, setComposerOpen] = useState(initialTab === 'sermons');
@@ -1981,15 +1846,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
             onShowQr={() => gotoSettings('open-qr')}
           />
         )}
-        {tab === 'engage' && (
-          <EngageCards
-            church={church}
-            churchId={churchId}
-            session={session}
-            onChurchUpdate={(c) => setChurch((prev) => ({ ...prev, ...c }))}
-          />
-        )}
-        {tab === 'settings' && (
+{tab === 'settings' && (
           <SettingsPanel
             church={church}
             churchId={churchId}

@@ -22,7 +22,6 @@ const KIND_COPY = {
   prayer_support:            { verb: 'is praying for you', Icon: null, emoji: '🙏' },
   prayer_encouragement:      { verb: 'left an encouragement', Icon: Heart },
   sermon_comment:            { verb: 'commented on your sermon', Icon: BookOpen },
-  church_question_of_day:    { verb: 'posted a question for your church', Icon: null, emoji: '💬' },
 };
 
 function NotificationRow({ n, onClick }) {

@@ -1106,20 +1106,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
       .limit(15)
       .then(({ data }) => setSuggestedPeople(data ?? []));
   }, [session?.user?.id, profile?.church_id, profile?.tradition]);
-  const [qotd, setQotd] = useState(null);
-  useEffect(() => {
-    if (!profile?.church_id) return;
-    supabase
-      .from('churches')
-      .select('question_of_day, question_of_day_set_at')
-      .eq('id', profile.church_id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data?.question_of_day) setQotd(data);
-        else setQotd(null);
-      });
-  }, [profile?.church_id]);
-  useEffect(() => {
+useEffect(() => {
     if (!session?.user?.id) return;
     const uid = session.user.id;
     supabase.from('follows').select('following_id').eq('follower_id', uid)
@@ -1630,23 +1617,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
             </div>
           )}
 
-          {/* ── Question of the Day banner ── */}
-          {qotd?.question_of_day && feedType === 'posts' && (
-            <div style={{
-              margin: '0 0 16px',
-              padding: '16px 20px',
-              background: 'rgba(184,115,58,0.08)',
-              border: '1px solid rgba(184,115,58,0.25)',
-              borderRadius: 16,
-            }}>
-              <div style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', color: T.gold, opacity: 0.8, marginBottom: 8, fontWeight: 600 }}>
-                Pastor’s question
-              </div>
-              <div style={{ fontFamily: T.serif, fontSize: 17, color: T.ink, lineHeight: 1.65, fontStyle: 'italic' }}>
-                “{qotd.question_of_day}”
-              </div>
-            </div>
-          )}
+
 
           {/* ── Groups card ── */}
           {feedType === 'posts' && onOpenGroups && (
