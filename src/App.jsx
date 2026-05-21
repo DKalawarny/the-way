@@ -2118,22 +2118,6 @@ export default function App() {
     setPastorChurch(church ?? null);
   }
 
-  // If loadChurchRoles couldn't resolve via church_roles (RLS/schema issue),
-  // fall back to loading the church directly from profile.church_id.
-  useEffect(() => {
-    if (pastorChurch || !profile?.church_id) return;
-    supabase
-      .from('churches')
-      .select('id, name, city, region')
-      .eq('id', profile.church_id)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          setPastorChurch(data);
-          if (!pastorChurchId) setPastorChurchId(data.id);
-        }
-      });
-  }, [profile?.church_id, pastorChurch, pastorChurchId]);
 
   async function loadGroup(userId) {
     const { data } = await supabase
@@ -2652,13 +2636,13 @@ export default function App() {
         />
       )}
       {stage === 'church' && viewingChurchId && (() => {
-        const isOwnChurch = effectiveChurchId === viewingChurchId;
+        const isOwnChurch = pastorChurchId === viewingChurchId;
         const page = (
           <ChurchPage
             session={session}
             profile={profile}
             churchId={viewingChurchId}
-            pastorChurchId={effectiveChurchId}
+            pastorChurchId={pastorChurchId}
             chromeless={isOwnChurch}
             onBack={() => {
               if (initialChurchId) {
@@ -2672,7 +2656,7 @@ export default function App() {
             onProfileUpdate={(p) => setProfile(p)}
             onViewProfile={(uid) => setViewingUserId(uid)}
             onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
-            onOpenAdmin={effectiveChurchId
+            onOpenAdmin={pastorChurchId
               ? (tab) => { setPastorAdminInitialTab(tab ?? 'overview'); setStage('church-admin'); }
               : undefined}
             onNewSermon={isOwnChurch
@@ -2806,11 +2790,11 @@ export default function App() {
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
         />
       )}
-      {stage === 'church-admin' && session && effectiveChurchId && (
+      {stage === 'church-admin' && session && pastorChurchId && (
         <ChurchAdmin
           session={session}
           profile={profile}
-          churchId={effectiveChurchId}
+          churchId={pastorChurchId}
           initialTab={pastorAdminInitialTab}
           onBack={() => goBack('me')}
           onOpenChurchPage={() => { setViewingChurchId(effectiveChurchId); setStage('church'); }}
