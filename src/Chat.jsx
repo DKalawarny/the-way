@@ -1355,6 +1355,16 @@ export default function Chat({
                     <span style={{ fontSize: 13 }}>↗</span><span>Share conversation</span>
                   </button>
                 )}
+                {onOpenBoard && (
+                  <button onClick={() => { setMenuOpen(false); onOpenBoard(); }} style={{
+                    width: '100%', textAlign: 'left', background: 'none',
+                    border: 'none', borderBottom: `1px solid ${C.border}`,
+                    padding: '12px 16px', fontSize: 14, color: C.text,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
+                  }}>
+                    <span style={{ fontSize: 13 }}>🔖</span><span>Your board</span>
+                  </button>
+                )}
                 <button onClick={() => { setMenuOpen(false); onOpenHistory(); }} style={{
                   width: '100%', textAlign: 'left', background: 'none',
                   border: 'none', padding: '12px 16px', fontSize: 14,

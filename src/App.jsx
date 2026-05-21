@@ -1020,18 +1020,21 @@ function Board({ open, onClose, notes, onRemove, onGoDeeper, onSharePublicly }) 
     } catch {}
   };
 
+  const sidebarW = typeof window !== 'undefined' && window.innerWidth >= 1024 ? 240 : 0;
+
   return (
     <div
       onClick={onClose}
       style={{
         position: 'fixed',
-        inset: 0,
+        top: 0, bottom: 0, right: 0,
+        left: sidebarW,
         background: 'rgba(44,24,16,0.55)',
         zIndex: 60,
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'flex-start',
-        padding: 20,
+        padding: '20px 16px',
         animation: 'fadeIn 0.15s ease',
         overflowY: 'auto',
       }}
@@ -1042,7 +1045,7 @@ function Board({ open, onClose, notes, onRemove, onGoDeeper, onSharePublicly }) 
         style={{
           background: T.parchment,
           borderRadius: 18,
-          maxWidth: 720,
+          maxWidth: 680,
           width: '100%',
           margin: '40px 0',
           border: `1px solid ${T.line}`,
@@ -1052,62 +1055,45 @@ function Board({ open, onClose, notes, onRemove, onGoDeeper, onSharePublicly }) 
       >
         <div
           style={{
-            padding: '22px 24px',
+            padding: '18px 20px',
             borderBottom: `1px solid ${T.line}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: 14,
+            gap: 12,
             background: T.cream,
           }}
         >
           <div>
-            <div
-              style={{
-                fontSize: 12,
-                letterSpacing: 2,
-                textTransform: 'uppercase',
-                color: T.goldDark,
-                marginBottom: 4,
-              }}
-            >
+            <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 3 }}>
               Your Board
             </div>
-            <div style={{ fontFamily: T.serif, fontSize: 24, color: T.ink, fontWeight: 600, letterSpacing: '-0.018em', lineHeight: 1.18 }}>
-              {notes.length === 0
-                ? 'Nothing saved yet'
-                : `${notes.length} ${notes.length === 1 ? 'note' : 'notes'}`}
+            <div style={{ fontFamily: T.serif, fontSize: 22, color: T.ink, fontWeight: 600, letterSpacing: '-0.018em', lineHeight: 1.18 }}>
+              {notes.length === 0 ? 'Nothing saved yet' : `${notes.length} ${notes.length === 1 ? 'note' : 'notes'}`}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
             {notes.length > 0 && (
               <button
                 onClick={() => copy(buildExportText(notes), '__all__')}
                 style={{
-                  background: T.ink,
-                  color: T.cream,
-                  border: 'none',
-                  borderRadius: 999,
-                  padding: '8px 14px',
-                  fontSize: 13,
-                  fontWeight: 500,
+                  background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+                  padding: '8px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer',
                 }}
               >
-                {copiedAll ? 'Copied ✓' : 'Copy all notes'}
+                {copiedAll ? 'Copied ✓' : 'Copy all'}
               </button>
             )}
             <button
               onClick={onClose}
               style={{
-                background: 'transparent',
-                border: `1px solid ${T.line}`,
-                borderRadius: 999,
-                padding: '8px 14px',
-                fontSize: 13,
-                color: T.inkSoft,
+                background: 'transparent', border: `1px solid ${T.line}`, borderRadius: '50%',
+                width: 34, height: 34, fontSize: 18, lineHeight: '1',
+                color: T.inkMuted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
-              Close
+              ×
             </button>
           </div>
         </div>
