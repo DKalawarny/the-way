@@ -526,6 +526,87 @@ export default function ChurchPage({
         </div>
       </div>}
 
+      {/* Compact chromeless banner — pastor's own church view.
+          Just the colored strip + icon; name/CTA live below on cream. */}
+      {chromeless && (
+        <>
+          <div style={{
+            height: 140,
+            background: churchBannerBg(church),
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            overflow: 'hidden', position: 'relative',
+          }}>
+            <div style={{
+              width: 80, height: 80, borderRadius: '50%',
+              background: 'rgba(253,248,240,0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 40, overflow: 'hidden',
+              boxShadow: '0 4px 20px rgba(26,17,8,0.25)',
+            }}>
+              {church.avatar_url
+                ? <img src={church.avatar_url} alt={church.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : '⛪'}
+            </div>
+          </div>
+
+          <div style={{ textAlign: 'center', padding: '24px 20px 20px', background: T.cream, borderBottom: `1px solid ${T.line}` }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 6 }}>
+              <h1 style={{ fontFamily: T.display, fontSize: 30, fontWeight: 600, color: T.ink, margin: 0, lineHeight: 1.1, letterSpacing: '-0.02em' }}>
+                {church.name}
+              </h1>
+              {church.verification_status === 'verified' && (
+                <span title="Verified" style={{ color: T.gold, fontSize: 17 }}>✓</span>
+              )}
+              {church.verified === false && church.verify_method === 'unverified' && (
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.inkMuted, background: 'rgba(26,17,8,0.06)', border: `1px solid ${T.line}`, borderRadius: 999, padding: '3px 8px' }}>
+                  Self-reported
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: 13, color: T.inkSoft, marginBottom: church.pastor ? 4 : 20 }}>
+              {[church.denomination, [church.city, church.country].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}
+              {(church.countries_open_to ?? []).length > 0 && (
+                <span style={{ marginLeft: 4 }}>{church.countries_open_to.map(codeToFlag).join(' ')}</span>
+              )}
+            </div>
+            {church.pastor && (
+              <div style={{ fontSize: 13, fontStyle: 'italic', color: T.inkSoft, marginBottom: 20 }}>
+                Led by{' '}
+                <button onClick={() => onViewProfile?.(church.pastor.id)} style={{
+                  background: 'none', border: 'none', padding: 0,
+                  color: T.goldDark, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  fontFamily: 'inherit', fontStyle: 'normal',
+                }}>
+                  {church.pastor.display_name}
+                </button>
+              </div>
+            )}
+            {onOpenTalkToSomeone && (
+              <div style={{ marginBottom: 12 }}>
+                <button onClick={onOpenTalkToSomeone} style={{
+                  background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
+                  padding: '14px 44px', fontSize: 15, fontWeight: 600, cursor: 'pointer',
+                  boxShadow: '0 4px 16px rgba(168,85,48,0.28)', letterSpacing: '-0.01em',
+                }}>Message the team</button>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 16, fontSize: 13, color: T.inkSoft }}>
+              {onOpenPrayer && (
+                <button onClick={onOpenPrayer} style={{ background: 'none', border: 'none', color: T.inkSoft, fontSize: 13, cursor: 'pointer', padding: 0, textDecoration: 'underline', textDecorationColor: 'rgba(90,71,51,0.3)' }}>
+                  🙏 Pray together
+                </button>
+              )}
+              {onOpenPrayer && onOpenWalks && <span style={{ opacity: 0.4 }}>·</span>}
+              {onOpenWalks && (
+                <button onClick={onOpenWalks} style={{ background: 'none', border: 'none', color: T.inkSoft, fontSize: 13, cursor: 'pointer', padding: 0, textDecoration: 'underline', textDecorationColor: 'rgba(90,71,51,0.3)' }}>
+                  Pick a walk
+                </button>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
       <div style={{
         position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 4,
         background: T.cream,
@@ -657,8 +738,9 @@ export default function ChurchPage({
               </button>
             )}
 
-            {/* ── Quick action chips ── */}
-            {(isMember || isPastor) && (
+            {/* ── Quick action chips — only shown in non-chromeless view;
+                chromeless shows these above the tabs in the info card. ── */}
+            {!chromeless && (isMember || isPastor) && (
               <div style={{ marginBottom: 28 }}>
                 {/* Primary action */}
                 {onOpenTalkToSomeone && (

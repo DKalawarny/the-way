@@ -1246,7 +1246,7 @@ function AppHeader({ onOpenBible, onVerseClick }) {
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0,
       height: 56, zIndex: 110,
-      background: 'linear-gradient(180deg, #2a1a14 0%, #1f1410 100%)',
+      background: 'linear-gradient(180deg, #2e1c14 0%, #221510 100%)',
       borderBottom: '1px solid #3a261d',
       boxShadow: '0 4px 14px rgba(20,10,6,0.35), inset 0 -1px 0 rgba(184,115,58,0.18)',
       display: 'flex', alignItems: 'center',
@@ -1300,7 +1300,7 @@ function MobileHeader({ onOpenBible, onVerseClick }) {
       top: 'env(safe-area-inset-top, 0px)',
       left: 0, right: 0,
       height: 56, zIndex: 110,
-      background: 'linear-gradient(180deg, #2a1a14 0%, #1f1410 100%)',
+      background: 'linear-gradient(180deg, #2e1c14 0%, #221510 100%)',
       borderBottom: '1px solid #3a261d',
       boxShadow: '0 4px 14px rgba(20,10,6,0.35), inset 0 -1px 0 rgba(184,115,58,0.18)',
       display: 'flex', alignItems: 'center',
