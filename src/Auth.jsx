@@ -56,8 +56,8 @@ function ResendButton({ email }) {
   );
 }
 
-export default function Auth({ onAuth, onBack }) {
-  const [mode, setMode] = useState('signin'); // signin | signup | verify
+export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
+  const [mode, setMode] = useState(initialMode); // signin | signup | verify
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');

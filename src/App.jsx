@@ -1666,6 +1666,7 @@ export default function App() {
     }
   }, [profile?.id]);
   const [authStage, setAuthStage] = useState('idle'); // idle | auth | profile-setup | profile-view
+  const [authInitialMode, setAuthInitialMode] = useState('signin');
   const [profileEditOrigin, setProfileEditOrigin] = useState('idle'); // where edit profile was opened from
   const [pendingPastorApply, setPendingPastorApply] = useState(false);
   const [showPastorPrompt, setShowPastorPrompt] = useState(false);
@@ -2334,6 +2335,7 @@ export default function App() {
             }
           }}
           onBack={() => setAuthStage('idle')}
+          initialMode={authInitialMode}
         />
       </>
     );
@@ -2438,8 +2440,8 @@ export default function App() {
       }}>
       {stage === 'landing' && (
         <Landing
-          onBegin={() => setStage('onboarding')}
-          onSignIn={() => setAuthStage('auth')}
+          onBegin={() => { setAuthInitialMode('signup'); setAuthStage('auth'); }}
+          onSignIn={() => { setAuthInitialMode('signin'); setAuthStage('auth'); }}
           session={session}
           profile={profile}
           onEditProfile={() => setAuthStage('profile-view')}
