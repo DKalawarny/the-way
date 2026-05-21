@@ -60,7 +60,6 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
   const [mode, setMode] = useState(initialMode); // signin | signup | verify
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -88,7 +87,6 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
       options: {
         emailRedirectTo: window.location.origin,
         data: {
-          display_name: name,
           // First-touch attribution — stored in raw_user_meta_data,
           // visible in the Supabase dashboard under Authentication → Users.
           ...(utm?.utm_source   && { utm_source:   utm.utm_source }),
@@ -167,17 +165,6 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
         <h2 style={title}>{mode === 'signin' ? 'Welcome back' : 'Join the journey'}</h2>
 
         <form onSubmit={mode === 'signin' ? handleSignIn : handleSignUp}>
-          {mode === 'signup' && (
-            <Field label="Display name">
-              <input
-                style={input}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="How you'll appear to others"
-                required
-              />
-            </Field>
-          )}
           <Field label="Email">
             <input
               style={input}

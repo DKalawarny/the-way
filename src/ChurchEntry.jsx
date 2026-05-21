@@ -137,10 +137,13 @@ export default function ChurchEntry({ churchId, session, onAskAI, onAskSomeone, 
           </div>
 
           <button onClick={onClose} style={{ '--i': 6,
-            background: 'none', border: 'none', color: T.inkMuted, fontSize: 13,
-            cursor: 'pointer', padding: '18px 0 0',
+            background: 'rgba(184,115,58,0.08)',
+            border: `1px solid rgba(184,115,58,0.25)`,
+            borderRadius: 999,
+            color: T.goldDark, fontSize: 14, fontWeight: 600,
+            cursor: 'pointer', padding: '12px 28px', marginTop: 18,
           }}>
-            Just looking around →
+            Browse {church.name} →
           </button>
         </div>
       </div>

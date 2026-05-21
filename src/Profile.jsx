@@ -114,12 +114,28 @@ function Toggle({ checked, onChange, label }) {
 }
 
 // ── iPhone-style first-time wizard ───────────────────────────────────────────
+const LANGUAGES = [
+  { code: 'en', label: 'English',    native: 'English' },
+  { code: 'es', label: 'Spanish',    native: 'Español' },
+  { code: 'fr', label: 'French',     native: 'Français' },
+  { code: 'pt', label: 'Portuguese', native: 'Português' },
+  { code: 'de', label: 'German',     native: 'Deutsch' },
+  { code: 'ko', label: 'Korean',     native: '한국어' },
+  { code: 'zh', label: 'Chinese',    native: '中文' },
+  { code: 'hi', label: 'Hindi',      native: 'हिन्दी' },
+  { code: 'sw', label: 'Swahili',    native: 'Kiswahili' },
+  { code: 'yo', label: 'Yorùbá',     native: 'Yorùbá' },
+  { code: 'ig', label: 'Igbo',       native: 'Igbo' },
+  { code: 'ha', label: 'Hausa',      native: 'Hausa' },
+];
+
 const WIZARD_STEPS = [
-  { key: 'display_name',   question: 'What should we call you?',           hint: 'This is how you\'ll appear to others.' },
-  { key: 'person_type',    question: 'Where are you at right now?',         hint: 'Be honest — there\'s no wrong answer here.' },
-  { key: 'tradition',      question: 'Any tradition you identify with?',    hint: null },
-  { key: 'exploring_since',question: 'How long have you been on this path?',hint: null },
-  { key: 'what_brought',   question: 'What brought you here?',              hint: 'One honest line — or skip.', optional: true },
+  { key: 'name',              question: 'What\'s your name?',                  hint: 'First and last name.' },
+  { key: 'preferred_language',question: 'What language do you prefer?',        hint: 'Your AI companion will respond in your language.' },
+  { key: 'person_type',       question: 'Where are you at right now?',          hint: 'Be honest — there\'s no wrong answer here.' },
+  { key: 'tradition',         question: 'Any tradition you identify with?',     hint: null },
+  { key: 'exploring_since',   question: 'How long have you been on this path?', hint: null },
+  { key: 'what_brought',      question: 'What brought you here?',               hint: 'One honest line — or skip.', optional: true },
 ];
 
 function WizardDots({ step, total }) {
@@ -139,11 +155,13 @@ function WizardDots({ step, total }) {
 function ProfileWizard({ user, existing, onSave }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
-    display_name:    existing?.display_name ?? user?.user_metadata?.display_name ?? '',
-    person_type:     existing?.person_type ?? '',
-    tradition:       existing?.tradition ?? 'Still Discovering',
-    exploring_since: existing?.exploring_since ?? '',
-    what_brought:    existing?.what_brought ?? '',
+    first_name:         '',
+    last_name:          '',
+    preferred_language: existing?.preferred_language ?? navigator.language?.split('-')[0] ?? 'en',
+    person_type:        existing?.person_type ?? '',
+    tradition:          existing?.tradition ?? 'Still Discovering',
+    exploring_since:    existing?.exploring_since ?? '',
+    what_brought:       existing?.what_brought ?? '',
   });
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState(null);
@@ -156,6 +174,7 @@ function ProfileWizard({ user, existing, onSave }) {
 
   function canAdvance() {
     if (current.optional) return true;
+    if (current.key === 'name') return form.first_name.trim() && form.last_name.trim();
     const v = form[current.key];
     return v && v !== '';
   }
@@ -172,7 +191,7 @@ function ProfileWizard({ user, existing, onSave }) {
     setError(null);
     const payload = {
       id: user.id,
-      display_name:    form.display_name,
+      display_name:    [form.first_name.trim(), form.last_name.trim()].filter(Boolean).join(' '),
       person_type:     form.person_type,
       tradition:       form.tradition,
       exploring_since: form.exploring_since,
@@ -180,7 +199,7 @@ function ProfileWizard({ user, existing, onSave }) {
       tts_voice:       existing?.tts_voice ?? 'onyx',
       flags:           existing?.flags ?? [],
       show_flag:       existing?.show_flag ?? false,
-      preferred_language: existing?.preferred_language ?? (navigator.language?.split('-')[0] ?? 'en'),
+      preferred_language: form.preferred_language,
       updated_at: new Date().toISOString(),
     };
     const { error: err } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
@@ -226,20 +245,59 @@ function ProfileWizard({ user, existing, onSave }) {
         {!current.hint && <div style={{ marginBottom: 36 }} />}
 
         {/* Step inputs */}
-        {current.key === 'display_name' && (
-          <input
-            autoFocus
-            value={form.display_name}
-            onChange={(e) => set('display_name', e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && canAdvance() && advance()}
-            placeholder="Your name"
-            style={{
-              width: '100%', boxSizing: 'border-box',
-              border: 'none', borderBottom: `2px solid ${T.gold}`,
-              background: 'transparent', fontSize: 24, fontFamily: T.serif,
-              color: T.ink, padding: '8px 0', outline: 'none', textAlign: 'center',
-            }}
-          />
+        {current.key === 'name' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <input
+              autoFocus
+              value={form.first_name}
+              onChange={(e) => set('first_name', e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && canAdvance() && advance()}
+              placeholder="First name"
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                border: 'none', borderBottom: `2px solid ${T.gold}`,
+                background: 'transparent', fontSize: 24, fontFamily: T.serif,
+                color: T.ink, padding: '8px 0', outline: 'none', textAlign: 'center',
+              }}
+            />
+            <input
+              value={form.last_name}
+              onChange={(e) => set('last_name', e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && canAdvance() && advance()}
+              placeholder="Last name"
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                border: 'none', borderBottom: `2px solid ${T.gold}`,
+                background: 'transparent', fontSize: 24, fontFamily: T.serif,
+                color: T.ink, padding: '8px 0', outline: 'none', textAlign: 'center',
+              }}
+            />
+          </div>
+        )}
+
+        {current.key === 'preferred_language' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {LANGUAGES.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => set('preferred_language', lang.code)}
+                style={{
+                  padding: '14px 12px', textAlign: 'center',
+                  background: form.preferred_language === lang.code ? 'rgba(184,115,58,0.12)' : T.white,
+                  border: form.preferred_language === lang.code ? `2px solid ${T.gold}` : `1px solid ${T.line}`,
+                  borderRadius: 12, fontSize: 14, cursor: 'pointer',
+                  color: T.ink, fontFamily: T.serif,
+                  fontWeight: form.preferred_language === lang.code ? 600 : 400,
+                  transition: 'all 0.15s',
+                }}
+              >
+                <div style={{ fontSize: 16, marginBottom: 2 }}>{lang.native}</div>
+                {lang.native !== lang.label && (
+                  <div style={{ fontSize: 11, color: T.inkMuted }}>{lang.label}</div>
+                )}
+              </button>
+            ))}
+          </div>
         )}
 
         {current.key === 'person_type' && (
@@ -370,8 +428,10 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
   if (!existing?.display_name) {
     return <ProfileWizard user={user} existing={existing} onSave={onSave} />;
   }
+  const nameParts = (existing?.display_name ?? '').split(' ');
   const [form, setForm] = useState({
-    display_name:       existing?.display_name ?? user?.user_metadata?.display_name ?? '',
+    first_name:         nameParts[0] ?? '',
+    last_name:          nameParts.slice(1).join(' '),
     age_range:          existing?.age_range ?? '',
     gender:             existing?.gender ?? '',
     city:               existing?.city ?? '',
@@ -407,8 +467,10 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
     const countryText = form.flags.length > 0
       ? (COUNTRIES.find(([c]) => c === form.flags[0])?.[1] ?? '') : '';
 
+    const { first_name, last_name, ...formRest } = form;
     const payload = {
-      id: user.id, ...form,
+      id: user.id, ...formRest,
+      display_name: [first_name.trim(), last_name.trim()].filter(Boolean).join(' '),
       country: countryText,
       ...(existing?.avatar_config ? { avatar_config: existing.avatar_config } : {}),
       ...(isNewHome ? { home_found_at: new Date().toISOString() } : {}),
@@ -429,7 +491,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
       {showMilestone && (
         <HomeFound
           tradition={form.tradition}
-          name={form.display_name}
+          name={[form.first_name, form.last_name].filter(Boolean).join(' ')}
           onContinue={() => { setShowMilestone(false); onSave(form); }}
         />
       )}
@@ -478,9 +540,14 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
             {/* ── The basics ── */}
             <Section icon="👤" label="The basics" />
 
-            <Field label="Display name">
-              <input style={iStyle} value={form.display_name} onChange={(e) => set('display_name', e.target.value)} placeholder="How you'll appear to others" required />
-            </Field>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <Field label="First name">
+                <input style={iStyle} value={form.first_name} onChange={(e) => set('first_name', e.target.value)} placeholder="First" required />
+              </Field>
+              <Field label="Last name">
+                <input style={iStyle} value={form.last_name} onChange={(e) => set('last_name', e.target.value)} placeholder="Last" required />
+              </Field>
+            </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <Field label="Age range">
@@ -521,18 +588,9 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
 
             <Field label="Language">
               <select style={sStyle} value={form.preferred_language} onChange={(e) => set('preferred_language', e.target.value)}>
-                <option value="en">English</option>
-                <option value="es">Español</option>
-                <option value="fr">Français</option>
-                <option value="pt">Português</option>
-                <option value="de">Deutsch</option>
-                <option value="ko">한국어</option>
-                <option value="zh">中文</option>
-                <option value="hi">हिन्दी</option>
-                <option value="sw">Kiswahili</option>
-                <option value="yo">Yorùbá</option>
-                <option value="ig">Igbo</option>
-                <option value="ha">Hausa</option>
+                {LANGUAGES.map((lang) => (
+                  <option key={lang.code} value={lang.code}>{lang.native}{lang.native !== lang.label ? ` — ${lang.label}` : ''}</option>
+                ))}
               </select>
             </Field>
 

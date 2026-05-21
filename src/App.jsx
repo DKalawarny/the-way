@@ -1030,7 +1030,7 @@ function Board({ open, onClose, notes, onRemove, onGoDeeper, onSharePublicly }) 
         top: 0, bottom: 0, right: 0,
         left: sidebarW,
         background: 'rgba(44,24,16,0.55)',
-        zIndex: 60,
+        zIndex: 160,
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'flex-start',

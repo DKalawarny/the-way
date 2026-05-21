@@ -10,29 +10,19 @@ const TRADITIONS = [
 
 const PLANS = [
   {
-    id: 'small',
-    label: 'Small Group',
-    members: 'Up to 15 members',
-    price: '$29.99',
-    perMember: '~$2.00 / person',
-    desc: 'Friends, home group, or bible study circle.',
+    id: 'church_base',
+    label: 'Church Base',
+    members: 'Home group, Sunday school, or growing congregation',
+    price: '$41.99',
+    desc: 'Everything your group needs to study, pray, and grow together.',
   },
   {
-    id: 'church',
-    label: 'Church Group',
-    members: 'Up to 75 members',
-    price: '$74.99',
-    perMember: '~$1.00 / person',
-    desc: 'Sunday school class, parish group, or mid-size congregation.',
+    id: 'church_pro',
+    label: 'Church Pro',
+    members: 'Large congregation with full leadership tools',
+    price: '$82.99',
+    desc: 'Advanced tools, sermon threads, care team routing, and priority support.',
     featured: true,
-  },
-  {
-    id: 'large',
-    label: 'Large Church',
-    members: 'Up to 300 members',
-    price: '$174.99',
-    perMember: '~$0.58 / person',
-    desc: 'Full congregation. Less than a dollar per person.',
   },
 ];
 
@@ -48,8 +38,7 @@ export default function GroupSetup({ session, onJoined, onClose }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [created, setCreated] = useState(null);
-  const [selectedPlan, setSelectedPlan] = useState(null); // plan id chosen
-  const [showComingSoon, setShowComingSoon] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(null);
 
   async function join() {
     if (!code.trim()) return;
@@ -72,10 +61,11 @@ export default function GroupSetup({ session, onJoined, onClose }) {
     onJoined({ group, role: 'member' });
   }
 
-  async function create() {
-    if (!name.trim()) return;
+  async function checkout() {
+    if (!name.trim() || !selectedPlan) return;
     setBusy(true);
     setError('');
+
     const inviteCode = makeInviteCode();
     const { data: group, error: gErr } = await supabase.from('church_groups').insert({
       name: name.trim(),
@@ -90,6 +80,27 @@ export default function GroupSetup({ session, onJoined, onClose }) {
       member_id: session.user.id,
       role: 'pastor',
     });
+
+    try {
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authSession.access_token}` },
+          body: JSON.stringify({
+            price_plan: selectedPlan,
+            user_id: session.user.id,
+            user_email: session.user.email,
+            return_url: window.location.origin,
+          }),
+        }
+      );
+      const { url } = await res.json();
+      if (url) { window.location.href = url; return; }
+    } catch {}
+
+    // Stripe redirect failed — land on the success screen anyway
     setBusy(false);
     setCreated({ group, inviteCode });
   }
@@ -230,7 +241,6 @@ export default function GroupSetup({ session, onJoined, onClose }) {
                     </div>
                   </div>
                   <div style={{ fontSize: 13, color: '#4A3828', marginTop: 8 }}>{p.desc}</div>
-                  <div style={{ marginTop: 10, fontSize: 11, color: 'rgba(184,115,58,0.8)', fontWeight: 600 }}>{p.perMember}</div>
                 </div>
               ))}
             </div>
@@ -248,7 +258,7 @@ export default function GroupSetup({ session, onJoined, onClose }) {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(184,115,58,0.1)', border: '1px solid rgba(184,115,58,0.3)', borderRadius: 12, padding: '12px 16px', marginBottom: 28 }}>
               <div>
                 <div style={{ fontSize: 12, color: T.gold, fontWeight: 600 }}>{plan?.label}</div>
-                <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 2 }}>{plan?.members} · {plan?.price} CAD/month</div>
+                <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 2 }}>{plan?.price} CAD/month</div>
               </div>
               <button onClick={() => setSelectedPlan(null)} style={{ background: 'none', border: 'none', color: '#9B8C73', fontSize: 12, cursor: 'pointer', padding: 0 }}>
                 Change
@@ -289,51 +299,19 @@ export default function GroupSetup({ session, onJoined, onClose }) {
 
             {error && <div style={{ fontSize: 13, color: '#E07070', marginBottom: 12 }}>{error}</div>}
 
-            <button onClick={() => setShowComingSoon(true)} disabled={!name.trim()} style={{
-              background: !name.trim() ? 'rgba(184,115,58,0.3)' : `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
+            <button onClick={checkout} disabled={busy || !name.trim()} style={{
+              background: busy || !name.trim() ? 'rgba(184,115,58,0.3)' : `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
               color: T.ink, border: 'none', borderRadius: 999,
               padding: '14px', fontSize: 14, fontWeight: 600,
-              cursor: !name.trim() ? 'default' : 'pointer', width: '100%',
-              boxShadow: name.trim() ? '0 4px 16px rgba(184,115,58,0.35)' : 'none',
+              cursor: busy || !name.trim() ? 'default' : 'pointer', width: '100%',
+              boxShadow: !busy && name.trim() ? '0 4px 16px rgba(184,115,58,0.35)' : 'none',
             }}>
-              Continue to payment →
+              {busy ? 'Setting up…' : 'Continue to payment →'}
             </button>
           </>
         )}
       </div>
 
-      {/* ── Coming soon overlay ── */}
-      {showComingSoon && (
-        <div
-          onClick={() => setShowComingSoon(false)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200, padding: 24 }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{ background: '#1A0F07', border: '1px solid rgba(184,115,58,0.3)', borderRadius: 20, padding: 32, maxWidth: 400, width: '100%', textAlign: 'center' }}
-          >
-            <div style={{ fontSize: 11, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', marginBottom: 14, opacity: 0.8 }}>Coming soon</div>
-            <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 12 }}>
-              {plan?.label} — {plan?.price} CAD/mo
-            </div>
-            <div style={{ fontSize: 14, color: '#4A3828', lineHeight: 1.65, marginBottom: 28 }}>
-              Church group billing is launching soon. Join the list and we'll notify you the moment it's live — your group name is saved.
-            </div>
-            <button
-              onClick={async () => { setShowComingSoon(false); await create(); }}
-              style={{ width: '100%', background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '13px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 12 }}
-            >
-              Join the list &amp; create group
-            </button>
-            <button
-              onClick={() => setShowComingSoon(false)}
-              style={{ width: '100%', background: 'transparent', border: 'none', color: '#9B8C73', fontSize: 13, cursor: 'pointer', padding: 8 }}
-            >
-              Not yet
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -417,8 +417,7 @@ export default function ChurchPage({
       {!chromeless && <div style={{
         position: 'relative',
         background: churchBannerBg(church),
-        borderRadius: '0 0 28px 28px',
-        boxShadow: '0 8px 32px rgba(26,17,8,0.18), 0 2px 8px rgba(26,17,8,0.10)',
+        borderRadius: 0,
         overflow: 'hidden',
         color: T.cream,
         zIndex: 1,
