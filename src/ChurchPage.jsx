@@ -836,18 +836,20 @@ export default function ChurchPage({
                         </div>
                       )}
                     </div>
-                    <button
-                      onClick={latestSermon
-                        ? () => onOpenSermon?.(latestSermon.id)
-                        : () => onNewSermon ? onNewSermon() : onOpenAdmin?.('sermons')}
-                      style={{
-                        background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
-                        padding: '7px 14px', fontSize: 12.5, fontWeight: 600,
-                        cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {latestSermon ? 'View →' : 'Post first →'}
-                    </button>
+                    {(latestSermon || isPastor) && (
+                      <button
+                        onClick={latestSermon
+                          ? () => onOpenSermon?.(latestSermon.id)
+                          : () => onNewSermon ? onNewSermon() : onOpenAdmin?.('sermons')}
+                        style={{
+                          background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+                          padding: '7px 14px', fontSize: 12.5, fontWeight: 600,
+                          cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {latestSermon ? 'View →' : 'Post first →'}
+                      </button>
+                    )}
                   </div>
                 )}
 
