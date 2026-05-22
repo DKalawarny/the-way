@@ -945,15 +945,61 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
 
                 {/* ── Content items ──────────────────────────────────────── */}
                 {filteredIdxs.length === 0 ? (
-                  <div style={{
-                    background: T.white, border: `1px dashed ${T.line}`, borderRadius: 14,
-                    padding: '28px 20px', textAlign: 'center',
-                    color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.6,
-                    marginBottom: 12,
-                  }}>
-                    {content.length === 0
-                      ? 'Paste an outline above and tap Generate the week — or add one manually.'
-                      : `No ${activeKindMeta.label.toLowerCase()} yet — hit Repopulate or add one manually.`}
+                  <div style={{ marginBottom: 12 }}>
+                    {activeTab === 'daily_verse' ? (
+                      <div style={{
+                        background: T.white, border: `1px dashed ${T.line}`, borderRadius: 14,
+                        padding: '24px 20px', textAlign: 'center',
+                        color: T.inkMuted, lineHeight: 1.6, marginBottom: 10,
+                      }}>
+                        <div style={{ fontFamily: T.serif, fontStyle: 'italic', marginBottom: 16 }}>
+                          {content.length === 0
+                            ? 'Paste an outline above and tap Generate the week — or fill in each day yourself.'
+                            : 'No daily questions yet — generate or fill in each day yourself.'}
+                        </div>
+                        <button
+                          onClick={() => {
+                            setContent((arr) => {
+                              const usedDays = new Set(
+                                arr.filter((x) => x.kind === 'daily_verse' && x.day != null).map((x) => x.day)
+                              );
+                              const newItems = [];
+                              for (let day = 1; day <= 7; day++) {
+                                if (!usedDays.has(day)) {
+                                  newItems.push({
+                                    kind: 'daily_verse',
+                                    day,
+                                    body: '',
+                                    scripture: '',
+                                    scheduled_at: defaultScheduledAt(weekStartsOn, day),
+                                    _local: true,
+                                  });
+                                }
+                              }
+                              return [...arr, ...newItems];
+                            });
+                          }}
+                          style={{
+                            background: T.parchment, border: `1px solid ${T.goldLight}`,
+                            borderRadius: 999, padding: '9px 20px',
+                            fontSize: 13, fontWeight: 600, color: T.goldDark,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          + Set up all 7 days manually
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{
+                        background: T.white, border: `1px dashed ${T.line}`, borderRadius: 14,
+                        padding: '28px 20px', textAlign: 'center',
+                        color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.6,
+                      }}>
+                        {content.length === 0
+                          ? 'Paste an outline above and tap Generate the week — or add one manually.'
+                          : `No ${activeKindMeta.label.toLowerCase()} yet — hit Repopulate or add one manually.`}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   filteredIdxs.map(({ c, i }) => (
