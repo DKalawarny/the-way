@@ -769,8 +769,42 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
             <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 600, color: T.ink, marginBottom: 12 }}>
               Delete {church?.name}?
             </div>
-            <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, marginBottom: 16 }}>
-              This will permanently delete the church, all sermons, and all member records. Type the church name to confirm.
+
+            {/* What gets deleted */}
+            <div style={{
+              background: 'rgba(165,63,43,0.07)', border: '1px solid rgba(165,63,43,0.2)',
+              borderRadius: 10, padding: '12px 14px', marginBottom: 14,
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#a53f2b', marginBottom: 6 }}>This will permanently remove:</div>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: T.inkSoft, lineHeight: 1.75 }}>
+                <li>The church page and all its settings</li>
+                <li>All sermons and discussion questions</li>
+                <li>All member records and care assignments</li>
+                <li>Your congregation's access — immediately</li>
+              </ul>
+            </div>
+
+            {/* Transfer alternative */}
+            <div style={{
+              background: T.parchment, border: `1px solid ${T.goldLight}`,
+              borderRadius: 10, padding: '12px 14px', marginBottom: 16,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+            }}>
+              <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.5 }}>
+                Leaving but want the church to continue?
+              </div>
+              <button
+                onClick={() => { setDeleteOpen(false); setDeleteConfirm(''); openTransfer(); }}
+                style={{
+                  background: 'none', border: `1px solid ${T.goldLight}`, borderRadius: 999,
+                  padding: '6px 12px', fontSize: 12.5, fontWeight: 600,
+                  color: T.goldDark, cursor: 'pointer', flexShrink: 0,
+                }}
+              >Transfer instead →</button>
+            </div>
+
+            <div style={{ fontSize: 13, color: T.inkSoft, marginBottom: 10 }}>
+              Type the church name to confirm deletion:
             </div>
             <input
               value={deleteConfirm}
