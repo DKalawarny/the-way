@@ -78,6 +78,24 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
     showToast('Church photo updated.', 'success');
   }
 
+  // Church deletion
+  const [deleteOpen, setDeleteOpen]   = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleteBusy, setDeleteBusy]   = useState(false);
+
+  async function handleDeleteChurch() {
+    if (!churchId || deleteConfirm.trim().toLowerCase() !== (church?.name ?? '').toLowerCase()) return;
+    setDeleteBusy(true);
+    try {
+      await supabase.from('church_roles').delete().eq('church_id', churchId);
+      await supabase.from('sermons').delete().eq('church_id', churchId);
+      await supabase.from('churches').delete().eq('id', churchId);
+      onTransferComplete?.();
+    } catch {
+      setDeleteBusy(false);
+    }
+  }
+
   // Ownership transfer
   const [transferOpen, setTransferOpen]       = useState(false);
   const [transferSearch, setTransferSearch]   = useState('');
@@ -713,6 +731,79 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
           }}
         >Transfer ownership…</button>
       </div>
+
+      {/* ── Delete church ─────────────────────────────────────────────── */}
+      <div style={{
+        background: T.white, border: '1px solid rgba(165,63,43,0.35)',
+        borderLeft: '4px solid #a53f2b', borderRadius: 14, padding: '16px 18px', marginTop: 12,
+      }}>
+        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: '#a53f2b', fontWeight: 700, marginBottom: 6 }}>
+          Danger zone
+        </div>
+        <div style={{ fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.ink, marginBottom: 4 }}>
+          Delete this church
+        </div>
+        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>
+          Permanently removes the church, all sermons, and all member records. This cannot be undone. Do this before closing your account.
+        </div>
+        <button
+          onClick={() => setDeleteOpen(true)}
+          style={{
+            background: 'transparent', border: '1px solid rgba(165,63,43,0.5)',
+            borderRadius: 999, padding: '8px 16px', fontSize: 13,
+            color: '#a53f2b', fontWeight: 600, cursor: 'pointer',
+          }}
+        >Delete church…</button>
+      </div>
+
+      {/* Delete confirmation modal */}
+      {deleteOpen && (
+        <div
+          onClick={() => !deleteBusy && (setDeleteOpen(false), setDeleteConfirm(''))}
+          style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(44,24,16,0.70)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={{ background: T.cream, borderRadius: 18, maxWidth: 420, width: '100%', padding: '24px 22px', border: '1px solid rgba(165,63,43,0.4)' }}>
+            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: '#a53f2b', fontWeight: 700, marginBottom: 4 }}>
+              Confirm deletion
+            </div>
+            <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 600, color: T.ink, marginBottom: 12 }}>
+              Delete {church?.name}?
+            </div>
+            <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, marginBottom: 16 }}>
+              This will permanently delete the church, all sermons, and all member records. Type the church name to confirm.
+            </div>
+            <input
+              value={deleteConfirm}
+              onChange={(e) => setDeleteConfirm(e.target.value)}
+              placeholder={church?.name}
+              autoFocus
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 13px',
+                fontFamily: 'inherit', fontSize: 14, color: T.ink,
+                background: T.white, outline: 'none', marginBottom: 14,
+              }}
+            />
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => { setDeleteOpen(false); setDeleteConfirm(''); }}
+                disabled={deleteBusy}
+                style={{ flex: 1, background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999, padding: '10px', fontSize: 14, color: T.inkSoft, cursor: 'pointer' }}
+              >Cancel</button>
+              <button
+                onClick={handleDeleteChurch}
+                disabled={deleteBusy || deleteConfirm.trim().toLowerCase() !== (church?.name ?? '').toLowerCase()}
+                style={{
+                  flex: 1, background: '#a53f2b', border: 'none', borderRadius: 999,
+                  padding: '10px', fontSize: 14, fontWeight: 600, color: T.cream,
+                  cursor: deleteBusy || deleteConfirm.trim().toLowerCase() !== (church?.name ?? '').toLowerCase() ? 'not-allowed' : 'pointer',
+                  opacity: deleteBusy || deleteConfirm.trim().toLowerCase() !== (church?.name ?? '').toLowerCase() ? 0.5 : 1,
+                }}
+              >{deleteBusy ? 'Deleting…' : 'Delete permanently'}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Transfer modal */}
       {transferOpen && (
