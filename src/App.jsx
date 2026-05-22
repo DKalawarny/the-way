@@ -2647,7 +2647,7 @@ export default function App() {
             onOpenAdmin={pastorChurchId
               ? (tab) => { setPastorAdminInitialTab(tab ?? 'overview'); setStage('church-admin'); }
               : undefined}
-            onNewSermon={session
+            onNewSermon={(isOwnChurch || effectiveChurchId === viewingChurchId)
               ? () => { setComposerSermonId(null); setStage('sermon-composer'); }
               : undefined}
             onOpenFeed={() => setStage('feed')}
