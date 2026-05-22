@@ -7,8 +7,13 @@ import { useUiKit, EmptyState, TextButton } from './uikit.jsx';
 import ChurchModeShell from './ChurchModeShell.jsx';
 import FlagPicker from './FlagPicker.jsx';
 
+import { usePlan, CHURCH_BASE_MEMBER_LIMIT } from './usePlan.js';
+import { TrialBanner, UpgradeWall } from './PlanGate.jsx';
+
 const PastorDashboard = lazy(() => import('./PastorDashboard.jsx'));
 const SermonComposer  = lazy(() => import('./SermonComposer.jsx'));
+const ChurchAiChat    = lazy(() => import('./ChurchAiChat.jsx'));
+const BibleReader     = lazy(() => import('./BibleReader.jsx'));
 
 function qrUrl(url) {
   return `https://quickchart.io/qr?text=${encodeURIComponent(url)}&size=320&margin=2&dark=2C1810&light=FDF8F0`;
@@ -1093,7 +1098,7 @@ function InviteModal({ member, existingRoles, onClose, onSubmit }) {
   );
 }
 
-function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
+function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, onShowQr }) {
   const [members, setMembers]   = useState([]);
   const [rolesByUser, setRolesByUser] = useState({});  // { user_id: [role rows] }
   const [pendingInvites, setPendingInvites] = useState([]);  // [{...invite, user_profile}]
@@ -1354,11 +1359,57 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
   return (
     <div style={{ display: 'grid', gap: 14 }}>
       {uikitUi}
+      {/* Member gate — Church Base is capped at 150 */}
+      {(() => {
+        const memberLimit = churchPlan === 'church_base' ? CHURCH_BASE_MEMBER_LIMIT : Infinity;
+        const count = members.length;
+        const atLimit = count >= memberLimit;
+        const nearLimit = !atLimit && count >= memberLimit * 0.8;
+        if (!atLimit && !nearLimit) return null;
+        const spotsLeft = memberLimit - count;
+        return (
+          <div style={{
+            background: atLimit
+              ? 'linear-gradient(135deg, rgba(165,63,43,0.1) 0%, rgba(184,115,58,0.08) 100%)'
+              : 'linear-gradient(135deg, rgba(184,115,58,0.1) 0%, rgba(184,115,58,0.05) 100%)',
+            border: `1px solid ${atLimit ? 'rgba(165,63,43,0.35)' : 'rgba(184,115,58,0.3)'}`,
+            borderRadius: 12, padding: '14px 16px', marginBottom: 16,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+          }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: atLimit ? '#A53F2B' : T.goldDark, marginBottom: 3 }}>
+                {atLimit ? `Member limit reached (${memberLimit})` : `${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} left on Church Base`}
+              </div>
+              <div style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.5 }}>
+                {atLimit
+                  ? 'Upgrade to Church Pro to keep growing your congregation.'
+                  : 'Your congregation is growing. Upgrade to Church Pro for unlimited members.'}
+              </div>
+            </div>
+            <a
+              href={`mailto:hello@kinwove.com?subject=${encodeURIComponent('Upgrade to Church Pro')}`}
+              style={{
+                background: atLimit
+                  ? 'linear-gradient(135deg, #A53F2B 0%, #7d2e1e 100%)'
+                  : `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
+                color: '#FDF8EE', borderRadius: 999,
+                padding: '8px 16px', fontSize: 13, fontWeight: 600,
+                textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap',
+              }}
+            >
+              Upgrade to Pro →
+            </a>
+          </div>
+        );
+      })()}
+
       {/* Invite code card */}
       <div style={{
         background: `linear-gradient(135deg, ${T.parchment} 0%, ${T.parchmentDark} 100%)`,
         border: `1px solid ${T.line}`, borderRadius: 14,
         padding: '18px 20px',
+        opacity: (churchPlan === 'church_base' && members.length >= CHURCH_BASE_MEMBER_LIMIT) ? 0.45 : 1,
+        pointerEvents: (churchPlan === 'church_base' && members.length >= CHURCH_BASE_MEMBER_LIMIT) ? 'none' : 'auto',
       }}>
         <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
           ✦ Church invite code
@@ -1779,11 +1830,12 @@ function PeoplePanel({ session, church, churchId, onChurchUpdate, onShowQr }) {
 export default function ChurchAdmin({ session, profile, churchId, onBack, onOpenChurchPage, onOpenChurchHub, onOpenSermon, initialTab }) {
   // Allow deep-links into a specific tab (e.g. ChurchPage's "Edit in Pastor
   // settings" lands on Settings, not Overview). Falls back to overview.
-  const VALID_TABS = ['overview', 'people', 'settings'];
+  const VALID_TABS = ['overview', 'people', 'ask', 'bible', 'settings'];
   const [tab, setTab] = useState(initialTab && VALID_TABS.includes(initialTab) ? initialTab : 'overview');
   const [church, setChurch] = useState(null);
   const [composerOpen, setComposerOpen] = useState(initialTab === 'sermons');
   const [composerSermonId, setComposerSermonId] = useState(null);
+  const { plan, hasAccess, daysLeft, trialExpired } = usePlan(churchId);
   // One-shot action that the next mounted panel should execute (e.g. when the
   // setup checklist's "Print your QR code" item fires, we route to Settings
   // *and* signal the panel to open the QR modal — saves a second click at the
@@ -1823,7 +1875,15 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
       onOpenChurchHub={onOpenChurchHub}
       currentSubpage={null}
     >
+      {trialExpired && (
+        <UpgradeWall onBack={onBack} />
+      )}
       <Suspense fallback={<div style={{ color: T.inkMuted, fontFamily: T.serif, padding: 40, textAlign: 'center' }}>Loading…</div>}>
+        {!trialExpired && plan === 'trial' && daysLeft <= 14 && (
+          <div style={{ padding: '16px 16px 0' }}>
+            <TrialBanner daysLeft={daysLeft} />
+          </div>
+        )}
         {tab === 'overview' && (
           <PastorDashboard
             embedded
@@ -1842,11 +1902,25 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
             session={session}
             church={church}
             churchId={churchId}
+            churchPlan={plan}
             onChurchUpdate={(c) => setChurch((prev) => ({ ...prev, ...c }))}
             onShowQr={() => gotoSettings('open-qr')}
           />
         )}
-{tab === 'settings' && (
+        {tab === 'ask' && (
+          <ChurchAiChat
+            session={session}
+            profile={profile}
+            churchPlan={plan ?? 'church_base'}
+          />
+        )}
+        {tab === 'bible' && (
+          <BibleReader
+            session={session}
+            profile={profile ? { ...profile, plan: plan ?? 'church_base' } : profile}
+          />
+        )}
+        {tab === 'settings' && (
           <SettingsPanel
             church={church}
             churchId={churchId}
@@ -1870,6 +1944,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
             churchId={churchId}
             initialSermonId={composerSermonId}
             onOpenSermon={onOpenSermon}
+            userPlan={plan ?? 'free'}
             onBack={() => { setComposerOpen(false); setComposerSermonId(null); }}
           />
         </Suspense>

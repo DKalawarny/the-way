@@ -828,6 +828,7 @@ export default function Chat({
   onSetPersonType,
   seededFromNote,
 }) {
+  const aiPlan = profile?.plan ?? 'free';
   const [dark, setDark] = useState(() => localStorage.getItem('chat_dark') === '1');
   const C = dark ? CHAT_DARK : CHAT_LIGHT;
   function toggleDark() { setDark((d) => { localStorage.setItem('chat_dark', d ? '0' : '1'); return !d; }); }
@@ -865,7 +866,7 @@ export default function Chat({
   const { speakingId, speak: speakMsg, stop: stopSpeech, supported: ttsSupported } = useTextToSpeech({ voice: ttsVoice });
 
   // ── AI usage limits ────────────────────────────────────────────────────────
-  const aiUsage = useAiUsage(session?.user?.id, profile?.plan ?? 'free');
+  const aiUsage = useAiUsage(session?.user?.id, aiPlan);
 
   // ── Upgrade nudge — shown once/day when user asks 3+ deep questions ────────
   const NUDGE_KEY = 'kinwove:last_nudge_date';
@@ -874,7 +875,7 @@ export default function Chat({
   const [showNudge, setShowNudge] = useState(false);
 
   function maybeShowNudge(userMsg) {
-    const plan = profile?.plan ?? 'free';
+    const plan = aiPlan;
     if (plan === 'premium_plus') return; // Pro users don't need nudge
     const isDeepMsg = DEEP_RE.test(userMsg) || userMsg.length > 200;
     if (!isDeepMsg) return;
@@ -1113,7 +1114,7 @@ export default function Chat({
       const res = await authedFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ system, messages: next, personType, seekingContext, plan: profile?.plan ?? 'free' }),
+        body: JSON.stringify({ system, messages: next, personType, seekingContext, plan: aiPlan }),
       });
 
       if (!res.ok || !res.body) {
@@ -1755,7 +1756,7 @@ export default function Chat({
                   Your questions are getting deeper
                 </div>
                 <div style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.5 }}>
-                  {(profile?.plan ?? 'free') === 'free'
+                  {aiPlan === 'free'
                     ? 'Get deeper responses with Individual. $6.99 CAD/mo.'
                     : 'Get deeper responses with Individual Pro. $13.99 CAD/mo.'}
                 </div>
@@ -1804,7 +1805,7 @@ export default function Chat({
 
       {/* ── AI limit wall — replaces composer when user is out of messages ── */}
       {aiUsage.atLimit && session && (
-        <AiLimitWall plan={profile?.plan ?? 'free'} panelMode={panelMode} />
+        <AiLimitWall plan={aiPlan} panelMode={panelMode} />
       )}
 
       {/* ── Low-messages warning strip ── */}

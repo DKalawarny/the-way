@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase.js';
 
-export const TRIAL_DAYS = 30;
-export const PRO_PRICE  = '$19/mo';
-export const UPGRADE_EMAIL = 'hello@kinwove.com'; // swap for Stripe link when ready
+export const TRIAL_DAYS               = 35;
+export const CHURCH_BASE_PRICE        = '$41.99 CAD/mo';
+export const CHURCH_PRO_PRICE         = '$82.99 CAD/mo';
+export const PRO_PRICE                = CHURCH_BASE_PRICE; // kept for legacy imports
+export const UPGRADE_EMAIL            = 'hello@kinwove.com'; // swap for Stripe link when ready
+export const CHURCH_BASE_MEMBER_LIMIT = 150;
 
 export function usePlan(churchId) {
   const [rawData, setRawData] = useState(null);
@@ -69,4 +72,16 @@ export function usePlan(churchId) {
   const hasAccess    = plan === 'active' || (plan === 'trial' && daysLeft > 0);
 
   return { loading: false, plan, hasAccess, daysLeft, trialExpired, trialStartedAt };
+}
+
+// Read-only — never auto-starts a trial. Safe to call for any church member.
+// Returns the church's current plan string, or null while loading.
+export function useChurchPlanReadOnly(churchId) {
+  const [plan, setPlan] = useState(null);
+  useEffect(() => {
+    if (!churchId) return;
+    supabase.from('churches').select('plan').eq('id', churchId).maybeSingle()
+      .then(({ data }) => setPlan(data?.plan ?? 'free'));
+  }, [churchId]);
+  return plan;
 }

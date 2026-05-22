@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase, authedFetch } from './supabase.js';
 import { T } from './theme.js';
 import { useSermonAiUsage, FREE_SERMON_LIMIT } from './useSermonAiUsage.js';
+import { SermonAiNudge } from './PlanGate.jsx';
 import { useUiKit } from './uikit.jsx';
 import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
@@ -720,7 +721,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
               }}>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: T.ink, marginBottom: 3 }}>
-                    ✦ You've used your {FREE_SERMON_LIMIT} free AI sermons
+                    ✦ {sermonAi.isTrial ? `You've used all ${sermonAi.limit} trial AI uses` : `You've used your ${FREE_SERMON_LIMIT} free AI sermons`}
                   </div>
                   <div style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.5 }}>
                     Upgrade to keep generating — your congregation won't notice the difference in prep time, but you will.
@@ -755,10 +756,12 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
                 >
                   {generating ? 'Generating week…' : content.length > 0 ? '✦ Regenerate the week' : '✦ Generate the week'}
                 </button>
-                {sermonAi.isFree && !sermonAi.loading && (
-                  <span style={{ marginLeft: 12, fontSize: 12, color: T.inkMuted }}>
-                    {sermonAi.remaining} of {FREE_SERMON_LIMIT} free AI generation{sermonAi.remaining === 1 ? '' : 's'} left
-                  </span>
+                {!sermonAi.loading && (
+                  <SermonAiNudge
+                    remaining={sermonAi.remaining}
+                    isTrial={sermonAi.isTrial}
+                    isFree={sermonAi.isFree}
+                  />
                 )}
               </>
             )}

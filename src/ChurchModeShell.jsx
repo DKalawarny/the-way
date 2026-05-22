@@ -3,6 +3,8 @@ import { T, SHADOW } from './theme.js';
 const TABS = [
   { id: 'overview', label: 'Overview', emoji: '✦' },
   { id: 'people',   label: 'People',   emoji: '👥' },
+  { id: 'ask',      label: 'Ask',      emoji: '💬' },
+  { id: 'bible',    label: 'Bible',    emoji: '📖' },
   { id: 'settings', label: 'Settings', emoji: '⚙' },
 ];
 

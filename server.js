@@ -569,15 +569,15 @@ app.post('/api/chat', optionalAuth, limitEither(
     const isDeepTheology = deepKeywords.test(lastMsg) || lastMsg.length > 200;
 
     let model;
-    if (plan === 'premium_plus') {
-      // Pro tier: full range
+    if (['premium_plus', 'church_base', 'church_pro'].includes(plan)) {
+      // Full range: Haiku → Sonnet → Opus based on complexity
       model = (isDeepTheology || isVeryLong)
         ? 'claude-opus-4-7'
         : (isDeep || isLongConversation)
           ? 'claude-sonnet-4-6'
           : 'claude-haiku-4-5-20251001';
-    } else if (plan === 'premium') {
-      // Individual tier: Haiku or Sonnet
+    } else if (['premium', 'trial', 'topup'].includes(plan)) {
+      // Sonnet max — no Opus (controls cost on individual paid + church trial + top-up)
       model = (isDeep || isLongConversation || isDeepTheology)
         ? 'claude-sonnet-4-6'
         : 'claude-haiku-4-5-20251001';

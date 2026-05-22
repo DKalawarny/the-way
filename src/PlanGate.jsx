@@ -1,5 +1,6 @@
 import { T } from './theme.js';
-import { PRO_PRICE, UPGRADE_EMAIL } from './usePlan.js';
+import { CHURCH_BASE_PRICE, CHURCH_PRO_PRICE, UPGRADE_EMAIL, TRIAL_DAYS } from './usePlan.js';
+import { TRIAL_MSG_LIMIT } from './useSermonAiUsage.js';
 
 const subject = encodeURIComponent('kinwove — Church Pro upgrade');
 const body    = encodeURIComponent('Hi, I would like to upgrade my church to kinwove Pro.');
@@ -12,8 +13,7 @@ const href    = `mailto:${UPGRADE_EMAIL}?subject=${subject}&body=${body}`;
 ── */
 export function TrialBanner({ daysLeft }) {
   const urgent  = daysLeft <= 7;
-  const trialDays = 30;
-  const pct     = Math.max(0, Math.min(100, ((trialDays - daysLeft) / trialDays) * 100));
+  const pct     = Math.max(0, Math.min(100, ((TRIAL_DAYS - daysLeft) / TRIAL_DAYS) * 100));
 
   const bg      = urgent
     ? 'linear-gradient(135deg, rgba(165,63,43,0.1) 0%, rgba(184,115,58,0.08) 100%)'
@@ -25,7 +25,7 @@ export function TrialBanner({ daysLeft }) {
     ? 'Trial ends today'
     : daysLeft === 1
       ? '1 day left in your trial'
-      : `${daysLeft} days left in your free trial`;
+      : `${daysLeft} days left in your 5-week trial`;
 
   return (
     <div style={{
@@ -82,7 +82,7 @@ export function TrialBanner({ daysLeft }) {
               whiteSpace: 'nowrap',
             }}
           >
-            {urgent ? 'Upgrade now' : `Keep my tools · ${PRO_PRICE}`}
+            {urgent ? 'Upgrade now' : `Keep my tools · from ${CHURCH_BASE_PRICE}`}
           </a>
         </div>
 
@@ -195,7 +195,7 @@ export function UpgradeWall({ onBack }) {
             lineHeight: 1.7,
             margin: 0,
           }}>
-            Your free month is up — but the people depending on your tools aren't going anywhere.
+            Your 5-week trial is up — but the people depending on your tools aren't going anywhere.
             Upgrade to keep your dashboard, care team, sermon tools, and congregation running.
           </p>
         </div>
@@ -208,21 +208,28 @@ export function UpgradeWall({ onBack }) {
           borderRadius: '0 0 20px 20px',
           padding: '28px 32px 32px',
         }}>
-          {/* Price */}
-          <div style={{
-            display: 'flex', alignItems: 'baseline', gap: 6,
-            marginBottom: 4,
-          }}>
-            <span style={{
-              fontFamily: T.display, fontSize: 44, fontWeight: 700,
-              color: T.ink, letterSpacing: '-0.04em', lineHeight: 1,
-            }}>$19</span>
-            <span style={{ fontSize: 15, color: T.inkSoft, paddingBottom: 4 }}>/month per church</span>
+          {/* Pricing tiers */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 22 }}>
+            {[
+              { label: 'Church Base', price: CHURCH_BASE_PRICE, detail: 'Up to 150 members' },
+              { label: 'Church Pro',  price: CHURCH_PRO_PRICE,  detail: 'Unlimited congregation' },
+            ].map((tier) => (
+              <div key={tier.label} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 14px',
+                background: 'rgba(184,115,58,0.04)',
+                border: '1px solid rgba(184,115,58,0.12)',
+                borderRadius: 10,
+              }}>
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: T.ink }}>{tier.label}</div>
+                  <div style={{ fontSize: 12, color: T.inkMuted }}>{tier.detail}</div>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: T.goldDark, flexShrink: 0 }}>{tier.price}</div>
+              </div>
+            ))}
           </div>
-          <div style={{
-            fontSize: 12, color: T.inkMuted,
-            marginBottom: 22, letterSpacing: 0.2,
-          }}>
+          <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 22 }}>
             Cancel any time. No contracts. No lock-in.
           </div>
 
@@ -264,7 +271,7 @@ export function UpgradeWall({ onBack }) {
               marginBottom: 8,
             }}
           >
-            Keep my church active → {PRO_PRICE}
+            Keep my church active →
           </a>
 
           {/* Reassurance */}
@@ -307,5 +314,33 @@ export function UpgradeWall({ onBack }) {
         </p>
       </div>
     </div>
+  );
+}
+
+/* ── SermonAiNudge ───────────────────────────────────────────────────────────
+   Quiet inline counter shown next to the sermon composer generate button.
+   - Trial users: shows "X of 100 AI uses remaining"
+   - Free users: shows "X of 3 free AI sermons remaining"
+   - At limit: nothing — the gate replaces the button upstream
+   - Paid: nothing — unlimited
+── */
+export function SermonAiNudge({ remaining, isTrial, isFree }) {
+  if (!isFree && !isTrial) return null;
+  if (remaining <= 0) return null;
+
+  const total = isTrial ? TRIAL_MSG_LIMIT : 3;
+  const label = isTrial
+    ? `${remaining} of ${total} AI uses remaining in your trial`
+    : `${remaining} of ${total} free AI ${remaining === 1 ? 'sermon' : 'sermons'} remaining`;
+
+  return (
+    <span style={{
+      fontSize: 12,
+      color: remaining <= (isTrial ? 10 : 1) ? '#A53F2B' : T.inkMuted,
+      fontStyle: 'italic',
+      marginLeft: 12,
+    }}>
+      {label}
+    </span>
   );
 }
