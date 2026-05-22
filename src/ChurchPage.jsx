@@ -871,6 +871,7 @@ export default function ChurchPage({
                     refreshKey={feedRefresh}
                     onOpenSermon={onOpenSermon}
                     userPlan={profile?.plan ?? 'free'}
+                    isPastor={isPastor}
                     emptyMessage={isPastor
                       ? 'Nothing posted yet. Share this Sunday\u2019s sermon or write a note to your congregation.'
                       : 'Nothing posted yet — start a conversation or wait for your church to share.'}

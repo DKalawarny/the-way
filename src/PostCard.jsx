@@ -379,6 +379,7 @@ export default function PostCard({
   onViewChurch,
   isSaved = false,
   onSaveToggle,
+  isPastor = false,
 }) {
   const [reactions, setReactions] = useState({}); // { amen: 4, praying: 2, heart: 1 }
   const [mine, setMine]           = useState({}); // { amen: true }
@@ -404,10 +405,11 @@ export default function PostCard({
   const [reportDone, setReportDone] = useState(false);
 
   const isOwn = !!sessionUserId && item.author_id === sessionUserId && item.source === 'post';
+  const canModerate = isPastor && !isOwn && item.source === 'post';
   const canHideFromProfile = isOwn && item.scope === 'church';
   const canChangeVisibility = isOwn;
   const canEdit = isOwn;
-  const canDelete = isOwn;
+  const canDelete = isOwn || canModerate;
 
   async function toggleHideFromProfile() {
     if (!canHideFromProfile || hideBusy) return;
@@ -690,10 +692,10 @@ export default function PostCard({
                         padding: '10px 14px', fontSize: 13, color: T.error ?? '#A53F2B', cursor: 'pointer',
                       }}
                     >
-                      Delete post
+                      {canModerate ? 'Remove from church' : 'Delete post'}
                     </button>
                   )}
-                  {!isOwn && !!sessionUserId && item.source === 'post' && (
+                  {!isOwn && !canModerate && !!sessionUserId && item.source === 'post' && (
                     <button
                       onClick={() => { setMenuOpen(false); setReportOpen(true); }}
                       style={{
