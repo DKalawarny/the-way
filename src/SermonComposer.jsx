@@ -49,9 +49,9 @@ const inputCss = {
   fontSize: 15, fontFamily: 'inherit', background: T.cream, color: T.ink, outline: 'none',
 };
 
-function ContentItem({ item, onChange, onRemove, onRegenerate, regenerating, anyBusy }) {
+function ContentItem({ item, onChange, onRemove, onRegenerate, regenerating, anyBusy, atLimit }) {
   const canRegen = item.kind === 'daily_verse' && typeof onRegenerate === 'function';
-  const regenDisabled = anyBusy || !canRegen;
+  const regenDisabled = anyBusy || !canRegen || atLimit;
   return (
     <div style={{
       background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
@@ -73,9 +73,11 @@ function ContentItem({ item, onChange, onRemove, onRegenerate, regenerating, any
             disabled={regenDisabled}
             title={regenerating
               ? 'Regenerating this question…'
-              : anyBusy
-                ? 'Another generation is in progress'
-                : 'Replace this one with a fresh angle from the sermon'}
+              : atLimit
+                ? 'AI uses exhausted — upgrade to regenerate'
+                : anyBusy
+                  ? 'Another generation is in progress'
+                  : 'Replace this one with a fresh angle from the sermon'}
             style={{
               marginLeft: 'auto',
               display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -1011,6 +1013,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
                       onRegenerate={c.kind === 'daily_verse' ? () => handleRegenerateOne(i) : undefined}
                       regenerating={regeneratingIdx === i}
                       anyBusy={anyBusy || regeneratingIdx != null}
+                      atLimit={sermonAi.atLimit}
                     />
                   ))
                 )}
