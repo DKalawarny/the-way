@@ -71,6 +71,7 @@ import NotificationsBell from './NotificationsBell.jsx';
 import MessagesButton from './MessagesButton.jsx';
 import FindButton from './FindButton.jsx';
 import ChurchModeShell from './ChurchModeShell.jsx';
+import { useChurchPlanReadOnly } from './usePlan.js';
 import InstallPrompt from './InstallPrompt.jsx';
 
 const Community         = lazy(() => import('./Community.jsx'));
@@ -1629,6 +1630,7 @@ export default function App() {
   // pastorChurchId from church_roles; falls back to profile.church_id when
   // the church_roles RLS lookup fails (e.g. schema not migrated yet).
   const effectiveChurchId = pastorChurchId || (profile?.church_id ?? null);
+  const churchPlan = useChurchPlanReadOnly(effectiveChurchId);
 
   // Set <html lang> so browsers offer native auto-translate.
   // Falls back to the browser locale when the user has no saved preference.
@@ -2762,7 +2764,7 @@ export default function App() {
           session={session}
           churchId={effectiveChurchId || viewingChurchId}
           initialSermonId={composerSermonId}
-          userPlan={profile?.plan ?? 'free'}
+          userPlan={churchPlan ?? profile?.plan ?? 'free'}
           onBack={() => goBack('church-admin')}
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
         />
