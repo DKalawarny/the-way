@@ -2647,7 +2647,7 @@ export default function App() {
             onOpenAdmin={pastorChurchId
               ? (tab) => { setPastorAdminInitialTab(tab ?? 'overview'); setStage('church-admin'); }
               : undefined}
-            onNewSermon={(isOwnChurch || effectiveChurchId === viewingChurchId)
+            onNewSermon={isOwnChurch
               ? () => { setComposerSermonId(null); setStage('sermon-composer'); }
               : undefined}
             onOpenFeed={() => setStage('feed')}
@@ -2759,10 +2759,10 @@ export default function App() {
           onBack={() => goBack('church-admin')}
         />
       )}
-      {stage === 'sermon-composer' && session && (effectiveChurchId || viewingChurchId) && (
+      {stage === 'sermon-composer' && session && pastorChurchId && (
         <SermonComposer
           session={session}
-          churchId={effectiveChurchId || viewingChurchId}
+          churchId={pastorChurchId}
           initialSermonId={composerSermonId}
           userPlan={churchPlan ?? profile?.plan ?? 'free'}
           onBack={() => goBack('church-admin')}
