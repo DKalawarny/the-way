@@ -1157,7 +1157,7 @@ app.post('/api/church/verify-code', requireAuth, limitAuthed({ capacity: 10, ref
     const churchId = Array.isArray(created) ? created[0]?.id : created?.id;
     await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/pastor_applications?id=eq.${application_id}`, { method: 'PATCH', headers: h, body: JSON.stringify({ status: 'approved', verify_method: 'email_code', reviewed_at: new Date().toISOString() }) }),
-      fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}`, { method: 'PATCH', headers: h, body: JSON.stringify({ church_id: churchId }) }),
+      fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}`, { method: 'PATCH', headers: h, body: JSON.stringify({ church_id: churchId, is_pastor: true }) }),
       fetch(`${SUPABASE_URL}/rest/v1/church_roles`, {
         method: 'POST', headers: h,
         body: JSON.stringify({
@@ -1198,7 +1198,7 @@ app.post('/api/church/submit-unverified', requireAuth, limitAuthed({ capacity: 2
     const churchId = Array.isArray(created) ? created[0]?.id : created?.id;
     await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/pastor_applications?id=eq.${application_id}`, { method: 'PATCH', headers: h, body: JSON.stringify({ status: 'approved', verify_method: 'unverified', reviewed_at: new Date().toISOString() }) }),
-      fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}`, { method: 'PATCH', headers: h, body: JSON.stringify({ church_id: churchId }) }),
+      fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}`, { method: 'PATCH', headers: h, body: JSON.stringify({ church_id: churchId, is_pastor: true }) }),
       fetch(`${SUPABASE_URL}/rest/v1/church_roles`, {
         method: 'POST', headers: h,
         body: JSON.stringify({

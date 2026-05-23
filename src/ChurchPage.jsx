@@ -613,29 +613,6 @@ export default function ChurchPage({
                 </button>
               </div>
             )}
-            {onOpenTalkToSomeone && (
-              <div style={{ marginBottom: 12 }}>
-                <button onClick={onOpenTalkToSomeone} style={{
-                  background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
-                  padding: '14px 44px', fontSize: 15, fontWeight: 600, cursor: 'pointer',
-                  boxShadow: '0 4px 16px rgba(168,85,48,0.28)', letterSpacing: '-0.01em',
-                }}>Talk to someone</button>
-              </div>
-            )}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
-              {onOpenPrayer && (
-                <button onClick={onOpenPrayer} style={{
-                  background: 'none', border: `1px solid rgba(168,85,48,0.30)`, borderRadius: 999,
-                  color: T.inkSoft, fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: '8px 18px',
-                }}>🙏 Pray together</button>
-              )}
-              {onOpenWalks && (
-                <button onClick={onOpenWalks} style={{
-                  background: 'none', border: `1px solid rgba(168,85,48,0.30)`, borderRadius: 999,
-                  color: T.inkSoft, fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: '8px 18px',
-                }}>Pick a walk</button>
-              )}
-            </div>
           </div>
         </>
       )}

@@ -2624,7 +2624,8 @@ export default function App() {
         />
       )}
       {stage === 'church' && viewingChurchId && (() => {
-        const isOwnChurch = pastorChurchId === viewingChurchId;
+        const isOwnChurch = (pastorChurchId != null && pastorChurchId === viewingChurchId)
+          || (profile?.is_pastor && profile?.church_id === viewingChurchId);
         const page = (
           <ChurchPage
             session={session}
@@ -2671,6 +2672,7 @@ export default function App() {
               currentSubpage="public"
               onTabChange={(t) => { setPastorAdminInitialTab(t); setStage('church-admin'); }}
               onBack={() => setStage('me')}
+              onOpenChurchHub={() => setStage('church-admin')}
             >
               {page}
             </ChurchModeShell>
@@ -3004,7 +3006,7 @@ export default function App() {
             onGoHome={() => { setViewingUserId(null); setStage('home'); }}
             onGoChurch={() => {
               setViewingUserId(null);
-              if (pastorChurchId) { setStage('church-admin'); return; }
+              if (pastorChurchId || profile?.is_pastor) { setStage('church-admin'); return; }
               if (profile?.church_id) { setViewingChurchId(profile.church_id); setStage('church'); return; }
               setStage('churches');
             }}

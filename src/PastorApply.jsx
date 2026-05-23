@@ -166,7 +166,6 @@ export default function PastorApply({ session, profile, onClose, onBecamePastor 
       });
       if (!res.ok) { const b = await res.json().catch(() => ({})); setVerifyError(b.error || 'Failed.'); setSubmittingUnverified(false); return; }
       setStep('self-reported');
-      setTimeout(() => onBecamePastor?.(), 2000);
     } catch { setVerifyError('Network error — try again.'); setSubmittingUnverified(false); }
   }
 
@@ -199,10 +198,15 @@ export default function PastorApply({ session, profile, onClose, onBecamePastor 
           <div style={{ fontFamily: T.serif, fontSize: 15, color: T.inkSoft, lineHeight: 1.7, marginBottom: 16 }}>
             Your church page is active and your dashboard is ready. Because we couldn't verify an email, your church shows a <strong style={{ color: T.ink }}>"Self-reported"</strong> badge and won't appear in the public directory yet.
           </div>
-          <div style={{ background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 12, padding: '14px 16px', fontSize: 13, color: T.inkSoft, lineHeight: 1.6, marginBottom: 20 }}>
+          <div style={{ background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 12, padding: '14px 16px', fontSize: 13, color: T.inkSoft, lineHeight: 1.6, marginBottom: 24 }}>
             Once you have a church email set up, you can verify anytime from your dashboard to remove the badge and go fully public.
           </div>
-          <div style={{ fontSize: 13, color: T.inkMuted }}>Opening your dashboard…</div>
+          <button
+            onClick={() => onBecamePastor?.()}
+            style={{ background: T.ink, color: T.cream, border: 'none', borderRadius: 999, padding: '14px 28px', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}
+          >
+            Go to my dashboard →
+          </button>
         </div>
       </div>
     );
@@ -344,7 +348,7 @@ export default function PastorApply({ session, profile, onClose, onBecamePastor 
               <button
                 onClick={handleSkipVerification}
                 disabled={submittingUnverified}
-                style={{ background: 'none', border: `1px solid ${T.line}`, borderRadius: 999, padding: '10px 20px', fontSize: 13, color: T.inkSoft, cursor: 'pointer' }}
+                style={{ background: 'rgba(184,115,58,0.12)', border: `1px solid ${T.goldLight}`, borderRadius: 999, padding: '10px 20px', fontSize: 13, fontWeight: 600, color: T.goldDark, cursor: submittingUnverified ? 'not-allowed' : 'pointer', opacity: submittingUnverified ? 0.6 : 1 }}
               >
                 {submittingUnverified ? 'Setting up…' : 'Continue without verifying'}
               </button>
