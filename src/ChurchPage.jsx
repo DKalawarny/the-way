@@ -815,8 +815,8 @@ export default function ChurchPage({
                   <div className="rule-gold" style={{ flex: 1 }} />
                 </div>
 
-                {/* ── Pastor-only sermon status card ─────────────────────── */}
-                {isPastor && (
+                {/* ── Sermon status card — only when a sermon exists ─────── */}
+                {isPastor && latestSermon && (
                   <div style={{
                     background: T.parchment, border: `1px solid ${T.goldLight}`,
                     borderRadius: 12, padding: '10px 14px', marginBottom: 14,
@@ -826,30 +826,20 @@ export default function ChurchPage({
                       <div style={{ fontSize: 10.5, letterSpacing: 1.4, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 3 }}>
                         📖 Latest sermon
                       </div>
-                      {latestSermon ? (
-                        <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {latestSermon.title}
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: 13, color: T.inkSoft, fontStyle: 'italic' }}>
-                          No sermons posted yet
-                        </div>
-                      )}
+                      <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {latestSermon.title}
+                      </div>
                     </div>
-                    {(latestSermon || isPastor) && (
-                      <button
-                        onClick={latestSermon
-                          ? () => onOpenSermon?.(latestSermon.id)
-                          : () => onNewSermon ? onNewSermon() : onOpenAdmin?.('sermons')}
-                        style={{
-                          background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
-                          padding: '7px 14px', fontSize: 12.5, fontWeight: 600,
-                          cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {latestSermon ? 'View →' : 'Post first →'}
-                      </button>
-                    )}
+                    <button
+                      onClick={() => onOpenSermon?.(latestSermon.id)}
+                      style={{
+                        background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+                        padding: '7px 14px', fontSize: 12.5, fontWeight: 600,
+                        cursor: 'pointer', flexShrink: 0, whiteSpace: 'nowrap',
+                      }}
+                    >
+                      View →
+                    </button>
                   </div>
                 )}
 
