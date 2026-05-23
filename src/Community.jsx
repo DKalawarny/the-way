@@ -1419,7 +1419,7 @@ useEffect(() => {
       {/* Feed type tabs — underline style matching ChurchPage */}
       <div style={{
         display: 'flex',
-        background: T.white,
+        background: T.cream,
         borderBottom: `1px solid ${T.line}`,
       }}>
         {[

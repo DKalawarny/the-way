@@ -1190,7 +1190,7 @@ app.post('/api/church/submit-unverified', requireAuth, limitAuthed({ capacity: 2
 // ── Delete own account ──────────────────────────────────────────────────────
 // Verifies the caller's JWT via requireAuth, then uses the service-role key to
 // remove the auth.users row. Profile + child rows cascade via FK constraints.
-app.delete('/api/account', requireAuth, limitAuthed({ capacity: 3, refillPerSec: 3 / 3600 }), async (req, res) => {
+app.delete('/api/account', requireAuth, async (req, res) => {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
     return res.status(503).json({ error: 'account deletion not configured' });
   }
