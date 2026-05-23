@@ -614,6 +614,11 @@ create policy "User reads own application"
   on public.pastor_applications for select
   using (auth.uid() = user_id);
 
+create policy "User can update own application"
+  on public.pastor_applications for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
 create trigger churches_updated_at
   before update on public.churches
   for each row execute function update_updated_at();

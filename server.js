@@ -1053,6 +1053,33 @@ async function sendVerificationEmail(to, code, churchName) {
   if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text().catch(() => '')}`);
 }
 
+// Submit / re-submit a pastor application (upsert via service role → bypasses RLS)
+app.post('/api/church/apply', requireAuth, limitAuthed({ capacity: 5, refillPerSec: 5 / 300 }), async (req, res) => {
+  const { full_name, pastor_role, church_name, denomination, city, country, website, reason } = req.body ?? {};
+  if (!church_name || !full_name) return res.status(400).json({ error: 'full_name and church_name required' });
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation,resolution=merge-duplicates' };
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/pastor_applications?on_conflict=user_id`, {
+    method: 'POST', headers: h,
+    body: JSON.stringify({
+      user_id: req.userId,
+      full_name: full_name.trim(),
+      pastor_role: pastor_role || null,
+      church_name: church_name.trim(),
+      denomination: denomination || null,
+      city: city?.trim() || null,
+      country: country?.trim() || null,
+      website: website?.trim() || null,
+      reason: reason?.trim() || null,
+      status: 'pending',
+    }),
+  });
+  if (!r.ok) { const b = await r.text(); console.error('[kinwove] apply failed', r.status, b); return res.status(500).json({ error: 'apply failed' }); }
+  const rows = await r.json();
+  const row = Array.isArray(rows) ? rows[0] : rows;
+  res.json({ application: row });
+});
+
 // Scrape emails from a church website
 app.post('/api/church/scrape-emails', requireAuth, limitAuthed({ capacity: 5, refillPerSec: 5 / 300 }), async (req, res) => {
   const { website } = req.body ?? {};

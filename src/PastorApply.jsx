@@ -82,23 +82,23 @@ export default function PastorApply({ session, profile, onClose, onBecamePastor 
   async function handleSubmit(e) {
     e.preventDefault();
     setSaving(true); setError(null);
-    const payload = {
-      user_id: session.user.id,
-      full_name: form.full_name.trim(),
-      pastor_role: form.pastor_role || null,
-      church_name: form.church_name.trim(),
-      denomination: form.denomination || null,
-      city: form.city.trim() || null,
-      country: form.country.trim() || null,
-      website: form.website.trim() || null,
-      reason: form.reason.trim() || null,
-    };
-    const { data, error: err } = await supabase
-      .from('pastor_applications')
-      .upsert({ ...payload, status: 'pending' }, { onConflict: 'user_id' })
-      .select().single();
+    const res = await authedFetch('/api/church/apply', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        full_name: form.full_name.trim(),
+        pastor_role: form.pastor_role || null,
+        church_name: form.church_name.trim(),
+        denomination: form.denomination || null,
+        city: form.city.trim() || null,
+        country: form.country.trim() || null,
+        website: form.website.trim() || null,
+        reason: form.reason.trim() || null,
+      }),
+    });
     setSaving(false);
-    if (err) return setError(err.message);
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) return setError(body.error || 'Submit failed — try again.');
+    const data = body.application;
 
     // Instant auto-approval via domain match trigger
     if (data?.status === 'approved' && data?.verification_method === 'auto_domain') {
