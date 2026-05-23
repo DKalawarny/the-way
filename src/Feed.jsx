@@ -37,13 +37,11 @@ export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessa
       .limit(PAGE_SIZE);
 
     if (scope === 'me' && authorId) {
-      // The author's profile feed: their me-scoped posts + public prayers,
-      // PLUS their church-scoped posts (unless they hid those individually).
-      // The author can hide a specific church post from this feed via the
-      // PostCard kebab; default is visible.
+      // Profile feed: only posts the user scoped to themselves (scope='me').
+      // Church posts stay in the church feed, not the personal profile.
       q = q
         .eq('author_id', authorId)
-        .or(`scope.eq.me,and(scope.eq.church,hide_from_profile.eq.false)`);
+        .eq('scope', 'me');
     } else if (scope === 'church' && scopeId) {
       q = q.eq('scope', 'church').eq('scope_id', scopeId);
     } else if (scope === 'group' && scopeId) {
