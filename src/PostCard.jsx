@@ -404,12 +404,13 @@ export default function PostCard({
   const [reportBusy, setReportBusy] = useState(false);
   const [reportDone, setReportDone] = useState(false);
 
+  const isSermonAnnouncement = item.source === 'post' && !!item.body?.is_sermon_announcement;
   const isOwn = !!sessionUserId && item.author_id === sessionUserId && item.source === 'post';
   const canModerate = isPastor && !isOwn && item.source === 'post';
-  const canHideFromProfile = isOwn && item.scope === 'church';
-  const canChangeVisibility = isOwn;
-  const canEdit = isOwn;
-  const canDelete = isOwn || canModerate;
+  const canHideFromProfile = isOwn && item.scope === 'church' && !isSermonAnnouncement;
+  const canChangeVisibility = isOwn && !isSermonAnnouncement;
+  const canEdit = isOwn && !isSermonAnnouncement;
+  const canDelete = (isOwn || canModerate) && !isSermonAnnouncement;
 
   async function toggleHideFromProfile() {
     if (!canHideFromProfile || hideBusy) return;
