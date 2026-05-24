@@ -61,6 +61,7 @@ function MyPrayers({ session, profile }) {
   const [text,         setText]         = useState('');
   const [newIsPublic,  setNewIsPublic]  = useState(true);
   const [submitting,   setSubmitting]   = useState(false);
+  const [submitError,  setSubmitError]  = useState(null);
   const [composeOpen,  setComposeOpen]  = useState(false);
   const [praiseTarget, setPraiseTarget] = useState(null);   // prayer awaiting answered-confirmation
   const [praiseText,   setPraiseText]   = useState('');
@@ -114,9 +115,10 @@ function MyPrayers({ session, profile }) {
     setSubmitting(false);
     if (error) {
       console.error('[Prayer.add] insert failed', error);
-      alert(`Couldn't save prayer: ${error.message}`);
+      setSubmitError('Couldn\'t save — try again.');
       return;
     }
+    setSubmitError(null);
     setText(''); setNewIsPublic(true); setComposeOpen(false);
     imageDrafts.clear();
     if (data) setPrayers(prev => [data, ...prev]);
@@ -280,6 +282,7 @@ function MyPrayers({ session, profile }) {
                     }}>
                       {submitting ? 'Adding…' : 'Add'}
                     </button>
+                    {submitError && <span style={{ fontSize: 12, color: '#a53f2b', marginLeft: 8 }}>{submitError}</span>}
                   </div>
                 </div>
               </div>

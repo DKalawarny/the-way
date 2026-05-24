@@ -25,7 +25,7 @@ class PageErrorBoundary extends Component {
     const isChunkError = /failed to fetch dynamically imported module|loading chunk|loading css chunk/i.test(error.message ?? '');
     return (
       <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
-        <span style={{ color: T.gold, fontSize: 22 }}>✦</span>
+        <KinwoveWordmark size={22} textColor={T.ink} starColor={T.honey} />
         <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink }}>
           {isChunkError ? 'New version available' : 'Something went wrong'}
         </div>

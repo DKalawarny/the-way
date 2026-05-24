@@ -1325,7 +1325,6 @@ useEffect(() => {
     setPrayerSubmitting(false);
     if (error) {
       console.error('[submitPrayer] insert failed', error);
-      alert(`Couldn't post prayer: ${error.message}`);
       return;
     }
     if (data) {

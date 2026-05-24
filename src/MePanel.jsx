@@ -774,7 +774,6 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
     setPrayerSubmitting(false);
     if (error) {
       console.error('[addPrayer] insert failed', error);
-      alert(`Couldn't save prayer: ${error.message}`);
       return;
     }
     if (data) { setPrayers((prev) => [data, ...prev]); setPrayerText(''); setPrayerComposeOpen(false); }

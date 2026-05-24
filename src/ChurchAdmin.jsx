@@ -87,11 +87,14 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
     if (!churchId || deleteConfirm.trim().toLowerCase() !== (church?.name ?? '').toLowerCase()) return;
     setDeleteBusy(true);
     try {
-      await supabase.from('church_roles').delete().eq('church_id', churchId);
-      await supabase.from('sermons').delete().eq('church_id', churchId);
-      await supabase.from('churches').delete().eq('id', churchId);
+      const { error: rolesErr } = await supabase.from('church_roles').delete().eq('church_id', churchId);
+      const { error: sermonsErr } = await supabase.from('sermons').delete().eq('church_id', churchId);
+      const { error: churchErr } = await supabase.from('churches').delete().eq('id', churchId);
+      const err = rolesErr || sermonsErr || churchErr;
+      if (err) { showToast(`Delete failed: ${err.message}`, 'error'); setDeleteBusy(false); return; }
       onTransferComplete?.();
-    } catch {
+    } catch (e) {
+      showToast('Delete failed — try again.', 'error');
       setDeleteBusy(false);
     }
   }

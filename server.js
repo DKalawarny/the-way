@@ -14,7 +14,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 if (!process.env.ANTHROPIC_API_KEY) {
-  console.error('\n[the way] Missing ANTHROPIC_API_KEY. Copy .env.example to .env and add your key.\n');
+  console.error('\n[kinwove] Missing ANTHROPIC_API_KEY. Copy .env.example to .env and add your key.\n');
   process.exit(1);
 }
 
@@ -137,7 +137,7 @@ function limitEither(authedCfg, anonCfg) {
 
 // Generic error responder — never leak SDK internals to the client.
 function safeError(res, err, ctx) {
-  console.error(`[the way] ${ctx} error:`, err);
+  console.error(`[kinwove] ${ctx} error:`, err);
   if (!res.headersSent) res.status(500).json({ error: 'something went wrong' });
 }
 
@@ -268,7 +268,7 @@ async function lookupCachedAnswer(personType, question) {
     const rows = await r.json();
     return rows[0] ?? null;
   } catch (e) {
-    console.error('[the way] qa_cache lookup failed:', e?.message);
+    console.error('[kinwove] qa_cache lookup failed:', e?.message);
     return null;
   }
 }
@@ -286,7 +286,7 @@ async function bumpCacheHit(id) {
       body: JSON.stringify({ p_id: id }),
     });
   } catch (e) {
-    console.error('[the way] qa_cache bump failed:', e?.message);
+    console.error('[kinwove] qa_cache bump failed:', e?.message);
   }
 }
 
@@ -312,7 +312,7 @@ async function writeCacheEntry({ personType, question, answer, model }) {
       }),
     });
   } catch (e) {
-    console.error('[the way] qa_cache write failed:', e?.message);
+    console.error('[kinwove] qa_cache write failed:', e?.message);
   }
 }
 
@@ -337,7 +337,7 @@ async function logQaEvent({ personType, question, userId, wasCacheHit, isFirstTu
       }),
     });
   } catch (e) {
-    console.error('[the way] qa_events insert failed:', e?.message);
+    console.error('[kinwove] qa_events insert failed:', e?.message);
   }
 }
 
@@ -403,7 +403,7 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
 
     if (!oaiRes.ok) {
       const err = await oaiRes.text();
-      console.error('[the way] TTS error:', err);
+      console.error('[kinwove] TTS error:', err);
       return res.status(502).json({ error: 'TTS upstream error' });
     }
 
@@ -419,7 +419,7 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
         res.write(value);
       }
     };
-    pump().catch((e) => { console.error('[the way] TTS pipe error:', e); res.end(); });
+    pump().catch((e) => { console.error('[kinwove] TTS pipe error:', e); res.end(); });
   } catch (e) {
     safeError(res, e, 'tts');
   }
@@ -446,7 +446,7 @@ app.get('/api/bible/:bibleId/chapters/:chapterId', optionalAuth, limitEither({ c
       { headers: { 'api-key': BIBLE_API_KEY } }
     );
     if (!upstream.ok) {
-      console.error('[the way] bible chapter upstream', upstream.status);
+      console.error('[kinwove] bible chapter upstream', upstream.status);
       return res.status(upstream.status >= 500 ? 502 : upstream.status).json({ error: 'bible upstream error' });
     }
     const json = await upstream.json();
@@ -477,7 +477,7 @@ app.get('/api/bible/:bibleId/verses/:verseId', optionalAuth, limitEither({ capac
       { headers: { 'api-key': BIBLE_API_KEY } }
     );
     if (!upstream.ok) {
-      console.error('[the way] bible verse upstream', upstream.status);
+      console.error('[kinwove] bible verse upstream', upstream.status);
       return res.status(upstream.status >= 500 ? 502 : upstream.status).json({ error: 'bible upstream error' });
     }
     const json = await upstream.json();
@@ -598,7 +598,7 @@ app.post('/api/chat', optionalAuth, limitEither(
 
     stream.on('text', (delta) => send('text', { delta }));
     stream.on('error', (err) => {
-      console.error('[the way] stream error:', err);
+      console.error('[kinwove] stream error:', err);
       send('error', { message: err?.message || err?.error?.message || 'stream error' });
     });
 
@@ -624,7 +624,7 @@ app.post('/api/chat', optionalAuth, limitEither(
       model,
     });
   } catch (err) {
-    console.error('[the way] api error:', err);
+    console.error('[kinwove] api error:', err);
     if (!res.headersSent) {
       res.status(500).json({ error: 'something went wrong' });
     } else {
@@ -857,7 +857,7 @@ app.post('/api/sermon/generate', requireAuth, limitAuthed({ capacity: 12, refill
     if (!parsed) {
       try {
         parsed = JSON.parse(repairJsonString(cleaned));
-        console.warn('[the way] sermon JSON repaired (control chars).');
+        console.warn('[kinwove] sermon JSON repaired (control chars).');
       } catch (_) {}
     }
 
@@ -868,12 +868,12 @@ app.post('/api/sermon/generate', requireAuth, limitAuthed({ capacity: 12, refill
         const trimmed = cleaned.replace(/,?\s*\{[^{}]*$/, '').replace(/,?\s*$/, '');
         const closed = trimmed.endsWith(']}') ? trimmed : trimmed + ']}';
         parsed = JSON.parse(repairJsonString(closed));
-        console.warn('[the way] sermon JSON recovered from truncation.');
+        console.warn('[kinwove] sermon JSON recovered from truncation.');
       } catch (_) {}
     }
 
     if (!parsed) {
-      console.error('[the way] sermon JSON parse failed after all attempts. First 600 chars:', cleaned.slice(0, 600));
+      console.error('[kinwove] sermon JSON parse failed after all attempts. First 600 chars:', cleaned.slice(0, 600));
       return res.status(500).json({ error: 'Could not parse generated content. Try again.' });
     }
     let items = parsed.items ?? [];
@@ -903,7 +903,7 @@ app.post('/api/sermon/generate', requireAuth, limitAuthed({ capacity: 12, refill
     // SDK throws `APIError` subclasses (BadRequestError, RateLimitError, etc.)
     // that carry `.status` and `.message` — pass those through to the client
     // so the composer's error banner is actually useful.
-    console.error('[the way] sermon/generate error:', err);
+    console.error('[kinwove] sermon/generate error:', err);
     if (!res.headersSent) {
       const status  = typeof err?.status === 'number' ? err.status : 500;
       const name    = err?.name || 'Error';
@@ -992,7 +992,7 @@ app.post('/api/dev/become-pastor', requireAuth, limitAuthed({ capacity: 5, refil
       });
       if (!insert.ok) {
         const body = await insert.text().catch(() => '');
-        console.error('[the way] dev become-pastor church insert failed', insert.status, body);
+        console.error('[kinwove] dev become-pastor church insert failed', insert.status, body);
         return res.status(500).json({ error: 'church insert failed' });
       }
       const created = await insert.json();
@@ -1133,7 +1133,7 @@ app.post('/api/church/send-code', requireAuth, limitAuthed({ capacity: 3, refill
     await sendVerificationEmail(email, code, apps[0].church_name);
     res.json({ sent: true });
   } catch (err) {
-    console.error('[the way] send-code error:', err.message);
+    console.error('[kinwove] send-code error:', err.message);
     res.status(500).json({ error: 'Could not send email. Check RESEND_API_KEY and RESEND_FROM.' });
   }
 });
@@ -1296,7 +1296,7 @@ app.post('/api/ai-feedback', optionalAuth, limitEither(
       }),
     });
   } catch (e) {
-    console.error('[the way] ai-feedback insert error:', e?.message);
+    console.error('[kinwove] ai-feedback insert error:', e?.message);
   }
   res.status(200).json({ ok: true });
 });
@@ -1325,7 +1325,7 @@ app.post('/api/anon/ask', limitAnon({ capacity: 6, refillPerSec: 6 / 300 }), asy
         if (rows[0]?.id) verifiedChurchId = rows[0].id;
       }
     } catch (e) {
-      console.error('[the way] anon church verify failed:', e?.message);
+      console.error('[kinwove] anon church verify failed:', e?.message);
     }
   }
 
@@ -1357,7 +1357,7 @@ app.post('/api/anon/ask', limitAnon({ capacity: 6, refillPerSec: 6 / 300 }), asy
     });
     req.on('close', () => stream.controller?.abort?.());
     stream.on('text', (delta) => send('text', { delta }));
-    stream.on('error', (err) => { console.error('[the way] anon stream error:', err); send('error', { message: 'stream error' }); });
+    stream.on('error', (err) => { console.error('[kinwove] anon stream error:', err); send('error', { message: 'stream error' }); });
 
     const final = await stream.finalMessage();
     const fullText = final.content
@@ -1387,7 +1387,7 @@ app.post('/api/anon/ask', limitAnon({ capacity: 6, refillPerSec: 6 / 300 }), asy
             }),
           });
         } catch (e) {
-          console.error('[the way] anon/ask store failed:', e?.message);
+          console.error('[kinwove] anon/ask store failed:', e?.message);
         }
       });
     }
@@ -1395,7 +1395,7 @@ app.post('/api/anon/ask', limitAnon({ capacity: 6, refillPerSec: 6 / 300 }), asy
     send('done', { stop_reason: final.stop_reason });
     res.end();
   } catch (err) {
-    console.error('[the way] anon/ask error:', err);
+    console.error('[kinwove] anon/ask error:', err);
     if (!res.headersSent) {
       res.status(500).json({ error: 'something went wrong' });
     } else {
@@ -1434,7 +1434,7 @@ async function upsertSystemProfile(id) {
       }),
     });
   } catch (e) {
-    console.error('[the way] system profile upsert error:', e?.message);
+    console.error('[kinwove] system profile upsert error:', e?.message);
   }
 }
 
@@ -1457,12 +1457,12 @@ async function getOrCreateSystemAccount() {
       if (found?.id) {
         _systemAccountId = found.id;
         await upsertSystemProfile(_systemAccountId);
-        console.log(`[the way] system account found: ${_systemAccountId}`);
+        console.log(`[kinwove] system account found: ${_systemAccountId}`);
         return _systemAccountId;
       }
     }
   } catch (e) {
-    console.error('[the way] system account lookup error:', e?.message);
+    console.error('[kinwove] system account lookup error:', e?.message);
   }
 
   // 3. Create new auth user for the system account
@@ -1484,12 +1484,12 @@ async function getOrCreateSystemAccount() {
     if (data?.id) {
       _systemAccountId = data.id;
       await upsertSystemProfile(_systemAccountId);
-      console.log(`[the way] system account created: ${_systemAccountId}`);
+      console.log(`[kinwove] system account created: ${_systemAccountId}`);
       return _systemAccountId;
     }
-    console.error('[the way] system account create failed:', JSON.stringify(data));
+    console.error('[kinwove] system account create failed:', JSON.stringify(data));
   } catch (e) {
-    console.error('[the way] system account create error:', e?.message);
+    console.error('[kinwove] system account create error:', e?.message);
   }
 
   return null;
@@ -1550,7 +1550,7 @@ app.post('/api/welcome-dm', requireAuth, async (req, res) => {
     });
     if (!convR.ok) {
       const err = await convR.text();
-      console.error('[the way] welcome DM conv create failed:', err);
+      console.error('[kinwove] welcome DM conv create failed:', err);
       return res.status(500).json({ error: 'could not create conversation' });
     }
     const [conv] = await convR.json();
@@ -1620,7 +1620,7 @@ async function fetchSharedConversation(id) {
     const rows = await r.json();
     return rows[0] ?? null;
   } catch (e) {
-    console.error('[the way] supabase fetch error:', e?.message);
+    console.error('[kinwove] supabase fetch error:', e?.message);
     return null;
   }
 }
@@ -1680,7 +1680,7 @@ if (process.env.NODE_ENV !== 'development') {
       res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=3600');
       res.send(html);
     } catch (e) {
-      console.error('[the way] /share/:id error:', e?.message);
+      console.error('[kinwove] /share/:id error:', e?.message);
       next();
     }
   });
@@ -1706,7 +1706,7 @@ if (process.env.NODE_ENV !== 'development') {
           }
         }
       } catch (e) {
-        console.error('[the way] /sitemap.xml error:', e?.message);
+        console.error('[kinwove] /sitemap.xml error:', e?.message);
       }
     }
 
@@ -1731,5 +1731,5 @@ ${entries.join('\n')}
 }
 
 app.listen(PORT, () => {
-  console.log(`[the way] api listening on http://localhost:${PORT}`);
+  console.log(`[kinwove] api listening on http://localhost:${PORT}`);
 });

@@ -13,6 +13,10 @@ this project. Read it first.
 - First-time founder. Not a developer — understands product well but needs
   **concrete, copy-pasteable next steps**. Hand him the exact command or SQL.
 - Communicates in short, casual messages. Mirror that energy. Skip preamble.
+- Move fast, ship rough, polish on round 2.
+- **Don't ask permission for obvious cleanups** in a file you're already editing.
+- **Do ask before:** schema changes, destructive git ops, spending money.
+- "commit" → stage relevant files + commit. "push" → git push.
 
 ## 2. What kinwove is
 
@@ -24,20 +28,22 @@ until 2026-05-13** when we rebranded to **kinwove**.
   **community** (feed, prayer wall, groups, sermons), **church directory**
   (pastor onboarding + congregation features).
 - Aesthetic: **parchment + gold + serif**. Warm, editorial. Not a SaaS dashboard.
-- Domain currently live at **theway.app**. `kinwove.app` not yet acquired.
+- Domain: **kinwove.com** (live). Render (server) + Vercel (frontend) auto-deploy on push to `main`.
 
 ## 3. Stack
 
 - **Frontend:** React 18 + Vite, no framework. Inline styles + `src/theme.js`
-  tokens (`T.gold`, `T.cream`, `T.ink`, etc.). No Tailwind.
+  tokens. No Tailwind.
 - **Backend:** Express `server.js` — Anthropic proxy, Resend emails, pastor
   onboarding endpoints, rate limiting. All under `/api/*`.
 - **DB / auth:** Supabase. Schema in `supabase-schema.sql` + dated migrations
   in `scripts/`. Apply migrations manually in the Supabase SQL editor.
 - **AI:** Anthropic SDK, Claude Opus 4.7 (`claude-opus-4-7`). System prompts
   in `src/prompts.js`.
-- **Hosting:** Vercel (frontend) + Render (server). Both auto-deploy on push
-  to `main`.
+- **Brand:** `KinwoveWordmark` component (`src/components/brand/KinwoveWordmark.jsx`)
+  — the proper logo (wordmark + SVG star above the "i"). `KinwoveStar` is the
+  raw SVG star. Use these everywhere; never use the `✦` Unicode character as a
+  logo substitute.
 
 ## 4. Codebase map — the files that matter
 
@@ -57,10 +63,17 @@ until 2026-05-13** when we rebranded to **kinwove**.
 /src/ChurchPage.jsx           — Public + pastor-own church page.
 /src/ChurchAdmin.jsx          — Pastor dashboard (wrapped by ChurchModeShell).
 /src/ChurchModeShell.jsx      — Dark header shell with Leader/Visitor toggle
-                                and Overview/People/Settings tabs.
+                                and Overview/People/Ask/Bible/Settings tabs.
+                                Accepts fullBleed={true} to skip maxWidth/padding
+                                wrapper (used by Bible tab).
 /src/PastorApply.jsx          — Pastor application form (multi-step).
 /src/BibleReader.jsx          — Scripture reader with AI sidebar.
+                                Accepts topOffset={n} prop — when embedded in
+                                ChurchAdmin, pass topOffset={145} to account for
+                                ChurchModeShell header height.
+/src/ChurchAiChat.jsx         — Pastoral AI chat tab inside ChurchAdmin.
 /src/MessagesInbox.jsx        — DMs incl. "kinwove" system account.
+/src/components/brand/        — KinwoveWordmark.jsx + KinwoveStar.jsx
 /supabase-schema.sql          — Full schema (source of truth).
 /scripts/2026-*.sql           — Dated migrations. Newest date = latest.
 ```
@@ -78,6 +91,8 @@ Never add client-side Supabase calls to this flow — RLS will block them.
 4. **`POST /api/church/submit-unverified`** — creates church row, church_roles
    row (is_owner=true), sets `profile.church_id` AND **`profile.is_pastor = true`**.
 5. **`POST /api/church/verify-code`** — same as above, for email-verified path.
+6. Self-reported path: "Continue without verifying" button → user manually confirms
+   pastor status. Shows success screen with "Go to my dashboard →" button (no auto-dismiss).
 
 ### Existing pastors pre-2026-05-23 may need this SQL
 ```sql
@@ -109,11 +124,16 @@ Sends pastors (`pastorChurchId` set OR `profile.is_pastor=true`) directly to
 
 ### ChurchModeShell (chromeless church page)
 When `isOwnChurch=true`, ChurchPage is wrapped in ChurchModeShell showing
-the "VIEWING AS LEADER · VISITOR" toggle + Overview/People/Settings tabs.
+the "VIEWING AS LEADER · VISITOR" toggle + Overview/People/Ask/Bible/Settings tabs.
 - "Leader" toggle → `setStage('church-admin')`
 - "Visitor" toggle → church public page (current view)
 - Community action buttons (Talk to someone / Pray together / Pick a walk)
   are **only** in the `!chromeless` member view — NOT in the pastor's chromeless view.
+- Revoke role buttons are hidden on the pastor's own account row.
+
+### Account deletion (`DELETE /api/account`)
+Server-side: clears `churches.pastor_id` and removes `church_roles` rows BEFORE
+deleting the auth user, to avoid FK cascade ordering failures for church owners.
 
 ## 6. Community feed — important gotchas
 
@@ -141,8 +161,10 @@ T.gold      #B8733A    T.goldLight  #CC8D52    T.goldDark   #8E5528
 T.cream     #F5EDD8    T.parchment  #FAF3E2    T.white      #FFFFFF
 T.ink       #1A1108    T.inkSoft    #5A4733    T.inkMuted   #9C7B5E
 T.line      rgba(26,17,8,0.12)
-T.serif     'Fraunces, Georgia, serif'
+T.serif     'Fraunces, Georgia, serif'   (display headings)
+T.display   'Newsreader, Georgia, serif' (editorial body text)
 T.sans      system sans
+T.honey     #D4A24A  (warm amber for stars/accents in dark headers)
 ```
 
 Post cards: `background: T.parchment`, `border: 1px solid rgba(26,17,8,0.1)`,
@@ -162,42 +184,50 @@ update public.profiles
   where email = 'system-theway@theway.internal';
 ```
 
-## 9. Open punch list — launch blockers
+**Don't rename** `system-theway@theway.internal` auth row — it's not a real
+email, it's the trigger anchor for system DMs. Only the display_name changes.
 
-### Domain + email
-- [ ] Acquire `kinwove.app`. Point DNS to Vercel + Render.
-- [ ] When live: replace `theway.app` → `kinwove.app` in `index.html`
-      (canonical, og:url, JSON-LD), `server.js` share links,
-      `public/llms.txt`, `public/sw.js`, Plausible `data-domain`.
+## 9. Open punch list
+
+### Domain + email (when kinwove.app acquired)
+- [ ] Point DNS for kinwove.app to Vercel + Render.
+- [ ] Replace `theway.app` → `kinwove.app` in `index.html` (canonical, og:url,
+      JSON-LD), `server.js` share links, `public/llms.txt`, `public/sw.js`,
+      Plausible `data-domain`.
 - [ ] Set `RESEND_FROM` env var on Render (`kinwove <hello@kinwove.app>`).
-- [ ] **Don't rename** `system-theway@theway.internal` auth row — it's not
-      a real email, it's the trigger anchor for system DMs.
-- [ ] Claim `@kinwove` or `@kinwoveapp` on Twitter, update `twitter:site`
-      in `index.html`.
+- [ ] Claim `@kinwove` or `@kinwoveapp` on Twitter, update `twitter:site`.
 - [ ] `localStorage` keys (`theway:notes`, etc.) intentionally NOT renamed
       — would wipe existing users' local state.
 
-### Not yet done
-- [ ] Run the two pending SQL migrations above.
-- [ ] Verify `kinwove.app` domain redirects and SSL.
+### Supabase (must be done)
+- [ ] Run the two pending SQL migrations above (sermon_discussions + kinwove DM display name).
 
-## 10. Tone + voice
+### Remaining rough edges from 2026-05-24 audit
+- Feed.jsx: load error shows empty feed instead of an error state (silent failure)
+- ChurchPage.jsx: load error logged to console but no UI error state shown
+- Some console.error() calls in Community/PostCard don't surface as toasts
+  (post delete/edit/hide/report failures)
+- BibleReader AI sidebar has no loading indicator when fetching explanations
+- `PastorDashboard.jsx` SETUP_KEY still uses old `the-way:church-setup:${churchId}`
+  localStorage key (intentionally not renamed to avoid breaking existing pastor setup state)
+
+## 10. ChurchAdmin tabs
+
+- **Overview** — PastorDashboard (sermon, stats, featured walk picker, care team)
+- **People** — PeoplePanel (members, roles, invite code / "Invite your congregation")
+- **Ask** — ChurchAiChat (pastoral theology AI, uses `text=` prop on MsgText — NOT `content=`)
+- **Bible** — BibleReader (fullBleed mode, topOffset=145 for ChurchModeShell header)
+- **Settings** — SettingsPanel (church profile, open join toggle, danger zone)
+  - Featured Walk was **removed** from Settings (2026-05-24) — it lives in Overview only.
+
+## 11. Tone + voice
 
 - **Grace-first.** Never preachy. Never condescending to skeptics.
 - **Honest about uncertainty.** When scripture is divided, say so.
 - **No fake enthusiasm.** "Hey friend!" energy is wrong. Calm and adult.
 - **Share copy:** must work for believer→believer AND believer→skeptic.
-  Don't write "come worship with me" as the default.
 
 Read `src/prompts.js` for the full canonical AI tone.
-
-## 11. How Daniel likes to work
-
-- Move fast, ship rough, polish on round 2.
-- **Don't ask permission for obvious cleanups** in a file you're already editing.
-- **Do ask before:** schema changes, destructive git ops, spending money.
-- "commit" → stage relevant files + commit. "push" → git push. "d" → deploy
-  (Render/Vercel auto-deploy on push, so push = deploy).
 
 ## 12. Quick start for the next session
 
@@ -207,7 +237,7 @@ git log --oneline -5        # see recent commits
 npm run dev                 # server: localhost:8787, web: localhost:5173
 ```
 
-Latest commit as of 2026-05-23: `b735347` — pastor church-admin blank page fix.
+Latest commit as of 2026-05-24: `9d47bed` — account deletion fix.
 Branch: `main`. Everything is committed and pushed.
 
 Daniel also has a side project — **deconstructors.ca** (demolition company,
