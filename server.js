@@ -1053,6 +1053,17 @@ async function sendVerificationEmail(to, code, churchName) {
   if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text().catch(() => '')}`);
 }
 
+// Return the calling user's pastor church (service role → bypasses all client-side RLS)
+app.get('/api/me/pastor-church', requireAuth, async (req, res) => {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ church: null });
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+  const roles = await fetch(`${SUPABASE_URL}/rest/v1/church_roles?user_id=eq.${req.userId}&is_owner=eq.true&select=church_id,churches(id,name,city,region)&limit=1`, { headers: h }).then(r => r.json()).catch(() => []);
+  const joined = Array.isArray(roles) ? roles[0]?.churches : null;
+  if (joined) return res.json({ church: joined });
+  const churches = await fetch(`${SUPABASE_URL}/rest/v1/churches?pastor_id=eq.${req.userId}&select=id,name,city,region&limit=1`, { headers: h }).then(r => r.json()).catch(() => []);
+  res.json({ church: Array.isArray(churches) ? (churches[0] ?? null) : null });
+});
+
 // Submit / re-submit a pastor application (upsert via service role → bypasses RLS)
 app.post('/api/church/apply', requireAuth, limitAuthed({ capacity: 5, refillPerSec: 5 / 300 }), async (req, res) => {
   const { full_name, pastor_role, church_name, denomination, city, country, website, reason } = req.body ?? {};

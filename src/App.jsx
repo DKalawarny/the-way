@@ -2102,6 +2102,15 @@ export default function App() {
       church = pastorChurch ?? null;
     }
 
+    // Final fallback: ask the server (service role — bypasses all client RLS).
+    if (!church) {
+      try {
+        const r = await authedFetch('/api/me/pastor-church');
+        const b = await r.json();
+        church = b.church ?? null;
+      } catch { /* non-fatal */ }
+    }
+
     setPastorChurchId(church?.id ?? null);
     setPastorChurch(church ?? null);
   }
@@ -2781,14 +2790,14 @@ export default function App() {
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
         />
       )}
-      {stage === 'church-admin' && session && pastorChurchId && (
+      {stage === 'church-admin' && session && (pastorChurchId || (profile?.is_pastor && profile?.church_id)) && (
         <ChurchAdmin
           session={session}
           profile={profile}
-          churchId={pastorChurchId}
+          churchId={pastorChurchId || profile.church_id}
           initialTab={pastorAdminInitialTab}
           onBack={() => goBack('me')}
-          onOpenChurchPage={() => { setViewingChurchId(effectiveChurchId); setStage('church'); }}
+          onOpenChurchPage={() => { setViewingChurchId(effectiveChurchId || profile?.church_id); setStage('church'); }}
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
         />
       )}
