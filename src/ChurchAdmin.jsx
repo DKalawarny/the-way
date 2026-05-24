@@ -205,28 +205,6 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
   const [savingCountries, setSavingCountries] = useState(false);
   const countriesDirty = JSON.stringify(countriesDraft) !== JSON.stringify(church?.countries_open_to ?? []);
 
-  const [walks, setWalks] = useState([]);
-  const [savingFeatured, setSavingFeatured] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    supabase
-      .from('walks')
-      .select('id, title, subtitle, cover_emoji, length_days, sort_order')
-      .eq('is_published', true)
-      .order('sort_order', { ascending: true })
-      .then(({ data }) => { if (!cancelled) setWalks(data ?? []); });
-    return () => { cancelled = true; };
-  }, []);
-
-  async function setFeaturedWalk(nextId) {
-    if (!churchId) return;
-    setSavingFeatured(true);
-    const { error } = await supabase.from('churches').update({ featured_walk_id: nextId }).eq('id', churchId);
-    setSavingFeatured(false);
-    if (error) { showToast(`Couldn't save: ${error.message}`, 'error'); return; }
-    onChurchUpdate?.({ featured_walk_id: nextId });
-    showToast(nextId ? 'Featured walk updated.' : 'Featured walk cleared.', 'success');
-  }
 
   // Keep the drafts in sync if the parent's church state hot-swaps under us.
   useEffect(() => { setPinDraft(church?.pinned_post ?? ''); }, [church?.pinned_post]);
@@ -654,58 +632,6 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
             }} />
           </button>
         </div>
-      </div>
-
-      {/* ── Featured walk ── */}
-      <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '16px 18px' }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-          ✶ Featured walk
-        </div>
-        <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>
-          Pick one walk to highlight on your church page. Members pace it privately. Change or clear anytime.
-        </div>
-        <div style={{ display: 'grid', gap: 8 }}>
-          {walks.map((w) => {
-            const active = church?.featured_walk_id === w.id;
-            return (
-              <button
-                key={w.id}
-                onClick={() => setFeaturedWalk(active ? null : w.id)}
-                disabled={savingFeatured}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
-                  background: active ? T.parchment : T.cream,
-                  border: `1px solid ${active ? T.goldDark : T.line}`,
-                  borderRadius: 12, padding: '10px 12px',
-                  cursor: savingFeatured ? 'wait' : 'pointer',
-                }}
-              >
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: T.white, border: `1px solid ${T.line}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 18, color: T.goldDark, flexShrink: 0,
-                }}>{w.cover_emoji}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, lineHeight: 1.25 }}>{w.title}</div>
-                  {w.subtitle && <div style={{ fontSize: 12, color: T.inkSoft, fontStyle: 'italic', lineHeight: 1.4, marginTop: 2 }}>{w.subtitle}</div>}
-                  <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 2 }}>{w.length_days}-day walk</div>
-                </div>
-                {active && (
-                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', background: T.goldDark, color: T.cream, borderRadius: 999, padding: '3px 9px' }}>Featured</span>
-                )}
-              </button>
-            );
-          })}
-          {walks.length === 0 && <div style={{ color: T.inkMuted, fontStyle: 'italic', fontSize: 13.5 }}>No published walks yet.</div>}
-        </div>
-        {church?.featured_walk_id && (
-          <button onClick={() => setFeaturedWalk(null)} disabled={savingFeatured} style={{
-            marginTop: 10, background: 'none', border: `1px solid ${T.line}`,
-            borderRadius: 999, padding: '7px 14px', fontSize: 12,
-            color: T.inkMuted, cursor: savingFeatured ? 'wait' : 'pointer',
-          }}>Clear featured walk</button>
-        )}
       </div>
 
       {/* ── Danger zone — ownership transfer ───────────────────────── */}
@@ -1537,32 +1463,40 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
         pointerEvents: (churchPlan === 'church_base' && members.length >= CHURCH_BASE_MEMBER_LIMIT) ? 'none' : 'auto',
       }}>
         <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-          ✦ Church invite code
+          ✦ Invite your congregation
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <div style={{
-            fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-            fontSize: 28, fontWeight: 700, letterSpacing: 4, color: T.ink,
-            background: T.white, border: `1px solid ${T.line}`, borderRadius: 10,
-            padding: '8px 16px',
-          }}>
-            {code || '—'}
-          </div>
-          <button onClick={() => copy(code, 'code')} disabled={!code} style={{
-            background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
-            padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: code ? 'pointer' : 'not-allowed', opacity: code ? 1 : 0.5,
-          }}>{copied ? 'Copied ✓' : 'Copy code'}</button>
-          {joinUrl && (
-            <button onClick={() => copy(joinUrl, 'link')} style={{
-              background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
-              padding: '8px 14px', fontSize: 13, color: T.inkSoft, cursor: 'pointer',
-            }}>{linkCopied ? 'Copied ✓' : 'Copy join link'}</button>
-          )}
-        </div>
-        <p style={{ fontFamily: T.serif, fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, margin: '12px 0 0' }}>
-          Anyone with a profile in kinwove can join your church by entering this code.
-          Share it during a service, in a group chat, or by sending the link.
-        </p>
+        {code ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{
+                fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                fontSize: 28, fontWeight: 700, letterSpacing: 4, color: T.ink,
+                background: T.white, border: `1px solid ${T.line}`, borderRadius: 10,
+                padding: '8px 16px',
+              }}>
+                {code}
+              </div>
+              <button onClick={() => copy(code, 'code')} style={{
+                background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+                padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              }}>{copied ? 'Copied ✓' : 'Copy code'}</button>
+              {joinUrl && (
+                <button onClick={() => copy(joinUrl, 'link')} style={{
+                  background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
+                  padding: '8px 14px', fontSize: 13, color: T.inkSoft, cursor: 'pointer',
+                }}>{linkCopied ? 'Copied ✓' : 'Copy join link'}</button>
+              )}
+            </div>
+            <p style={{ fontFamily: T.serif, fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, margin: '12px 0 0' }}>
+              Share this code during a service, in a group chat, or by sending the link.
+              Anyone with a kinwove profile can join your church by entering it.
+            </p>
+          </>
+        ) : (
+          <p style={{ fontFamily: T.serif, fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, margin: '0 0 4px' }}>
+            Generate an invite code so your congregation can find and join your church on kinwove. Tap below to create one.
+          </p>
+        )}
         {/* Secondary share affordances — pre-written announcement (matches the
             QR modal) + a path back to the QR for printing. Without these the
             People-tab pastor was a tab-switch away from the polish we built
@@ -1589,10 +1523,19 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
           </div>
         )}
         <button onClick={() => setConfirmRotate(true)} style={{
-          background: 'transparent', border: 'none', color: T.goldDark, fontSize: 12.5,
-          padding: 0, marginTop: 12, cursor: 'pointer', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3,
+          background: code ? 'transparent' : T.ink,
+          color: code ? T.goldDark : T.cream,
+          border: code ? 'none' : 'none',
+          borderRadius: code ? 0 : 999,
+          padding: code ? 0 : '10px 20px',
+          marginTop: 12,
+          fontSize: code ? 12.5 : 14,
+          cursor: 'pointer',
+          fontWeight: 600,
+          textDecoration: code ? 'underline' : 'none',
+          textUnderlineOffset: 3,
         }}>
-          Reset code…
+          {code ? 'Reset code…' : 'Generate invite code →'}
         </button>
       </div>
 
@@ -1818,7 +1761,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
                           {[m.city, m.country].filter(Boolean).join(', ')}
                         </div>
                       )}
-                      {memberRoles.length > 0 && (
+                      {memberRoles.length > 0 && m.id !== session?.user?.id && (
                         <div style={{ marginTop: 2, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                           {memberRoles.map((r) => (
                             <TextButton
@@ -1999,6 +1942,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
       onOpenChurchPage={onOpenChurchPage}
       onOpenChurchHub={onOpenChurchHub}
       currentSubpage={null}
+      fullBleed={tab === 'bible'}
     >
       {trialExpired && (
         <UpgradeWall onBack={onBack} />
@@ -2043,6 +1987,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
           <BibleReader
             session={session}
             profile={profile ? { ...profile, plan: plan ?? 'church_base' } : profile}
+            topOffset={145}
           />
         )}
         {tab === 'settings' && (

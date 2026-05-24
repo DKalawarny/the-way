@@ -197,7 +197,7 @@ export default function ChurchAiChat({ session, profile, churchPlan }) {
                 color: T.ink,
               }}>
                 {m.content
-                  ? <MsgText content={m.content} />
+                  ? <MsgText text={m.content} />
                   : <span style={{ color: T.inkMuted, fontStyle: 'italic' }}>…</span>
                 }
               </div>

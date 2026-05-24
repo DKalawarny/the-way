@@ -671,7 +671,7 @@ function parseRef(refStr) {
   return book ? { bookId: book.id, chapter, verse } : null;
 }
 
-export default function BibleReader({ session, profile, homeKey = 0, onClose, onOpenChat, jumpRef }) {
+export default function BibleReader({ session, profile, homeKey = 0, onClose, onOpenChat, jumpRef, topOffset = 0 }) {
   // ── Navigation state ────────────────────────────────────────────────────────
   const [view, setView]         = useState('home');      // 'home' | 'chapters' | 'reading'
   const [chapBook, setChapBook] = useState(ALL_BOOKS[0]); // book shown in chapters view
@@ -1845,7 +1845,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
   );
 
   return (
-    <div style={{ height: 'calc(100vh - 62px)', background: C.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div style={{ height: `calc(100vh - ${62 + topOffset}px)`, background: C.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Bible sub-header — sits directly below the global app header */}
       <div style={{
         background: C.bg, borderBottom: `1px solid ${C.border}`,

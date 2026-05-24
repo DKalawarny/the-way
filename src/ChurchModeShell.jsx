@@ -43,6 +43,7 @@ export default function ChurchModeShell({
   onOpenChurchHub,
   currentSubpage,
   bodyMaxWidth = 760,
+  fullBleed = false,
   children,
 }) {
   const isVisitorView = currentSubpage === 'public';
@@ -113,8 +114,8 @@ export default function ChurchModeShell({
       </div>
 
       {/* Public/visitor view renders full-bleed — ChurchPage owns its own layout */}
-      {isVisitorView
-        ? <div style={{ paddingBottom: 80 }}>{children}</div>
+      {isVisitorView || fullBleed
+        ? <div style={{ paddingBottom: fullBleed ? 0 : 80 }}>{children}</div>
         : <div style={{ maxWidth: bodyMaxWidth, margin: '0 auto', padding: '20px 20px 80px' }}>{children}</div>
       }
     </div>
