@@ -26,6 +26,9 @@ export default function ChurchPage({
   const [joining, setJoining] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
   const [joinRequest, setJoinRequest] = useState(null); // null | 'pending' | 'declined'
+  const [codeInput, setCodeInput] = useState('');
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [codeError, setCodeError] = useState(null);
   const [copied, setCopied] = useState(false);
   const [latestSermon, setLatestSermon] = useState(null); // newest is_published=true sermon
   const [seriesList, setSeriesList] = useState([]);        // [{id,name,scripture_arc,started_on,ended_on,description,sermon_count}]
@@ -277,6 +280,31 @@ export default function ChurchPage({
       });
     }
     showToast("Welcome \u2014 you\u2019re now a member.", 'success');
+  }
+
+  async function handleJoinByCode(e) {
+    e.preventDefault();
+    const code = codeInput.trim().toUpperCase();
+    if (!code || !session?.user?.id) return;
+    setCodeLoading(true);
+    setCodeError(null);
+    const { data: ch } = await supabase
+      .from('churches')
+      .select('id, invite_code')
+      .eq('id', churchId)
+      .maybeSingle();
+    if (!ch || ch.invite_code?.toUpperCase() !== code) {
+      setCodeLoading(false);
+      setCodeError('That code doesn\'t match. Check with your pastor.');
+      return;
+    }
+    // Code is correct \u2014 join directly regardless of open_join setting
+    const { error } = await supabase.from('profiles').update({ church_id: churchId }).eq('id', session.user.id);
+    setCodeLoading(false);
+    if (error) { setCodeError(`Couldn't join: ${error.message}`); return; }
+    onProfileUpdate?.({ ...profile, church_id: churchId });
+    setMemberCount((c) => c + 1);
+    showToast('Welcome \u2014 you\'re now a member.', 'success');
   }
 
   async function handleLeave() {
@@ -1194,6 +1222,39 @@ export default function ChurchPage({
                       : church?.open_join === false ? 'Request to join'
                       : 'Join this church'}
                   </button>
+                )}
+
+                {/* Code entry for approval-required churches */}
+                {session && !isMember && joinRequest !== 'pending' && church?.open_join === false && (
+                  <form onSubmit={handleJoinByCode} style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 6, textAlign: 'center' }}>
+                      Have an invite code? Enter it to join directly.
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        value={codeInput}
+                        onChange={(e) => { setCodeInput(e.target.value.toUpperCase()); setCodeError(null); }}
+                        placeholder="Invite code…"
+                        maxLength={16}
+                        style={{
+                          flex: 1, boxSizing: 'border-box',
+                          border: `1px solid ${codeError ? '#a53f2b' : T.line}`,
+                          borderRadius: 10, padding: '9px 14px', fontSize: 13,
+                          background: T.white, color: T.ink, outline: 'none',
+                          fontFamily: 'ui-monospace, monospace', letterSpacing: 2, fontWeight: 600,
+                        }}
+                      />
+                      <button type="submit" disabled={!codeInput.trim() || codeLoading} style={{
+                        background: T.ink, color: T.cream, border: 'none', borderRadius: 10,
+                        padding: '9px 16px', fontSize: 13, fontWeight: 600,
+                        cursor: codeInput.trim() ? 'pointer' : 'not-allowed',
+                        opacity: codeInput.trim() ? 1 : 0.4, flexShrink: 0,
+                      }}>
+                        {codeLoading ? '…' : 'Join →'}
+                      </button>
+                    </div>
+                    {codeError && <div style={{ fontSize: 12, color: '#a53f2b', marginTop: 5 }}>{codeError}</div>}
+                  </form>
                 )}
 
                 {/* Follow button — non-members only */}

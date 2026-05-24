@@ -7,6 +7,25 @@ export default function ChurchDirectory({ session, profile, onBack, onOpenChurch
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
   const [memberCounts, setMemberCounts] = useState({});
+  const [codeVal, setCodeVal] = useState('');
+  const [codeLoading, setCodeLoading] = useState(false);
+  const [codeError, setCodeError] = useState(null);
+
+  async function joinByCode(e) {
+    e.preventDefault();
+    const code = codeVal.trim().toUpperCase();
+    if (!code) return;
+    setCodeLoading(true);
+    setCodeError(null);
+    const { data: ch } = await supabase
+      .from('churches')
+      .select('id, name')
+      .eq('invite_code', code)
+      .maybeSingle();
+    setCodeLoading(false);
+    if (!ch) { setCodeError('No church found with that code.'); return; }
+    onOpenChurch?.(ch.id);
+  }
 
   useEffect(() => {
     setLoading(true);
@@ -69,6 +88,41 @@ export default function ChurchDirectory({ session, profile, onBack, onOpenChurch
       </header>
 
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '20px 16px' }}>
+
+        {/* Invite code entry */}
+        <form onSubmit={joinByCode} style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
+            Have an invite code?
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              value={codeVal}
+              onChange={(e) => { setCodeVal(e.target.value.toUpperCase()); setCodeError(null); }}
+              placeholder="Enter code…"
+              maxLength={16}
+              style={{
+                flex: 1, boxSizing: 'border-box',
+                border: `1px solid ${codeError ? '#a53f2b' : T.line}`, borderRadius: 12,
+                padding: '11px 16px', fontSize: 14, background: T.white,
+                color: T.ink, outline: 'none', fontFamily: 'ui-monospace, monospace',
+                letterSpacing: 2, fontWeight: 600,
+              }}
+            />
+            <button type="submit" disabled={!codeVal.trim() || codeLoading} style={{
+              background: T.ink, color: T.cream, border: 'none', borderRadius: 12,
+              padding: '11px 20px', fontSize: 14, fontWeight: 600,
+              cursor: codeVal.trim() ? 'pointer' : 'not-allowed',
+              opacity: codeVal.trim() ? 1 : 0.4, flexShrink: 0,
+            }}>
+              {codeLoading ? '…' : 'Go →'}
+            </button>
+          </div>
+          {codeError && <div style={{ fontSize: 12, color: '#a53f2b', marginTop: 6 }}>{codeError}</div>}
+        </form>
+
+        <div style={{ fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 8 }}>
+          Or search
+        </div>
         <div style={{ marginBottom: 14 }}>
           <input
             value={query}
