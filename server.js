@@ -1232,20 +1232,36 @@ app.delete('/api/account', requireAuth, async (req, res) => {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
     return res.status(503).json({ error: 'account deletion not configured' });
   }
+  const svcH = {
+    apikey: SUPABASE_SERVICE_KEY,
+    Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+    'Content-Type': 'application/json',
+  };
   try {
+    // Clear pastor_id on any churches owned by this user before deleting, to avoid
+    // FK cascade ordering issues (churches.pastor_id → profiles ON DELETE SET NULL
+    // can conflict with the profile cascade from auth delete in some Supabase versions).
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/churches?pastor_id=eq.${req.userId}`,
+      { method: 'PATCH', headers: { ...svcH, Prefer: 'return=minimal' }, body: JSON.stringify({ pastor_id: null }) },
+    ).catch(() => {});
+
+    // Remove church_roles rows for this user so no FK holds after profile delete.
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/church_roles?user_id=eq.${req.userId}`,
+      { method: 'DELETE', headers: { ...svcH, Prefer: 'return=minimal' } },
+    ).catch(() => {});
+
     const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${req.userId}`, {
       method: 'DELETE',
-      headers: {
-        apikey: SUPABASE_SERVICE_KEY,
-        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-      },
+      headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
     });
     if (!r.ok) {
       const body = await r.text().catch(() => '');
-      console.error('[the way] account delete failed', r.status, body);
-      return res.status(500).json({ error: 'delete failed' });
+      console.error('[kinwove] account delete failed', r.status, body);
+      return res.status(500).json({ error: `delete failed: ${body || r.status}` });
     }
-    // Drop the cached token so a stolen JWT cannot keep authenticating after delete.
+    // Drop cached tokens so a stolen JWT cannot keep authenticating after delete.
     for (const [tok, v] of tokenCache) if (v.userId === req.userId) tokenCache.delete(tok);
     res.status(204).end();
   } catch (err) {
