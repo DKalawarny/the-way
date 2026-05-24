@@ -805,8 +805,8 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
           borderRadius: 14, padding: '14px 18px',
           fontSize: 13, color: T.inkSoft, lineHeight: 1.65,
         }}>
-          <div style={{ fontWeight: 600, color: T.ink, marginBottom: 6 }}>Pastor's promise to your congregation</div>
-          You see themes, not people. You see counts, not conversations. No drift detection, no engagement scoring — lurking is part of belonging.
+          <div style={{ fontWeight: 600, color: T.ink, marginBottom: 6 }}>What pastors can and can't see</div>
+          You can see who's joined, overall activity, and sermon engagement. You can't see private prayers, anonymous questions, or what individuals are reading. Your congregation's private moments stay private.
         </div>
 
         {!embedded && (
