@@ -1164,9 +1164,12 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
 
   const [copied, setCopied]       = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [announceCopied, setAnnounceCopied] = useState(false);
   const [rotating, setRotating]   = useState(false);
   const [confirmRotate, setConfirmRotate] = useState(false);
+
+  // Local invite_code state — self-sourced from DB in loadAll() so it
+  // survives tab navigation without depending on the church prop staying fresh.
+  const [localInviteCode, setLocalInviteCode] = useState(church?.invite_code ?? '');
 
   const [removingId, setRemovingId] = useState(null);
   const [scrubPosts, setScrubPosts] = useState(false);
@@ -1176,7 +1179,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
 
   const { showToast, askConfirm, ui: uikitUi } = useUiKit();
 
-  const code = church?.invite_code ?? '';
+  const code = localInviteCode ?? '';
   const joinUrl = (typeof window !== 'undefined' && code)
     ? `${window.location.origin}/?join=${code}`
     : '';
@@ -1191,6 +1194,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
       { data: inviteRows },
       { data: blockRows },
       { data: joinReqRows },
+      { data: codeRow },
     ] = await Promise.all([
       supabase
         .from('profiles')
@@ -1217,10 +1221,19 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
         .eq('church_id', churchId)
         .eq('status', 'pending')
         .order('created_at', { ascending: true }),
+      // Fetch invite_code directly so it survives tab navigation without
+      // depending on the church prop staying fresh across remounts.
+      supabase
+        .from('churches')
+        .select('invite_code')
+        .eq('id', churchId)
+        .maybeSingle(),
     ]);
 
     const m = memberRows ?? [];
     setMembers(m);
+    // Update local invite code from DB — overrides stale prop value on remount.
+    if (codeRow?.invite_code != null) setLocalInviteCode(codeRow.invite_code);
     setJoinRequests((joinReqRows ?? []).map(r => ({
       ...r, display_name: r.profiles?.display_name ?? 'Member',
       city: r.profiles?.city, country: r.profiles?.country,
@@ -1268,20 +1281,6 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
     else { setLinkCopied(true); setTimeout(() => setLinkCopied(false), 1400); }
   }
 
-  // Pre-written announcement matching the QR modal's copy. The People-tab
-  // pastor shouldn't have to navigate to Settings to reach this affordance —
-  // they're already in "share" mindset here. Same template, same tone.
-  async function copyAnnouncement() {
-    if (!joinUrl) return;
-    try {
-      await navigator.clipboard.writeText(buildAnnouncementText(church?.name, joinUrl));
-      setAnnounceCopied(true);
-      setTimeout(() => setAnnounceCopied(false), 2200);
-    } catch (_) {
-      showToast("Couldn't copy — long-press to copy manually.", 'error');
-    }
-  }
-
   async function reviewRequest(requestId, userId, approve) {
     setReviewBusy(requestId);
     if (approve) {
@@ -1313,6 +1312,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
       .single();
     setRotating(false);
     if (error) { showToast(`Couldn't rotate code: ${error.message}`, 'error'); return; }
+    setLocalInviteCode(data.invite_code);   // keep local state in sync immediately
     onChurchUpdate?.(data);
     showToast('New invite code generated.', 'success');
   }
@@ -1499,31 +1499,6 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
           <p style={{ fontFamily: T.serif, fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, margin: '0 0 4px' }}>
             Generate an invite code so your congregation can find and join your church on kinwove. Tap below to create one.
           </p>
-        )}
-        {/* Secondary share affordances — pre-written announcement (matches the
-            QR modal) + a path back to the QR for printing. Without these the
-            People-tab pastor was a tab-switch away from the polish we built
-            in Settings, and the empty-state nudge said "share the code"
-            without giving them a graceful way to actually do it. */}
-        {joinUrl && (
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
-            <button onClick={copyAnnouncement} style={{
-              background: 'transparent', border: `1px solid ${T.goldDark}`,
-              color: T.goldDark, borderRadius: 999,
-              padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            }}>
-              {announceCopied ? <><Check size={13} strokeWidth={2.5} /> Copied — paste anywhere</> : <><Copy size={13} strokeWidth={2} /> Copy announcement</>}
-            </button>
-            {onShowQr && (
-              <button onClick={onShowQr} style={{
-                background: 'transparent', border: `1px solid ${T.line}`,
-                color: T.inkSoft, borderRadius: 999,
-                padding: '8px 14px', fontSize: 13, cursor: 'pointer',
-              }}>
-                <QrCode size={14} strokeWidth={2} style={{ marginRight: 6 }} />Show QR code
-              </button>
-            )}
-          </div>
         )}
         <button onClick={() => setConfirmRotate(true)} style={{
           background: code ? 'transparent' : T.ink,
