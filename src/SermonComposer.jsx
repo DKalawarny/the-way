@@ -730,7 +730,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
                   </div>
                 </div>
                 <a
-                  href={`mailto:hello@kinwove.com?subject=${encodeURIComponent('kinwove — AI Upgrade')}&body=${encodeURIComponent('Hi, I would like to upgrade to unlock unlimited AI sermon generation.')}`}
+                  href={`mailto:hello@kinwove.app?subject=${encodeURIComponent('kinwove — AI Upgrade')}&body=${encodeURIComponent('Hi, I would like to upgrade to unlock unlimited AI sermon generation.')}`}
                   style={{
                     background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
                     color: '#FDF8EE', borderRadius: 999,

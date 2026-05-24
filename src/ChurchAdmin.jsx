@@ -1441,7 +1441,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
               </div>
             </div>
             <a
-              href={`mailto:hello@kinwove.com?subject=${encodeURIComponent('Upgrade to Church Pro')}`}
+              href={`mailto:hello@kinwove.app?subject=${encodeURIComponent('Upgrade to Church Pro')}`}
               style={{
                 background: atLimit
                   ? 'linear-gradient(135deg, #A53F2B 0%, #7d2e1e 100%)'

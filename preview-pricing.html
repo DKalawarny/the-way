@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pricing UI Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F4EFE6; color: #2C1810; }
+
+  .page { padding: 36px 24px 80px; max-width: 900px; margin: 0 auto; }
+  .label { font-size: 10px; letter-spacing: 2.2px; text-transform: uppercase; color: #8E5528; font-weight: 700; margin: 44px 0 6px; }
+  .label:first-child { margin-top: 0; }
+  .rule { height: 1px; background: rgba(184,115,58,0.18); margin-bottom: 22px; }
+  .row { display: flex; gap: 22px; flex-wrap: wrap; }
+  .col { flex: 1; min-width: 280px; }
+
+  /* ─── Sermon Composer shell ─── */
+  .composer { background: #fff; border: 1px solid #E8DDD2; border-radius: 16px; overflow: hidden; }
+  .composer-header { padding: 18px 22px 0; border-bottom: 1px solid #F0EAE3; }
+  .composer-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: #2C1810; letter-spacing: -0.02em; margin-bottom: 4px; }
+  .composer-sub { font-size: 12px; color: #A08060; margin-bottom: 16px; }
+  .input-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .fake-input { flex: 1; height: 36px; background: #F9F5EF; border: 1px solid #E8DDD2; border-radius: 8px; padding: 0 12px; font-size: 13px; color: #2C1810; display: flex; align-items: center; }
+  .fake-textarea { width: 100%; height: 64px; background: #F9F5EF; border: 1px solid #E8DDD2; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #A08060; font-family: 'Lora', serif; margin-bottom: 14px; line-height: 1.5; }
+  .composer-body { padding: 18px 22px; }
+
+  /* Generate button — active */
+  .btn-generate {
+    background: linear-gradient(135deg, #B8733A 0%, #c47020 100%);
+    color: #FDF8EE; border: none; border-radius: 999px;
+    padding: 11px 22px; font-size: 14px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 3px 14px rgba(184,115,58,0.35);
+    font-family: inherit;
+  }
+  .counter { display: inline-block; margin-left: 12px; font-size: 12px; color: #A08060; }
+
+  /* Generate gate — at limit */
+  .gate {
+    background: linear-gradient(135deg, rgba(184,115,58,0.08) 0%, rgba(184,115,58,0.04) 100%);
+    border: 1px solid rgba(184,115,58,0.28);
+    border-radius: 14px; padding: 16px 18px;
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+  }
+  .gate-title { font-size: 13px; font-weight: 600; color: #2C1810; margin-bottom: 3px; }
+  .gate-body { font-size: 12.5px; color: #7A6055; line-height: 1.5; }
+  .gate-cta {
+    background: linear-gradient(135deg, #B8733A 0%, #c47020 100%);
+    color: #FDF8EE; border-radius: 999px;
+    padding: 9px 18px; font-size: 13px; font-weight: 600;
+    text-decoration: none; flex-shrink: 0;
+    box-shadow: 0 3px 12px rgba(184,115,58,0.3);
+    white-space: nowrap; font-family: inherit;
+    border: none; cursor: pointer;
+  }
+
+  /* Repopulate button locked */
+  .btn-repopulate-locked {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: transparent; border: 1px solid #E8DDD2;
+    border-radius: 999px; padding: 6px 12px;
+    font-size: 12.5px; font-weight: 600; color: #C0A898;
+    cursor: not-allowed; opacity: 0.6; font-family: inherit;
+  }
+
+  /* ─── Chat AI limit wall ─── */
+  .chat-shell { background: #fff; border: 1px solid #E8DDD2; border-radius: 16px; overflow: hidden; }
+  .chat-messages { padding: 20px 18px; display: flex; flex-direction: column; gap: 12px; min-height: 140px; }
+  .msg { padding: 10px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.55; max-width: 85%; }
+  .msg-user { background: #B8733A; color: #FDF8EE; align-self: flex-end; font-family: 'Lora', serif; }
+  .msg-ai { background: #F4EFE6; color: #2C1810; align-self: flex-start; font-family: 'Lora', serif; font-style: italic; }
+
+  /* Warning banner (≤3 left) */
+  .usage-warning {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 6px 16px;
+    background: rgba(165,63,43,0.06);
+    border-top: 1px solid rgba(165,63,43,0.18);
+    border-bottom: 1px solid rgba(165,63,43,0.18);
+  }
+  .usage-warning span { font-size: 11px; color: #A53F2B; font-weight: 600; }
+
+  /* Limit wall */
+  .limit-wall {
+    border-top: 1px solid #E8DDD2;
+    padding: 22px 20px 28px;
+    background: #fff;
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    text-align: center;
+  }
+  .limit-star { font-size: 24px; }
+  .limit-title { font-family: 'Fraunces', serif; font-size: 19px; font-weight: 600; color: #2C1810; letter-spacing: -0.015em; }
+  .limit-sub { font-size: 13.5px; color: #7A6055; line-height: 1.6; max-width: 290px; font-family: 'Lora', serif; }
+  .price-card {
+    background: #FBF7F0; border: 1px solid #DCC99A;
+    border-radius: 14px; padding: 16px 20px;
+    width: 100%; max-width: 300px; text-align: left;
+  }
+  .price-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 11px; border-radius: 10px; margin-bottom: 6px; }
+  .price-row:last-child { margin-bottom: 0; }
+  .price-row.highlight { background: #fff; border: 1px solid #DCC99A; }
+  .price-label { font-size: 13px; font-weight: 600; color: #2C1810; }
+  .price-detail { font-size: 11.5px; color: #A08060; }
+  .price-amount { font-size: 14px; font-weight: 700; color: #8E5528; flex-shrink: 0; }
+  .btn-upgrade {
+    background: linear-gradient(135deg, #B8733A 0%, #c47020 100%);
+    color: #FDF8EE; border: none; border-radius: 999px;
+    padding: 13px 20px; font-size: 14px; font-weight: 600;
+    cursor: pointer; width: 100%; max-width: 300px;
+    box-shadow: 0 4px 18px rgba(184,115,58,0.38);
+    font-family: inherit; letter-spacing: -0.01em;
+  }
+  .promo-link { font-size: 12px; color: #A08060; text-decoration: underline; cursor: pointer; background: none; border: none; font-family: inherit; }
+
+  /* Fake input bar */
+  .chat-input-bar { border-top: 1px solid #E8DDD2; padding: 10px 14px; display: flex; gap: 8px; align-items: center; background: #fff; }
+  .fake-chat-input { flex: 1; height: 36px; background: #F9F5EF; border: 1px solid #E8DDD2; border-radius: 8px; padding: 0 12px; font-size: 13px; color: #C0A898; display: flex; align-items: center; }
+
+  /* Section divider text */
+  .note { font-size: 12px; color: #A08060; font-family: 'Lora', serif; font-style: italic; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══════════════════════════════════════════════
+       SERMON COMPOSER — generate button active states
+  ═══════════════════════════════════════════════ -->
+  <div class="label">Sermon Composer — AI button, 1 generation used (2 remaining)</div>
+  <div class="rule"></div>
+  <div class="composer">
+    <div class="composer-header">
+      <div class="composer-title">Sunday service · Week of May 18</div>
+      <div class="composer-sub">Paste your outline, then let AI generate the week's content</div>
+      <div class="input-row">
+        <div class="fake-input">Romans 8:28 — All things work together for good</div>
+        <div class="fake-input" style="max-width:120px">May 18, 2025</div>
+      </div>
+      <div class="fake-textarea">We're starting a new series on trust and sovereignty. The congregation has been through a hard season — job losses, health scares. Romans 8:28 as the anchor…</div>
+    </div>
+    <div class="composer-body">
+      <button class="btn-generate">✦ Generate the week</button>
+      <span class="counter">2 of 3 free AI generations left</span>
+    </div>
+  </div>
+
+  <div class="label" style="margin-top:36px">Sermon Composer — AI limit reached (0 remaining)</div>
+  <div class="rule"></div>
+  <div class="composer">
+    <div class="composer-header">
+      <div class="composer-title">Sunday service · Week of May 25</div>
+      <div class="composer-sub">Paste your outline, then let AI generate the week's content</div>
+      <div class="input-row">
+        <div class="fake-input">Psalm 23 — The Lord is my shepherd</div>
+        <div class="fake-input" style="max-width:120px">May 25, 2025</div>
+      </div>
+      <div class="fake-textarea">Continuing the trust series. Psalm 23 is familiar but rarely felt deeply. Want to approach it fresh — focus on still waters as rest, not just peace…</div>
+    </div>
+    <div class="composer-body">
+      <!-- Gate replaces button -->
+      <div class="gate">
+        <div>
+          <div class="gate-title">✦ You've used your 3 free AI sermons</div>
+          <div class="gate-body">Upgrade to keep generating — your congregation won't notice the difference in prep time, but you will.</div>
+        </div>
+        <button class="gate-cta">Unlock AI →</button>
+      </div>
+      <div style="margin-top:14px; display:flex; align-items:center; justify-content:flex-end;">
+        <button class="btn-repopulate-locked">🔒 Repopulate daily questions</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       CHAT AI — warning + limit wall
+  ═══════════════════════════════════════════════ -->
+  <div class="label" style="margin-top:52px">Chat AI — usage warning (2 questions left this week)</div>
+  <div class="rule"></div>
+  <div class="chat-shell" style="max-width:400px">
+    <div class="chat-messages">
+      <div class="msg msg-user">Why would God allow suffering if he's good?</div>
+      <div class="msg msg-ai">"That's one of the oldest questions in theology — and one worth sitting with rather than rushing past. The book of Job is basically…"</div>
+    </div>
+    <div class="usage-warning">
+      <span>2 free questions left this week</span>
+    </div>
+    <div class="chat-input-bar">
+      <div class="fake-chat-input">Ask anything…</div>
+    </div>
+  </div>
+  <div class="note">Resets every Monday. No popup, just the quiet counter — keeps it non-annoying.</div>
+
+  <div class="label" style="margin-top:36px">Chat AI — weekly limit hit (0 questions left)</div>
+  <div class="rule"></div>
+  <div class="chat-shell" style="max-width:400px">
+    <div class="chat-messages">
+      <div class="msg msg-user">What does free will mean if God knows everything?</div>
+      <div class="msg msg-ai">"Great question — this is where Calvinism and Arminianism have been going back and forth for centuries…"</div>
+    </div>
+    <div class="limit-wall">
+      <div class="limit-star">✦</div>
+      <div class="limit-title">That's your 10 free questions this week</div>
+      <div class="limit-sub">Free questions reset every Monday. Upgrade for unlimited conversations, deeper study, and all AI models.</div>
+      <div class="price-card">
+        <div class="price-row">
+          <div>
+            <div class="price-label">Individual</div>
+            <div class="price-detail">200 msgs/mo · Haiku + Sonnet AI</div>
+          </div>
+          <div class="price-amount">$6.99 CAD/mo</div>
+        </div>
+        <div class="price-row highlight">
+          <div>
+            <div class="price-label">Individual Pro</div>
+            <div class="price-detail">150 msgs/mo · all 3 AI models</div>
+          </div>
+          <div class="price-amount">$13.99 CAD/mo</div>
+        </div>
+      </div>
+      <button class="btn-upgrade">Upgrade now →</button>
+      <button class="promo-link">Have a promo code?</button>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

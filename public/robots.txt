@@ -22,4 +22,4 @@ Disallow: /api/
 Disallow: /auth/callback
 Disallow: /admin/
 
-Sitemap: https://kinwove.com/sitemap.xml
+Sitemap: https://kinwove.app/sitemap.xml

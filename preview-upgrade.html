@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Upgrade UI Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=Lora:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #F4EFE6; color: #2C1810; }
+
+  /* ── Layout ── */
+  .page { padding: 40px 20px 80px; }
+  .section-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #8E5528; font-weight: 700; margin: 40px 0 14px; }
+  .section-label:first-child { margin-top: 0; }
+  .divider { height: 1px; background: rgba(184,115,58,0.15); margin: 8px 0 32px; }
+  .row { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+  .col { flex: 1; min-width: 280px; max-width: 500px; }
+
+  /* ── Trial Banner ── */
+  .banner { border-radius: 14px; padding: 16px 18px; position: relative; overflow: hidden; }
+  .banner-accent { position: absolute; top: 0; left: 0; bottom: 0; width: 3px; border-radius: 14px 0 0 14px; }
+  .banner-inner { padding-left: 10px; }
+  .banner-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  .banner-tag { font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase; font-weight: 700; margin-bottom: 3px; }
+  .banner-body { font-size: 13.5px; color: #2C1810; line-height: 1.5; max-width: 340px; }
+  .banner-cta { border-radius: 999px; padding: 9px 20px; font-size: 13px; font-weight: 600; text-decoration: none; color: #FDF8EE; flex-shrink: 0; display: inline-block; letter-spacing: -0.01em; white-space: nowrap; }
+  .progress-track { height: 4px; border-radius: 2px; background: rgba(44,24,16,0.08); overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 2px; }
+
+  /* normal banner */
+  .banner-normal { background: linear-gradient(135deg, rgba(184,115,58,0.1) 0%, rgba(184,115,58,0.05) 100%); border: 1px solid rgba(184,115,58,0.3); }
+  .banner-normal .banner-accent { background: linear-gradient(180deg, #B8733A 0%, rgba(184,115,58,0.3) 100%); }
+  .banner-normal .banner-tag { color: #B8733A; }
+  .banner-normal .banner-cta { background: linear-gradient(135deg, #B8733A 0%, #c47020 100%); box-shadow: 0 3px 12px rgba(184,115,58,0.3); }
+  .banner-normal .progress-fill { background: linear-gradient(90deg, #B8733A, rgba(184,115,58,0.5)); }
+
+  /* urgent banner */
+  .banner-urgent { background: linear-gradient(135deg, rgba(165,63,43,0.1) 0%, rgba(184,115,58,0.08) 100%); border: 1px solid rgba(165,63,43,0.35); }
+  .banner-urgent .banner-accent { background: linear-gradient(180deg, #A53F2B 0%, rgba(184,115,58,0.3) 100%); }
+  .banner-urgent .banner-tag { color: #A53F2B; }
+  .banner-urgent .banner-cta { background: linear-gradient(135deg, #A53F2B 0%, #7d2e1e 100%); box-shadow: 0 3px 12px rgba(165,63,43,0.3); }
+  .banner-urgent .progress-fill { background: linear-gradient(90deg, #A53F2B, rgba(184,115,58,0.7)); }
+
+  /* ── Upgrade Wall ── */
+  .wall-wrap { max-width: 460px; }
+  .wall-hero {
+    background: linear-gradient(150deg, #1E1008 0%, #2C1810 60%, #1A0E07 100%);
+    border-radius: 20px 20px 0 0;
+    padding: 36px 32px 32px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(184,115,58,0.2);
+    border-bottom: none;
+  }
+  .wall-hero .ring1 { position: absolute; top: -50px; right: -50px; width: 160px; height: 160px; border-radius: 50%; border: 1px solid rgba(184,115,58,0.1); }
+  .wall-hero .ring2 { position: absolute; top: -25px; right: -25px; width: 100px; height: 100px; border-radius: 50%; border: 1px solid rgba(184,115,58,0.08); }
+  .wall-hero .gold-bar { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent 0%, #B8733A 40%, rgba(184,115,58,0.4) 100%); }
+  .wall-icon { width: 60px; height: 60px; border-radius: 50%; background: rgba(184,115,58,0.15); border: 1px solid rgba(184,115,58,0.35); display: flex; align-items: center; justify-content: center; margin: 0 auto 22px; box-shadow: 0 0 32px rgba(184,115,58,0.2); font-size: 26px; filter: drop-shadow(0 0 8px rgba(184,115,58,0.6)); }
+  .wall-eyebrow { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(184,115,58,0.7); font-weight: 700; margin-bottom: 12px; }
+  .wall-headline { font-family: 'Fraunces', Georgia, serif; font-size: 30px; font-weight: 600; color: rgba(253,248,240,0.95); margin-bottom: 14px; letter-spacing: -0.025em; line-height: 1.15; }
+  .wall-sub { font-family: 'Lora', Georgia, serif; font-size: 15px; color: rgba(253,248,240,0.55); line-height: 1.7; }
+
+  .wall-body { background: #fff; border: 1px solid rgba(184,115,58,0.18); border-top: none; border-radius: 0 0 20px 20px; padding: 28px 32px 32px; }
+  .price-row { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+  .price-amount { font-family: 'Fraunces', Georgia, serif; font-size: 44px; font-weight: 700; color: #2C1810; letter-spacing: -0.04em; line-height: 1; }
+  .price-period { font-size: 15px; color: #7A6055; padding-bottom: 4px; }
+  .price-note { font-size: 12px; color: #A08060; margin-bottom: 22px; letter-spacing: 0.2px; }
+  .features { display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px; }
+  .feature-row { display: flex; align-items: flex-start; gap: 11px; padding: 10px 14px; background: rgba(184,115,58,0.04); border: 1px solid rgba(184,115,58,0.1); border-radius: 10px; }
+  .feature-icon { font-size: 17px; flex-shrink: 0; line-height: 1.4; }
+  .feature-text { font-size: 13.5px; color: #2C1810; line-height: 1.5; }
+  .wall-cta { display: block; width: 100%; background: linear-gradient(135deg, #B8733A 0%, #c47020 100%); color: #FDF8EE; border: none; border-radius: 999px; padding: 16px 20px; font-size: 16px; font-weight: 600; cursor: pointer; text-decoration: none; text-align: center; box-shadow: 0 6px 24px rgba(184,115,58,0.4); letter-spacing: -0.01em; margin-bottom: 8px; }
+  .wall-reassurance { text-align: center; font-size: 12px; color: #A08060; line-height: 1.6; margin-bottom: 16px; }
+  .wall-back { width: 100%; background: none; color: #A08060; border: none; padding: 8px; font-size: 13px; cursor: pointer; letter-spacing: 0.1px; }
+  .wall-support { margin-top: 18px; font-size: 12px; color: rgba(253,248,240,0.45); text-align: center; line-height: 1.6; }
+  .wall-support a { color: rgba(184,115,58,0.8); text-decoration: none; }
+
+  /* outer bg mirrors the wall page bg */
+  .wall-page { background: linear-gradient(180deg, #1A0E07 0%, #2C1810 40%, #F4EFE6 100%); border-radius: 20px; padding: 36px 20px 48px; }
+</style>
+</head>
+<body>
+<div class="page" style="max-width:960px;margin:0 auto;">
+
+  <!-- ── Trial Banner ── -->
+  <div class="section-label">Trial Banner — plenty of time (18 days left)</div>
+  <div class="divider"></div>
+  <div class="banner banner-normal">
+    <div class="banner-accent"></div>
+    <div class="banner-inner">
+      <div class="banner-top">
+        <div>
+          <div class="banner-tag">18 days left in your free trial</div>
+          <div class="banner-body">Your first 30 days are on us. Upgrade anytime to keep your pastor tools and congregation features running.</div>
+        </div>
+        <a href="#" class="banner-cta">Keep my tools · $19/mo</a>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" style="width:40%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label" style="margin-top:36px;">Trial Banner — urgent (4 days left)</div>
+  <div class="divider"></div>
+  <div class="banner banner-urgent">
+    <div class="banner-accent"></div>
+    <div class="banner-inner">
+      <div class="banner-top">
+        <div>
+          <div class="banner-tag">4 days left in your free trial</div>
+          <div class="banner-body">Your congregation's tools are about to go offline. Keep them running — upgrade before your trial ends.</div>
+        </div>
+        <a href="#" class="banner-cta">Upgrade now</a>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" style="width:87%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Upgrade Wall ── -->
+  <div class="section-label" style="margin-top:56px;">Upgrade Wall — full page (trial expired)</div>
+  <div class="divider"></div>
+
+  <div class="wall-page">
+    <div class="wall-wrap" style="margin:0 auto;">
+
+      <div class="wall-hero">
+        <div class="ring1"></div>
+        <div class="ring2"></div>
+        <div class="gold-bar"></div>
+        <div class="wall-icon">✦</div>
+        <div class="wall-eyebrow">Church Pro</div>
+        <h2 class="wall-headline">Your congregation<br>is still here.</h2>
+        <p class="wall-sub">Your free month is up — but the people depending on your tools aren't going anywhere. Upgrade to keep your dashboard, care team, sermon tools, and congregation running.</p>
+      </div>
+
+      <div class="wall-body">
+        <div class="price-row">
+          <span class="price-amount">$19</span>
+          <span class="price-period">/month per church</span>
+        </div>
+        <div class="price-note">Cancel any time. No contracts. No lock-in.</div>
+
+        <div class="features">
+          <div class="feature-row"><span class="feature-icon">📊</span><span class="feature-text">Pastor dashboard & congregation insights</span></div>
+          <div class="feature-row"><span class="feature-icon">✍️</span><span class="feature-text">AI sermon composer — draft a full sermon in minutes</span></div>
+          <div class="feature-row"><span class="feature-icon">🤝</span><span class="feature-text">Care team — follow up personally with your flock</span></div>
+          <div class="feature-row"><span class="feature-icon">🗺️</span><span class="feature-text">Custom discipleship journeys & walk announcements</span></div>
+          <div class="feature-row"><span class="feature-icon">👥</span><span class="feature-text">Unlimited church members & congregation feed</span></div>
+        </div>
+
+        <a href="#" class="wall-cta">Keep my church active → $19/mo</a>
+        <div class="wall-reassurance">We'll confirm by email. Usually live within minutes.</div>
+        <button class="wall-back">← Go back</button>
+      </div>
+
+      <p class="wall-support">Questions? <a href="#">hello@theway.app</a></p>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

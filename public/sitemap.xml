@@ -4,14 +4,14 @@
 
   <!-- Landing / home -->
   <url>
-    <loc>https://kinwove.com/</loc>
+    <loc>https://kinwove.app/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
 
   <!-- Public share links (dynamically generated, but crawlers hit the root) -->
   <url>
-    <loc>https://kinwove.com/?utm_source=sitemap</loc>
+    <loc>https://kinwove.app/?utm_source=sitemap</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

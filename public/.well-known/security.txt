@@ -1,3 +1,3 @@
-Contact: mailto:hello@kinwove.com
+Contact: mailto:hello@kinwove.app
 Preferred-Languages: en
-Canonical: https://kinwove.com/.well-known/security.txt
+Canonical: https://kinwove.app/.well-known/security.txt

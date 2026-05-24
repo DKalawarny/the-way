@@ -156,7 +156,7 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
       });
       if (url) window.location.href = url;
     } catch {
-      window.open(`mailto:hello@kinwove.com?subject=Upgrade%20to%20${pricePlan}`);
+      window.open(`mailto:hello@kinwove.app?subject=Upgrade%20to%20${pricePlan}`);
     } finally {
       setUpgrading(null);
     }
@@ -174,7 +174,7 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
       });
       if (url) window.location.href = url;
     } catch {
-      window.open('mailto:hello@kinwove.com?subject=AI%20Top-up');
+      window.open('mailto:hello@kinwove.app?subject=AI%20Top-up');
     } finally {
       setUpgrading(null);
     }
