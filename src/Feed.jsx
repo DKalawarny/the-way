@@ -22,6 +22,7 @@ export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessa
   const [items, setItems]         = useState([]);
   const [sponsors, setSponsors]   = useState([]);
   const [loading, setLoading]     = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [authorMap, setAuthorMap] = useState({});      // { uid: { display_name, avatar_config } }
   const [churchMap, setChurchMap] = useState({});      // { cid: { name, ... } }
   const [rolesByUser, setRolesByUser] = useState({});  // { uid: [role rows] } per visible church scope
@@ -30,6 +31,7 @@ export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessa
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     let q = supabase
       .from('feed_items')
       .select('*')
@@ -49,7 +51,7 @@ export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessa
     }
 
     const { data, error } = await q;
-    if (error) { console.error('feed load failed', error.message); setItems([]); setLoading(false); return; }
+    if (error) { setLoadError(true); setItems([]); setLoading(false); return; }
     const rows = data ?? [];
     setItems(rows);
 
@@ -144,6 +146,24 @@ export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessa
     return (
       <div style={{ color: T.inkMuted, fontFamily: T.serif, textAlign: 'center', padding: 40 }}>
         Loading…
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div style={{
+        background: T.white, border: `1px dashed ${T.line}`, borderRadius: 14,
+        padding: '32px 20px', textAlign: 'center',
+        color: T.inkMuted, fontFamily: T.serif, lineHeight: 1.65,
+      }}>
+        <div style={{ marginBottom: 10 }}>Couldn't load posts right now.</div>
+        <button
+          onClick={load}
+          style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 13, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}
+        >
+          Try again
+        </button>
       </div>
     );
   }

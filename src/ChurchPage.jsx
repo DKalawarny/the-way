@@ -22,6 +22,7 @@ export default function ChurchPage({
 }) {
   const [church, setChurch] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [memberCount, setMemberCount] = useState(0);
   const [joining, setJoining] = useState(false);
   const [leaveConfirm, setLeaveConfirm] = useState(false);
@@ -87,7 +88,7 @@ export default function ChurchPage({
         .limit(1)
         .maybeSingle(),
     ]).then(async ([{ data: c, error: cErr }, { count }, { data: serm }]) => {
-      if (cErr) console.error('[ChurchPage] church load error:', cErr);
+      if (cErr || !c) { setLoadError(true); setLoading(false); return; }
       let withPastor = c;
       if (c?.pastor_id) {
         const { data: pastor } = await supabase
@@ -415,6 +416,20 @@ export default function ChurchPage({
     return (
       <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ color: T.inkMuted, fontFamily: T.serif }}>Loading…</div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontFamily: T.serif, fontSize: 17, color: T.inkSoft, marginBottom: 14 }}>Couldn't load this church.</div>
+          <button
+            onClick={onBack}
+            style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 13, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}
+          >← Go back</button>
+        </div>
       </div>
     );
   }

@@ -7,6 +7,7 @@ import { relativeTime } from './time.js';
 import Comments from './Comments.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
 import { codeToFlag } from './countries.js';
+import { useUiKit } from './uikit.jsx';
 
 function renderWithMentions(text, mentions, onViewProfile, onViewChurch) {
   if (!mentions?.length || !text) return text;
@@ -404,6 +405,8 @@ export default function PostCard({
   const [reportBusy, setReportBusy] = useState(false);
   const [reportDone, setReportDone] = useState(false);
 
+  const { showToast, ui: postCardUi } = useUiKit();
+
   const isSermonAnnouncement = item.source === 'post' && !!item.body?.is_sermon_announcement;
   const isOwn = !!sessionUserId && item.author_id === sessionUserId && item.source === 'post';
   const canModerate = isPastor && !isOwn && item.source === 'post';
@@ -422,7 +425,7 @@ export default function PostCard({
       .eq('id', item.id);
     setHideBusy(false);
     setMenuOpen(false);
-    if (error) { console.error('hide toggle failed', error.message); return; }
+    if (error) { showToast("Couldn't update post. Try again.", 'error'); return; }
     setHiddenLocally(next);
   }
 
@@ -435,7 +438,7 @@ export default function PostCard({
       .eq('id', item.id);
     setVisBusy(false);
     setMenuOpen(false);
-    if (error) { console.error('visibility change failed', error.message); return; }
+    if (error) { showToast("Couldn't change visibility. Try again.", 'error'); return; }
     setLocalVisibility(next);
   }
 
@@ -455,7 +458,7 @@ export default function PostCard({
       .update({ body: next })
       .eq('id', item.id);
     setEditBusy(false);
-    if (error) { console.error('edit failed', error.message); return; }
+    if (error) { showToast("Couldn't save edit. Try again.", 'error'); return; }
     setLocalBodyText(next);
     setEditing(false);
   }
@@ -470,7 +473,7 @@ export default function PostCard({
     setDeleteBusy(false);
     setConfirmingDelete(false);
     setMenuOpen(false);
-    if (error) { console.error('delete failed', error.message); return; }
+    if (error) { showToast("Couldn't delete post. Try again.", 'error'); return; }
     setDeletedLocally(true);
     onDeleted?.(item.id);
   }
@@ -485,7 +488,7 @@ export default function PostCard({
       note: reportNote.trim() || null,
     });
     setReportBusy(false);
-    if (error) { console.error('report failed', error.message); return; }
+    if (error) { showToast("Couldn't submit report. Try again.", 'error'); return; }
     setReportDone(true);
   }
 
@@ -568,6 +571,7 @@ export default function PostCard({
       padding: '18px 20px', marginBottom: 16,
       opacity: hiddenLocally ? 0.55 : 1,
     }}>
+      {postCardUi}
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
         <div style={{

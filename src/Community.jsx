@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback, lazy, Suspense, Fragment } from 'react';
 import { Smile, Bookmark } from 'lucide-react';
 import { supabase } from './supabase.js';
+import { useUiKit } from './uikit.jsx';
 import { T, tintFor, SEMANTIC } from './theme.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { KinwoveWordmark } from './components/brand/KinwoveWordmark.jsx';
@@ -140,6 +141,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
   const [blockBusy,      setBlockBusy]      = useState(false);
   const replyInputRef = useRef(null);
   const commentScrollRef = useRef(null);
+  const { showToast, ui: postToastUi } = useUiKit();
 
   // Scroll to bottom of comments list when modal opens so the input is in view
   useEffect(() => {
@@ -178,7 +180,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
       note: reportNote.trim() || null,
     });
     setReportBusy(false);
-    if (error) { console.error('report failed', error.message); return; }
+    if (error) { showToast("Couldn't submit report. Try again.", 'error'); return; }
     setReportDone(true);
   }
 
@@ -198,6 +200,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
 
   return (
     <>
+      {postToastUi}
       <div style={{
         background: T.parchment,
         borderRadius: 14,
@@ -1071,6 +1074,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
   const [pastorMap, setPastorMap] = useState({});
   const [churchMap, setChurchMap] = useState({});
   const [loading, setLoading] = useState(true);
+  const [feedError, setFeedError] = useState(false);
   const [filter, setFilter] = useState('all');
   const [filterPersonalized, setFilterPersonalized] = useState(false);
   const [blockedIds, setBlockedIds] = useState([]);
@@ -1167,6 +1171,7 @@ useEffect(() => {
 
   const loadPosts = useCallback(async () => {
     setLoading(true);
+    setFeedError(false);
     // Disambiguate the FK: post_comments + reactions also link posts→profiles,
     // so PostgREST refuses the bare `profiles(...)` embed. !author_id pins it
     // to posts.author_id. Same for post_comments → profiles via author_id.
@@ -1196,8 +1201,7 @@ useEffect(() => {
       : Promise.resolve({ data: [] });
 
     const [{ data: postData, error: postErr }, { data: sermonData }] = await Promise.all([query, sermonPromise]);
-    if (postErr) console.error('[Community.loadPosts]', postErr.message);
-    if (!postData) { setLoading(false); return; }
+    if (postErr || !postData) { setFeedError(true); setLoading(false); return; }
 
     const myId = session?.user?.id;
     const visible = postData;
@@ -1692,7 +1696,13 @@ useEffect(() => {
             return (
               <>
                 {loading && <div style={{ textAlign: 'center', color: T.inkMuted, padding: 40, fontFamily: T.serif, fontSize: 16 }}>Loading…</div>}
-                {!loading && filtered.length === 0 && (
+                {!loading && feedError && (
+                  <div style={{ textAlign: 'center', color: T.inkMuted, fontFamily: T.serif, padding: '32px 20px', lineHeight: 1.65 }}>
+                    <div style={{ marginBottom: 10 }}>Couldn't load posts right now.</div>
+                    <button onClick={loadPosts} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 13, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 3 }}>Try again</button>
+                  </div>
+                )}
+                {!loading && !feedError && filtered.length === 0 && (
                   <EmptyState
                     icon={
                       <svg width={30} height={30} viewBox="0 0 36 36" fill="none" aria-hidden>

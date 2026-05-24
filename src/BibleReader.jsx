@@ -1003,6 +1003,8 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
     const userMsg = { role: 'user', content: prompt };
     setChatMsgs((prev) => [...prev, userMsg]);
     setChatBusy(true);
+    // Push the placeholder immediately so '…' shows while the request is in-flight.
+    setChatMsgs((prev) => [...prev, { role: 'assistant', content: '' }]);
     try {
       const res = await authedFetch('/api/chat', {
         method: 'POST',
@@ -1010,7 +1012,6 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
         body: JSON.stringify({ system: getSystemPrompt(), messages: [...chatMsgs, userMsg], personType: profile?.person_type ?? 'curious' }),
       });
       if (!res.ok || !res.body) throw new Error();
-      setChatMsgs((prev) => [...prev, { role: 'assistant', content: '' }]);
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
@@ -1029,7 +1030,13 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
           }
         }
       }
-    } catch {}
+    } catch {
+      // Remove the empty placeholder bubble if the request failed entirely.
+      setChatMsgs((prev) => {
+        const last = prev[prev.length - 1];
+        return last?.role === 'assistant' && !last?.content ? prev.slice(0, -1) : prev;
+      });
+    }
     aiUsage.increment();
     setChatBusy(false);
   }
