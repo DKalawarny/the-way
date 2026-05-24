@@ -1,8 +1,7 @@
 # kinwove — Claude Code handover
 
 This file is the entry point for a new Claude Code session picking up work on
-this project. Read it first. It captures who the user is, what we've built,
-where the rebrand left things, and what the next-step punch list looks like.
+this project. Read it first.
 
 ---
 
@@ -11,12 +10,9 @@ where the rebrand left things, and what the next-step punch list looks like.
 **Daniel Kalawarny** (dkalawarny@hotmail.com).
 - Recent convert to Christianity. The product is informed by his own journey
   from skeptic → seeker → believer.
-- First-time founder. He's not a developer by background — he understands
-  product well, but he needs **concrete, copy-pasteable next steps**, not
-  abstract architectural advice. When in doubt, hand him the exact command
-  or SQL to run.
-- Communicates in short, casual messages ("yah lets get this ready to launch",
-  "ok", "crisp it all up"). Mirror that energy. Skip preamble, get to the point.
+- First-time founder. Not a developer — understands product well but needs
+  **concrete, copy-pasteable next steps**. Hand him the exact command or SQL.
+- Communicates in short, casual messages. Mirror that energy. Skip preamble.
 
 ## 2. What kinwove is
 
@@ -27,203 +23,192 @@ until 2026-05-13** when we rebranded to **kinwove**.
 - Three core pillars: **AI companion** (Claude-powered Bible/faith Q&A),
   **community** (feed, prayer wall, groups, sermons), **church directory**
   (pastor onboarding + congregation features).
-- Aesthetic: **parchment + gold + serif**. Warm, editorial, slow-internet
-  feel. Not a SaaS dashboard. Think well-printed devotional, not Slack.
-- Domain currently live at **theway.app**. `kinwove.app` not yet acquired
-  (see §7 — that's why all the URLs still say theway.app).
+- Aesthetic: **parchment + gold + serif**. Warm, editorial. Not a SaaS dashboard.
+- Domain currently live at **theway.app**. `kinwove.app` not yet acquired.
 
 ## 3. Stack
 
-- **Frontend:** React 18 + Vite, no framework. JSX, lazy-loaded routes via
-  `React.lazy + Suspense`. No Tailwind — inline styles + a `theme.js` token
-  module (`T.gold`, `T.cream`, `T.ink`, etc.) and a `TYPE_TINTS` map for
-  per-persona post colors.
-- **Backend:** Express server (`server.js`) that proxies Anthropic + Resend.
-  Auth, rate limiting, length caps, and stream cancellation are all on
-  `/api/*`.
-- **DB / auth / realtime / storage:** Supabase. Schema lives in
-  `supabase-schema.sql` (single source of truth) plus dated migrations in
-  `scripts/` (`scripts/2026-MM-DD-<topic>.sql`). Apply migrations manually
-  in the Supabase SQL editor — no CLI runner is wired up.
-- **AI:** Anthropic SDK, Claude Opus 4.7 (`claude-opus-4-7` — see
-  `server.js`). System prompts live in `src/prompts.js`.
-- **Analytics:** Plausible (privacy-first, no cookies, `data-domain="theway.app"`).
-- **Hosting:** Static frontend on Vercel (`vercel.json`), server on Render
-  (`render.yaml`).
+- **Frontend:** React 18 + Vite, no framework. Inline styles + `src/theme.js`
+  tokens (`T.gold`, `T.cream`, `T.ink`, etc.). No Tailwind.
+- **Backend:** Express `server.js` — Anthropic proxy, Resend emails, pastor
+  onboarding endpoints, rate limiting. All under `/api/*`.
+- **DB / auth:** Supabase. Schema in `supabase-schema.sql` + dated migrations
+  in `scripts/`. Apply migrations manually in the Supabase SQL editor.
+- **AI:** Anthropic SDK, Claude Opus 4.7 (`claude-opus-4-7`). System prompts
+  in `src/prompts.js`.
+- **Hosting:** Vercel (frontend) + Render (server). Both auto-deploy on push
+  to `main`.
 
 ## 4. Codebase map — the files that matter
 
 ```
-/server.js                    — Express API. Anthropic proxy, Resend emails,
-                                system DM creation, rate limiting.
-/index.html                   — SEO/OG meta, JSON-LD, noscript SEO fallback.
+/server.js                    — Express API. Start here for any backend work.
 /src/theme.js                 — ★ Design tokens. Start here for any visual work.
 /src/prompts.js               — ★ AI system prompts. Tone/voice lives here.
-/src/App.jsx                  — Root + Landing + nav + section colors.
+/src/App.jsx                  — Root. Nav, routing (stage machine), session.
 /src/Auth.jsx                 — Sign in / sign up / verify-email flow.
 /src/Chat.jsx                 — Main AI conversation surface.
-/src/Feed.jsx, Community.jsx  — Community feed + post types.
+/src/Community.jsx            — Community feed. Has its OWN inline PostCard
+                                component (~line 123–700). SEPARATE from
+                                src/PostCard.jsx. Always edit Community.jsx's
+                                PostCard for feed card changes.
+/src/Feed.jsx                 — Feed data layer (query + hydration).
+/src/PostCard.jsx             — PostCard used by ChurchPage feed (not Community).
+/src/ChurchPage.jsx           — Public + pastor-own church page.
+/src/ChurchAdmin.jsx          — Pastor dashboard (wrapped by ChurchModeShell).
+/src/ChurchModeShell.jsx      — Dark header shell with Leader/Visitor toggle
+                                and Overview/People/Settings tabs.
+/src/PastorApply.jsx          — Pastor application form (multi-step).
 /src/BibleReader.jsx          — Scripture reader with AI sidebar.
-/src/MessagesInbox.jsx        — DMs incl. the "kinwove" system account.
-/src/DMConversation.jsx       — Individual DM view.
-/src/PastorDashboard.jsx,
- PastorApply.jsx,
- ChurchAdmin.jsx              — Pastor onboarding pillar (see §6).
-/scripts/2026-*.sql           — Dated DB migrations. Newest = newest date.
-/supabase-schema.sql          — Full schema (truth source).
-/public/manifest.json,
- og-image.svg,
- llms.txt                     — PWA + crawler/AI-bot metadata.
+/src/MessagesInbox.jsx        — DMs incl. "kinwove" system account.
+/supabase-schema.sql          — Full schema (source of truth).
+/scripts/2026-*.sql           — Dated migrations. Newest date = latest.
 ```
 
-## 5. What was just shipped — the kinwove rebrand (2026-05-13)
+## 5. Pastor onboarding — how it works (critical — read this)
 
-Everything below is **done and on disk** in the working tree. **Not yet
-committed.** Branch is `main`, last commit `2e43cd1` ("Snapshot 3-day build
-push: pastor onboarding, sermon thread, privacy gate").
+The entire pastor application flow runs **server-side via service role key**.
+Never add client-side Supabase calls to this flow — RLS will block them.
 
-### Visual
+### Flow
+1. `PastorApply.jsx` form submit → **`POST /api/church/apply`** (server upserts
+   to `pastor_applications`, bypasses RLS)
+2. Domain-match trigger may auto-approve instantly.
+3. Otherwise: user goes to email verification step.
+4. **`POST /api/church/submit-unverified`** — creates church row, church_roles
+   row (is_owner=true), sets `profile.church_id` AND **`profile.is_pastor = true`**.
+5. **`POST /api/church/verify-code`** — same as above, for email-verified path.
 
-- **Gold palette shifted** from `#C4813A` (rgb 196,129,58) to **`#B8733A`**
-  (rgb 184,115,58) — more amber/copper, less yellow. Proportional family:
-  `T.gold #B8733A`, `T.goldLight #CC8D52`, `T.goldDark #8E5528`.
-- All `rgba(196,129,58,...)` swept to `rgba(184,115,58,...)` across
-  `src/`, `server.js`, `index.html`, `og-image.svg` (perl sweep).
-- All literal `#C4813A` / `#9A6328` / `#D89B52` references replaced — none
-  remain outside of `theme.js`. (Verify with
-  `grep -r '#C4813A\|#9A6328\|#D89B52' src/`.)
-- **Wordmark typography crisped:** Fraunces (not generic serif), weight
-  **500** (not 600/700), letter-spacing **−0.02em** (or −0.025em on bigger
-  surfaces). Bumped sizes 1–2pt. Done in nav, sticky verse bar, app
-  sidebar, SharedView/StudySession headers, Chat header, Auth eyebrow,
-  and og-image.svg (132px / 500 / −4 tracking).
+### Existing pastors pre-2026-05-23 may need this SQL
+```sql
+update public.profiles set is_pastor = true
+where church_id is not null and (is_pastor is null or is_pastor = false);
+```
 
-### Strings
+### `pastorChurchId` — three-layer fallback in `loadChurchRoles` (App.jsx)
+1. `church_roles` table (RLS: requires `profile.church_id = church_roles.church_id`)
+2. `churches.pastor_id` direct query ("Pastor reads their own church" policy)
+3. **`GET /api/me/pastor-church`** — service role, always works regardless of RLS
 
-- **"The Way" → "kinwove"** everywhere user-facing: UI strings, page
-  titles, share titles, AI prompts (`"You are kinwove..."` in `prompts.js`
-  and `server.js`), system account `display_name`, Resend `from`,
-  PWA manifest, og-image, llms.txt, JSON-LD, `package.json` name.
+### `isOwnChurch` (App.jsx church stage)
+```js
+const isOwnChurch = (pastorChurchId != null && pastorChurchId === viewingChurchId)
+  || (profile?.is_pastor && profile?.church_id === viewingChurchId);
+```
+Second clause handles when `pastorChurchId` is still null on first load.
 
-### Files added by the rebrand
+### `church-admin` stage render guard
+```js
+stage === 'church-admin' && session && (pastorChurchId || (profile?.is_pastor && profile?.church_id))
+```
+Uses `pastorChurchId || profile.church_id` as the churchId prop to ChurchAdmin.
 
-- `scripts/2026-05-13-rename-system-account-to-kinwove.sql` — **must run
-  in production after deploy** (see §7).
+### `onGoChurch` nav handler
+Sends pastors (`pastorChurchId` set OR `profile.is_pastor=true`) directly to
+`church-admin`. Members with `profile.church_id` go to the church page.
 
-## 6. The pastor-onboarding pillar (background you may need)
+### ChurchModeShell (chromeless church page)
+When `isOwnChurch=true`, ChurchPage is wrapped in ChurchModeShell showing
+the "VIEWING AS LEADER · VISITOR" toggle + Overview/People/Settings tabs.
+- "Leader" toggle → `setStage('church-admin')`
+- "Visitor" toggle → church public page (current view)
+- Community action buttons (Talk to someone / Pray together / Pick a walk)
+  are **only** in the `!chromeless` member view — NOT in the pastor's chromeless view.
 
-Cheap path: pastors apply via `PastorApply.jsx`, the app sends Resend emails
-to admin, admin approves manually via SQL in `scripts/approve-pastor-application.sql`
-or by running `scripts/2026-05-01-pastor-application-notifications.sql`-style
-helpers. **Manual SQL approval is deliberate** — Daniel wants a human in the
-loop until volume justifies automation. Don't refactor this to be self-serve
-without checking first.
+## 6. Community feed — important gotchas
 
-Domain-matched pastors (e.g. `pastor@firstbaptist.org` matching a church row
-with that domain) get auto-verified by a trigger. Everyone else lands in the
-admin queue.
+### Community.jsx has its OWN PostCard
+`Community.jsx` contains an inline PostCard component (~line 123–700).
+`src/PostCard.jsx` is used by **ChurchPage only**. They are separate.
+Always edit the right one.
 
-## 7. Open punch list — what's left for actual launch
+### Feed scope: personal profile = `scope='me'` only
+`Feed.jsx` `me` source query uses `.eq('scope', 'me')`. Church-scoped posts
+never appear in the personal profile Posts tab even if the same user authored them.
 
-These are **intentionally not touched** because they need real decisions or
-external setup:
+### Sermon announcement guard (PostCard.jsx)
+`isSermonAnnouncement = item.source === 'post' && !!item.body?.is_sermon_announcement`
+Blocks delete/edit/hide menus even when `isOwn=true` (pastor is the author).
+
+### Latest Sermon card (ChurchPage.jsx)
+Only renders when `latestSermon` exists: `{isPastor && latestSermon && (...)}`.
+No empty state shown.
+
+## 7. Design tokens (theme.js)
+
+```
+T.gold      #B8733A    T.goldLight  #CC8D52    T.goldDark   #8E5528
+T.cream     #F5EDD8    T.parchment  #FAF3E2    T.white      #FFFFFF
+T.ink       #1A1108    T.inkSoft    #5A4733    T.inkMuted   #9C7B5E
+T.line      rgba(26,17,8,0.12)
+T.serif     'Fraunces, Georgia, serif'
+T.sans      system sans
+```
+
+Post cards: `background: T.parchment`, `border: 1px solid rgba(26,17,8,0.1)`,
+`borderRadius: 14`. Body text: Newsreader 17px / lineHeight 1.55 /
+`fontVariationSettings: '"opsz" 18'` (critical — without opsz it looks wrong).
+
+## 8. Pending SQL migrations (run in Supabase SQL editor)
+
+```sql
+-- 1. Sermon discussion image uploads (posts fail without this column)
+alter table public.sermon_discussions
+  add column if not exists image_urls text[] default '{}';
+
+-- 2. Rename system DM account display name
+update public.profiles
+  set display_name = 'kinwove'
+  where email = 'system-theway@theway.internal';
+```
+
+## 9. Open punch list — launch blockers
 
 ### Domain + email
-- [ ] **Acquire `kinwove.app`** (or chosen kinwove domain).
-- [ ] Point DNS to Vercel + Render.
-- [ ] When live: search/replace `theway.app` → `kinwove.app` across
-      `index.html` (canonical, og:url, JSON-LD `@id`), `server.js` share
-      links, `public/llms.txt`, `public/.well-known/llms.txt`,
-      `public/sw.js`, Plausible `data-domain` in `index.html`.
-- [ ] Set up mailbox: `hello@kinwove.app`, `support@kinwove.app`. Update
-      Resend `RESEND_FROM` env var and any hardcoded references.
-- [ ] **Don't touch** `system-theway@theway.internal` — it's not a real
-      email, it's the local-only auth row that owns system DMs. Renaming
-      it breaks the trigger.
-- [ ] Twitter handle `@thewayapp` in `twitter:site` (`index.html`) — claim
-      `@kinwove` or `@kinwoveapp` first, then update.
-- [ ] **localStorage keys** (`theway:notes`, `theway:convs`, `theway:dailyQ`,
-      etc.) are intentionally NOT renamed — would wipe existing users'
-      local state. Migrate only if you're OK losing those.
+- [ ] Acquire `kinwove.app`. Point DNS to Vercel + Render.
+- [ ] When live: replace `theway.app` → `kinwove.app` in `index.html`
+      (canonical, og:url, JSON-LD), `server.js` share links,
+      `public/llms.txt`, `public/sw.js`, Plausible `data-domain`.
+- [ ] Set `RESEND_FROM` env var on Render (`kinwove <hello@kinwove.app>`).
+- [ ] **Don't rename** `system-theway@theway.internal` auth row — it's not
+      a real email, it's the trigger anchor for system DMs.
+- [ ] Claim `@kinwove` or `@kinwoveapp` on Twitter, update `twitter:site`
+      in `index.html`.
+- [ ] `localStorage` keys (`theway:notes`, etc.) intentionally NOT renamed
+      — would wipe existing users' local state.
 
-### Deploy-day must-runs
-- [ ] Run `scripts/2026-05-13-rename-system-account-to-kinwove.sql` in
-      Supabase SQL editor **after deploying the new client build**.
-      `MessagesInbox.jsx` and `DMConversation.jsx` now match against
-      `display_name = 'kinwove'`; the existing prod row is still `'The Way'`,
-      so old DMs lose their system-account badge until this is run.
-- [ ] Verify `RESEND_FROM` env var on Render is set (currently defaults
-      to `kinwove <onboarding@resend.dev>` in `server.js` if unset —
-      will work in a pinch but won't match your domain).
+### Not yet done
+- [ ] Run the two pending SQL migrations above.
+- [ ] Verify `kinwove.app` domain redirects and SSL.
 
-### In-progress at handover
-- [ ] **Commit the rebrand work.** Working tree has 64 modified + many
-      untracked files (see `git status`). Some untracked `.jsx` files
-      (`AdminPage.jsx`, `HelpPage.jsx`, `MessagesInbox.jsx`, etc.) are
-      **pre-rebrand feature work that was never committed** — they live
-      on disk but weren't in the previous "3-day build push" snapshot.
-      The rebrand touched all of them. Suggest committing as one
-      `feat: rebrand "The Way" → "kinwove"` commit, **excluding**:
-      - `Untitled.rtf`, `growth os api.rtf` (stray .rtf files at root)
-- [ ] Production build verified clean: `npm run build` → no errors, no
-      warnings (verified 2026-05-13 after fixing a duplicate `background`
-      key in `HelpPage.jsx`).
-
-## 8. Tone + voice conventions
-
-Read `src/prompts.js` for the canonical AI tone. Short version:
+## 10. Tone + voice
 
 - **Grace-first.** Never preachy. Never condescending to skeptics.
-  Never dismissive of believers.
-- **Honest about uncertainty.** When scripture is ambiguous or scholarship
-  is divided, say so. Don't paper over.
-- **Quote scripture by reference** (e.g. "Romans 8:28"), not by sermon.
+- **Honest about uncertainty.** When scripture is divided, say so.
 - **No fake enthusiasm.** "Hey friend!" energy is wrong. Calm and adult.
+- **Share copy:** must work for believer→believer AND believer→skeptic.
+  Don't write "come worship with me" as the default.
 
-For **invite/share copy** specifically (see `MEMORY.md` →
-`feedback_invite_copy_tone.md`): default share text must work for **both**
-believer→believer and believer→skeptic shares. Don't write "come worship
-with me" energy as the default — it breaks for half the audience.
+Read `src/prompts.js` for the full canonical AI tone.
 
-## 9. How Daniel likes to work
+## 11. How Daniel likes to work
 
-- Move fast, ship rough, polish on round 2. He'd rather see something live
-  and broken than something perfect and unshipped.
-- Concrete > abstract. If you say "you should add rate limiting," he wants
-  the actual code or env var, not a thinkpiece.
-- **Don't ask permission for obvious cleanups** while you're in a file. If
-  the file has a duplicate key warning and you're editing it anyway, fix it.
-- **Do ask before:** schema changes, anything destructive (force push,
-  reset --hard, deleting files), spending money (new SaaS subscriptions,
-  domain purchases, paid APIs).
+- Move fast, ship rough, polish on round 2.
+- **Don't ask permission for obvious cleanups** in a file you're already editing.
+- **Do ask before:** schema changes, destructive git ops, spending money.
+- "commit" → stage relevant files + commit. "push" → git push. "d" → deploy
+  (Render/Vercel auto-deploy on push, so push = deploy).
 
-## 10. Things to surface unprompted
-
-If Daniel asks "what was on the list" or "what are the parked things," there
-should be a `parked_followups.md` in his auto-memory at
-`~/.claude/projects/-Users-danielkalawarny-Desktop-untitled-folder-2/memory/`.
-Surface that without him having to ask twice.
-
-He also has a side project — **deconstructors.ca**, a demolition company
-site SEO/AI-findability overhaul on 10web. If he mentions deconstructors,
-that's a different codebase entirely.
-
----
-
-## 11. Quick start for the next session
+## 12. Quick start for the next session
 
 ```bash
-cd "/Users/danielkalawarny/Desktop/untitled folder 2"
-git status                    # see the uncommitted rebrand
-npm run dev                   # starts server + vite concurrently
-                              # server: localhost:8787, web: localhost:5173
+cd /Users/danielkalawarny/Desktop/kinwove
+git log --oneline -5        # see recent commits
+npm run dev                 # server: localhost:8787, web: localhost:5173
 ```
 
-To verify rebrand integrity:
-```bash
-grep -rn '#C4813A\|#9A6328\|#D89B52' src/   # should be empty
-grep -rn 'rgba(196,\s*129,\s*58' src/        # should be empty
-grep -rn 'The Way' src/                       # should be empty
-```
+Latest commit as of 2026-05-23: `b735347` — pastor church-admin blank page fix.
+Branch: `main`. Everything is committed and pushed.
 
-If any of those return results, the rebrand has a hole — patch and re-verify.
+Daniel also has a side project — **deconstructors.ca** (demolition company,
+SEO/AI overhaul on 10web). Completely separate codebase — don't confuse the two.
