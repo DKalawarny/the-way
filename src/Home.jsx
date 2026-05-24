@@ -60,12 +60,12 @@ export default function Home({
   const firstName = (profile?.display_name ?? '').split(' ')[0] || '';
 
   const [revealed, setRevealed] = useState(() => {
-    try { return localStorage.getItem('theway:dailyQ:revealed') === todayKey(); }
+    try { return localStorage.getItem('kinwove:dailyQ:revealed') === todayKey(); }
     catch { return false; }
   });
   const reveal = () => {
     setRevealed(true);
-    try { localStorage.setItem('theway:dailyQ:revealed', todayKey()); } catch {}
+    try { localStorage.setItem('kinwove:dailyQ:revealed', todayKey()); } catch {}
   };
 
   const [churchName, setChurchName] = useState(null);

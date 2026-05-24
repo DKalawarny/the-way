@@ -137,7 +137,7 @@ export const JOURNEYS = [
   },
 ];
 
-const PROGRESS_KEY = 'theway:journey_progress';
+const PROGRESS_KEY = 'kinwove:journey_progress';
 
 export function getJourneyProgress() {
   try {

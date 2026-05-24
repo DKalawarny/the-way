@@ -15,7 +15,7 @@ import AiLimitWall, { AiUsageWarning } from './AiLimitWall.jsx';
 import Tip from './Tip.jsx';
 import { extractRefs, parseRef, toApiVerseId, VALIDATION_BIBLE_ID } from './bibleRefUtils.js';
 
-const GUEST_COUNT_KEY = 'theway:guest_count';
+const GUEST_COUNT_KEY = 'kinwove:guest_count';
 
 // ── Chat contextual topic illustrations ──────────────────────────────────────
 // Topic detection: match user question keywords → symbolic thematic accent.

@@ -661,8 +661,8 @@ function PastorPrompt({ open, onApply, onClose }) {
   );
 }
 
-const NOTES_KEY = 'theway:notes:v1';
-const CONVS_KEY = 'theway:convs:v1';
+const NOTES_KEY = 'kinwove:notes:v1';
+const CONVS_KEY = 'kinwove:convs:v1';
 
 function useConversations() {
   const [conversations, setConversations] = useState(() => {

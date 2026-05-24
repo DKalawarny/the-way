@@ -29,7 +29,7 @@ const THEME_LABEL = {
 //   dismissed: pastor saw the green "all done" celebrate and clicked Dismiss.
 //              If anything later un-completes (e.g. welcome note cleared) the
 //              checklist re-emerges automatically.
-const SETUP_KEY = (churchId) => `the-way:church-setup:${churchId}`;
+const SETUP_KEY = (churchId) => `kinwove:church-setup:${churchId}`;
 function readSetupState(churchId) {
   if (!churchId || typeof localStorage === 'undefined') return { qrPrinted: false, dismissed: false };
   try {

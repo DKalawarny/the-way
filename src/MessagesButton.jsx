@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 
-const STORAGE_KEY = 'theway:messages-last-opened';
+const STORAGE_KEY = 'kinwove:messages-last-opened';
 
 export default function MessagesButton({ session, rightOffset = 0, isDesktop = false, onClick }) {
   const [unread, setUnread] = useState(0);

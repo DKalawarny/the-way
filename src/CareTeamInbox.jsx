@@ -5,7 +5,7 @@ import { T } from './theme.js';
 import CareConversation from './CareConversation.jsx';
 
 const COVENANT_VERSION = 1;
-const STORAGE_KEY = 'theway:care-covenant-accepted-v1';
+const STORAGE_KEY = 'kinwove:care-covenant-accepted-v1';
 
 function CovenantModal({ onAccept, onDecline }) {
   return (

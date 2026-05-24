@@ -12,7 +12,7 @@ const STARTER_QUESTIONS = [
 ];
 
 function sessionToken() {
-  const KEY = 'theway:anon-session';
+  const KEY = 'kinwove:anon-session';
   let t = sessionStorage.getItem(KEY);
   if (!t) {
     t = (crypto.randomUUID?.() ?? String(Date.now()) + Math.random()).slice(0, 32);
