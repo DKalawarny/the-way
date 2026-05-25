@@ -142,7 +142,7 @@ function CommunityPreview({ onBegin }) {
             padding: '13px 18px', maxWidth: '75%',
             fontSize: 15, fontFamily: T.sans, lineHeight: 1.5,
           }}>
-            If God is real, why do innocent people suffer?
+            Is it okay to have doubts about God?
           </div>
         </div>
 
@@ -152,13 +152,13 @@ function CommunityPreview({ onBegin }) {
           color: DIM, marginBottom: 0,
         }}>
           <p style={{ margin: '0 0 16px' }}>
-            Theologians call this the "problem of evil" — and it's the question most honest believers have wrestled with privately, even if they never said it out loud in church.
+            Yes — and the Bible is unusually honest about this. The Psalms, which were Israel's own prayer book, are full of doubt. "My God, my God, why have you forsaken me?" Jeremiah called God a deceptive brook. John the Baptist, in prison, sent word asking Jesus: "Are you the one, or should we expect someone else?"
           </p>
           <p style={{ margin: '0 0 16px' }}>
-            The Bible doesn't paper over it. Job loses everything without explanation. The Psalms are full of raw "God, where are you?" — David wrote lines like that, and Jesus quoted them from the cross. The writers weren't pretending the pain wasn't real.
+            Doubt shows up at the centre of faith, not at its edges. After the resurrection, all four Gospels record the disciples struggling — Thomas gets singled out, but he wasn't alone. What changed them wasn't the removal of doubt but an encounter that made trust possible.
           </p>
           <p style={{ margin: 0, color: DIMLO }}>
-            What scripture offers isn't a clean explanation — it offers presence in the middle of it. Romans 8 doesn't say suffering makes sense. It says nothing in it can separate you from…
+            Faith was never meant to be certainty. It's more like trust in the middle of uncertainty. Which means your doubt isn't a sign something has gone wrong — it might be the most honest…
           </p>
         </div>
 
