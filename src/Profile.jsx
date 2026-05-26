@@ -696,16 +696,16 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
             <div style={{ marginTop: 32, borderTop: `1px solid rgba(184,115,58,0.15)`, paddingTop: 24 }}>
               <button
                 type="submit"
-                disabled={saving || !form.display_name}
+                disabled={saving || !form.first_name.trim()}
                 style={{
                   width: '100%',
-                  background: saving || !form.display_name
+                  background: saving || !form.first_name.trim()
                     ? T.line
                     : `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
                   color: T.cream, border: 'none', borderRadius: 999,
                   padding: '15px 20px', fontSize: 15, fontWeight: 600,
-                  cursor: saving || !form.display_name ? 'not-allowed' : 'pointer',
-                  boxShadow: saving || !form.display_name ? 'none' : '0 4px 20px rgba(184,115,58,0.35)',
+                  cursor: saving || !form.first_name.trim() ? 'not-allowed' : 'pointer',
+                  boxShadow: saving || !form.first_name.trim() ? 'none' : '0 4px 20px rgba(184,115,58,0.35)',
                   transition: 'all 0.15s',
                   letterSpacing: '0.01em',
                 }}
