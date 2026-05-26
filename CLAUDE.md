@@ -13,6 +13,8 @@ this project. Read it first.
 
 This star was approved and confirmed correct on 2026-05-26. Do not touch these values for any reason unless Daniel explicitly says "change the star." Do not infer from screenshots, do not "improve" it, do not adjust proportions.
 
+**Star icon rule (locked 2026-05-26):** Never use the `✦` Unicode character as a visible UI icon. All star icons in JSX must use `<KinwoveStar size={N} />` from `src/components/brand/KinwoveStar.jsx`. The `✦` character is only acceptable inside plain strings (email HTML, prompts, non-rendered text). Do not revert this without explicit instruction.
+
 ---
 
 ## 1. Who you're working with
