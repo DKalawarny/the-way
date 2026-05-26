@@ -2656,7 +2656,7 @@ export default function App() {
               ? (tab) => { setPastorAdminInitialTab(tab ?? 'overview'); setStage('church-admin'); }
               : undefined}
             onNewSermon={isOwnChurch
-              ? () => { setComposerSermonId(null); setStage('sermon-composer'); }
+              ? () => { setPastorAdminInitialTab('sermons'); setStage('church-admin'); }
               : undefined}
             onOpenFeed={() => setStage('feed')}
             onOpenPrayer={() => setStage('prayer')}
@@ -2768,16 +2768,12 @@ export default function App() {
           onBack={() => goBack('church-admin')}
         />
       )}
-      {stage === 'sermon-composer' && session && pastorChurchId && (
-        <SermonComposer
-          session={session}
-          churchId={pastorChurchId}
-          initialSermonId={composerSermonId}
-          userPlan={churchPlan ?? profile?.plan ?? 'free'}
-          onBack={() => goBack('church-admin')}
-          onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
-        />
-      )}
+      {stage === 'sermon-composer' && session && pastorChurchId && (() => {
+        // Redirect to church-admin sermons tab so sidebar stays visible
+        setPastorAdminInitialTab('sermons');
+        setStage('church-admin');
+        return null;
+      })()}
       {(stage === 'pastor-dashboard') && session && pastorChurchId && (
         <ChurchAdmin
           session={session}
