@@ -17,9 +17,8 @@ export default function ChurchDirectory({ session, profile, onBack, onOpenChurch
     if (!code) return;
     setCodeLoading(true);
     setCodeError(null);
-    const { data: ch } = await supabase
-      .rpc('find_church_by_invite_code', { code })
-      .maybeSingle();
+    const res = await fetch(`/api/church/by-invite-code?code=${encodeURIComponent(code)}`);
+    const { church: ch } = await res.json();
     setCodeLoading(false);
     if (!ch) { setCodeError('No church found with that code.'); return; }
     onOpenChurch?.(ch.id);

@@ -1064,6 +1064,20 @@ app.get('/api/me/pastor-church', requireAuth, async (req, res) => {
   res.json({ church: Array.isArray(churches) ? (churches[0] ?? null) : null });
 });
 
+// Look up a church by invite code — service role bypasses RLS so unverified churches work
+app.get('/api/church/by-invite-code', requireAuth, async (req, res) => {
+  const code = (req.query.code ?? '').trim().toUpperCase();
+  if (!code) return res.status(400).json({ church: null });
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ church: null });
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+  const rows = await fetch(
+    `${SUPABASE_URL}/rest/v1/churches?invite_code=eq.${encodeURIComponent(code)}&select=id,name&limit=1`,
+    { headers: h }
+  ).then(r => r.json()).catch(() => []);
+  const church = Array.isArray(rows) ? (rows[0] ?? null) : null;
+  res.json({ church });
+});
+
 // Submit / re-submit a pastor application (upsert via service role → bypasses RLS)
 app.post('/api/church/apply', requireAuth, limitAuthed({ capacity: 5, refillPerSec: 5 / 300 }), async (req, res) => {
   const { full_name, pastor_role, church_name, denomination, city, country, website, reason } = req.body ?? {};

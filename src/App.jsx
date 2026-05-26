@@ -1919,9 +1919,9 @@ export default function App() {
 
     let cancelled = false;
     (async () => {
-      const { data: ch, error: lookupErr } = await supabase
-        .rpc('find_church_by_invite_code', { code })
-        .maybeSingle();
+      const inviteRes = await fetch(`/api/church/by-invite-code?code=${encodeURIComponent(code)}`);
+      const { church: ch } = await inviteRes.json();
+      const lookupErr = !inviteRes.ok ? true : null;
 
       if (cancelled) return;
 
