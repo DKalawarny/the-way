@@ -174,13 +174,13 @@ export default function GroupSetup({ session, onJoined, onClose }) {
           <>
             <div style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.12, marginBottom: 10 }}>Join your group</div>
             <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.65, marginBottom: 32 }}>
-              Your pastor or group leader will have a 6-character invite code. Enter it below.
+              Your pastor or group leader will have an 8-character invite code. Enter it below.
             </div>
             <input
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
-              placeholder="ABC123"
-              maxLength={6}
+              placeholder="ABC12345"
+              maxLength={8}
               style={{
                 background: T.white, border: '1px solid rgba(184,115,58,0.25)',
                 borderRadius: 12, padding: '14px 18px', fontSize: 22, color: T.ink,
