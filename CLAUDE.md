@@ -5,6 +5,16 @@ this project. Read it first.
 
 ---
 
+## ⚠️ LOCKED — DO NOT CHANGE WITHOUT EXPLICIT INSTRUCTION
+
+**KinwoveStar path:** `M12 1 L13.4 9.6 L22 11 L13.4 12.4 L12 23 L10.6 12.4 L2 11 L10.6 9.6 Z`
+**KinwoveStar viewBox:** `0 0 24 24`
+**KinwoveWordmark star container:** `width: '0.28em'`, `height: '0.28em'`, `top: '-0.72em'`
+
+This star was approved and confirmed correct on 2026-05-26. Do not touch these values for any reason unless Daniel explicitly says "change the star." Do not infer from screenshots, do not "improve" it, do not adjust proportions.
+
+---
+
 ## 1. Who you're working with
 
 **Daniel Kalawarny** (dkalawarny@hotmail.com).
