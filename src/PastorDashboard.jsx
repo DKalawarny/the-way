@@ -56,8 +56,8 @@ function SetupChecklist({ items, allDone, onDismiss }) {
       marginBottom: 16,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700 }}>
-          ✦ Get ready for Sunday
+        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, display: 'flex', alignItems: 'center' }}>
+          <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Get ready for Sunday
         </div>
         <div style={{ flex: 1 }} />
         <div style={{ fontSize: 12, color: T.inkMuted, fontWeight: 600 }}>
@@ -648,7 +648,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
 
             {/* Quick actions */}
             <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-              <QuickAction emoji="✦" label="New sermon"        hint="Turn Sunday into a week"    onClick={onOpenComposer}    accent={T.goldDark} />
+              <QuickAction emoji={<KinwoveStar size={22} />} label="New sermon"        hint="Turn Sunday into a week"    onClick={onOpenComposer}    accent={T.goldDark} />
               <QuickAction emoji="✶" label="Announce a walk"   hint="Post & feature for everyone" onClick={openWalkModal}     accent={T.goldDark} />
               <QuickAction emoji="✎" label="Post to feed"      hint="A note for the congregation" onClick={() => setPostModalOpen(true)} />
               <QuickAction emoji="👥" label="People & roles"    hint="Invite, badge, and manage" onClick={onOpenCareAdmin} />

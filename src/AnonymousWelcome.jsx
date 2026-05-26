@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 const STARTER_QUESTIONS = [
   'What\u2019s actually in the Bible?',
@@ -111,7 +112,7 @@ export default function AnonymousWelcome({ churchId, churchName, onSignUp, onTal
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700 }}>
-            ✦ Anonymous · AI chat
+            <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Anonymous · AI chat
           </div>
           <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, letterSpacing: '-0.012em', lineHeight: 1.15 }}>
             Ask anything {churchName ? `· ${churchName}` : ''}
@@ -131,7 +132,7 @@ export default function AnonymousWelcome({ churchId, churchName, onSignUp, onTal
                 background: T.parchment, border: `2px solid ${T.gold}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 26, color: T.goldDark, margin: '8px auto 18px',
-              }}>✦</div>
+              }}><KinwoveStar size={26} /></div>
 
               <div style={{ '--i': 1, textAlign: 'center', maxWidth: 420, margin: '0 auto 22px' }}>
                 <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.12, marginBottom: 8 }}>

@@ -315,7 +315,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
                 name={c.otherProfile?.display_name}
                 avatarConfig={c.otherProfile?.avatar_config}
                 photoUrl={c.otherProfile?.avatar_url}
-                subtitle={isSystem ? 'Welcome message ✦' : 'Direct message'}
+                subtitle={isSystem ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>Welcome message <KinwoveStar size={10} style={{ verticalAlign: 'middle', flexShrink: 0 }} /></span> : 'Direct message'}
                 subtitleColor={isSystem ? T.goldDark : undefined}
                 ts={c.last_message_at ?? c.created_at}
                 lastBody={dmLastMsgs[c.id]?.body}

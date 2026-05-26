@@ -1344,7 +1344,7 @@ export default function Chat({
                   padding: '12px 16px', fontSize: 14, color: C.text,
                   cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
                 }}>
-                  <span style={{ fontSize: 15 }}>✦</span><span style={{ fontWeight: 600 }}>New conversation</span>
+                  <KinwoveStar size={15} style={{ flexShrink: 0 }} /><span style={{ fontWeight: 600 }}>New conversation</span>
                 </button>
                 {messages.length > 0 && (
                   <button onClick={() => { setMenuOpen(false); setShareContent({ text: formatConversation(messages, conversationTitle), label: 'Share conversation', rawMessages: messages, convTitle: conversationTitle }); }} style={{

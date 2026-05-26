@@ -311,7 +311,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
               Skipped for plain text/share to keep the feed quiet. */}
           {(() => {
             const eyebrowFor = {
-              journey_milestone: { label: '✦ A STEP ON THE WAY', color: '#a05870' },
+              journey_milestone: { label: <><KinwoveStar size={10} style={{ verticalAlign: 'middle', marginRight: 4, flexShrink: 0 }} /> A STEP ON THE WAY</>, color: '#a05870' },
               verse:             { label: '📖 SCRIPTURE',         color: '#9c5a1f' },
               question:          { label: '? ASKING',             color: '#3a6b8a' },
               prayer:            { label: '🙏 A PRAYER',           color: '#A87840' },
@@ -855,7 +855,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tab
                   <circle cx="17" cy="17" r="10" fill={T.gold}/>
                   <polyline points="11,17 15,21 23,12" fill="none" stroke="white" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                <span style={{ fontSize: 11, fontWeight: 700, color: T.goldDark }}>Answered ✦</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: T.goldDark, display: 'inline-flex', alignItems: 'center', gap: 3 }}>Answered <KinwoveStar size={10} style={{ verticalAlign: 'middle', flexShrink: 0 }} /></span>
               </div>
             )}
           </div>
@@ -866,7 +866,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tab
 
           {prayer.is_answered && prayer.praise_report && (
             <div style={{ marginBottom: 14, background: 'rgba(184,115,58,0.07)', borderRadius: 10, padding: '10px 13px', borderLeft: `3px solid ${T.gold}` }}>
-              <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 4 }}>Praise Report ✦</div>
+              <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 4 }}>Praise Report <KinwoveStar size={10} style={{ verticalAlign: 'middle', marginLeft: 3, flexShrink: 0 }} /></div>
               <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: T.inkSoft, lineHeight: 1.6 }}>"{prayer.praise_report}"</div>
             </div>
           )}
@@ -959,7 +959,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tab
                 </div>
                 {prayer.is_answered && prayer.praise_report && (
                   <div style={{ marginBottom: 14, background: 'rgba(184,115,58,0.07)', borderRadius: 10, padding: '10px 13px', borderLeft: `3px solid ${T.gold}` }}>
-                    <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 4 }}>Praise Report ✦</div>
+                    <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 4 }}>Praise Report <KinwoveStar size={10} style={{ verticalAlign: 'middle', marginLeft: 3, flexShrink: 0 }} /></div>
                     <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: T.inkSoft, lineHeight: 1.6 }}>"{prayer.praise_report}"</div>
                   </div>
                 )}
@@ -1429,7 +1429,7 @@ useEffect(() => {
           { id: 'posts',      label: '📝 Posts'     },
           { id: 'following',  label: '👥 Following'  },
           { id: 'prayers',    label: '🙏 Prayers'   },
-          { id: 'milestones', label: '✦ Milestones' },
+          { id: 'milestones', label: <><KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 4, flexShrink: 0 }} /> Milestones</> },
         ].map(t => {
           const isActive = feedType === t.id;
           return (
@@ -1886,7 +1886,7 @@ useEffect(() => {
                 )}
                 {loading && <div style={{ textAlign: 'center', color: T.inkMuted, padding: 40, fontFamily: T.serif, fontSize: 16 }}>Loading…</div>}
                 {!loading && milestones.length === 0 && (
-                  <EmptyState icon="✦" title="No milestones yet." body="Share a step on your faith journey — big or small." />
+                  <EmptyState icon={<KinwoveStar size={32} />} title="No milestones yet." body="Share a step on your faith journey — big or small." />
                 )}
                 <div className="stagger-in">
                   {milestones.map((p, i) => (

@@ -3,6 +3,7 @@ import { UserPlus, Users, MessageCircle, CornerDownRight, Smile, Heart, BookOpen
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { Avatar } from './ProfilePage.jsx';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 function timeAgo(ts) {
   const diff = (Date.now() - new Date(ts)) / 1000;
@@ -25,7 +26,7 @@ const KIND_COPY = {
 };
 
 function NotificationRow({ n, onClick }) {
-  const copy = KIND_COPY[n.kind] ?? { verb: n.kind, Icon: null, emoji: '✦' };
+  const copy = KIND_COPY[n.kind] ?? { verb: n.kind, Icon: null, emoji: <KinwoveStar size={10} /> };
   const actor = n.actor_profile;
   const actorName = actor?.display_name ?? 'Someone';
   const snippet = n.data?.snippet;

@@ -4,6 +4,7 @@ import { authedFetch } from './supabase.js';
 import { useAiUsage } from './useAiUsage.js';
 import AiLimitWall from './AiLimitWall.jsx';
 import MsgText from './MsgText.jsx';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 const PASTORAL_SYSTEM = `You are a theological assistant for Christian church leaders and pastors. You speak from within the historic Christian faith — you hold that Jesus is Lord, that the Bible is the authoritative Word of God, and that the gospel is true. You are not a neutral academic observer. You are a well-read, pastorally grounded colleague helping a minister do their work better.
 
@@ -139,7 +140,7 @@ export default function ChurchAiChat({ session, profile, churchPlan }) {
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 0' }}>
         {isEmpty && !aiUsage.atLimit && (
           <div style={{ textAlign: 'center', padding: '24px 0 32px' }}>
-            <div style={{ fontSize: 22, marginBottom: 10 }}>✦</div>
+            <div style={{ fontSize: 22, marginBottom: 10 }}><KinwoveStar size={22} /></div>
             <div style={{ fontFamily: T.serif, fontSize: 17, fontWeight: 500, color: T.ink, marginBottom: 6, letterSpacing: '-0.01em' }}>
               Pastoral AI
             </div>

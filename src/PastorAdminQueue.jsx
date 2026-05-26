@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { relativeTime } from './time.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 /**
  * Admin triage view for pending pastor applications.
@@ -281,7 +282,7 @@ function ApplicationCard({ app, applicantProfile, onCopyApprove, onCopyReject })
             color: T.resolvedText, background: T.resolvedBg,
             padding: '3px 9px', borderRadius: 999,
           }}>
-            ✦ AUTO ({app.verification_method})
+            <KinwoveStar size={11} style={{ verticalAlign: 'middle', marginRight: 4, flexShrink: 0 }} /> AUTO ({app.verification_method})
           </span>
         )}
         {app.no_registration && (

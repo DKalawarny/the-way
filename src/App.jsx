@@ -637,7 +637,7 @@ function PastorPrompt({ open, onApply, onClose }) {
           textAlign: 'center',
         }}
       >
-        <div style={{ fontSize: 32, marginBottom: 12 }}>✦</div>
+        <div style={{ fontSize: 32, marginBottom: 12 }}><KinwoveStar size={32} /></div>
         <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 10 }}>
           Are you a pastor?
         </div>
@@ -2995,7 +2995,7 @@ export default function App() {
             display: 'flex', alignItems: 'center', gap: 10,
           }}
         >
-          <span style={{ fontSize: 16 }}>{joinResult.ok ? '✦' : '!'}</span>
+          <span style={{ fontSize: 16 }}>{joinResult.ok ? <KinwoveStar size={16} /> : '!'}</span>
           <span>{joinResult.message}</span>
           <span style={{ marginLeft: 6, opacity: 0.6, fontSize: 16 }}>×</span>
         </div>

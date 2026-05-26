@@ -1,6 +1,7 @@
 import { T } from './theme.js';
 import { CHURCH_BASE_PRICE, CHURCH_PRO_PRICE, UPGRADE_EMAIL, TRIAL_DAYS } from './usePlan.js';
 import { TRIAL_MSG_LIMIT } from './useSermonAiUsage.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 const subject = encodeURIComponent('kinwove — Church Pro upgrade');
 const body    = encodeURIComponent('Hi, I would like to upgrade my church to kinwove Pro.');
@@ -166,7 +167,7 @@ export function UpgradeWall({ onBack }) {
             margin: '0 auto 22px',
             boxShadow: '0 0 32px rgba(184,115,58,0.2)',
           }}>
-            <span style={{ fontSize: 26, filter: 'drop-shadow(0 0 8px rgba(184,115,58,0.6))' }}>✦</span>
+            <KinwoveStar size={26} style={{ filter: 'drop-shadow(0 0 8px rgba(184,115,58,0.6))' }} />
           </div>
 
           <div style={{

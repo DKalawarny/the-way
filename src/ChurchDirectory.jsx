@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 export default function ChurchDirectory({ session, profile, onBack, onOpenChurch, onApply }) {
   const [churches, setChurches] = useState([]);
@@ -78,7 +79,7 @@ export default function ChurchDirectory({ session, profile, onBack, onOpenChurch
             borderRadius: 999, padding: '6px 14px', fontSize: 13, color: T.goldDark, fontWeight: 600, cursor: 'pointer',
             flexShrink: 0,
           }}>
-            ✦ I'm a pastor
+            <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> I'm a pastor
           </button>
         )}
         </div>
@@ -152,7 +153,7 @@ export default function ChurchDirectory({ session, profile, onBack, onOpenChurch
                 marginTop: 18, background: T.ink, color: T.cream, border: 'none',
                 borderRadius: 999, padding: '11px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
               }}>
-                ✦ Apply as a pastor
+                <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Apply as a pastor
               </button>
             )}
           </div>

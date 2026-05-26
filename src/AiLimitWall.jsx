@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { T } from './theme.js';
 import { TOPUP_MESSAGES, TOPUP_PRICE, PLAN_LIMITS } from './useAiUsage.js';
 import { supabase } from './supabase.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 // ── Promo code redemption ─────────────────────────────────────────────────────
 export function PromoCodeInput({ onSuccess }) {
@@ -195,7 +196,7 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
         // ── Free user hit lifetime cap ───────────────────────────────────────
         <>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 22, marginBottom: 8 }}>✦</div>
+            <div style={{ fontSize: 22, marginBottom: 8 }}><KinwoveStar size={22} /></div>
             <div style={{
               fontFamily: T.display, fontSize: 18, fontWeight: 600,
               color: T.ink, marginBottom: 6, letterSpacing: '-0.01em',

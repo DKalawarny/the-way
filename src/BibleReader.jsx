@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { T } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { useSpeechRecognition } from './useSpeechRecognition.js';
 import { useTextToSpeech } from './useTextToSpeech.js';
 import { authedFetch } from './supabase.js';
@@ -1908,7 +1909,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
               WebkitTapHighlightColor: 'transparent',
             }}
             title={chatOpen ? 'Close commentary' : 'Ask about this chapter'}
-          >✦</button>
+          ><KinwoveStar size={15} /></button>
         </div>
       </div>
 

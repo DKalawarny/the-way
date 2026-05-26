@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Check, ArrowLeft } from 'lucide-react';
 import { T } from './theme.js';
 import { JOURNEYS } from './journeys.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 function StepDot({ state }) {
   const colors = {
@@ -93,7 +94,7 @@ function JourneyDetail({ journey, currentStep, onStartStep, onBack }) {
 
           {currentStep >= journey.steps.length && (
             <div style={{ textAlign: 'center', padding: '32px 20px', background: 'rgba(184,115,58,0.08)', border: '1px solid rgba(184,115,58,0.25)', borderRadius: 18, marginTop: 8 }}>
-              <div style={{ fontSize: 28, marginBottom: 14 }}>✦</div>
+              <div style={{ fontSize: 28, marginBottom: 14 }}><KinwoveStar size={28} /></div>
               <div style={{ fontFamily: T.serif, fontSize: 24, color: T.ink, fontWeight: 600, marginBottom: 10, letterSpacing: '-0.015em', lineHeight: 1.15 }}>Path complete.</div>
               <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.65 }}>
                 You've walked the whole way. Keep exploring — or start another path.
@@ -164,7 +165,7 @@ export default function Journeys({ onClose, onStartStep, progress }) {
                     <div style={{ fontSize: 13, color: T.inkMuted, lineHeight: 1.55 }}>{j.description}</div>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
-                    {complete && <div style={{ fontSize: 12, color: T.gold, letterSpacing: 1 }}>✦ Done</div>}
+                    {complete && <div style={{ fontSize: 12, color: T.gold, letterSpacing: 1, display: 'flex', alignItems: 'center', gap: 4 }}><KinwoveStar size={12} style={{ verticalAlign: 'middle', flexShrink: 0 }} /> Done</div>}
                     {inProgress && <div style={{ fontSize: 12, color: T.gold, opacity: 0.8 }}>{stepsDone}/{j.steps.length}</div>}
                   </div>
                 </div>

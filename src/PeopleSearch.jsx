@@ -3,6 +3,7 @@ import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { Avatar } from './ProfilePage.jsx';
 import { PERSON_TYPES } from './constants.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 const TYPE_COLORS = {
   curious:       { bg: 'rgba(184,115,58,0.1)',  border: 'rgba(184,115,58,0.3)',  text: '#8B5E2A' },
@@ -498,7 +499,7 @@ export default function PeopleSearch({ session, profile, onClose, onViewProfile,
                         borderRadius: 999, padding: '11px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
                       }}
                     >
-                      ✦ Apply as a pastor
+                      <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Apply as a pastor
                     </button>
                   )}
                 </div>

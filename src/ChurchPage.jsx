@@ -2,6 +2,7 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { ArrowLeft, Share2, Check, ExternalLink } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T, SHADOW, RADIUS, SEMANTIC, SPACE } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { presetForRole } from './Badge.jsx';
 import { useUiKit } from './uikit.jsx';
 import JoinByCode from './JoinByCode.jsx';
@@ -372,7 +373,7 @@ export default function ChurchPage({
               background: T.parchment, border: `2px solid ${T.gold}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 32, color: T.goldDark, margin: `0 auto ${SPACE[5]}px`,
-            }}>✦</div>
+            }}><KinwoveStar size={32} /></div>
             <div className="section-eyebrow" style={{ marginBottom: SPACE[2] }}>Belong</div>
             <h1 className="editorial-h1" style={{ fontSize: 28, marginBottom: SPACE[3] }}>
               Find a church to walk with.
@@ -727,8 +728,8 @@ export default function ChurchPage({
                   background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: RADIUS.lg,
                   padding: `${SPACE[4]}px ${SPACE[5]}px`, marginBottom: SPACE[4],
                 }}>
-                  <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 4 }}>
-                    ✦ Invitation from your pastor
+                  <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center' }}>
+                    <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Invitation from your pastor
                   </div>
                   <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, lineHeight: 1.25, marginBottom: 4 }}>
                     Take on the {label.toLowerCase()} role?
@@ -918,8 +919,8 @@ export default function ChurchPage({
                 background: T.parchment, border: `1px solid ${T.goldLight}`,
                 borderRadius: 14, padding: '20px', marginBottom: 16,
               }}>
-                <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-                  ✦ This week's sermon
+                <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center' }}>
+                  <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> This week's sermon
                 </div>
                 {latestSermon ? (
                   <>
@@ -959,8 +960,8 @@ export default function ChurchPage({
                 borderRadius: 14, padding: '18px 20px', marginBottom: 16,
                 boxShadow: '0 2px 8px rgba(184,115,58,0.10)',
               }}>
-                <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-                  ✦ This week's sermon
+                <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center' }}>
+                  <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> This week's sermon
                 </div>
                 <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, lineHeight: 1.2, letterSpacing: '-0.015em', marginBottom: 6 }}>
                   {latestSermon.title}
@@ -1350,8 +1351,8 @@ export default function ChurchPage({
                 background: 'rgba(184,115,58,0.06)', border: `1px solid ${T.goldLight}`,
                 borderLeft: `4px solid ${T.gold}`, borderRadius: 12, padding: '16px 18px', marginBottom: 16,
               }}>
-                <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-                  ✦ From the pastor
+                <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center' }}>
+                  <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> From the pastor
                 </div>
                 <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                   {church.pinned_post}

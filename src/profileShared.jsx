@@ -17,6 +17,7 @@
 
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 // ── Shared constants ────────────────────────────────────────────────────
 
@@ -178,7 +179,7 @@ export function ChurchAttendsCard({
           onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.10)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.04)'; }}
         >
-          <span style={{ fontSize: 14, color: T.goldDark, filter: 'drop-shadow(0 0 4px rgba(184,115,58,0.4))', flexShrink: 0 }}>✦</span>
+          <KinwoveStar size={14} style={{ color: T.goldDark, filter: 'drop-shadow(0 0 4px rgba(184,115,58,0.4))', flexShrink: 0 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 11, color: T.goldDark, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 2 }}>
               This week{formatWeekOf(sermon.week_starts_on) ? ` · ${formatWeekOf(sermon.week_starts_on)}` : ''}

@@ -3,6 +3,7 @@ import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import SponsoredCard from './SponsoredCard.jsx';
 import { ArrowLeft, Plus, Pencil, Trash2, X } from 'lucide-react';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 const EMPTY_FORM = {
   sponsor_name: '',
@@ -126,8 +127,8 @@ export default function AdminPage({ onBack }) {
         >
           <ArrowLeft size={16} /> Back
         </button>
-        <div style={{ flex: 1, fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, letterSpacing: '-0.01em' }}>
-          ✦ kinwove — Admin
+        <div style={{ flex: 1, fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, letterSpacing: '-0.01em', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <KinwoveStar size={16} style={{ flexShrink: 0 }} /> kinwove — Admin
         </div>
       </div>
 
@@ -210,7 +211,7 @@ export default function AdminPage({ onBack }) {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 18, flexShrink: 0,
                   }}>
-                    {s.emoji ?? '✦'}
+                    {s.emoji ?? <KinwoveStar size={18} />}
                   </div>
 
                   {/* Name + title */}

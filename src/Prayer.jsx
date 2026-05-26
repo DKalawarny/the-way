@@ -3,6 +3,7 @@ import { Lock, Globe, Building2, ArrowLeft } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T, SEMANTIC } from './theme.js';
 import { churchBannerBg } from './ChurchAdmin.jsx';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { Avatar } from './ProfilePage.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
 import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
@@ -323,7 +324,7 @@ function MyPrayers({ session, profile }) {
                 borderLeft: `3px solid ${T.gold}`,
               }}>
                 <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.gold, fontWeight: 700, marginBottom: 4 }}>
-                  Praise Report ✦
+                  Praise Report <KinwoveStar size={10} style={{ verticalAlign: 'middle', marginLeft: 3, flexShrink: 0 }} />
                 </div>
                 <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 14, color: '#2C1810', lineHeight: 1.6 }}>
                   "{p.praise_report}"

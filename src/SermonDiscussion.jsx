@@ -6,6 +6,7 @@ import { relativeTime } from './time.js';
 import { useUiKit, EmptyState, TextButton } from './uikit.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
 import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 /**
  * Threaded discussion anchored to either:
@@ -187,7 +188,7 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
         </div>
       ) : top.length === 0 ? (
         <EmptyState
-          glyph="✦"
+          glyph={<KinwoveStar size={22} />}
           title="No replies yet"
           body="Be the first to share a thought."
           dense

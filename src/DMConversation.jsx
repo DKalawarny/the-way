@@ -375,7 +375,7 @@ export default function DMConversation({ session, profile, conversationId, other
           fontSize: 13, color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic',
         }}>
           This is a welcome message from kinwove — not a monitored inbox.
-          Use the <strong style={{ fontStyle: 'normal', color: T.inkSoft }}>Ask ✦</strong> button to start a conversation.
+          Use the <strong style={{ fontStyle: 'normal', color: T.inkSoft }}>Ask <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginLeft: 2, flexShrink: 0 }} /></strong> button to start a conversation.
         </div>
       ) : (
         <div style={{ flexShrink: 0 }}>

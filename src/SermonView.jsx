@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T, RADIUS, SPACE, SHADOW } from './theme.js';
 import PostImageGrid from './PostImageGrid.jsx';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 const SermonDiscussion = lazy(() => import('./SermonDiscussion.jsx'));
 
@@ -139,7 +140,7 @@ export default function SermonView({ session, profile, sermonId, onBack, chromel
           boxShadow: SHADOW.warm,
         }}>
           <div className="section-eyebrow" style={{ marginBottom: 6, color: T.goldDark }}>
-            ✦ Sunday {week ?? ''}
+            <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Sunday {week ?? ''}
           </div>
           <h1 className="editorial-h1" style={{ fontSize: 28, marginBottom: 6 }}>
             {sermon.title}

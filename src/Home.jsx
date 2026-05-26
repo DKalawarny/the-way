@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T, SEMANTIC, SHADOW, RADIUS, SPACE } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 const DAILY_VERSES = [
   { text: 'Be still, and know that I am God.', ref: 'Psalm 46:10' },
@@ -126,8 +127,8 @@ export default function Home({
               background: 'radial-gradient(circle, rgba(184,115,58,0.28), transparent 70%)',
               pointerEvents: 'none',
             }} />
-            <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.gold, fontWeight: 700, marginBottom: 8 }}>
-              ✦ This week at {churchName}
+            <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.gold, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center' }}>
+              <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> This week at {churchName}
             </div>
             <div className="editorial-h2" style={{ fontSize: 21, color: T.cream, marginBottom: 6, lineHeight: 1.25 }}>
               {latestSermon.title}
@@ -159,7 +160,7 @@ export default function Home({
             background: 'radial-gradient(circle, rgba(184,115,58,0.18), transparent 70%)',
             pointerEvents: 'none',
           }} />
-          <div className="section-eyebrow" style={{ marginBottom: SPACE[3] }}>✦ Today's verse</div>
+          <div className="section-eyebrow" style={{ marginBottom: SPACE[3], display: 'flex', alignItems: 'center' }}><KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Today's verse</div>
           <blockquote className="editorial-h2" style={{
             fontSize: 22, margin: 0, marginBottom: SPACE[3], color: T.ink,
           }}>
@@ -185,7 +186,7 @@ export default function Home({
                 background: T.cream, border: `2px solid ${T.gold}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: T.goldDark, fontSize: 18,
-              }}>✦</div>
+              }}><KinwoveStar size={18} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="section-eyebrow">Today's question</div>
                 <div style={{ fontFamily: T.serif, fontSize: 14, color: T.inkSoft, fontStyle: 'italic', marginTop: 2 }}>

@@ -1,7 +1,8 @@
 import { T, SHADOW } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 const TABS = [
-  { id: 'overview', label: 'Overview', emoji: '✦' },
+  { id: 'overview', label: 'Overview', emoji: <KinwoveStar size={13} /> },
   { id: 'people',   label: 'People',   emoji: '👥' },
   { id: 'ask',      label: 'Ask',      emoji: '💬' },
   { id: 'bible',    label: 'Bible',    emoji: '📖' },

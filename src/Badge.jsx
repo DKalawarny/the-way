@@ -87,7 +87,9 @@ export default function Badge({ role, size = 'sm' }) {
     }}>
       {preset?.useStar
         ? <KinwoveStar size={fontSize - 0.5} color={palette.text} />
-        : <span style={{ fontSize: fontSize - 0.5 }}>{emoji}</span>
+        : emoji === '✦'
+          ? <KinwoveStar size={fontSize - 0.5} color={palette.text} />
+          : <span style={{ fontSize: fontSize - 0.5 }}>{emoji}</span>
       }
       {text}
     </span>

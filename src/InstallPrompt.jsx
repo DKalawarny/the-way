@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { T } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 /**
  * PWA "Add to Home Screen" nudge.
@@ -98,7 +99,7 @@ export default function InstallPrompt({ triggerNow = false }) {
       display: 'flex', alignItems: 'center', gap: 14,
       animation: 'fadeUp 0.35s cubic-bezier(0.2,0.8,0.2,1) both',
     }}>
-      <div style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>✦</div>
+      <div style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}><KinwoveStar size={28} /></div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: T.cream, marginBottom: 2 }}>
           Add to your home screen

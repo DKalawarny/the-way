@@ -4,6 +4,7 @@ import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { Avatar } from './ProfilePage.jsx';
 import CareConversation from './CareConversation.jsx';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 const SPECIALTY_LABEL = {
   marriage:  'Marriage',
@@ -301,7 +302,7 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
                   width: 38, height: 38, borderRadius: 10, background: T.parchment,
                   border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: T.goldDark, fontSize: 18,
-                }}>✦</div>
+                }}><KinwoveStar size={18} /></div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>Anyone available</div>
                   <div style={{ fontSize: 12.5, color: T.inkSoft, marginTop: 1 }}>

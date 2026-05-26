@@ -6,6 +6,7 @@ import { SermonAiNudge } from './PlanGate.jsx';
 import { useUiKit } from './uikit.jsx';
 import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 const KIND_LABEL = {
   daily_verse:    'Daily question',
@@ -722,8 +723,8 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
                 gap: 14, flexWrap: 'wrap',
               }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: T.ink, marginBottom: 3 }}>
-                    ✦ {sermonAi.isTrial ? `You've used all ${sermonAi.limit} trial AI uses` : `You've used your ${FREE_SERMON_LIMIT} free AI sermons`}
+                  <div style={{ fontSize: 13, fontWeight: 600, color: T.ink, marginBottom: 3, display: 'flex', alignItems: 'center' }}>
+                    <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> {sermonAi.isTrial ? `You've used all ${sermonAi.limit} trial AI uses` : `You've used your ${FREE_SERMON_LIMIT} free AI sermons`}
                   </div>
                   <div style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.5 }}>
                     Upgrade to keep generating — your congregation won't notice the difference in prep time, but you will.
@@ -756,7 +757,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
                     opacity: (generating || !summary.trim()) ? 0.5 : 1,
                   }}
                 >
-                  {generating ? 'Generating week…' : content.length > 0 ? '✦ Regenerate the week' : '✦ Generate the week'}
+                  {generating ? 'Generating week…' : content.length > 0 ? <><KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Regenerate the week</> : <><KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Generate the week</>}
                 </button>
                 {!sermonAi.loading && (
                   <SermonAiNudge
@@ -1099,8 +1100,8 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
             background: T.parchment, border: `1px solid ${T.goldLight}`,
             borderRadius: 14, padding: '16px 18px', marginBottom: 14,
           }}>
-            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 6 }}>
-              ✦ Sunday → the week
+            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center' }}>
+              <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Sunday → the week
             </div>
             <div style={{ fontFamily: T.serif, fontSize: 14.5, color: T.ink, lineHeight: 1.6 }}>
               Paste this Sunday's outline. We turn it into 7 daily discussion

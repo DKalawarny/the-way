@@ -12,6 +12,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { T, RADIUS, SHADOW } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 /* ── Toast ────────────────────────────────────────────────────────── */
 
@@ -149,7 +150,8 @@ function ConfirmInternal({ title, body, confirmLabel = 'Confirm', cancelLabel = 
  *   <EmptyState glyph="✦" title="No replies yet"
  *               body="Be the first to share a thought." />
  */
-export function EmptyState({ glyph = '✦', title, body, action, dense = false }) {
+export function EmptyState({ glyph, title, body, action, dense = false }) {
+  if (glyph === undefined) glyph = <KinwoveStar size={dense ? 22 : 30} />;
   return (
     <div style={{
       textAlign: 'center',

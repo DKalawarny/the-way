@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Compass, Users, Heart, BookOpen, Building2, UserCheck, Shield, Search, Sparkles } from 'lucide-react';
 import { T } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 // ─── Content ────────────────────────────────────────────────────────────────
 
@@ -434,7 +435,7 @@ export default function HelpPage({ onClose, onOpenTour }) {
                   onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(184,115,58,0.14)')}
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(184,115,58,0.08)')}
                 >
-                  ✦ Take the tour again
+                  <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Take the tour again
                 </button>
               )}
               <div style={{ fontSize: 12, color: T.inkMuted, lineHeight: 1.6 }}>
@@ -466,7 +467,7 @@ export default function HelpPage({ onClose, onOpenTour }) {
                   <div style={{ padding: '40px 0', textAlign: 'center', color: T.inkMuted }}>
                     <div style={{ fontSize: 32, marginBottom: 12 }}>🤔</div>
                     <div style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 17, color: T.ink, marginBottom: 6 }}>No results found</div>
-                    <div style={{ fontSize: 13.5 }}>Try a different search, or tap ✦ Ask for a live answer.</div>
+                    <div style={{ fontSize: 13.5 }}>Try a different search, or tap <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 2, flexShrink: 0 }} /> Ask for a live answer.</div>
                   </div>
                 ) : searchResults.map((item, i) => (
                   <SearchResultRow key={i} item={item} />
@@ -505,7 +506,7 @@ export default function HelpPage({ onClose, onOpenTour }) {
                 textAlign: 'center',
               }}
             >
-              ✦ Take the feature tour
+              <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Take the feature tour
             </button>
           )}
           {searchResults !== null ? (
@@ -514,7 +515,7 @@ export default function HelpPage({ onClose, onOpenTour }) {
                 <div style={{ textAlign: 'center', padding: '48px 20px', color: T.inkMuted }}>
                   <div style={{ fontSize: 28, marginBottom: 10 }}>🤔</div>
                   <div style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 16, color: T.ink, marginBottom: 6 }}>No results found</div>
-                  <div style={{ fontSize: 13.5 }}>Try a different search or tap ✦ Ask.</div>
+                  <div style={{ fontSize: 13.5 }}>Try a different search or tap <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 2, flexShrink: 0 }} /> Ask.</div>
                 </div>
               ) : searchResults.map((item, i) => <SearchResultRow key={i} item={item} />)}
             </>

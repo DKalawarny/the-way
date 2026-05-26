@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase, authedFetch } from './supabase.js';
 import { T } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 const LENGTHS = [7, 14, 21, 30];
 
@@ -309,7 +310,7 @@ export default function WalkCreator({ session, churchId, onBack, onSaved }) {
             opacity: (!form.title.trim() || !form.theme.trim()) ? 0.5 : 1,
           }}
         >
-          Generate {form.length}-day walk with AI ✦
+          Generate {form.length}-day walk with AI <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginLeft: 5, flexShrink: 0 }} />
         </button>
         <button
           onClick={startManual}
@@ -396,7 +397,7 @@ export default function WalkCreator({ session, churchId, onBack, onSaved }) {
             border: 'none', borderRadius: 999,
             padding: '12px 16px', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
           }}
-        >Publish walk ✦</button>
+        >Publish walk <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginLeft: 5, flexShrink: 0 }} /></button>
       </div>
     </div>
   );

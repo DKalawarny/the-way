@@ -4,6 +4,7 @@ import { supabase, uploadPostImage } from './supabase.js';
 import { T } from './theme.js';
 import MentionInput from './MentionInput.jsx';
 import { Avatar } from './ProfilePage.jsx';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 const MAX_IMAGES_PER_POST = 4;
 
@@ -434,7 +435,7 @@ export default function PostComposer({
         {!isChurchScope && postKind !== 'announcement' && (
           <ToolBtn active={postKind === 'milestone'} onClick={() => toggleKind('milestone')}
             title="Mark as a step on your walk">
-            ✦ Milestone
+            <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Milestone
           </ToolBtn>
         )}
 

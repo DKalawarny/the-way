@@ -5,6 +5,7 @@ import {
   LogOut, Trash2, Megaphone, HelpCircle, Users, Search,
 } from 'lucide-react';
 import { T } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 export default function TopRightMenu({
   profile,
@@ -116,7 +117,7 @@ export default function TopRightMenu({
               display: 'flex', alignItems: 'center', gap: 7,
               background: T.parchment,
             }}>
-              <span style={{ color: T.gold, fontSize: 14, filter: 'drop-shadow(0 0 6px rgba(184,115,58,0.5))' }}>✦</span>
+              <KinwoveStar size={14} style={{ color: T.gold, filter: 'drop-shadow(0 0 6px rgba(184,115,58,0.5))', flexShrink: 0 }} />
               <span style={{ fontFamily: T.display, fontSize: 16, fontWeight: 500, color: T.ink, letterSpacing: '-0.02em' }}>kinwove</span>
             </div>
             {/* Sections */}

@@ -6,6 +6,7 @@ import Badge, { INVITABLE_ROLES, presetForRole } from './Badge.jsx';
 import { useUiKit, EmptyState, TextButton } from './uikit.jsx';
 import ChurchModeShell from './ChurchModeShell.jsx';
 import FlagPicker from './FlagPicker.jsx';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 import { usePlan, CHURCH_BASE_MEMBER_LIMIT } from './usePlan.js';
 import { TrialBanner, UpgradeWall } from './PlanGate.jsx';
@@ -407,8 +408,8 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
         background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
         padding: '16px 18px',
       }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-          ✦ Welcome note
+        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center' }}>
+          <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Welcome note
         </div>
         <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 10 }}>
           A short greeting for visitors and members — appears at the top of your public page. A sentence or two is plenty.
@@ -1468,8 +1469,8 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
         opacity: (churchPlan === 'church_base' && members.length >= CHURCH_BASE_MEMBER_LIMIT) ? 0.45 : 1,
         pointerEvents: (churchPlan === 'church_base' && members.length >= CHURCH_BASE_MEMBER_LIMIT) ? 'none' : 'auto',
       }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-          ✦ Invite your congregation
+        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center' }}>
+          <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Invite your congregation
         </div>
         {code ? (
           <>

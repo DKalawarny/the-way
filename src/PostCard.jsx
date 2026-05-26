@@ -8,6 +8,7 @@ import Comments from './Comments.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
 import { codeToFlag } from './countries.js';
 import { useUiKit } from './uikit.jsx';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 function renderWithMentions(text, mentions, onViewProfile, onViewChurch) {
   if (!mentions?.length || !text) return text;
@@ -760,8 +761,8 @@ export default function PostCard({
             background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: 12,
             padding: '12px 14px',
           }}>
-            <div style={{ fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 6 }}>
-              ✦ This week's sermon
+            <div style={{ fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center' }}>
+              <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> This week's sermon
             </div>
             <div style={{ fontFamily: T.serif, fontSize: 17, fontWeight: 600, color: T.ink, lineHeight: 1.3, marginBottom: 4 }}>
               {effectiveItem.body.sermon_title ?? effectiveItem.body.text}

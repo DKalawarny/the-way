@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase, authedFetch } from './supabase.js';
 import { T } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 const DEV_PASTOR_BYPASS = import.meta.env.DEV
   && import.meta.env.VITE_DEV_PASTOR_BYPASS === 'true';
@@ -174,7 +175,7 @@ export default function PastorApply({ session, profile, onClose, onBecamePastor 
     return (
       <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
         <div style={{ textAlign: 'center', maxWidth: 400 }}>
-          <div style={{ fontSize: 52, marginBottom: 20 }}>✦</div>
+          <div style={{ fontSize: 52, marginBottom: 20 }}><KinwoveStar size={52} /></div>
           <div style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 600, color: T.ink, marginBottom: 12, letterSpacing: '-0.02em' }}>
             You're verified.
           </div>
@@ -328,7 +329,7 @@ export default function PastorApply({ session, profile, onClose, onBecamePastor 
                   boxShadow: '0 4px 20px rgba(184,115,58,0.35)',
                 }}
               >
-                {verifying ? 'Verifying…' : 'Verify & go live ✦'}
+                {verifying ? 'Verifying…' : <>Verify &amp; go live <KinwoveStar size={14} style={{ verticalAlign: 'middle', marginLeft: 5, flexShrink: 0 }} /></>}
               </button>
               <button
                 onClick={() => { setCodeSent(false); setCode(''); setVerifyError(null); }}

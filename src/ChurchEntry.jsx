@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 // QR landing: someone scans a church's code. Don't dump them into AI by default —
 // give them a clear choice between asking AI privately or messaging a real person.
@@ -96,7 +97,7 @@ export default function ChurchEntry({ churchId, session, onAskAI, onAskSomeone, 
                 width: 44, height: 44, borderRadius: 12, background: 'rgba(184,115,58,0.10)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: T.goldDark, fontSize: 22, flexShrink: 0,
-              }}>✦</div>
+              }}><KinwoveStar size={22} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, letterSpacing: '-0.012em', marginBottom: 3 }}>
                   Ask anything

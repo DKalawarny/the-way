@@ -7,6 +7,7 @@ import { PERSON_TYPES } from './constants.js';
 import { Avatar, BANNER_PRESETS, bannerBackground } from './ProfilePage.jsx';
 import AvatarPicker from './AvatarPicker.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 const PostComposer = lazy(() => import('./PostComposer.jsx'));
 // Shared with UserProfile — same constants, same helpers, same church card.
@@ -1497,15 +1498,15 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                           overflow: 'hidden', minWidth: 195,
                         }}>
                           {[
-                            { label: p.is_answered ? '○  Mark unanswered' : '✦  Mark answered', onClick: () => { setMenuPrayerId(null); handlePrayerAnswerButton(p); } },
-                            { label: 'Remove prayer', danger: true, onClick: () => { setMenuPrayerId(null); removePrayer(p.id); } },
+                            { key: 'answered', content: p.is_answered ? '○  Mark unanswered' : <><KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 4, flexShrink: 0 }} />  Mark answered</>, onClick: () => { setMenuPrayerId(null); handlePrayerAnswerButton(p); } },
+                            { key: 'remove', content: 'Remove prayer', danger: true, onClick: () => { setMenuPrayerId(null); removePrayer(p.id); } },
                           ].map((item, i, arr) => (
-                            <button key={item.label} onClick={item.onClick} style={{
+                            <button key={item.key} onClick={item.onClick} style={{
                               width: '100%', textAlign: 'left', background: 'none', border: 'none',
                               padding: '11px 16px', fontSize: 13,
                               color: item.danger ? T.error : T.ink, cursor: 'pointer',
                               borderBottom: i < arr.length - 1 ? `1px solid ${T.line}` : 'none',
-                            }}>{item.label}</button>
+                            }}>{item.content}</button>
                           ))}
                         </div>
                       </>
@@ -1521,7 +1522,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                 {/* ── Praise report ── */}
                 {p.is_answered && p.praise_report && (
                   <div style={{ margin: '0 18px 14px', background: 'rgba(184,115,58,0.07)', borderRadius: 10, padding: '10px 13px', borderLeft: `3px solid ${T.gold}` }}>
-                    <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 4 }}>Praise Report ✦</div>
+                    <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 4 }}>Praise Report <KinwoveStar size={10} style={{ verticalAlign: 'middle', marginLeft: 3, flexShrink: 0 }} /></div>
                     <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, color: T.inkSoft, lineHeight: 1.6 }}>"{p.praise_report}"</div>
                   </div>
                 )}

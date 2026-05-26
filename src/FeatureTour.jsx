@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { T } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 // ── Steps ────────────────────────────────────────────────────────────────────
 const STEPS = [
   {
-    emoji: '✦',
+    emoji: <KinwoveStar size={52} />,
     title: 'Welcome to kinwove',
     body: "A place for the whole journey — whether you're just curious, rebuilding your faith, or leading a congregation. No pressure, no judgment.",
     tag: null,

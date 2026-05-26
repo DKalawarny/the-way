@@ -1,4 +1,5 @@
 import { T } from './theme.js';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 export default function SponsoredCard({ sponsor_name, title, body, cta_text, cta_url, emoji }) {
   return (
@@ -24,7 +25,7 @@ export default function SponsoredCard({ sponsor_name, title, body, cta_text, cta
             fontSize: 16,
             flexShrink: 0,
           }}>
-            {emoji ?? '✦'}
+            {emoji ?? <KinwoveStar size={16} />}
           </div>
           <span style={{
             fontFamily: T.sans,

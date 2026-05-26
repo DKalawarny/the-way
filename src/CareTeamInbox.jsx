@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import CareConversation from './CareConversation.jsx';
+import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 const COVENANT_VERSION = 1;
 const STORAGE_KEY = 'kinwove:care-covenant-accepted-v1';
@@ -76,7 +77,7 @@ function ConversationRow({ conversation, lastMessage, onOpen, isUnclaimed }) {
           border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: T.goldDark, fontSize: 14,
         }}>
-          {conversation.is_anonymous ? '?' : '✦'}
+          {conversation.is_anonymous ? '?' : <KinwoveStar size={14} />}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>{subjectName}</div>
@@ -237,8 +238,8 @@ export default function CareTeamInbox({ session, profile, churchId, onBack }) {
           <>
             {unclaimed.length > 0 && (
               <>
-                <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, margin: '0 0 8px' }}>
-                  ✦ Open · waiting for someone
+                <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, margin: '0 0 8px', display: 'flex', alignItems: 'center' }}>
+                  <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Open · waiting for someone
                 </div>
                 {unclaimed.map((c) => (
                   <ConversationRow key={c.id} conversation={c} lastMessage={lastMsgs[c.id]} onOpen={openConversation} isUnclaimed />
