@@ -319,18 +319,7 @@ function bodyForKind(item, onViewProfile, onViewChurch, sessionUserId, onOpenSer
               {question}
             </div>
           )}
-          {onOpenSermon && b.sermon_id && (
-            <button
-              onClick={() => onOpenSermon(b.sermon_id)}
-              style={{
-                marginTop: 12, background: 'transparent', border: `1px solid ${T.goldLight}`,
-                borderRadius: 999, padding: '6px 14px', fontSize: 12.5,
-                fontWeight: 600, color: T.goldDark, cursor: 'pointer',
-              }}
-            >
-              Read full sermon →
-            </button>
-          )}
+          {/* "Read full sermon" button removed — discussion items stand alone with inline comments */}
         </div>
       );
     }
@@ -409,8 +398,9 @@ export default function PostCard({
   const { showToast, ui: postCardUi } = useUiKit();
 
   const isSermonAnnouncement = item.source === 'post' && !!item.body?.is_sermon_announcement;
-  const isOwn = !!sessionUserId && item.author_id === sessionUserId && item.source === 'post';
-  const canModerate = isPastor && !isOwn && item.source === 'post';
+  const isPostLike = item.source === 'post' || item.source === 'sermon_item';
+  const isOwn = !!sessionUserId && item.author_id === sessionUserId && isPostLike;
+  const canModerate = isPastor && !isOwn && isPostLike;
   const canHideFromProfile = isOwn && item.scope === 'church' && !isSermonAnnouncement;
   const canChangeVisibility = isOwn && !isSermonAnnouncement;
   const canEdit = isOwn && !isSermonAnnouncement;
@@ -608,7 +598,7 @@ export default function PostCard({
             )}
           </div>
         </div>
-        {(canHideFromProfile || canChangeVisibility || canEdit || canDelete || (!isOwn && !!sessionUserId && item.source === 'post')) && (
+        {(canHideFromProfile || canChangeVisibility || canEdit || canDelete || (!isOwn && !!sessionUserId && isPostLike)) && (
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
@@ -701,7 +691,7 @@ export default function PostCard({
                       {canModerate ? 'Remove from church' : 'Delete post'}
                     </button>
                   )}
-                  {!isOwn && !canModerate && !!sessionUserId && item.source === 'post' && (
+                  {!isOwn && !canModerate && !!sessionUserId && isPostLike && (
                     <button
                       onClick={() => { setMenuOpen(false); setReportOpen(true); }}
                       style={{
@@ -935,7 +925,7 @@ export default function PostCard({
 
       {/* Reactions + comments row — hidden for sermon announcements (discussion lives in SermonView) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingTop: 8, borderTop: `1px solid ${T.line}`, flexWrap: 'wrap' }}>
-        {item.source === 'post' && !item.body?.is_sermon_announcement && REACTIONS.map((r) => (
+        {isPostLike && !item.body?.is_sermon_announcement && REACTIONS.map((r) => (
           <ReactionButton
             key={r.id}
             kind={r}
@@ -952,13 +942,13 @@ export default function PostCard({
             🙏 {item.body?.prayer_count ?? 0} praying
           </span>
         )}
-        {item.source === 'post' && !item.body?.is_sermon_announcement && viewCount > 0 && (
+        {isPostLike && !item.body?.is_sermon_announcement && viewCount > 0 && (
           <span style={{ fontSize: 11.5, color: T.inkMuted, marginLeft: 2 }}>
             {viewCount.toLocaleString()} {viewCount === 1 ? 'view' : 'views'}
           </span>
         )}
         <div style={{ flex: 1 }} />
-        {item.source === 'post' && !item.body?.is_sermon_announcement && (
+        {isPostLike && !item.body?.is_sermon_announcement && (
           <button
             onClick={() => setCommentsOpen((v) => !v)}
             style={{
@@ -974,7 +964,7 @@ export default function PostCard({
             💬 {localCommentCount > 0 ? localCommentCount : 'Comment'}
           </button>
         )}
-        {item.source === 'post' && !item.body?.is_sermon_announcement && onSaveToggle && !!sessionUserId && (
+        {isPostLike && !item.body?.is_sermon_announcement && onSaveToggle && !!sessionUserId && (
           <button
             onClick={() => onSaveToggle(item.id, isSaved)}
             title={isSaved ? 'Remove private save' : 'Private save'}
@@ -994,7 +984,7 @@ export default function PostCard({
       </div>
 
       {/* Inline FB-style comments — toggled by the Comment button above */}
-      {item.source === 'post' && !item.body?.is_sermon_announcement && commentsOpen && (
+      {isPostLike && !item.body?.is_sermon_announcement && commentsOpen && (
         <Comments
           item={item}
           sessionUserId={sessionUserId}
