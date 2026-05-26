@@ -1301,18 +1301,23 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
   async function rotateCode() {
     setRotating(true);
     setConfirmRotate(false);
-    const { data: gen } = await supabase.rpc('gen_church_invite_code');
-    const newCode = gen ?? null;
-    if (!newCode) { setRotating(false); return; }
-    const { error } = await supabase
-      .from('churches')
-      .update({ invite_code: newCode, invite_code_rotated_at: new Date().toISOString() })
-      .eq('id', churchId);
-    setRotating(false);
-    if (error) { showToast(`Couldn't rotate code: ${error.message}`, 'error'); return; }
-    setLocalInviteCode(newCode);   // keep local state in sync immediately
-    onChurchUpdate?.({ invite_code: newCode });
-    showToast('New invite code generated.', 'success');
+    try {
+      const token = (await supabase.auth.getSession())?.data?.session?.access_token;
+      const res = await fetch('/api/church/rotate-invite-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ churchId }),
+      });
+      const body = await res.json();
+      if (!res.ok) { showToast(body.error || "Couldn't rotate code.", 'error'); return; }
+      setLocalInviteCode(body.invite_code);
+      onChurchUpdate?.({ invite_code: body.invite_code });
+      showToast('New invite code generated.', 'success');
+    } catch {
+      showToast("Couldn't rotate code.", 'error');
+    } finally {
+      setRotating(false);
+    }
   }
 
   const removingMember = members.find((m) => m.id === removingId) ?? null;

@@ -1078,6 +1078,30 @@ app.get('/api/church/by-invite-code', async (req, res) => {
   res.json({ church });
 });
 
+// Rotate a church's invite code — requires auth, verifies caller is the pastor
+app.post('/api/church/rotate-invite-code', requireAuth, async (req, res) => {
+  const { churchId } = req.body ?? {};
+  if (!churchId) return res.status(400).json({ error: 'churchId required' });
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'service unavailable' });
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
+  // Verify caller is the pastor of this church
+  const rows = await fetch(
+    `${SUPABASE_URL}/rest/v1/churches?id=eq.${encodeURIComponent(churchId)}&select=pastor_id&limit=1`,
+    { headers: h }
+  ).then(r => r.json()).catch(() => []);
+  const church = Array.isArray(rows) ? rows[0] : null;
+  if (!church) return res.status(404).json({ error: 'Church not found' });
+  if (church.pastor_id !== req.userId) return res.status(403).json({ error: 'Not your church' });
+  // Generate new 8-char code
+  const newCode = Math.random().toString(36).substring(2, 10).toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 8).padEnd(8, 'A');
+  const updated = await fetch(
+    `${SUPABASE_URL}/rest/v1/churches?id=eq.${encodeURIComponent(churchId)}`,
+    { method: 'PATCH', headers: { ...h, Prefer: 'return=minimal' }, body: JSON.stringify({ invite_code: newCode, invite_code_rotated_at: new Date().toISOString() }) }
+  ).then(r => ({ ok: r.ok, status: r.status })).catch(() => ({ ok: false }));
+  if (!updated.ok) return res.status(500).json({ error: 'Failed to save new code' });
+  res.json({ invite_code: newCode });
+});
+
 // Submit / re-submit a pastor application (upsert via service role → bypasses RLS)
 app.post('/api/church/apply', requireAuth, limitAuthed({ capacity: 5, refillPerSec: 5 / 300 }), async (req, res) => {
   const { full_name, pastor_role, church_name, denomination, city, country, website, reason } = req.body ?? {};
