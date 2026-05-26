@@ -5,6 +5,7 @@ import { T } from './theme.js';
 import { BadgeList } from './Badge.jsx';
 import { relativeTime } from './time.js';
 import Comments from './Comments.jsx';
+import SermonDiscussion from './SermonDiscussion.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
 import { codeToFlag } from './countries.js';
 import { useUiKit } from './uikit.jsx';
@@ -985,13 +986,23 @@ export default function PostCard({
 
       {/* Inline FB-style comments — toggled by the Comment button above */}
       {isPostLike && !item.body?.is_sermon_announcement && commentsOpen && (
-        <Comments
-          item={item}
-          sessionUserId={sessionUserId}
-          authorMap={authorMap}
-          rolesByUser={rolesByUser}
-          onCountChange={(delta) => setLocalCommentCount((n) => Math.max(0, n + delta))}
-        />
+        item.source === 'sermon_item'
+          ? <div style={{ padding: '0 4px' }}>
+              <SermonDiscussion
+                sermonContentId={item.id}
+                churchId={item.scope_id}
+                sessionUserId={sessionUserId}
+                isPastor={isPastor}
+                defaultOpen
+              />
+            </div>
+          : <Comments
+              item={item}
+              sessionUserId={sessionUserId}
+              authorMap={authorMap}
+              rolesByUser={rolesByUser}
+              onCountChange={(delta) => setLocalCommentCount((n) => Math.max(0, n + delta))}
+            />
       )}
     </div>
   );
