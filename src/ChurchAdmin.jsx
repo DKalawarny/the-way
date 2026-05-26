@@ -1304,16 +1304,14 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
     const { data: gen } = await supabase.rpc('gen_church_invite_code');
     const newCode = gen ?? null;
     if (!newCode) { setRotating(false); return; }
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('churches')
       .update({ invite_code: newCode, invite_code_rotated_at: new Date().toISOString() })
-      .eq('id', churchId)
-      .select('invite_code, invite_code_rotated_at')
-      .single();
+      .eq('id', churchId);
     setRotating(false);
     if (error) { showToast(`Couldn't rotate code: ${error.message}`, 'error'); return; }
-    setLocalInviteCode(data.invite_code);   // keep local state in sync immediately
-    onChurchUpdate?.(data);
+    setLocalInviteCode(newCode);   // keep local state in sync immediately
+    onChurchUpdate?.({ invite_code: newCode });
     showToast('New invite code generated.', 'success');
   }
 
