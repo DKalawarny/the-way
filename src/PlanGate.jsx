@@ -329,15 +329,18 @@ export function SermonAiNudge({ remaining, isTrial, isFree }) {
   if (!isFree && !isTrial) return null;
   if (remaining <= 0) return null;
 
-  const total = isTrial ? TRIAL_MSG_LIMIT : 3;
+  // Only show when running low — no need to show the count when plenty remain
+  const lowThreshold = isTrial ? 10 : 1;
+  if (remaining > lowThreshold) return null;
+
   const label = isTrial
-    ? `${remaining} of ${total} AI uses remaining in your trial`
-    : `${remaining} of ${total} free AI ${remaining === 1 ? 'sermon' : 'sermons'} remaining`;
+    ? `${remaining} AI uses left in your trial`
+    : `${remaining} free ${remaining === 1 ? 'sermon' : 'sermons'} left`;
 
   return (
     <span style={{
       fontSize: 12,
-      color: remaining <= (isTrial ? 10 : 1) ? '#A53F2B' : T.inkMuted,
+      color: '#A53F2B',
       fontStyle: 'italic',
       marginLeft: 12,
     }}>
