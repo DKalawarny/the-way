@@ -1065,7 +1065,7 @@ app.get('/api/me/pastor-church', requireAuth, async (req, res) => {
 });
 
 // Look up a church by invite code — service role bypasses RLS so unverified churches work
-app.get('/api/church/by-invite-code', requireAuth, async (req, res) => {
+app.get('/api/church/by-invite-code', async (req, res) => {
   const code = (req.query.code ?? '').trim().toUpperCase();
   if (!code) return res.status(400).json({ church: null });
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ church: null });
