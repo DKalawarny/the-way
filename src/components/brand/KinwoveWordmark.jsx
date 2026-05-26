@@ -25,11 +25,11 @@ export const KinwoveWordmark = ({
       <span
         style={{
           position: 'absolute',
-          top: '-0.82em',
+          top: '-0.72em',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: '0.22em',
-          height: '0.36em',
+          width: '0.28em',
+          height: '0.28em',
           display: 'block',
           filter: `drop-shadow(0 0 3px ${starColor}) drop-shadow(0 0 6px ${starColor}88)`,
         }}
