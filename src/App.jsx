@@ -367,7 +367,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
               onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.1)'; e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.transform = 'translateY(-3px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(184,115,58,0.18)'; e.currentTarget.style.transform = 'translateY(0)'; }}
             >
-              <div style={{ fontSize: 28, marginBottom: 14 }}>{c.emoji}</div>
+              <div style={{ fontSize: 28, marginBottom: 14, height: 40, display: 'flex', alignItems: 'flex-end' }}>{c.emoji}</div>
               <div style={{ fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.cream, marginBottom: 8, letterSpacing: '-0.01em' }}>{c.label}</div>
               <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.7 }}>{c.body}</div>
             </button>
@@ -654,7 +654,7 @@ function PastorPrompt({ open, onApply, onClose }) {
           onClick={onClose}
           style={{ width: '100%', background: 'transparent', color: T.inkMuted, border: 'none', marginTop: 10, fontSize: 13, cursor: 'pointer' }}
         >
-          No, maybe later
+          No
         </button>
       </SwipeableSheet>
     </div>
