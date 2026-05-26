@@ -1730,7 +1730,7 @@ export default function App() {
       clearTimeout(stageSaveTimerRef.current);
       stageSaveTimerRef.current = setTimeout(() => {
         const uid = sessionRef.current?.user?.id;
-        if (uid) supabase.from('profiles').update({ last_stage: stage }).eq('id', uid).catch(() => {});
+        if (uid) supabase.from('profiles').update({ last_stage: stage }).eq('id', uid).then(null, () => {});
       }, 2000);
     }
   }, [stage]);
@@ -1885,7 +1885,7 @@ export default function App() {
         if (event === 'SIGNED_OUT') {
           localStorage.removeItem('kw:stage');
           const uid = sessionRef.current?.user?.id;
-          if (uid) supabase.from('profiles').update({ last_stage: null }).eq('id', uid).catch(() => {});
+          if (uid) supabase.from('profiles').update({ last_stage: null }).eq('id', uid).then(null, () => {});
         }
         setStage(initialAnonChurchId ? 'church-entry' : initialChurchId ? 'church' : 'landing');
       }
