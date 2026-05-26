@@ -68,7 +68,7 @@ function ReactionButton({ kind, count, mine, onToggle }) {
       onMouseLeave={(e) => { if (!mine) e.currentTarget.style.color = T.inkSoft; }}
     >
       {kind.Icon ? <kind.Icon size={13} strokeWidth={mine ? 0 : 1.75} fill={mine ? T.goldDark : 'none'} /> : <span style={{ fontSize: 13 }}>{kind.emoji}</span>}
-      <span>{count > 0 ? count : kind.label}</span>
+      <span>{kind.label}{count > 0 ? <span style={{ marginLeft: 3, opacity: 0.75 }}>{count}</span> : null}</span>
     </button>
   );
 }
@@ -962,7 +962,7 @@ export default function PostCard({
             onMouseEnter={(e) => { if (!commentsOpen) e.currentTarget.style.color = T.ink; }}
             onMouseLeave={(e) => { if (!commentsOpen) e.currentTarget.style.color = T.inkSoft; }}
           >
-            💬 {localCommentCount > 0 ? localCommentCount : 'Comment'}
+            💬 Comment{localCommentCount > 0 ? <span style={{ marginLeft: 3, opacity: 0.75 }}>{localCommentCount}</span> : null}
           </button>
         )}
         {isPostLike && !item.body?.is_sermon_announcement && onSaveToggle && !!sessionUserId && (
