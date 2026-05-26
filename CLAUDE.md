@@ -1,7 +1,7 @@
 # kinwove — Claude Code handover
 
 This file is the entry point for a new Claude Code session picking up work on
-this project. Read it first.
+this project. Read it first, top to bottom.
 
 ---
 
@@ -14,6 +14,68 @@ this project. Read it first.
 This star was approved and confirmed correct on 2026-05-26. Do not touch these values for any reason unless Daniel explicitly says "change the star." Do not infer from screenshots, do not "improve" it, do not adjust proportions.
 
 **Star icon rule (locked 2026-05-26):** Never use the `✦` Unicode character as a visible UI icon. All star icons in JSX must use `<KinwoveStar size={N} />` from `src/components/brand/KinwoveStar.jsx`. The `✦` character is only acceptable inside plain strings (email HTML, prompts, non-rendered text). Do not revert this without explicit instruction.
+
+---
+
+## ⚠️ FIXED BUGS — DO NOT REVERT
+
+These bugs were fixed on 2026-05-26 after painful debugging. Read before touching any of these areas.
+
+### 1. Supabase `.catch()` is not a function
+**Never** chain `.catch(() => {})` on a Supabase query builder. Use `.then(null, () => {})` or `await` with try/catch instead. The Supabase query builder is thenable but has no `.catch()` method — it will crash the app with a blank screen.
+
+### 2. Profile table has NO `first_name` / `last_name` columns
+The profiles table only has `display_name` (text). Profile.jsx splits `display_name` into `first_name`/`last_name` **in the UI only** for the form, then joins them back on save. Never query for `first_name` or `last_name` from Supabase — the columns don't exist and the query will 400.
+
+The save logic: `display_name = [form.first_name.trim(), form.last_name.trim()].filter(Boolean).join(' ')`
+
+### 3. Profile Save button — correct disabled check
+The profile edit form state has `first_name` and `last_name` keys, NOT `display_name`. The Save button must check:
+```js
+disabled={saving || !form.first_name.trim()}
+```
+Never check `!form.display_name` — it's undefined in the edit form state.
+
+### 4. Pastor prompt `isFirstTime` check
+The pastor onboarding prompt logic in App.jsx must check `!profile?.is_pastor`, NOT `!pastorChurchId`. Checking `!pastorChurchId` incorrectly blocks the prompt for users who have a church but whose church roles haven't loaded yet:
+```js
+const isFirstTime = profileEditOrigin === 'idle' && !pendingPastorApply && !profile?.is_pastor;
+```
+
+### 5. Invite code rotation — always use the server endpoint
+`rotateCode()` in `PeoplePanel` (ChurchAdmin.jsx) uses `POST /api/church/rotate-invite-code` (service role, bypasses RLS). Never revert this to a direct Supabase `.update()` call — RLS will block it. The token must use `session?.access_token` first (prop), with `getSession()` as fallback:
+```js
+const token = session?.access_token ?? (await supabase.auth.getSession())?.data?.session?.access_token;
+```
+
+### 6. Invite code lookup — always use the server endpoint
+`GET /api/church/by-invite-code?code=X` (service role). Never do a direct Supabase query for invite codes — RLS blocks it for non-members of non-public/pending churches.
+
+### 7. Sermon composer — NOT a fixed overlay
+The SermonComposer is rendered as the **Sermons tab** inside ChurchModeShell (`tab === 'sermons'` in ChurchAdmin.jsx), with `embedded={true}`. It is NOT a `position:fixed; inset:0; zIndex:300` overlay — that pattern was removed because it covered the sidebar (zIndex:100). Do not reintroduce the overlay. The tab is defined in ChurchModeShell.jsx TABS array (🎙 Sermons).
+
+Entry points that open sermons must navigate to `church-admin` with `tab='sermons'`:
+- `openSermonInComposer(id)` → `setTab('sermons')` (inside ChurchAdmin)
+- `onNewSermon` callback from ChurchPage → `setPastorAdminInitialTab('sermons'); setStage('church-admin')`
+- `stage === 'sermon-composer'` redirect in App.jsx → same as above
+
+### 8. SermonAiNudge — only show when running low
+`SermonAiNudge` in `PlanGate.jsx` must only render when remaining uses are low (≤10 for trial, ≤1 for free). Do not show the count when the user has plenty of uses. Do not add a persistent counter anywhere in the UI.
+
+### 9. ChurchModeShell tabs (current, locked)
+```
+Overview | People | Ask | Bible | 🎙 Sermons | Settings
+```
+Sermons was added 2026-05-26. Do not remove it. `fullBleed` is only for the Bible tab.
+
+### 10. Admin email branding
+The DB trigger `notify_admin_pastor_application` in Supabase sends emails via Resend. It must use kinwove branding — subject line `kinwove — New pastor application: ...`, no ✦ in subject. If you see "The Way" anywhere in emails, the trigger needs to be re-run with the updated SQL (see scripts/).
+
+### 11. Sermon discussion display names
+`SermonDiscussion.jsx` only fetches `id, display_name` from profiles (no first_name/last_name columns). Fallback is `'Someone'`. The display_name is populated on profile creation from the wizard.
+
+### 12. `stage === 'sermon-composer'` is effectively dead
+This App.jsx stage now immediately redirects to `church-admin` with `pastorAdminInitialTab = 'sermons'`. Don't add new rendering logic to it.
 
 ---
 
@@ -40,7 +102,8 @@ until 2026-05-13** when we rebranded to **kinwove**.
   **community** (feed, prayer wall, groups, sermons), **church directory**
   (pastor onboarding + congregation features).
 - Aesthetic: **parchment + gold + serif**. Warm, editorial. Not a SaaS dashboard.
-- Domain: **kinwove.com** (live). Render (server) + Vercel (frontend) auto-deploy on push to `main`.
+- Domain: **kinwove.com** (live). All on **Render** — server.js + built frontend
+  both deploy from `main`. Push to main = deploy.
 
 ## 3. Stack
 
@@ -74,17 +137,20 @@ until 2026-05-13** when we rebranded to **kinwove**.
 /src/PostCard.jsx             — PostCard used by ChurchPage feed (not Community).
 /src/ChurchPage.jsx           — Public + pastor-own church page.
 /src/ChurchAdmin.jsx          — Pastor dashboard (wrapped by ChurchModeShell).
+                                PeoplePanel is defined inline here (~line 1156).
 /src/ChurchModeShell.jsx      — Dark header shell with Leader/Visitor toggle
-                                and Overview/People/Ask/Bible/Settings tabs.
-                                Accepts fullBleed={true} to skip maxWidth/padding
-                                wrapper (used by Bible tab).
+                                and Overview/People/Ask/Bible/Sermons/Settings tabs.
+                                Accepts fullBleed={true} for Bible tab only.
 /src/PastorApply.jsx          — Pastor application form (multi-step).
 /src/BibleReader.jsx          — Scripture reader with AI sidebar.
                                 Accepts topOffset={n} prop — when embedded in
-                                ChurchAdmin, pass topOffset={145} to account for
-                                ChurchModeShell header height.
+                                ChurchAdmin, pass topOffset={145}.
 /src/ChurchAiChat.jsx         — Pastoral AI chat tab inside ChurchAdmin.
+/src/SermonComposer.jsx       — Sermon AI tool. Rendered embedded (tab) inside
+                                ChurchAdmin — NOT as a standalone stage.
+/src/SermonDiscussion.jsx     — Discussion threads on sermon daily questions.
 /src/MessagesInbox.jsx        — DMs incl. "kinwove" system account.
+/src/PlanGate.jsx             — Plan gates + SermonAiNudge (low-use warning only).
 /src/components/brand/        — KinwoveWordmark.jsx + KinwoveStar.jsx
 /supabase-schema.sql          — Full schema (source of truth).
 /scripts/2026-*.sql           — Dated migrations. Newest date = latest.
@@ -136,7 +202,7 @@ Sends pastors (`pastorChurchId` set OR `profile.is_pastor=true`) directly to
 
 ### ChurchModeShell (chromeless church page)
 When `isOwnChurch=true`, ChurchPage is wrapped in ChurchModeShell showing
-the "VIEWING AS LEADER · VISITOR" toggle + Overview/People/Ask/Bible/Settings tabs.
+the "VIEWING AS LEADER · VISITOR" toggle + tabs.
 - "Leader" toggle → `setStage('church-admin')`
 - "Visitor" toggle → church public page (current view)
 - Community action buttons (Talk to someone / Pray together / Pick a walk)
@@ -202,7 +268,7 @@ email, it's the trigger anchor for system DMs. Only the display_name changes.
 ## 9. Open punch list
 
 ### Domain + email (when kinwove.app acquired)
-- [ ] Point DNS for kinwove.app to Vercel + Render.
+- [ ] Point DNS for kinwove.app to Render.
 - [ ] Replace `theway.app` → `kinwove.app` in `index.html` (canonical, og:url,
       JSON-LD), `server.js` share links, `public/llms.txt`, `public/sw.js`,
       Plausible `data-domain`.
@@ -229,6 +295,7 @@ email, it's the trigger anchor for system DMs. Only the display_name changes.
 - **People** — PeoplePanel (members, roles, invite code / "Invite your congregation")
 - **Ask** — ChurchAiChat (pastoral theology AI, uses `text=` prop on MsgText — NOT `content=`)
 - **Bible** — BibleReader (fullBleed mode, topOffset=145 for ChurchModeShell header)
+- **Sermons** — SermonComposer embedded (added 2026-05-26, replaces fixed overlay)
 - **Settings** — SettingsPanel (church profile, open join toggle, danger zone)
   - Featured Walk was **removed** from Settings (2026-05-24) — it lives in Overview only.
 
@@ -249,7 +316,7 @@ git log --oneline -5        # see recent commits
 npm run dev                 # server: localhost:8787, web: localhost:5173
 ```
 
-Latest commit as of 2026-05-24: `9d47bed` — account deletion fix.
+Latest commit as of 2026-05-26: `aa32888` — invite code token fix.
 Branch: `main`. Everything is committed and pushed.
 
 Daniel also has a side project — **deconstructors.ca** (demolition company,
