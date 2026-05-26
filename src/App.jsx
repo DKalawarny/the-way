@@ -1920,9 +1920,7 @@ export default function App() {
     let cancelled = false;
     (async () => {
       const { data: ch, error: lookupErr } = await supabase
-        .from('churches')
-        .select('id, name')
-        .eq('invite_code', code)
+        .rpc('find_church_by_invite_code', { code })
         .maybeSingle();
 
       if (cancelled) return;
