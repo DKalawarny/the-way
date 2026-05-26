@@ -54,7 +54,7 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
     const ids = [...new Set(list.filter((r) => !r.is_anonymous).map((r) => r.author_id))];
     if (ids.length) {
       const [{ data: profs }, { data: roleRows }] = await Promise.all([
-        supabase.from('profiles').select('id, display_name').in('id', ids),
+        supabase.from('profiles').select('id, display_name, first_name, last_name').in('id', ids),
         churchId
           ? supabase.from('church_roles')
               .select('id, user_id, role_key, role_label')
@@ -141,7 +141,8 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
   function Bubble({ row, depth = 0 }) {
     const isMine = row.author_id === sessionUserId;
     const canDelete = isMine || isPastor;
-    const name = row.is_anonymous ? 'Anonymous' : (profMap[row.author_id]?.display_name ?? 'Someone');
+    const prof = profMap[row.author_id];
+    const name = row.is_anonymous ? 'Anonymous' : (prof?.display_name || [prof?.first_name, prof?.last_name].filter(Boolean).join(' ') || 'Someone');
     return (
       <div style={{ marginLeft: depth * 22, marginTop: 8 }}>
         <div style={{
@@ -204,7 +205,7 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
             fontSize: 12, color: T.inkMuted, marginBottom: 6,
             display: 'flex', alignItems: 'center', gap: 6,
           }}>
-            ↳ Replying to {replyTo.is_anonymous ? 'Anonymous' : (profMap[replyTo.author_id]?.display_name ?? 'someone')}
+            ↳ Replying to {replyTo.is_anonymous ? 'Anonymous' : (() => { const p = profMap[replyTo.author_id]; return p?.display_name || [p?.first_name, p?.last_name].filter(Boolean).join(' ') || 'someone'; })()}
             <button onClick={() => setReplyTo(null)} style={{
               background: 'none', border: 'none', color: T.goldDark, cursor: 'pointer', fontSize: 12,
             }}>cancel</button>
