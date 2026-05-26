@@ -518,7 +518,7 @@ begin
     subject      := '✦ Auto-verified: ' || coalesce(new.church_name, 'unnamed');
     status_label := 'Approved instantly via domain match. The applicant is now a verified pastor.';
   else
-    subject      := '🛡 New pastor application: ' || coalesce(new.church_name, 'unnamed');
+    subject      := '✦ New pastor application: ' || coalesce(new.church_name, 'unnamed');
     status_label := 'Pending — please review in the admin queue.';
   end if;
 
@@ -540,6 +540,7 @@ begin
 
   html_body := format(
     '<div style="font-family:-apple-system,system-ui,sans-serif;max-width:560px;margin:0 auto;color:#2a1a0e;">'
+      '<p style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#B8733A;margin:0 0 16px;">kinwove</p>'
       '<h2 style="font-size:19px;margin:0 0 8px;">%s</h2>'
       '<p style="color:#666;line-height:1.55;margin:0 0 16px;">%s</p>'
       '<table style="border-collapse:collapse;width:100%%;font-size:14px;">'
