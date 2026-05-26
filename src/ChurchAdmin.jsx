@@ -1303,7 +1303,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
     setRotating(true);
     setConfirmRotate(false);
     try {
-      const token = (await supabase.auth.getSession())?.data?.session?.access_token;
+      const token = session?.access_token ?? (await supabase.auth.getSession())?.data?.session?.access_token;
       const res = await fetch('/api/church/rotate-invite-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
