@@ -2328,7 +2328,7 @@ export default function App() {
           user={session.user}
           existing={profile}
           onSave={(p) => {
-            const isFirstTime = profileEditOrigin === 'idle' && !pendingPastorApply && !pastorChurchId;
+            const isFirstTime = profileEditOrigin === 'idle' && !pendingPastorApply && !profile?.is_pastor;
             setProfile(p);
             setAuthStage('idle');
             if (pendingPastorApply) { setPendingPastorApply(false); setStage('pastor-apply'); }
