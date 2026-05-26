@@ -985,24 +985,54 @@ export default function PostCard({
       </div>
 
       {/* Inline FB-style comments — toggled by the Comment button above */}
+      {/* FB-style comment modal */}
       {isPostLike && !item.body?.is_sermon_announcement && commentsOpen && (
-        item.source === 'sermon_item'
-          ? <div style={{ padding: '0 4px' }}>
-              <SermonDiscussion
-                sermonContentId={item.id}
-                churchId={item.scope_id}
-                sessionUserId={sessionUserId}
-                isPastor={isPastor}
-                defaultOpen
-              />
+        <div
+          onClick={() => setCommentsOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: T.white, borderRadius: 18, width: '100%', maxWidth: 580,
+              maxHeight: '85vh', display: 'flex', flexDirection: 'column',
+              boxShadow: '0 12px 48px rgba(0,0,0,0.22)',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Modal header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: `1px solid ${T.line}` }}>
+              <span style={{ fontFamily: T.serif, fontWeight: 600, fontSize: 15, color: T.ink }}>
+                {displayName}'s post
+              </span>
+              <button onClick={() => setCommentsOpen(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: T.inkMuted, cursor: 'pointer', lineHeight: 1, padding: 4 }}>×</button>
             </div>
-          : <Comments
-              item={item}
-              sessionUserId={sessionUserId}
-              authorMap={authorMap}
-              rolesByUser={rolesByUser}
-              onCountChange={(delta) => setLocalCommentCount((n) => Math.max(0, n + delta))}
-            />
+            {/* Scrollable body */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px' }}>
+              {/* Post body preview */}
+              <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${T.line}` }}>
+                {bodyForKind(effectiveItem, onViewProfile, onViewChurch, sessionUserId, onOpenSermon)}
+              </div>
+              {/* Thread */}
+              {item.source === 'sermon_item'
+                ? <SermonDiscussion
+                    sermonContentId={item.id}
+                    churchId={item.scope_id}
+                    sessionUserId={sessionUserId}
+                    isPastor={isPastor}
+                    defaultOpen
+                  />
+                : <Comments
+                    item={item}
+                    sessionUserId={sessionUserId}
+                    authorMap={authorMap}
+                    rolesByUser={rolesByUser}
+                    onCountChange={(delta) => setLocalCommentCount((n) => Math.max(0, n + delta))}
+                  />
+              }
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
