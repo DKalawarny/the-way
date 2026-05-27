@@ -1253,7 +1253,7 @@ app.post('/api/church/submit-unverified', requireAuth, limitAuthed({ capacity: 2
         city: appl.city || null, country: appl.country || null,
         website: appl.website || null, pastor_id: req.userId,
         verified: false, verify_method: 'unverified',
-        verification_status: 'pending', is_public: false,
+        verification_status: 'pending', is_public: true,
       }),
     });
     if (!churchRes.ok) throw new Error(`church insert ${churchRes.status}`);
