@@ -17,7 +17,6 @@
 
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
-import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 // ── Shared constants ────────────────────────────────────────────────────
 
@@ -111,90 +110,59 @@ export function ChurchAttendsCard({
   const locationLine = [church.city, church.region].filter(Boolean).join(', ');
   const showMemberCount = memberCount > 0;
 
+  const inner = (
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{
+        fontSize: 10, color: T.goldDark, fontWeight: 700,
+        letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 3,
+      }}>
+        {eyebrow}
+      </div>
+      <div style={{
+        fontFamily: T.serif, fontSize: 15.5, fontWeight: 600, color: T.ink,
+        letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+      }}>
+        {church.name}
+      </div>
+      {(locationLine || showMemberCount) && (
+        <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {locationLine}
+          {locationLine && showMemberCount && ' · '}
+          {showMemberCount && `${memberCount} ${memberCount === 1 ? 'member' : 'members'}`}
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div style={{
-      marginBottom: 12,
-      background: T.white,
-      border: `1px solid ${T.line}`,
-      borderRadius: 14,
-      overflow: 'hidden',
-    }}>
-      {/* Top row — church identity. Whole row tappable when handler exists. */}
+    <div style={{ marginBottom: 16 }}>
       {onOpenChurch ? (
         <button
           onClick={() => onOpenChurch(church.id)}
           style={{
             width: '100%', textAlign: 'left',
-            background: 'transparent', border: 'none', cursor: 'pointer',
-            padding: '14px 16px',
-            display: 'flex', alignItems: 'center', gap: 12,
-            transition: 'background 0.15s',
+            background: T.parchment,
+            border: `1px solid rgba(184,115,58,0.2)`,
+            borderRadius: 12,
+            cursor: 'pointer',
+            padding: '13px 16px',
+            display: 'flex', alignItems: 'center', gap: 10,
+            transition: 'border-color 0.15s, background 0.15s',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = T.parchment; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = '#F5EDD8'; e.currentTarget.style.borderColor = 'rgba(184,115,58,0.38)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = T.parchment; e.currentTarget.style.borderColor = 'rgba(184,115,58,0.2)'; }}
         >
-          <span style={{ fontSize: 20, lineHeight: 1 }}>⛪</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11, color: T.inkMuted, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 2 }}>
-              {eyebrow}
-            </div>
-            <div style={{ fontFamily: T.display, fontSize: 16, fontWeight: 600, color: T.ink, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {church.name}
-            </div>
-            {(locationLine || showMemberCount) && (
-              <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {locationLine}
-                {locationLine && showMemberCount && ' · '}
-                {showMemberCount && `${memberCount} ${memberCount === 1 ? 'member' : 'members'}`}
-              </div>
-            )}
-          </div>
-          <span style={{ color: T.goldDark, fontSize: 16, flexShrink: 0 }}>→</span>
+          {inner}
+          <span style={{ color: T.goldDark, fontSize: 13, flexShrink: 0, opacity: 0.65 }}>→</span>
         </button>
       ) : (
-        // Read-only fallback — happens only when caller omits onOpenChurch
-        <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 20, lineHeight: 1 }}>⛪</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11, color: T.inkMuted, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 2 }}>{eyebrow}</div>
-            <div style={{ fontFamily: T.display, fontSize: 16, fontWeight: 600, color: T.ink }}>{church.name}</div>
-          </div>
+        <div style={{
+          background: T.parchment, border: `1px solid rgba(184,115,58,0.2)`,
+          borderRadius: 12, padding: '13px 16px',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          {inner}
         </div>
-      )}
-
-      {/* Bottom row — this week's sermon. Separate tap target so going
-          "what are they hearing this Sunday?" is a single tap from any
-          profile. Only renders when there's a published sermon + handler. */}
-      {sermon && onOpenSermon && (
-        <button
-          onClick={() => onOpenSermon(sermon.id)}
-          style={{
-            width: '100%', textAlign: 'left',
-            background: 'rgba(184,115,58,0.04)',
-            border: 'none', borderTop: `1px solid ${T.line}`,
-            cursor: 'pointer', padding: '12px 16px',
-            display: 'flex', alignItems: 'center', gap: 12,
-            transition: 'background 0.15s',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.10)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.04)'; }}
-        >
-          <KinwoveStar size={14} style={{ color: T.goldDark, filter: 'drop-shadow(0 0 4px rgba(184,115,58,0.4))', flexShrink: 0 }} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11, color: T.goldDark, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 2 }}>
-              This week{formatWeekOf(sermon.week_starts_on) ? ` · ${formatWeekOf(sermon.week_starts_on)}` : ''}
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {sermon.title}
-            </div>
-            {sermon.scripture_ref && (
-              <div style={{ fontFamily: T.serif, fontSize: 12, fontStyle: 'italic', color: T.inkMuted, marginTop: 1 }}>
-                {sermon.scripture_ref}
-              </div>
-            )}
-          </div>
-          <span style={{ color: T.goldDark, fontSize: 14, flexShrink: 0 }}>→</span>
-        </button>
       )}
     </div>
   );
