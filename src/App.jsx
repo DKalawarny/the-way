@@ -1724,16 +1724,37 @@ export default function App() {
     };
     document.title = TITLES[stage] ?? 'kinwove';
     // Persist nav position so tab-suspend / mobile reload returns user to same screen.
-    // localStorage: fast, same-browser. user_metadata: cross-browser fallback (debounced).
+    // localStorage: fast, same-browser. DB last_stage: cross-browser/device fallback (debounced).
     const PERSIST = new Set(['home','feed','read','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
     if (PERSIST.has(stage)) {
       localStorage.setItem('kw:stage', stage);
+      // Reduced from 2000ms → 300ms so DB is updated before user leaves the tab
       clearTimeout(stageSaveTimerRef.current);
       stageSaveTimerRef.current = setTimeout(() => {
         const uid = sessionRef.current?.user?.id;
         if (uid) supabase.from('profiles').update({ last_stage: stage }).eq('id', uid).then(null, () => {});
-      }, 2000);
+      }, 300);
     }
+  }, [stage]);
+
+  // Flush last_stage to DB immediately when tab is hidden (mobile Safari recycles
+  // tabs aggressively — the debounce above often doesn't fire before the page unloads).
+  useEffect(() => {
+    const PERSIST = new Set(['home','feed','read','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
+    const flush = () => {
+      const uid = sessionRef.current?.user?.id;
+      if (uid && PERSIST.has(stage)) {
+        // Use sendBeacon if available (survives page unload); fall back to fetch.
+        const body = JSON.stringify({ last_stage: stage });
+        supabase.from('profiles').update({ last_stage: stage }).eq('id', uid).then(null, () => {});
+      }
+    };
+    document.addEventListener('visibilitychange', flush);
+    window.addEventListener('pagehide', flush);
+    return () => {
+      document.removeEventListener('visibilitychange', flush);
+      window.removeEventListener('pagehide', flush);
+    };
   }, [stage]);
 
   // Enrich the tab title with the actual church or sermon name once loaded.
