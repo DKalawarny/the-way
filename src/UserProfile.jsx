@@ -206,6 +206,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
   }, [actionMenuOpen]);
 
   return (
+    <>
     <div className="scene" style={{
       position: 'fixed',
       top: isDesktop ? 56 : 0,
@@ -675,7 +676,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
     {followListOpen && (
       <div
         onClick={() => setFollowListOpen(null)}
-        style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+        style={{ position: 'fixed', inset: 0, zIndex: 500, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
       >
         <div
           onClick={(e) => e.stopPropagation()}
@@ -725,5 +726,6 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
         </div>
       </div>
     )}
+    </>
   );
 }
