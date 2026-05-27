@@ -1704,7 +1704,18 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                   borderRadius: isAssistant ? '16px 16px 16px 4px' : '16px 16px 4px 16px',
                   padding: '10px 14px', fontSize: 14, fontFamily: T.serif, lineHeight: 1.65, whiteSpace: 'pre-wrap',
                 }}>
-                  {m.content || (isStreaming ? '…' : '')}
+                  {m.content || (isStreaming ? (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 18 }}>
+                      {[0, 0.16, 0.32].map((delay, k) => (
+                        <span key={k} style={{
+                          width: 7, height: 7, borderRadius: '50%',
+                          background: chatDark ? CC.muted : T.goldDark,
+                          display: 'inline-block',
+                          animation: `bounce 1.2s ease-in-out ${delay}s infinite`,
+                        }} />
+                      ))}
+                    </span>
+                  ) : '')}
                 </div>
               </div>
 
