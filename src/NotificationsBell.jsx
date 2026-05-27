@@ -48,12 +48,15 @@ function NotificationRow({ n, onClick, onFriendAction }) {
   }
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onClick(n)}
+      onKeyDown={(e) => e.key === 'Enter' && onClick(n)}
       style={{
         width: '100%', display: 'flex', gap: 11, alignItems: 'flex-start',
         background: unread ? 'rgba(184,115,58,0.08)' : 'transparent',
-        border: 'none', borderBottom: `1px solid ${T.line}`,
+        borderBottom: `1px solid ${T.line}`,
         padding: '12px 14px', cursor: 'pointer', textAlign: 'left',
         transition: 'background 0.15s',
       }}
@@ -137,7 +140,7 @@ function NotificationRow({ n, onClick, onFriendAction }) {
           boxShadow: '0 0 6px rgba(184,115,58,0.6)',
         }} />
       )}
-    </button>
+    </div>
   );
 }
 
