@@ -428,6 +428,7 @@ export default function PostCard({
   defaultCommentsOpen = false,
   onViewProfile,
   onViewChurch,
+  onPickWalk,
   isSaved = false,
   onSaveToggle,
   isPastor = false,
@@ -848,6 +849,44 @@ export default function PostCard({
           bodyForKind(effectiveItem, onViewProfile, onViewChurch, sessionUserId, onOpenSermon)
         )}
         {!editing && <PostImageGrid urls={effectiveItem.body?.image_urls} />}
+
+        {/* Walk announcement card */}
+        {!editing && item.body_data?.is_walk_announcement && (
+          <div style={{
+            marginTop: 12,
+            background: T.parchment,
+            border: `1px solid rgba(184,115,58,0.28)`,
+            borderRadius: 12,
+            padding: '12px 14px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}>
+            <div>
+              <div style={{ fontSize: 10.5, letterSpacing: 1.4, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 5 }}>
+                🚶 New Walk
+              </div>
+              <div style={{ fontFamily: T.serif, fontSize: 16, fontWeight: 600, color: T.ink, lineHeight: 1.3 }}>
+                {item.body_data.walk_emoji} {item.body_data.walk_title}
+              </div>
+            </div>
+            {onPickWalk && (
+              <button
+                onClick={() => onPickWalk(item.body_data.walk_id)}
+                style={{
+                  flexShrink: 0,
+                  background: T.ink, color: T.cream, border: 'none',
+                  borderRadius: 999, padding: '8px 14px',
+                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                View →
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {confirmingDelete && (

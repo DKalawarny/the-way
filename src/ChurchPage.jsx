@@ -882,6 +882,7 @@ export default function ChurchPage({
                     refreshKey={feedRefresh}
                     onOpenSermon={onOpenSermon}
                     onViewProfile={onViewProfile}
+                    onPickWalk={() => onOpenWalks?.()}
                     userPlan={profile?.plan ?? 'free'}
                     isPastor={isPastor}
                     emptyMessage={isPastor
