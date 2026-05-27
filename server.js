@@ -659,10 +659,14 @@ Quality bar for the closing question (apply these tests before writing it):
   ✓ GOOD — surfaces a hard implication: "If God's grace is really unconditional, what stops it from being used as an excuse?"
   ✓ GOOD — challenges an assumption: "We talk about forgiving others, but the passage says nothing about the other person deserving it. Does forgiveness require any response from the one forgiven?"
 
-Each daily must:
-  - Be 2–3 sentences of tight context or reflection that set up the question (concrete and specific — point at a real situation, person, or tension from the text, not a general principle), then one closing question on a new line.
-  - The closing question must be rooted in a specific moment from the topic for that day, have no single obvious answer, and be answerable by both a first-month believer and a 20-year elder without one dominating.
-  - Be one focused sentence per question — no sub-clauses, no "and also".
+Each daily must follow this exact structure in the "body" field:
+  1. The question — first, on its own line. One sentence, ends with a question mark. This is the thing the card leads with.
+  2. A blank line (\\n\\n).
+  3. 2–3 sentences of tight context that frame WHY this question is worth asking today — point at a specific moment, person, or tension from the text, not a general principle. This is the support, not the lead.
+
+  Quality rules:
+  - The question must be rooted in a specific moment from that day's topic, have no single obvious answer, and be answerable by both a first-month believer and a 20-year elder without one dominating.
+  - One focused sentence per question — no sub-clauses, no "and also".
   - Day 1: lowest barrier — easy for anyone to respond to. Final day: the most challenging or theologically unsettling of the week.
   - Do NOT attach a scripture citation unless a verse genuinely adds a new lens. Do NOT repeat the main passage as the topic. Do NOT reuse the same topic on two different days.
 
@@ -672,14 +676,22 @@ This is for someone who wants to sit alone with the text.
   Paragraph 2: One honest, unsettling question the passage raises that the sermon may not have fully resolved. Don't resolve it here either — let it sit.
 
 FOR KIDS — kid_version (write exactly 1)
-A parent reads this aloud to a 6–10 year old. It must do TWO things in this exact order, separated by a blank line:
-  1) A 3–5 sentence kid-friendly retelling of what the sermon was about. Use a real-world analogy a child can picture (a person, a situation, a choice). No abstract theology, no "God is like a light in the darkness" metaphors. Plain words a kid actually uses.
-  2) A blank line, then "Questions to talk about:" on its own line, then 2–3 numbered questions geared for that age range. Questions should be concrete and openable (e.g. "When was a time you wanted to share but didn't?" not "Why is sharing important?"). One short sentence each. No yes/no questions.
+A parent reads this aloud to a child aged 6–10. Keep it SHORT — the whole thing should take 30 seconds to read aloud. Structure EXACTLY like this, no exceptions:
+
+  Line 1: One sentence that says what the sermon was about in kid language. Name a real situation (a person, a choice, a moment) — no metaphors.
+  Line 2: One sentence that says why it mattered or what happened.
+  Blank line.
+  "Questions to talk about:" on its own line.
+  1. [One short concrete question — something the child can actually picture happening to them.]
+  2. [One short concrete question.]
+  3. [One short concrete question.]
+
+  Rules: No sentence longer than 12 words. No abstract theology. No "God is like..." metaphors. No yes/no questions. Questions must be things a 7-year-old has actually experienced (sharing, being left out, wanting something, being afraid, telling the truth).
 
 Output ONLY valid JSON. Schema:
 {
   "items": [
-    { "kind": "daily_verse",    "day": 1, "scripture": "Topic label (4–7 words)", "body": "2–3 sentence context + closing question." },
+    { "kind": "daily_verse",    "day": 1, "scripture": "Topic label (4–7 words)", "body": "The question on its own line?\\n\\n2–3 sentences of context that frame why this question matters." },
     ... days 1 through 7 ...
     { "kind": "going_deeper",   "body": "Two-paragraph deeper reflection." },
     { "kind": "kid_version",    "body": "Kid-friendly summary.\\n\\nQuestions to talk about:\\n1. ...\\n2. ...\\n3. ..." }
@@ -801,7 +813,7 @@ app.post('/api/sermon/generate', requireAuth, limitAuthed({ capacity: 12, refill
         : `No other days are filled in yet — pick the topic from the sermon that has the most discussion energy.`,
       `Pick a fresh topic, scene, or theological move from the sermon that the days above don't already cover. Apply the full DAILY QUESTIONS quality bar from the system prompt.`,
       `Output exactly one item in this exact shape (no other items, no commentary):`,
-      `{ "items": [ { "kind": "daily_verse", "day": ${singleDay ?? 1}, "scripture": "Topic label (4–7 words)", "body": "2–3 sentence context + closing question." } ] }`,
+      `{ "items": [ { "kind": "daily_verse", "day": ${singleDay ?? 1}, "scripture": "Topic label (4–7 words)", "body": "The question on its own line?\\n\\n2–3 sentences of context that frame why this question matters." } ] }`,
     ].join('\n\n');
     userContent = `${baseContent}\n\n${single}`;
   } else {

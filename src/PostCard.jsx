@@ -278,49 +278,107 @@ function bodyForKind(item, onViewProfile, onViewChurch, sessionUserId, onOpenSer
         </div>
       );
     case 'sermon_item': {
-      // Split body into context lines and the closing question.
-      // The closing question is the last non-empty line (ends with ?) or we show all as one block.
-      const lines = (b.text ?? '').split('\n').map((l) => l.trim()).filter(Boolean);
-      const lastLine = lines[lines.length - 1] ?? '';
-      const hasQuestion = lastLine.endsWith('?');
-      const contextLines = hasQuestion ? lines.slice(0, -1) : lines;
-      const question = hasQuestion ? lastLine : null;
+      // New format (2026-05-27): question is the FIRST line (ends with ?),
+      // followed by a blank line, then 2–3 sentences of context.
+      // Legacy format (context first, question last) is handled by fallback.
+      const rawText = b.text ?? '';
+      const paras = rawText.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+      const firstPara = paras[0] ?? '';
+      const isQuestionFirst = firstPara.endsWith('?');
+      let question, contextLines;
+      if (isQuestionFirst) {
+        question = firstPara;
+        contextLines = paras.slice(1);
+      } else {
+        // Legacy: question is the last non-empty line ending with ?
+        const lines = rawText.split('\n').map((l) => l.trim()).filter(Boolean);
+        const lastLine = lines[lines.length - 1] ?? '';
+        question = lastLine.endsWith('?') ? lastLine : null;
+        contextLines = question ? [lines.slice(0, -1).join(' ')] : [lines.join(' ')];
+      }
 
-      const ITEM_KIND_LABEL = {
-        going_deeper: 'Going deeper',
-        kid_version:  'For kids',
-        daily_verse:  'Discussion',
-      };
-      const kindLabel = ITEM_KIND_LABEL[b.item_kind] ?? 'Discussion';
-
-      return (
-        <div style={{ background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: 12, padding: '12px 14px' }}>
-          {/* Eyebrow */}
-          <div style={{ fontSize: 10.5, letterSpacing: 1.4, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: b.scripture ? 6 : 8 }}>
-            💬 {kindLabel}{b.day != null ? ` · Day ${b.day}` : ''}{b.sermon_title ? ` · ${b.sermon_title}` : ''}
+      // Kids version gets a completely different, simpler layout
+      if (b.item_kind === 'kid_version') {
+        // Parse: retelling lines before "Questions to talk about:", then numbered questions
+        const allLines = rawText.split('\n').map((l) => l.trim()).filter(Boolean);
+        const splitIdx = allLines.findIndex((l) => /questions to talk about/i.test(l));
+        const retelling = splitIdx > -1 ? allLines.slice(0, splitIdx) : allLines.slice(0, 2);
+        const qs = splitIdx > -1 ? allLines.slice(splitIdx + 1) : [];
+        return (
+          <div style={{ background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: 12, padding: '14px 16px' }}>
+            <div style={{ fontSize: 10.5, letterSpacing: 1.4, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 10 }}>
+              🧒 For kids{b.sermon_title ? ` · ${b.sermon_title}` : ''}
+            </div>
+            <div style={{ fontFamily: T.serif, fontSize: 15, lineHeight: 1.65, color: T.inkSoft, marginBottom: 14 }}>
+              {retelling.join(' ')}
+            </div>
+            {qs.length > 0 && (
+              <>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: T.inkMuted, marginBottom: 8 }}>
+                  Questions to talk about
+                </div>
+                {qs.map((q, i) => (
+                  <div key={i} style={{
+                    fontFamily: T.serif, fontSize: 15.5, fontWeight: 600, color: T.ink,
+                    lineHeight: 1.5, paddingLeft: 12, borderLeft: `3px solid ${T.gold}`,
+                    marginBottom: i < qs.length - 1 ? 10 : 0,
+                  }}>
+                    {q.replace(/^\d+\.\s*/, '')}
+                  </div>
+                ))}
+              </>
+            )}
           </div>
-          {/* Topic heading */}
-          {b.scripture && (
-            <div style={{ fontSize: 15, fontWeight: 700, color: T.ink, lineHeight: 1.3, marginBottom: 8 }}>
-              {b.scripture}
+        );
+      }
+
+      // Going deeper
+      if (b.item_kind === 'going_deeper') {
+        return (
+          <div style={{ background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: 12, padding: '14px 16px' }}>
+            <div style={{ fontSize: 10.5, letterSpacing: 1.4, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 10 }}>
+              📖 Going deeper{b.sermon_title ? ` · ${b.sermon_title}` : ''}
             </div>
-          )}
-          {/* Context paragraph */}
-          {contextLines.length > 0 && (
-            <div style={{ fontFamily: T.serif, fontSize: 15, lineHeight: 1.7, color: T.inkSoft, marginBottom: question ? 10 : 0 }}>
-              {contextLines.join('\n')}
+            <div style={{ fontFamily: T.serif, fontSize: 15, lineHeight: 1.75, color: T.ink, whiteSpace: 'pre-wrap' }}>
+              {rawText}
             </div>
-          )}
-          {/* Closing question — visually distinct */}
+          </div>
+        );
+      }
+
+      // Daily discussion — question leads
+      return (
+        <div style={{ background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: 12, padding: '14px 16px' }}>
+          {/* Eyebrow: Day number is the key info; sermon title is secondary context */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: T.goldDark }}>
+              💬 {b.day != null ? `Day ${b.day}` : 'Discussion'}
+            </span>
+            {b.sermon_title && (
+              <span style={{ fontSize: 11, color: T.inkMuted }}>· {b.sermon_title}</span>
+            )}
+          </div>
+          {/* Question — the hero */}
           {question && (
             <div style={{
-              fontFamily: T.serif, fontSize: 15.5, fontWeight: 600, lineHeight: 1.6,
-              color: T.ink, borderLeft: `3px solid ${T.gold}`, paddingLeft: 12, marginTop: contextLines.length ? 2 : 0,
+              fontFamily: T.serif, fontSize: 17, fontWeight: 600, lineHeight: 1.5,
+              color: T.ink, marginBottom: contextLines.length ? 12 : 0,
             }}>
               {question}
             </div>
           )}
-          {/* "Read full sermon" button removed — discussion items stand alone with inline comments */}
+          {/* Topic label — small, beneath the question */}
+          {b.scripture && (
+            <div style={{ fontSize: 11.5, color: T.goldDark, fontStyle: 'italic', marginBottom: contextLines.length ? 8 : 0 }}>
+              {b.scripture}
+            </div>
+          )}
+          {/* Context — supporting material */}
+          {contextLines.length > 0 && (
+            <div style={{ fontFamily: T.serif, fontSize: 14, lineHeight: 1.7, color: T.inkSoft }}>
+              {contextLines.join('\n\n')}
+            </div>
+          )}
         </div>
       );
     }
