@@ -1201,44 +1201,18 @@ useEffect(() => {
           .limit(20)
       : Promise.resolve({ data: [] });
 
-    // Church posts from churches the user follows — only in "All" view,
-    // only public posts. User opted in by following, so they see what the
-    // church posts without needing to be a member.
-    const churchPostPromise = (filter === 'all' && session?.user?.id)
-      ? supabase.from('church_follows').select('church_id').eq('user_id', session.user.id)
-          .then(async ({ data: follows }) => {
-            const ids = (follows ?? []).map((f) => f.church_id).filter(Boolean);
-            if (!ids.length) return { data: [] };
-            return supabase
-              .from('posts')
-              .select(`*, profiles!author_id(display_name, city, country, tradition, person_type, avatar_config, avatar_url, show_flag, flags), post_comments(id, body, created_at, profiles!author_id(display_name, avatar_config, avatar_url))`)
-              .eq('scope', 'church')
-              .in('scope_id', ids)
-              .eq('visibility', 'public')
-              .order('created_at', { ascending: false })
-              .limit(30);
-          })
-      : Promise.resolve({ data: [] });
-
-    const [{ data: postData, error: postErr }, { data: sermonData }, { data: churchPostData }] = await Promise.all([query, sermonPromise, churchPostPromise]);
+    const [{ data: postData, error: postErr }, { data: sermonData }] = await Promise.all([query, sermonPromise]);
     if (postErr || !postData) { setFeedError(true); setLoading(false); return; }
 
     const myId = session?.user?.id;
+    const visible = postData;
 
-    // Merge public posts + followed-church posts; deduplicate by ID, sort newest first
-    const merged = [...postData];
-    const seenIds = new Set(postData.map((p) => p.id));
-    for (const cp of (churchPostData ?? [])) {
-      if (!seenIds.has(cp.id)) { merged.push(cp); seenIds.add(cp.id); }
-    }
-    merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-    const postIds = merged.map((p) => p.id);
+    const postIds = visible.map((p) => p.id);
     const { data: reactions } = postIds.length
       ? await supabase.from('reactions').select('post_id, kind, author_id').in('post_id', postIds)
       : { data: [] };
 
-    const enriched = merged.map((p) => {
+    const enriched = visible.map((p) => {
       const postReactions = reactions?.filter((r) => r.post_id === p.id) ?? [];
       const counts = {};
       postReactions.forEach((r) => { counts[r.kind] = (counts[r.kind] ?? 0) + 1; });
@@ -1246,13 +1220,11 @@ useEffect(() => {
       return { ...p, reaction_counts: counts, my_reaction: myReaction, reply_count: p.post_comments?.length ?? 0 };
     });
 
-    // Hydrate pastor profiles + church names for sermon items AND church posts
+    // Hydrate pastor profiles + church names for sermon items so the byline
+    // can read "Pastor X · Y Church" without each card re-fetching.
     const sermons = sermonData ?? [];
     const pastorIds = [...new Set(sermons.map((s) => s.author_id).filter(Boolean))];
-    const churchIds = [...new Set([
-      ...sermons.map((s) => s.scope_id),
-      ...(churchPostData ?? []).map((p) => p.scope_id),
-    ].filter(Boolean))];
+    const churchIds = [...new Set(sermons.map((s) => s.scope_id).filter(Boolean))];
     const [{ data: pastors }, { data: churches }] = await Promise.all([
       pastorIds.length
         ? supabase.from('profiles').select('id, display_name, avatar_config, avatar_url').in('id', pastorIds)
