@@ -46,8 +46,10 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
       supabase.from('posts').select('*', { count: 'exact', head: true }).eq('author_id', userId),
       supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', userId),
       supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', userId),
-    ]).then(([{ count: p }, { count: ing }, { count: ers }]) => {
-      setStats({ posts: p ?? 0, following: ing ?? 0, followers: ers ?? 0 });
+      supabase.from('friend_requests').select('id', { count: 'exact', head: true })
+        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`).eq('status', 'accepted'),
+    ]).then(([{ count: p }, { count: ing }, { count: ers }, { count: fr }]) => {
+      setStats({ posts: p ?? 0, following: ing ?? 0, followers: ers ?? 0, friends: fr ?? 0 });
     });
     if (session?.user?.id) {
       supabase.from('follows').select('id').eq('follower_id', session.user.id).eq('following_id', userId)
@@ -128,9 +130,14 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
     if (kind === 'following') {
       const { data } = await supabase.from('follows').select('following_id').eq('follower_id', userId);
       ids = (data ?? []).map((r) => r.following_id);
-    } else {
+    } else if (kind === 'followers') {
       const { data } = await supabase.from('follows').select('follower_id').eq('following_id', userId);
       ids = (data ?? []).map((r) => r.follower_id);
+    } else if (kind === 'friends') {
+      const { data } = await supabase.from('friend_requests')
+        .select('sender_id, receiver_id').eq('status', 'accepted')
+        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+      ids = (data ?? []).map((r) => r.sender_id === userId ? r.receiver_id : r.sender_id);
     }
     if (!ids.length) { setFollowListLoading(false); return; }
     const { data: profiles } = await supabase
@@ -450,9 +457,10 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
           {(stats.posts > 0 || stats.following > 0 || stats.followers > 0) && (
             <div style={{ display: 'flex', gap: 24, paddingTop: 14, borderTop: `1px solid ${T.line}` }}>
               {[
-                { value: stats.posts, label: 'Posts', kind: null },
-                { value: stats.following, label: 'Following', kind: 'following' },
-                { value: stats.followers, label: 'Followers', kind: 'followers' },
+                { value: stats.posts,      label: 'Posts',      kind: null },
+                { value: stats.friends,    label: 'Friends',    kind: 'friends' },
+                { value: stats.following,  label: 'Following',  kind: 'following' },
+                { value: stats.followers,  label: 'Followers',  kind: 'followers' },
               ].map((s) => (
                 <div
                   key={s.label}
@@ -692,7 +700,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.ink,
           }}>
-            {followListOpen === 'following' ? 'Following' : 'Followers'}
+            {{ following: 'Following', followers: 'Followers', friends: 'Friends' }[followListOpen]}
             <button onClick={() => setFollowListOpen(null)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>×</button>
           </div>
           {/* List */}
@@ -702,7 +710,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
             )}
             {!followListLoading && followListData.length === 0 && (
               <div style={{ padding: '40px 24px', textAlign: 'center', color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', fontSize: 14 }}>
-                {followListOpen === 'following' ? 'Not following anyone yet.' : 'No followers yet.'}
+                {{ following: 'Not following anyone yet.', followers: 'No followers yet.', friends: 'No friends yet.' }[followListOpen]}
               </div>
             )}
             {!followListLoading && followListData.map((p) => (

@@ -1191,9 +1191,10 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
               borderTop: `1px solid ${T.line}`, borderBottom: `1px solid ${T.line}`, marginBottom: 14,
             }}>
               {[
-                { value: stats.posts,     label: 'Posts',     onClick: null },
-                { value: stats.following, label: 'Following', onClick: () => setTab('following') },
-                { value: stats.followers, label: 'Followers', onClick: async () => {
+                { value: stats.posts,          label: 'Posts',     onClick: null },
+                { value: friendsList.length,   label: 'Friends',   onClick: () => setTab('friends') },
+                { value: stats.following,      label: 'Following', onClick: () => setTab('following') },
+                { value: stats.followers,      label: 'Followers', onClick: async () => {
                   setFollowersOpen(true);
                   if (followersList.length > 0) return;
                   setFollowersLoading(true);
