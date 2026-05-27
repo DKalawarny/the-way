@@ -7,6 +7,7 @@ import { useUiKit, EmptyState, TextButton } from './uikit.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
 import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
+import { Avatar } from './ProfilePage.jsx';
 
 /**
  * Threaded discussion anchored to either:
@@ -54,7 +55,7 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
     const ids = [...new Set(list.filter((r) => !r.is_anonymous).map((r) => r.author_id))];
     if (ids.length) {
       const [{ data: profs }, { data: roleRows }] = await Promise.all([
-        supabase.from('profiles').select('id, display_name').in('id', ids),
+        supabase.from('profiles').select('id, display_name, avatar_config, avatar_url').in('id', ids),
         churchId
           ? supabase.from('church_roles')
               .select('id, user_id, role_key, role_label')
@@ -140,14 +141,32 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
   function Bubble({ row, depth = 0 }) {
     const isMine = row.author_id === sessionUserId;
     const canDelete = isMine || isPastor;
-    const name = row.is_anonymous ? 'Anonymous' : (profMap[row.author_id]?.display_name || 'Someone');
+    const prof = profMap[row.author_id];
+    const name = row.is_anonymous ? 'Anonymous' : (prof?.display_name || 'Someone');
     return (
       <div style={{ marginLeft: depth * 22, marginTop: 8 }}>
         <div style={{
           background: T.white, border: `1px solid ${T.line}`, borderRadius: 12,
           padding: '10px 12px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
+            {!row.is_anonymous && (
+              <Avatar
+                name={prof?.display_name}
+                avatarConfig={prof?.avatar_config}
+                photoUrl={prof?.avatar_url}
+                size={30}
+              />
+            )}
+            {row.is_anonymous && (
+              <div style={{
+                width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+                background: T.line, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, color: T.inkMuted, fontWeight: 700,
+              }}>·</div>
+            )}
+            <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{name}</span>
             {!row.is_anonymous && rolesMap[row.author_id]?.length > 0 && (
               <BadgeList roles={rolesMap[row.author_id]} />
@@ -170,6 +189,8 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
             background: 'none', border: 'none', color: T.goldDark, fontSize: 12, cursor: 'pointer',
             marginTop: 4, padding: '6px 0', fontWeight: 600, minHeight: 28,
           }}>↳ Reply</button>
+            </div>
+          </div>
         </div>
         {repliesOf(row.id).map((r) => <Bubble key={r.id} row={r} depth={depth + 1} />)}
       </div>
