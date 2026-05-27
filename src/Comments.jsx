@@ -213,6 +213,7 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
           }}
           placeholder="Write a comment…"
           rows={2}
+          autoFocus
           style={{
             width: '100%', boxSizing: 'border-box',
             border: `1px solid ${T.line}`, borderRadius: 10, padding: '8px 12px',

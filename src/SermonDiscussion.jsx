@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { BadgeList } from './Badge.jsx';
@@ -34,6 +34,7 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
   const [open, setOpen]       = useState(defaultOpen);
   const { showToast, askConfirm, ui: uikitUi } = useUiKit();
   const imageDrafts = useImageDrafts(4);
+  const textareaRef = useRef(null);
 
   // Which anchor column to filter / insert against. The component is a no-op
   // if neither is provided, but that's a developer error — render nothing
@@ -79,6 +80,11 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
     if (!open) return;
     reload();
   }, [anchorCol, anchorVal, open]);
+
+  // Focus the textarea whenever a reply target is set (or when the composer first mounts open)
+  useEffect(() => {
+    if (open) requestAnimationFrame(() => textareaRef.current?.focus());
+  }, [replyTo, open]);
 
   async function submit() {
     if (!sessionUserId || !text.trim() || !anchorVal) return;
@@ -229,6 +235,7 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
           </div>
         )}
         <textarea
+          ref={textareaRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={replyTo ? 'Write a reply…' : 'Share a thought…'}
