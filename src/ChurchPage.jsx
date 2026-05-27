@@ -1368,41 +1368,35 @@ export default function ChurchPage({
               if (!rows.length) return null;
               return (
                 <div style={{
-                  background: T.white, border: `1px solid ${T.line}`,
-                  borderRadius: 14, overflow: 'hidden', marginBottom: 16,
+                  background: T.parchment,
+                  border: `1px solid rgba(184,115,58,0.18)`,
+                  borderRadius: 16, padding: '6px 0', marginBottom: 16,
                 }}>
-                  <div style={{
-                    fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase',
-                    color: T.inkMuted, fontWeight: 700,
-                    padding: '14px 18px 10px',
-                    borderBottom: `1px solid ${T.line}`,
-                  }}>
-                    Church details
-                  </div>
                   {rows.map((row, i) => (
                     <div key={row.label} style={{
-                      display: 'flex', alignItems: 'flex-start', gap: 14,
-                      padding: '13px 18px',
-                      borderBottom: i < rows.length - 1 ? `1px solid ${T.line}` : 'none',
+                      display: 'flex', alignItems: 'center', gap: 14,
+                      padding: '12px 18px',
+                      borderBottom: i < rows.length - 1 ? `1px solid rgba(184,115,58,0.12)` : 'none',
                     }}>
                       <div style={{
-                        width: 32, height: 32, borderRadius: 8,
-                        background: 'rgba(184,115,58,0.08)',
+                        width: 34, height: 34, borderRadius: 10,
+                        background: T.white,
+                        boxShadow: '0 1px 3px rgba(44,24,16,0.08)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         flexShrink: 0, color: T.goldDark,
                       }}>
                         <row.Icon size={15} strokeWidth={1.8} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 11, color: T.inkMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>
+                        <div style={{ fontSize: 11, color: T.inkMuted, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 1 }}>
                           {row.label}
                         </div>
                         {row.href ? (
-                          <a href={row.href} target="_blank" rel="noreferrer" style={{ fontSize: 14, color: T.goldDark, textDecoration: 'none', lineHeight: 1.45 }}>
-                            {row.value}
+                          <a href={row.href} target="_blank" rel="noreferrer" style={{ fontSize: 14, color: T.goldDark, textDecoration: 'none', fontWeight: 500 }}>
+                            {row.value} ↗
                           </a>
                         ) : (
-                          <div style={{ fontSize: 14, color: T.ink, lineHeight: 1.45 }}>{row.value}</div>
+                          <div style={{ fontSize: 14.5, color: T.ink, fontWeight: 500 }}>{row.value}</div>
                         )}
                       </div>
                     </div>
@@ -1426,15 +1420,34 @@ export default function ChurchPage({
             {/* Pinned post — visitor-facing only. Pastor edits this in Pastor settings. */}
             {church.pinned_post && (
               <div style={{
-                background: 'rgba(184,115,58,0.06)', border: `1px solid ${T.goldLight}`,
-                borderLeft: `4px solid ${T.gold}`, borderRadius: 12, padding: '16px 18px', marginBottom: 16,
+                background: T.parchment,
+                border: `1px solid rgba(184,115,58,0.18)`,
+                borderRadius: 16, padding: '20px 22px', marginBottom: 16,
               }}>
-                <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center' }}>
-                  <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> From the pastor
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 7,
+                  fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase',
+                  color: T.goldDark, fontWeight: 700, marginBottom: 14,
+                }}>
+                  <KinwoveStar size={11} />
+                  A note from the pastor
                 </div>
-                <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+                <div style={{
+                  fontFamily: T.serif, fontSize: 15.5, color: T.ink,
+                  lineHeight: 1.75, whiteSpace: 'pre-wrap',
+                  fontStyle: 'italic',
+                }}>
                   {church.pinned_post}
                 </div>
+                {church.pastor?.display_name && (
+                  <div style={{
+                    marginTop: 14,
+                    fontSize: 13, color: T.inkSoft, fontWeight: 600,
+                    paddingTop: 12, borderTop: `1px solid rgba(184,115,58,0.14)`,
+                  }}>
+                    — {church.pastor.display_name}
+                  </div>
+                )}
               </div>
             )}
 
