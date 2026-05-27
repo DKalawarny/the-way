@@ -1241,12 +1241,8 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
         </div>
 
 
-        {/* ── Plan & AI usage — quiet one-liner ────────────────────────────── */}
-        {!aiUsage.loading && (
-          <div style={{ padding: '0 20px 14px' }}>
-            <PlanLine plan={profile?.plan ?? 'free'} aiUsage={aiUsage} session={session} />
-          </div>
-        )}
+        {/* ── Plan & AI usage — hidden until Stripe upgrade flow is live ──── */}
+        {/* <PlanLine plan={profile?.plan ?? 'free'} aiUsage={aiUsage} session={session} /> */}
 
         {/* Tabs — 4 tabs, gold accent, hairline anchor */}
         <div style={{
