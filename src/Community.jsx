@@ -1260,6 +1260,8 @@ useEffect(() => {
     // Followers see: (a) pastor-authored public posts and (b) the latest
     // published sermon as a teaser card — same as following a church on any
     // platform: you see official content, not private congregation messages.
+    // Followers see sermon teasers only — no individual church posts bleed
+    // into the community feed. Church posts stay private to the congregation.
     const churchPostPromise = (filter === 'all' && session?.user?.id)
       ? supabase.from('church_follows').select('church_id').eq('user_id', session.user.id)
           .then(async ({ data: follows }) => {
@@ -1267,42 +1269,24 @@ useEffect(() => {
             const memberChurchId = profile?.church_id;
             const ids = (follows ?? []).map((f) => f.church_id).filter((id) => id && id !== memberChurchId);
             if (!ids.length) return { data: [], sermonTeasers: [] };
-            // Church metadata: pastor_id + name
+            // Church names for teaser cards
             const { data: churchRows } = await supabase
-              .from('churches').select('id, pastor_id, name').in('id', ids);
-            const pastorByChurch = {};
+              .from('churches').select('id, name').in('id', ids);
             const nameByChurch = {};
-            (churchRows ?? []).forEach((c) => {
-              if (c.pastor_id) pastorByChurch[c.id] = c.pastor_id;
-              nameByChurch[c.id] = c.name ?? '';
-            });
-            // Fetch pastor posts + latest published sermons in parallel
-            const [{ data: posts }, { data: sermons }] = await Promise.all([
-              supabase
-                .from('posts')
-                .select(`*, profiles!author_id(display_name, city, country, tradition, person_type, avatar_config, avatar_url, show_flag, flags), post_comments(id, body, created_at, profiles!author_id(display_name, avatar_config, avatar_url))`)
-                .eq('scope', 'church')
-                .in('scope_id', ids)
-                .eq('visibility', 'public')
-                .eq('is_anonymous', false)
-                .order('created_at', { ascending: false })
-                .limit(30),
-              supabase
-                .from('sermons')
-                .select('id, title, scripture_ref, summary, week_starts_on, church_id')
-                .in('church_id', ids)
-                .eq('is_published', true)
-                .order('week_starts_on', { ascending: false })
-                .limit(ids.length * 3),
-            ]);
-            // Pastor posts only
-            const pastorPosts = (posts ?? []).filter((p) => pastorByChurch[p.scope_id] === p.author_id);
-            // Latest sermon per church (already ordered newest-first)
+            (churchRows ?? []).forEach((c) => { nameByChurch[c.id] = c.name ?? ''; });
+            // Latest published sermon per followed church — one teaser each
+            const { data: sermons } = await supabase
+              .from('sermons')
+              .select('id, title, scripture_ref, summary, week_starts_on, church_id')
+              .in('church_id', ids)
+              .eq('is_published', true)
+              .order('week_starts_on', { ascending: false })
+              .limit(ids.length * 3);
             const seenChurches = new Set();
             const sermonTeasers = (sermons ?? [])
               .filter((s) => { if (seenChurches.has(s.church_id)) return false; seenChurches.add(s.church_id); return true; })
               .map((s) => ({ ...s, churchName: nameByChurch[s.church_id] ?? '' }));
-            return { data: pastorPosts, sermonTeasers };
+            return { data: [], sermonTeasers };
           })
       : Promise.resolve({ data: [], sermonTeasers: [] });
 
@@ -1336,13 +1320,10 @@ useEffect(() => {
       return { ...p, reaction_counts: counts, my_reaction: myReaction, reply_count: p.post_comments?.length ?? 0 };
     });
 
-    // Hydrate pastor profiles + church names for sermon items AND church posts
+    // Hydrate pastor profiles + church names for sermon feed_items
     const sermons = sermonData ?? [];
     const pastorIds = [...new Set(sermons.map((s) => s.author_id).filter(Boolean))];
-    const churchIds = [...new Set([
-      ...sermons.map((s) => s.scope_id),
-      ...(churchPostData ?? []).map((p) => p.scope_id),
-    ].filter(Boolean))];
+    const churchIds = [...new Set(sermons.map((s) => s.scope_id).filter(Boolean))];
     const [{ data: pastors }, { data: churches }] = await Promise.all([
       pastorIds.length
         ? supabase.from('profiles').select('id, display_name, avatar_config, avatar_url').in('id', pastorIds)
