@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 
@@ -389,6 +389,7 @@ function WalkDay({ walk, step, progress, day, onAdvance, onPrev, onNext, onBack,
 
 export default function Walks({ session, onClose }) {
   const [view, setView] = useState('library');     // 'library' | 'overview' | 'day'
+  const scrollRef = useRef(null);
   const [walks, setWalks] = useState([]);
   const [progressMap, setProgressMap] = useState({});  // walk_id → progress row
   const [selected, setSelected] = useState(null);
@@ -396,6 +397,14 @@ export default function Walks({ session, onClose }) {
   const [day, setDay] = useState(1);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+
+  // Scroll to top whenever the user moves to a new day
+  useEffect(() => {
+    if (view === 'day') {
+      scrollRef.current?.scrollTo({ top: 0, behavior: 'instant' });
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  }, [day, view]);
 
   useEffect(() => {
     let active = true;
@@ -502,7 +511,7 @@ export default function Walks({ session, onClose }) {
   const fresh      = walks.filter((w) => !progressMap[w.id]);
 
   return (
-    <div style={{ minHeight: '100vh', background: T.cream, padding: '32px 20px 80px', overflowY: 'auto' }}>
+    <div ref={scrollRef} style={{ minHeight: '100vh', background: T.cream, padding: '32px 20px 80px', overflowY: 'auto' }}>
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
         {view === 'library' && (
           <>
