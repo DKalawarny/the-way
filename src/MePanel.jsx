@@ -631,6 +631,9 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
   const [posts, setPosts] = useState([]);
   const [stats, setStats] = useState({ posts: 0, following: 0, followers: 0 });
   const [followingList, setFollowingList] = useState([]);
+  const [followersList, setFollowersList] = useState([]);
+  const [followersLoading, setFollowersLoading] = useState(false);
+  const [followersOpen, setFollowersOpen] = useState(false);
   const [friendsList, setFriendsList] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]); // incoming pending
   const [tab, setTab] = useState('posts');
@@ -1188,14 +1191,32 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
               borderTop: `1px solid ${T.line}`, borderBottom: `1px solid ${T.line}`, marginBottom: 14,
             }}>
               {[
-                { value: stats.posts, label: 'Posts' },
-                { value: stats.following, label: 'Following' },
-                { value: stats.followers, label: 'Followers' },
+                { value: stats.posts,     label: 'Posts',     onClick: null },
+                { value: stats.following, label: 'Following', onClick: () => setTab('following') },
+                { value: stats.followers, label: 'Followers', onClick: async () => {
+                  setFollowersOpen(true);
+                  if (followersList.length > 0) return;
+                  setFollowersLoading(true);
+                  const uid = session?.user?.id;
+                  const { data } = await supabase.from('follows').select('follower_id').eq('following_id', uid);
+                  const ids = (data ?? []).map((r) => r.follower_id);
+                  if (ids.length) {
+                    const { data: profs } = await supabase.from('profiles').select('id, display_name, avatar_config, avatar_url').in('id', ids);
+                    setFollowersList(profs ?? []);
+                  }
+                  setFollowersLoading(false);
+                }},
               ].map((s) => (
-                <div key={s.label} style={{ cursor: 'default' }}>
+                <div
+                  key={s.label}
+                  onClick={s.onClick ?? undefined}
+                  style={{ cursor: s.onClick ? 'pointer' : 'default' }}
+                >
                   <span style={{ fontFamily: T.display, fontSize: 20, fontWeight: 500, color: T.ink, marginRight: 5, letterSpacing: '-0.01em' }}>{s.value}</span>
                   <span style={{
-                    fontSize: 12, color: T.inkSoft, fontWeight: 400,
+                    fontSize: 12, color: s.onClick ? T.goldDark : T.inkSoft,
+                    fontWeight: s.onClick ? 600 : 400,
+                    textDecoration: s.onClick ? 'underline' : 'none',
                   }}>{s.label}</span>
                 </div>
               ))}
@@ -2031,6 +2052,57 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
           </div>
         )}
       </div>
+
+      {/* ── Followers modal ────────────────────────────────────── */}
+      {followersOpen && (
+        <div
+          onClick={() => setFollowersOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: T.white, borderRadius: 18, width: '100%', maxWidth: 400,
+              maxHeight: '70vh', display: 'flex', flexDirection: 'column',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.18)', overflow: 'hidden',
+            }}
+          >
+            <div style={{
+              padding: '16px 20px', borderBottom: `1px solid ${T.line}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.ink,
+            }}>
+              Followers
+              <button onClick={() => setFollowersOpen(false)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>×</button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {followersLoading && (
+                <div style={{ padding: 32, textAlign: 'center', color: T.inkMuted, fontFamily: T.serif, fontSize: 14 }}>Loading…</div>
+              )}
+              {!followersLoading && followersList.length === 0 && (
+                <div style={{ padding: '40px 24px', textAlign: 'center', color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', fontSize: 14 }}>No followers yet.</div>
+              )}
+              {!followersLoading && followersList.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => { setFollowersOpen(false); onViewProfile?.(p.id); }}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                    padding: '12px 20px', background: 'none', border: 'none',
+                    borderBottom: `1px solid ${T.line}`, cursor: 'pointer', textAlign: 'left',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = T.parchment}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                >
+                  <Avatar name={p.display_name} avatarConfig={p.avatar_config} photoUrl={p.avatar_url} size={38} />
+                  <span style={{ fontSize: 14, fontWeight: 600, color: T.ink }}>{p.display_name}</span>
+                  <span style={{ marginLeft: 'auto', color: T.goldDark, fontSize: 14 }}>→</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
