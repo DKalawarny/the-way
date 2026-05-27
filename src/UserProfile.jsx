@@ -13,6 +13,9 @@ const PostComposer  = lazy(() => import('./PostComposer.jsx'));
 export default function UserProfile({ userId, session, onClose, onStartChat, onStartDM, onViewProfile, onOpenChurch, onOpenSermon }) {
   const [profile, setProfile] = useState(null);
   const [followingList, setFollowingList] = useState([]);
+  const [followListOpen, setFollowListOpen] = useState(null); // null | 'following' | 'followers'
+  const [followListData, setFollowListData] = useState([]);
+  const [followListLoading, setFollowListLoading] = useState(false);
   const [stats, setStats] = useState({ posts: 0, following: 0, followers: 0 });
   const [isFollowing, setIsFollowing] = useState(false);
   // friendStatus: 'none' | 'pending-sent' | 'pending-received' | 'friends'
@@ -115,6 +118,26 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
       setIsFollowing(true);
       setStats((s) => ({ ...s, followers: s.followers + 1 }));
     }
+  }
+
+  async function openFollowList(kind) {
+    setFollowListOpen(kind);
+    setFollowListLoading(true);
+    setFollowListData([]);
+    let ids = [];
+    if (kind === 'following') {
+      const { data } = await supabase.from('follows').select('following_id').eq('follower_id', userId);
+      ids = (data ?? []).map((r) => r.following_id);
+    } else {
+      const { data } = await supabase.from('follows').select('follower_id').eq('following_id', userId);
+      ids = (data ?? []).map((r) => r.follower_id);
+    }
+    if (!ids.length) { setFollowListLoading(false); return; }
+    const { data: profiles } = await supabase
+      .from('profiles').select('id, display_name, avatar_config, avatar_url')
+      .in('id', ids);
+    setFollowListData(profiles ?? []);
+    setFollowListLoading(false);
   }
 
   async function loadPublicPrayers() {
@@ -415,13 +438,21 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
           {(stats.posts > 0 || stats.following > 0 || stats.followers > 0) && (
             <div style={{ display: 'flex', gap: 24, paddingTop: 14, borderTop: `1px solid ${T.line}` }}>
               {[
-                { value: stats.posts, label: 'Posts' },
-                { value: stats.following, label: 'Following' },
-                { value: stats.followers, label: 'Followers' },
+                { value: stats.posts, label: 'Posts', kind: null },
+                { value: stats.following, label: 'Following', kind: 'following' },
+                { value: stats.followers, label: 'Followers', kind: 'followers' },
               ].map((s) => (
-                <div key={s.label}>
-                  <span style={{ fontFamily: T.display, fontSize: 21, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>{s.value}</span>
-                  <span style={{ fontSize: 12, color: T.inkMuted, marginLeft: 5 }}>{s.label}</span>
+                <div
+                  key={s.label}
+                  onClick={() => s.kind && openFollowList(s.kind)}
+                  style={{ cursor: s.kind ? 'pointer' : 'default' }}
+                >
+                  <span style={{ fontFamily: T.display, fontSize: 21, fontWeight: 600, color: T.kind ? T.goldDark : T.ink, letterSpacing: '-0.015em' }}>{s.value}</span>
+                  <span style={{
+                    fontSize: 12, color: s.kind ? T.goldDark : T.inkMuted, marginLeft: 5,
+                    fontWeight: s.kind ? 600 : 400,
+                    textDecoration: s.kind ? 'underline' : 'none',
+                  }}>{s.label}</span>
                 </div>
               ))}
             </div>
@@ -646,5 +677,60 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
       </>)}
       </div>{/* /centered column */}
     </div>
+
+    {/* ── Following / Followers modal ──────────────────────────── */}
+    {followListOpen && (
+      <div
+        onClick={() => setFollowListOpen(null)}
+        style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            background: T.white, borderRadius: 18, width: '100%', maxWidth: 400,
+            maxHeight: '70vh', display: 'flex', flexDirection: 'column',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.18)', overflow: 'hidden',
+          }}
+        >
+          {/* Header */}
+          <div style={{
+            padding: '16px 20px', borderBottom: `1px solid ${T.line}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.ink,
+          }}>
+            {followListOpen === 'following' ? 'Following' : 'Followers'}
+            <button onClick={() => setFollowListOpen(null)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>×</button>
+          </div>
+          {/* List */}
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            {followListLoading && (
+              <div style={{ padding: 32, textAlign: 'center', color: T.inkMuted, fontFamily: T.serif, fontSize: 14 }}>Loading…</div>
+            )}
+            {!followListLoading && followListData.length === 0 && (
+              <div style={{ padding: '40px 24px', textAlign: 'center', color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', fontSize: 14 }}>
+                {followListOpen === 'following' ? 'Not following anyone yet.' : 'No followers yet.'}
+              </div>
+            )}
+            {!followListLoading && followListData.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => { setFollowListOpen(null); onViewProfile?.(p.id); }}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '12px 20px', background: 'none', border: 'none',
+                  borderBottom: `1px solid ${T.line}`, cursor: 'pointer', textAlign: 'left',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = T.parchment}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+              >
+                <Avatar name={p.display_name} avatarConfig={p.avatar_config} photoUrl={p.avatar_url} size={38} />
+                <span style={{ fontSize: 14, fontWeight: 600, color: T.ink }}>{p.display_name}</span>
+                <span style={{ marginLeft: 'auto', color: T.goldDark, fontSize: 14 }}>→</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
   );
 }
