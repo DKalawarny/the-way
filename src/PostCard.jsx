@@ -589,6 +589,9 @@ export default function PostCard({
           </div>
           <div style={{ fontSize: 11.5, color: T.inkMuted }}>
             {relativeTime(item.created_at)}
+            {showAsChurch && !item.is_anonymous && authorProfile?.display_name && (
+              <> · by {authorProfile.display_name}</>
+            )}
             {item.scope === 'church' && !showAsChurch && churchInfo?.name && ` · in ${churchInfo.name}`}
             {item.source === 'post' && localVisibility !== 'public' && ` · ${visMeta.emoji} ${visMeta.label}`}
             {hiddenLocally && ' · hidden from your profile'}
