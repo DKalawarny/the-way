@@ -1201,22 +1201,30 @@ useEffect(() => {
           .limit(20)
       : Promise.resolve({ data: [] });
 
-    // Public posts from followed churches — same as following someone on any
-    // social platform: you see their PUBLIC posts, not their private messages.
-    // visibility='public' gate ensures private congregation posts stay in church only.
+    // Pastor-authored public posts from followed churches.
+    // Followers see what the pastor intentionally publishes — not every
+    // member's post, and not anonymous posts (can't verify those are the pastor).
     const churchPostPromise = (filter === 'all' && session?.user?.id)
       ? supabase.from('church_follows').select('church_id').eq('user_id', session.user.id)
           .then(async ({ data: follows }) => {
             const ids = (follows ?? []).map((f) => f.church_id).filter(Boolean);
             if (!ids.length) return { data: [] };
-            return supabase
+            // Fetch pastor_id for each followed church so we can filter by author
+            const { data: churchRows } = await supabase
+              .from('churches').select('id, pastor_id').in('id', ids);
+            const pastorByChurch = {};
+            (churchRows ?? []).forEach((c) => { if (c.pastor_id) pastorByChurch[c.id] = c.pastor_id; });
+            const { data: posts } = await supabase
               .from('posts')
               .select(`*, profiles!author_id(display_name, city, country, tradition, person_type, avatar_config, avatar_url, show_flag, flags), post_comments(id, body, created_at, profiles!author_id(display_name, avatar_config, avatar_url))`)
               .eq('scope', 'church')
               .in('scope_id', ids)
               .eq('visibility', 'public')
+              .eq('is_anonymous', false)
               .order('created_at', { ascending: false })
               .limit(30);
+            // Keep only posts authored by that church's pastor
+            return { data: (posts ?? []).filter((p) => pastorByChurch[p.scope_id] === p.author_id) };
           })
       : Promise.resolve({ data: [] });
 
