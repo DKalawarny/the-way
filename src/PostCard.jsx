@@ -540,15 +540,14 @@ export default function PostCard({
     }
   }
 
-  // Byline
+  // Byline — person is always primary; church goes in the subline as context
   const showAsChurch = item.scope === 'church' && churchInfo;
   let displayName, avatarLabel;
   if (item.is_anonymous) {
     displayName = 'Anonymous'; avatarLabel = '·';
-  } else if (showAsChurch) {
-    displayName = churchInfo.name ?? 'Church'; avatarLabel = '⛪';
   } else {
-    displayName = authorProfile?.display_name ?? 'Someone'; avatarLabel = (displayName[0] ?? '·').toUpperCase();
+    displayName = authorProfile?.display_name ?? 'Someone';
+    avatarLabel = (displayName[0] ?? '·').toUpperCase();
   }
 
   if (deletedLocally) return null;
@@ -571,7 +570,7 @@ export default function PostCard({
           onClick={() => !item.is_anonymous && onViewProfile?.(item.author_id)}
           style={{
             width: 32, height: 32, borderRadius: '50%',
-            background: showAsChurch ? T.parchment : (item.is_anonymous ? T.line : T.parchment),
+            background: item.is_anonymous ? T.line : T.parchment,
             color: T.goldDark,
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 13, fontWeight: 700,
@@ -591,22 +590,19 @@ export default function PostCard({
             >
               {displayName}
             </span>
-            {!item.is_anonymous && !showAsChurch && authorProfile?.show_flag && (authorProfile?.flags ?? []).length > 0 && (
+            {!item.is_anonymous && authorProfile?.show_flag && (authorProfile?.flags ?? []).length > 0 && (
               <span style={{ fontSize: 14, lineHeight: 1 }}>{codeToFlag(authorProfile.flags[0])}</span>
             )}
-            {!item.is_anonymous && !showAsChurch && authorRoles && authorRoles.length > 0 && (
+            {!item.is_anonymous && authorRoles && authorRoles.length > 0 && (
               <BadgeList roles={authorRoles} />
             )}
           </div>
           <div style={{ fontSize: 11.5, color: T.inkMuted }}>
             {relativeTime(item.created_at)}
-            {showAsChurch && !item.is_anonymous && authorProfile?.display_name && (
-              <> · by {authorProfile.display_name}</>
-            )}
-            {item.scope === 'church' && !showAsChurch && churchInfo?.name && ` · in ${churchInfo.name}`}
+            {item.scope === 'church' && churchInfo?.name && <> · in {churchInfo.name}</>}
             {item.source === 'post' && localVisibility !== 'public' && ` · ${visMeta.emoji} ${visMeta.label}`}
             {hiddenLocally && ' · hidden from your profile'}
-            {!item.is_anonymous && !showAsChurch && (authorProfile?.flags ?? []).length > 0 && (
+            {!item.is_anonymous && (authorProfile?.flags ?? []).length > 0 && (
               <span style={{ marginLeft: 6, fontSize: 13 }}>
                 {(authorProfile.flags).map(codeToFlag).join(' ')}
               </span>
