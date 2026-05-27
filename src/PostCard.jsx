@@ -348,7 +348,7 @@ function bodyForKind(item, onViewProfile, onViewChurch, sessionUserId, onOpenSer
 
       // Daily discussion — question leads
       return (
-        <div style={{ background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: 12, padding: '14px 16px' }}>
+        <div style={{ background: T.parchment, border: `1px solid rgba(184,115,58,0.28)`, borderRadius: 12, padding: '14px 16px' }}>
           {/* Eyebrow: Day number is the key info; sermon title is secondary context */}
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 12 }}>
             <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: T.goldDark }}>
@@ -362,6 +362,7 @@ function bodyForKind(item, onViewProfile, onViewChurch, sessionUserId, onOpenSer
           {question && (
             <div style={{
               fontFamily: T.serif, fontSize: 17, fontWeight: 600, lineHeight: 1.5,
+              letterSpacing: '-0.02em',
               color: T.ink, marginBottom: contextLines.length ? 12 : 0,
             }}>
               {question}
@@ -375,7 +376,7 @@ function bodyForKind(item, onViewProfile, onViewChurch, sessionUserId, onOpenSer
           )}
           {/* Context — supporting material */}
           {contextLines.length > 0 && (
-            <div style={{ fontFamily: T.serif, fontSize: 14, lineHeight: 1.7, color: T.inkSoft }}>
+            <div style={{ fontFamily: T.serif, fontSize: 14.5, lineHeight: 1.7, color: T.inkSoft }}>
               {contextLines.join('\n\n')}
             </div>
           )}
