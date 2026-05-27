@@ -121,6 +121,58 @@ function timeAgo(ts) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
+function SermonTeaserCard({ sermon, isMember, onOpenChurch }) {
+  return (
+    <div style={{
+      background: T.parchment,
+      border: `1px solid rgba(184,115,58,0.22)`,
+      borderRadius: 14, marginBottom: 14, overflow: 'hidden',
+    }}>
+      {/* Church label strip */}
+      <div style={{
+        padding: '10px 18px 0',
+        display: 'flex', alignItems: 'center', gap: 7,
+      }}>
+        <span style={{ fontSize: 16 }}>⛪</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: T.goldDark, letterSpacing: '0.04em' }}>
+          {sermon.churchName}
+        </span>
+      </div>
+      {/* Sermon content */}
+      <div style={{ padding: '10px 18px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+          <KinwoveStar size={11} style={{ color: T.gold, flexShrink: 0 }} />
+          <span style={{ fontSize: 11, fontWeight: 700, color: T.goldDark, letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+            This week's sermon
+          </span>
+        </div>
+        <div style={{ fontFamily: T.serif, fontSize: 19, fontWeight: 600, color: T.ink, lineHeight: 1.25, letterSpacing: '-0.015em', marginBottom: sermon.scripture_ref ? 5 : 10 }}>
+          {sermon.title}
+        </div>
+        {sermon.scripture_ref && (
+          <div style={{ fontSize: 13, color: T.goldDark, fontStyle: 'italic', marginBottom: 10 }}>
+            {sermon.scripture_ref}
+          </div>
+        )}
+        {sermon.summary && (
+          <div style={{ fontFamily: T.serif, fontSize: 14, color: T.inkSoft, lineHeight: 1.6, marginBottom: 14 }}>
+            {sermon.summary.slice(0, 120)}{sermon.summary.length > 120 ? '…' : ''}
+          </div>
+        )}
+        <button
+          onClick={() => onOpenChurch?.(sermon.church_id)}
+          style={{
+            background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+            padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+          }}
+        >
+          {isMember ? 'Read this sermon →' : `Join ${sermon.churchName} to follow along →`}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function PostCard({ post, index = 0, session, currentUserId, userProfile, userGroup, onReact, onReplySubmit, onRepost, isFollowing, onFollow, onViewProfile, tabColor = '#B8733A', tabText = '#8E5528', isSaved = false, onSaveToggle, isAuthorBlocked = false, onBlockAuthor, defaultCommentsOpen = false, churchName = null }) {
   const [bodyExpanded,   setBodyExpanded]   = useState(false);
   const [commentsOpen,   setCommentsOpen]   = useState(defaultCommentsOpen);
@@ -1201,47 +1253,72 @@ useEffect(() => {
           .limit(20)
       : Promise.resolve({ data: [] });
 
-    // Pastor-authored public posts from followed churches.
-    // Followers see what the pastor intentionally publishes — not every
-    // member's post, and not anonymous posts (can't verify those are the pastor).
+    // Pastor posts + sermon teasers from followed churches.
+    // Followers see: (a) pastor-authored public posts and (b) the latest
+    // published sermon as a teaser card — same as following a church on any
+    // platform: you see official content, not private congregation messages.
     const churchPostPromise = (filter === 'all' && session?.user?.id)
       ? supabase.from('church_follows').select('church_id').eq('user_id', session.user.id)
           .then(async ({ data: follows }) => {
             const ids = (follows ?? []).map((f) => f.church_id).filter(Boolean);
-            if (!ids.length) return { data: [] };
-            // Fetch pastor_id for each followed church so we can filter by author
+            if (!ids.length) return { data: [], sermonTeasers: [] };
+            // Church metadata: pastor_id + name
             const { data: churchRows } = await supabase
-              .from('churches').select('id, pastor_id').in('id', ids);
+              .from('churches').select('id, pastor_id, name').in('id', ids);
             const pastorByChurch = {};
-            (churchRows ?? []).forEach((c) => { if (c.pastor_id) pastorByChurch[c.id] = c.pastor_id; });
-            const { data: posts } = await supabase
-              .from('posts')
-              .select(`*, profiles!author_id(display_name, city, country, tradition, person_type, avatar_config, avatar_url, show_flag, flags), post_comments(id, body, created_at, profiles!author_id(display_name, avatar_config, avatar_url))`)
-              .eq('scope', 'church')
-              .in('scope_id', ids)
-              .eq('visibility', 'public')
-              .eq('is_anonymous', false)
-              .order('created_at', { ascending: false })
-              .limit(30);
-            // Keep only posts authored by that church's pastor
-            return { data: (posts ?? []).filter((p) => pastorByChurch[p.scope_id] === p.author_id) };
+            const nameByChurch = {};
+            (churchRows ?? []).forEach((c) => {
+              if (c.pastor_id) pastorByChurch[c.id] = c.pastor_id;
+              nameByChurch[c.id] = c.name ?? '';
+            });
+            // Fetch pastor posts + latest published sermons in parallel
+            const [{ data: posts }, { data: sermons }] = await Promise.all([
+              supabase
+                .from('posts')
+                .select(`*, profiles!author_id(display_name, city, country, tradition, person_type, avatar_config, avatar_url, show_flag, flags), post_comments(id, body, created_at, profiles!author_id(display_name, avatar_config, avatar_url))`)
+                .eq('scope', 'church')
+                .in('scope_id', ids)
+                .eq('visibility', 'public')
+                .eq('is_anonymous', false)
+                .order('created_at', { ascending: false })
+                .limit(30),
+              supabase
+                .from('sermons')
+                .select('id, title, scripture_ref, summary, week_starts_on, church_id')
+                .in('church_id', ids)
+                .eq('is_published', true)
+                .order('week_starts_on', { ascending: false })
+                .limit(ids.length * 3),
+            ]);
+            // Pastor posts only
+            const pastorPosts = (posts ?? []).filter((p) => pastorByChurch[p.scope_id] === p.author_id);
+            // Latest sermon per church (already ordered newest-first)
+            const seenChurches = new Set();
+            const sermonTeasers = (sermons ?? [])
+              .filter((s) => { if (seenChurches.has(s.church_id)) return false; seenChurches.add(s.church_id); return true; })
+              .map((s) => ({ ...s, churchName: nameByChurch[s.church_id] ?? '' }));
+            return { data: pastorPosts, sermonTeasers };
           })
-      : Promise.resolve({ data: [] });
+      : Promise.resolve({ data: [], sermonTeasers: [] });
 
-    const [{ data: postData, error: postErr }, { data: sermonData }, { data: churchPostData }] = await Promise.all([query, sermonPromise, churchPostPromise]);
+    const [{ data: postData, error: postErr }, { data: sermonData }, { data: churchPostData, sermonTeasers: churchSermonTeasers = [] }] = await Promise.all([query, sermonPromise, churchPostPromise]);
     if (postErr || !postData) { setFeedError(true); setLoading(false); return; }
 
     const myId = session?.user?.id;
 
-    // Merge public posts + followed-church posts; deduplicate by ID, sort newest first
+    // Merge: community posts + pastor church posts + sermon teasers (sorted newest first)
     const merged = [...postData];
     const seenIds = new Set(postData.map((p) => p.id));
     for (const cp of (churchPostData ?? [])) {
       if (!seenIds.has(cp.id)) { merged.push(cp); seenIds.add(cp.id); }
     }
+    for (const s of churchSermonTeasers) {
+      merged.push({ _type: 'sermon_teaser', id: `teaser-${s.id}`, created_at: s.week_starts_on ?? new Date().toISOString(), sermon: s });
+    }
     merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-    const postIds = merged.map((p) => p.id);
+    // Reactions only needed for real posts (teasers have no post ID in DB)
+    const postIds = merged.filter((p) => !p._type).map((p) => p.id);
     const { data: reactions } = postIds.length
       ? await supabase.from('reactions').select('post_id, kind, author_id').in('post_id', postIds)
       : { data: [] };
@@ -1755,6 +1832,13 @@ useEffect(() => {
                     const showAds = isFreeUser && sponsors.length > 0;
                     return filtered.map((p, i) => (
                       <Fragment key={`post:${p.id}`}>
+                        {p._type === 'sermon_teaser' ? (
+                          <SermonTeaserCard
+                            sermon={p.sermon}
+                            isMember={profile?.church_id === p.sermon.church_id}
+                            onOpenChurch={onOpenChurch}
+                          />
+                        ) : (
                         <PostCard
                           post={p}
                           index={Math.min(i, 6)}
@@ -1777,6 +1861,7 @@ useEffect(() => {
                           defaultCommentsOpen={openCommentPostId === p.id}
                           churchName={p.scope === 'church' ? (churchMap[p.scope_id]?.name ?? null) : null}
                         />
+                        )}
                         {showAds && (i + 1) % 10 === 0 && (
                           <SponsoredCard
                             key={`sponsored-${i}`}
