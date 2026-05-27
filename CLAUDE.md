@@ -98,6 +98,50 @@ Reaction buttons show label AND count side by side. Comment button shows count n
 <span>{kind.label}{count > 0 ? <span style={{ marginLeft: 3, opacity: 0.75 }}>{count}</span> : null}</span>
 ```
 
+### 17. Church search shows ALL public churches (FIXED 2026-05-26)
+`ChurchDirectory.jsx` no longer filters by `verification_status = 'verified'`. All `is_public=true` churches appear in search regardless of verification status. Do not re-add the verified filter.
+
+### 18. New churches default to `is_public=true` (FIXED 2026-05-26)
+`/api/church/submit-unverified` in server.js sets `is_public: true`. The old `is_public: false` hid all self-reported churches from search and broke invite codes. Do not revert.
+
+### 19. PostCard author names are clickable (ADDED 2026-05-26)
+Avatar and name in `src/PostCard.jsx` call `onViewProfile?.(item.author_id)` on click. `Feed.jsx` accepts and passes `onViewProfile` to PostCard. `ChurchPage.jsx` passes `onViewProfile` into Feed. Anonymous posts stay non-clickable.
+
+### 20. Connect screen is live (ADDED 2026-05-26)
+`ConnectScreen.jsx` renders at `stage === 'connect'`. Both Community instances in App.jsx pass `onOpenConnect={() => setStage('connect')}`. Do NOT set it back to `undefined`. The screen shows members with `mentor_open=true` or `connect_open=true`.
+
+### 21. DB columns added 2026-05-26 (run in prod)
+```sql
+-- profiles
+alter table public.profiles
+  add column if not exists mentor_open boolean default false,
+  add column if not exists connect_open boolean default false,
+  add column if not exists allow_friend_requests boolean default true,
+  add column if not exists allow_follows boolean default true;
+
+-- sermon discussions image support
+alter table public.sermon_discussions
+  add column if not exists image_urls text[] default '{}';
+
+-- poll votes
+create table if not exists public.poll_votes (
+  post_id uuid not null references public.posts(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  option_index integer not null,
+  created_at timestamptz not null default now(),
+  primary key (post_id, user_id)
+);
+```
+
+### 22. Autofocus on comment inputs (ADDED 2026-05-26)
+`Comments.jsx` textarea has `autoFocus`. `SermonDiscussion.jsx` uses `useRef` + `useEffect` to focus textarea whenever `replyTo` changes or the discussion opens. Community.jsx reply input already had `autoFocus`. Do not remove these.
+
+### 23. SermonDiscussion avatars (ADDED 2026-05-26)
+Profiles query fetches `avatar_config, avatar_url`. `Bubble` component renders `<Avatar size={30} />` beside each commenter's name. Anonymous posts get a neutral dot placeholder.
+
+### 24. SermonDiscussion multiple replies (FIXED 2026-05-26)
+Reply button shows at ALL depths (removed `depth === 0` gate). After posting, calls `reload()` instead of optimistic append so `profMap` is populated and names show correctly (not "Someone").
+
 ---
 
 ## 1. Who you're working with
@@ -337,7 +381,7 @@ git log --oneline -5        # see recent commits
 npm run dev                 # server: localhost:8787, web: localhost:5173
 ```
 
-Latest commit as of 2026-05-26: `b5fbb9e` — church post attribution (show poster name under church name on feed cards).
+Latest commit as of 2026-05-26: `c2ba5a3` — Connect screen enabled.
 Branch: `main`. Everything is committed and pushed.
 
 Daniel also has a side project — **deconstructors.ca** (demolition company,
