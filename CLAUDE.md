@@ -77,6 +77,27 @@ The DB trigger `notify_admin_pastor_application` in Supabase sends emails via Re
 ### 12. `stage === 'sermon-composer'` is effectively dead
 This App.jsx stage now immediately redirects to `church-admin` with `pastorAdminInitialTab = 'sermons'`. Don't add new rendering logic to it.
 
+### 13. Church post attribution — "by [person]" sub-line (ADDED 2026-05-26)
+When `showAsChurch` is true (church-scoped post shown under the church name), the timestamp sub-line in `PostCard.jsx` shows `"1h · by [authorProfile.display_name]"`. This is the intended Facebook-groups-style attribution. Do not remove it.
+```jsx
+{showAsChurch && !item.is_anonymous && authorProfile?.display_name && (
+  <> · by {authorProfile.display_name}</>
+)}
+```
+`authorProfile` is passed from `authorMap` in `Feed.jsx` — non-anonymous author IDs are always hydrated. The Community.jsx inline PostCard does NOT use this (it only shows personal/public posts, no church scope).
+
+### 14. FB-style comment modal (PostCard.jsx — ADDED 2026-05-26)
+Comments open as a fixed overlay modal (zIndex: 400) with backdrop click to close. Do NOT revert to inline expansion. Sermon items (`item.source === 'sermon_item'`) render `<SermonDiscussion>` inside the modal; regular posts render `<Comments>`. The modal header shows `"{displayName}'s post"`.
+
+### 15. Notification deep-link to comments (ADDED 2026-05-26)
+`App.jsx` has `openCommentPostId` state. When a notification with `target_type='post'` or `type='post_comment'` is tapped, it sets `openCommentPostId = n.target_id` and navigates to feed. This is threaded through to `Community.jsx` and `Feed.jsx` as the `openCommentPostId` prop, then to each `PostCard` as `defaultCommentsOpen={openCommentPostId === item.id}`. Do not break this chain.
+
+### 16. Reaction + comment counts (PostCard.jsx — ADDED 2026-05-26)
+Reaction buttons show label AND count side by side. Comment button shows count next to the 💬 label. Do not hide counts or remove the label — both must show.
+```jsx
+<span>{kind.label}{count > 0 ? <span style={{ marginLeft: 3, opacity: 0.75 }}>{count}</span> : null}</span>
+```
+
 ---
 
 ## 1. Who you're working with
@@ -316,7 +337,7 @@ git log --oneline -5        # see recent commits
 npm run dev                 # server: localhost:8787, web: localhost:5173
 ```
 
-Latest commit as of 2026-05-26: `aa32888` — invite code token fix.
+Latest commit as of 2026-05-26: `b5fbb9e` — church post attribution (show poster name under church name on feed cards).
 Branch: `main`. Everything is committed and pushed.
 
 Daniel also has a side project — **deconstructors.ca** (demolition company,
