@@ -2502,7 +2502,7 @@ export default function App() {
             else setStage('churches');
           }}
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
-          onOpenConnect={undefined}
+          onOpenConnect={() => setStage('connect')}
           onOpenGroups={() => setStage('groups')}
         />
       )}
@@ -2567,7 +2567,7 @@ export default function App() {
           onOpenTalkToSomeone={profile?.church_id ? () => { setViewingChurchId(profile.church_id); setStage('talk-to-someone'); } : undefined}
           onOpenCareInbox={careTeamRecord ? () => setStage('care-inbox') : undefined}
           onOpenMessages={() => setStage('messages')}
-          onOpenConnect={undefined}
+          onOpenConnect={() => setStage('connect')}
           onOpenPastorDashboard={pastorChurchId ? () => setStage('church-admin') : undefined}
           hasCareTeamRole={!!careTeamRecord}
           hasPastoredChurch={!!pastorChurchId}
