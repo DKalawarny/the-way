@@ -462,9 +462,10 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
           .gte('created_at', sevenDaysAgo),
         supabase
           .from('personal_prayers')
-          .select('category, created_at')
+          .select('id, body, created_at, user_id, profiles!user_id(church_id)')
+          .eq('is_public', true)
           .gte('created_at', sevenDaysAgo)
-          .limit(500),
+          .limit(100),
         supabase
           .from('care_conversations')
           .select('id', { count: 'exact', head: true })
@@ -505,16 +506,13 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
         .slice(0, 6);
       setThemes(themeArr);
 
-      const prayerCounts = {};
-      (prayers ?? []).forEach((p) => {
-        const k = p.category ?? 'other';
-        prayerCounts[k] = (prayerCounts[k] ?? 0) + 1;
-      });
-      const prayerArr = Object.entries(prayerCounts)
-        .map(([k, v]) => ({ theme: k, count: v }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 6);
-      setPrayerThemes(prayerArr);
+      // Filter to church members only, then take the 6 most recent
+      const churchPrayers = (prayers ?? [])
+        .filter((p) => p.profiles?.church_id === churchId)
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 6)
+        .map((p) => ({ theme: p.body, count: 1, id: p.id }));
+      setPrayerThemes(churchPrayers);
 
       setCareCount(careConvCount ?? 0);
       setCareTeamSize(careTeam ?? 0);
@@ -695,10 +693,17 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
         >
           {prayerThemes.length === 0 ? (
             <div style={{ color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', textAlign: 'center', padding: '20px 0' }}>
-              No prayer themes yet this week.
+              No prayer requests this week.
             </div>
           ) : (
-            prayerThemes.map((t) => <ThemeBar key={t.theme} theme={t.theme} count={t.count} max={prayerMax} />)
+            prayerThemes.map((t) => (
+              <div key={t.id} style={{
+                fontFamily: T.serif, fontSize: 14, color: T.inkSoft, lineHeight: 1.55,
+                padding: '9px 0', borderBottom: `1px solid ${T.line}`,
+              }}>
+                🙏 {t.theme.length > 120 ? t.theme.slice(0, 120) + '…' : t.theme}
+              </div>
+            ))
           )}
         </Section>
 
