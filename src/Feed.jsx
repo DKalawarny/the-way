@@ -16,7 +16,7 @@ function parseSource(source) {
   return { scope: null, scopeId: null, authorId: null };
 }
 
-export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessage, onOpenSermon, userPlan, blockedUserIds = [], isPastor = false }) {
+export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessage, onOpenSermon, userPlan, blockedUserIds = [], isPastor = false, openCommentPostId }) {
   const { scope, scopeId, authorId } = parseSource(source);
 
   const [items, setItems]         = useState([]);
@@ -214,6 +214,7 @@ export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessa
               commentCount={commentCounts[item.id] ?? 0}
               onOpenSermon={onOpenSermon}
               isPastor={isPastor}
+              defaultCommentsOpen={openCommentPostId === item.id}
               isSaved={savedPostIds.has(item.id)}
               onSaveToggle={async (postId, wasSaved) => {
                 if (wasSaved) {

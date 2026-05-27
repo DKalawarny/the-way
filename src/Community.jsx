@@ -121,9 +121,9 @@ function timeAgo(ts) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-function PostCard({ post, index = 0, session, currentUserId, userProfile, userGroup, onReact, onReplySubmit, onRepost, isFollowing, onFollow, onViewProfile, tabColor = '#B8733A', tabText = '#8E5528', isSaved = false, onSaveToggle, isAuthorBlocked = false, onBlockAuthor }) {
+function PostCard({ post, index = 0, session, currentUserId, userProfile, userGroup, onReact, onReplySubmit, onRepost, isFollowing, onFollow, onViewProfile, tabColor = '#B8733A', tabText = '#8E5528', isSaved = false, onSaveToggle, isAuthorBlocked = false, onBlockAuthor, defaultCommentsOpen = false }) {
   const [bodyExpanded,   setBodyExpanded]   = useState(false);
-  const [commentsOpen,   setCommentsOpen]   = useState(false);
+  const [commentsOpen,   setCommentsOpen]   = useState(defaultCommentsOpen);
   // post.post_comments is the embedded select from loadPosts; it's a thin
   // shape ({id, body, created_at, profiles}) hydrated by the relationship.
   // Optimistic appends use the same shape so the UI doesn't flicker.
@@ -1065,7 +1065,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tab
   );
 }
 
-export default function Community({ session, profile, onClose, onOpenChat, hideHeader, userGroup, onViewProfile, onFindPeople, onInviteFriends, onOpenPrayer, onOpenRead, onOpenBible, onVerseClick, onOpenChurch, onOpenSermon, onOpenConnect, onOpenGroups, accentColor }) {
+export default function Community({ session, profile, onClose, onOpenChat, hideHeader, userGroup, onViewProfile, onFindPeople, onInviteFriends, onOpenPrayer, onOpenRead, onOpenBible, onVerseClick, onOpenChurch, onOpenSermon, onOpenConnect, onOpenGroups, accentColor, openCommentPostId }) {
   // Section colour: gold for main Feed, forest green for church community feed
   const TAB_COLOR = accentColor ?? '#B8733A';
   const TAB_TEXT  = accentColor ?? '#8E5528'; // slightly darker for text legibility
@@ -1741,6 +1741,7 @@ useEffect(() => {
                           onSaveToggle={session ? handleSaveToggle : undefined}
                           isAuthorBlocked={blockedIds.includes(p.author_id)}
                           onBlockAuthor={session ? handleBlockAuthor : undefined}
+                          defaultCommentsOpen={openCommentPostId === p.id}
                         />
                         {showAds && (i + 1) % 10 === 0 && (
                           <SponsoredCard

@@ -1593,6 +1593,7 @@ export default function App() {
   const [pendingChurchJoin, setPendingChurchJoin] = useState(null);
   const [activeCareConv, setActiveCareConv] = useState(null);
   const [activeDmConv, setActiveDmConv] = useState(null); // { id, otherProfile }
+  const [openCommentPostId, setOpenCommentPostId] = useState(null);
   const [shareCopied, setShareCopied] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [currentConvId, setCurrentConvId] = useState(null);
@@ -2487,6 +2488,7 @@ export default function App() {
           userGroup={userGroup}
           accentColor="#6b2438"
           hideHeader={showNav}
+          openCommentPostId={openCommentPostId}
           onClose={() => goBack('home')}
           onOpenChat={(q) => { if (!currentConvId) startChatFromProfile(); if (q) setPrefilledInput(q); setChatPanelOpen(true); }}
           onViewProfile={(uid) => uid === session.user.id ? setStage('me') : setViewingUserId(uid)}
@@ -3105,7 +3107,10 @@ export default function App() {
           isDesktop={isDesktop}
           rightOffset={isDocked ? chatPanelWidth : 0}
           onNavigate={(n) => {
-            if (n.target_type === 'post')           { setStage('feed'); }
+            if (n.target_type === 'post' || n.type === 'post_comment' || n.type === 'post_comment_reply') {
+              setOpenCommentPostId(n.target_id);
+              setStage('feed');
+            }
             else if (n.target_type === 'prayer')    { setStage('feed'); }
             else if (n.target_type === 'sermon')    { setViewingSermonId(n.target_id); setStage('sermon-view'); }
             else if (n.target_type === 'friend_request') { setStage('me'); }
