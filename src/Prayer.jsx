@@ -5,8 +5,6 @@ import { T, SEMANTIC } from './theme.js';
 import { churchBannerBg } from './ChurchAdmin.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { Avatar } from './ProfilePage.jsx';
-import PostImageGrid from './PostImageGrid.jsx';
-import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
 import EmptyState from './EmptyState.jsx';
 
 // Candle — personal prayer list empty state
@@ -70,7 +68,6 @@ function MyPrayers({ session, profile }) {
   const [encMap,       setEncMap]       = useState({});          // { prayerId: [...encouragements] }
   const [encCounts,    setEncCounts]    = useState({});          // { prayerId: count }
   const [supportMap,   setSupportMap]   = useState({});          // { prayerId: count }
-  const imageDrafts = useImageDrafts(4);
 
   useEffect(() => {
     supabase
@@ -108,10 +105,8 @@ function MyPrayers({ session, profile }) {
     e.preventDefault();
     if (!text.trim()) return;
     setSubmitting(true);
-    const image_urls = await imageDrafts.uploadAll(session.user.id);
     const { data, error } = await supabase.from('personal_prayers').insert({
       user_id: session.user.id, body: text.trim(), is_public: newIsPublic,
-      image_urls,
     }).select().single();
     setSubmitting(false);
     if (error) {
@@ -121,7 +116,6 @@ function MyPrayers({ session, profile }) {
     }
     setSubmitError(null);
     setText(''); setNewIsPublic(true); setComposeOpen(false);
-    imageDrafts.clear();
     if (data) setPrayers(prev => [data, ...prev]);
   }
 
@@ -240,13 +234,6 @@ function MyPrayers({ session, profile }) {
                     fontSize: 15, color: T.ink, fontFamily: T.serif, lineHeight: 1.65,
                   }}
                 />
-                <ImageDraftGrid drafts={imageDrafts.drafts} onRemove={imageDrafts.remove} />
-                <div style={{ marginTop: 8 }}>
-                  <ImageAttachButton
-                    drafts={imageDrafts.drafts} max={imageDrafts.max}
-                    fileInputRef={imageDrafts.fileInputRef} onPick={imageDrafts.pick}
-                  />
-                </div>
                 <div style={{ marginTop: 10, borderTop: `1px solid rgba(90,128,100,0.2)`, paddingTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                   {/* Privacy toggle */}
                   <div style={{ display: 'flex', background: 'rgba(90,128,100,0.12)', borderRadius: 999, padding: 3, gap: 2 }}>
@@ -271,7 +258,7 @@ function MyPrayers({ session, profile }) {
                     </button>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button type="button" onClick={() => { setComposeOpen(false); setText(''); imageDrafts.clear(); }}
+                    <button type="button" onClick={() => { setComposeOpen(false); setText(''); }}
                       style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 13, cursor: 'pointer', padding: '6px 10px' }}>
                       Cancel
                     </button>
@@ -340,12 +327,6 @@ function MyPrayers({ session, profile }) {
             }}>
               {p.body}
             </div>
-
-            {Array.isArray(p.image_urls) && p.image_urls.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
-                <PostImageGrid urls={p.image_urls} />
-              </div>
-            )}
 
             {/* Actions */}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -506,7 +487,6 @@ function GroupPrayers({ session, profile, userGroup }) {
   const [encCounts,   setEncCounts]   = useState({});   // { prayerId: number }
   const [encNote,     setEncNote]     = useState({});   // { prayerId: string }
   const [encSending,  setEncSending]  = useState(null); // prayerId currently posting
-  const imageDrafts = useImageDrafts(4);
 
   useEffect(() => {
     if (!userGroup) return;
@@ -540,14 +520,11 @@ function GroupPrayers({ session, profile, userGroup }) {
     e.preventDefault();
     if (!text.trim() || !session || !userGroup) return;
     setSubmitting(true);
-    const image_urls = await imageDrafts.uploadAll(session.user.id);
     const { data } = await supabase.from('prayers').insert({
       author_id: session.user.id, body: text.trim(),
       is_public: false, is_anonymous: false, group_id: userGroup.group.id,
-      image_urls,
     }).select('*, profiles(display_name, avatar_config, avatar_url)').single();
     setText(''); setSubmitting(false);
-    imageDrafts.clear();
     if (data) setPrayers(prev => [data, ...prev]);
   }
 
@@ -630,12 +607,7 @@ function GroupPrayers({ session, profile, userGroup }) {
             onFocus={e => (e.currentTarget.style.borderColor = T.gold)}
             onBlur={e => (e.currentTarget.style.borderColor = '#D9C9A8')}
           />
-          <ImageDraftGrid drafts={imageDrafts.drafts} onRemove={imageDrafts.remove} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 8 }}>
-            <ImageAttachButton
-              drafts={imageDrafts.drafts} max={imageDrafts.max}
-              fileInputRef={imageDrafts.fileInputRef} onPick={imageDrafts.pick}
-            />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 8, gap: 8 }}>
             <button type="submit" disabled={submitting || !text.trim()} style={{
               background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
               padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
@@ -673,12 +645,6 @@ function GroupPrayers({ session, profile, userGroup }) {
               <div style={{ fontFamily: T.serif, fontSize: 15, color: '#2C1810', lineHeight: 1.7, marginBottom: 14 }}>
                 {p.body}
               </div>
-              {Array.isArray(p.image_urls) && p.image_urls.length > 0 && (
-                <div style={{ marginBottom: 14 }}>
-                  <PostImageGrid urls={p.image_urls} />
-                </div>
-              )}
-
               {/* Actions */}
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                 {!isOwn && (
