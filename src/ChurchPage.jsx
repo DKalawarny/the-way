@@ -1,5 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
-import { ArrowLeft, Share2, Check, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Share2, Check, ExternalLink, MapPin, Clock, Users, Globe, BookOpen } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T, SHADOW, RADIUS, SEMANTIC, SPACE } from './theme.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
@@ -1334,6 +1334,83 @@ export default function ChurchPage({
               </div>
             )}
 
+            {/* ── Church details card ── */}
+            {(() => {
+              const rows = [
+                church.denomination && {
+                  Icon: BookOpen,
+                  label: 'Denomination',
+                  value: church.denomination,
+                },
+                (church.street_address || church.city || church.country) && {
+                  Icon: MapPin,
+                  label: 'Location',
+                  value: [church.street_address, church.city, church.country].filter(Boolean).join(', '),
+                },
+                church.service_info && {
+                  Icon: Clock,
+                  label: 'Services',
+                  value: church.service_info,
+                },
+                memberCount > 0 && {
+                  Icon: Users,
+                  label: 'Members',
+                  value: `${memberCount} ${memberCount === 1 ? 'member' : 'members'}`,
+                },
+                church.website && {
+                  Icon: Globe,
+                  label: 'Website',
+                  value: church.website,
+                  href: church.website.startsWith('http') ? church.website : `https://${church.website}`,
+                },
+              ].filter(Boolean);
+
+              if (!rows.length) return null;
+              return (
+                <div style={{
+                  background: T.white, border: `1px solid ${T.line}`,
+                  borderRadius: 14, overflow: 'hidden', marginBottom: 16,
+                }}>
+                  <div style={{
+                    fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase',
+                    color: T.inkMuted, fontWeight: 700,
+                    padding: '14px 18px 10px',
+                    borderBottom: `1px solid ${T.line}`,
+                  }}>
+                    Church details
+                  </div>
+                  {rows.map((row, i) => (
+                    <div key={row.label} style={{
+                      display: 'flex', alignItems: 'flex-start', gap: 14,
+                      padding: '13px 18px',
+                      borderBottom: i < rows.length - 1 ? `1px solid ${T.line}` : 'none',
+                    }}>
+                      <div style={{
+                        width: 32, height: 32, borderRadius: 8,
+                        background: 'rgba(184,115,58,0.08)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0, color: T.goldDark,
+                      }}>
+                        <row.Icon size={15} strokeWidth={1.8} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 11, color: T.inkMuted, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>
+                          {row.label}
+                        </div>
+                        {row.href ? (
+                          <a href={row.href} target="_blank" rel="noreferrer" style={{ fontSize: 14, color: T.goldDark, textDecoration: 'none', lineHeight: 1.45 }}>
+                            {row.value}
+                          </a>
+                        ) : (
+                          <div style={{ fontSize: 14, color: T.ink, lineHeight: 1.45 }}>{row.value}</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
             {/* About */}
             {church.about && (
               <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '18px 20px', marginBottom: 16 }}>
@@ -1361,15 +1438,6 @@ export default function ChurchPage({
               </div>
             )}
 
-            {/* Website */}
-            {church.website && (
-              <a href={church.website.startsWith('http') ? church.website : `https://${church.website}`} target="_blank" rel="noreferrer" style={{
-                display: 'block', background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
-                padding: '14px 16px', marginBottom: 16, color: T.goldDark, fontSize: 14, textDecoration: 'none',
-              }}>
-                <ExternalLink size={14} strokeWidth={2} style={{ marginRight: 6, verticalAlign: 'middle' }} />Visit church website
-              </a>
-            )}
 
             {/* Report listing — quiet footer link, not a CTA. Only useful for
                 non-pastors; the pastor edits their own listing in admin. */}
