@@ -23,6 +23,7 @@ const KIND_COPY = {
   prayer_support:            { verb: 'is praying for you', Icon: null, emoji: '🙏' },
   prayer_encouragement:      { verb: 'left an encouragement', Icon: Heart },
   sermon_comment:            { verb: 'commented on your sermon', Icon: BookOpen },
+  follow:                    { verb: 'started following you', Icon: UserPlus },
 };
 
 function NotificationRow({ n, onClick }) {

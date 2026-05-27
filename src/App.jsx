@@ -3114,6 +3114,7 @@ export default function App() {
             else if (n.target_type === 'prayer')    { setStage('feed'); }
             else if (n.target_type === 'sermon')    { setViewingSermonId(n.target_id); setStage('sermon-view'); }
             else if (n.target_type === 'friend_request') { setStage('me'); }
+            else if (n.kind === 'follow') { setViewingUserId(n.actor_id); }
           }}
         />
       )}
