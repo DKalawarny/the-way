@@ -499,6 +499,18 @@ export default function Walks({ session, onClose }) {
     if (data) {
       setProgressMap((m) => ({ ...m, [selected.id]: data }));
       if (isLast) {
+        // Auto-post a journey milestone when the walk is finished
+        if (session?.user?.id) {
+          supabase.from('posts').insert({
+            author_id:   session.user.id,
+            scope:       'me',
+            kind:        'journey_milestone',
+            visibility:  'public',
+            is_anonymous: false,
+            body:        `Finished "${selected.title}" — ${selected.length_days}-day walk.`,
+            body_data:   { walk_id: selected.id, walk_emoji: selected.cover_emoji ?? '' },
+          }).then(null, () => {}); // fire and forget
+        }
         setView('overview');
       } else {
         setDay(day + 1);

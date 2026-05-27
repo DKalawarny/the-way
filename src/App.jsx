@@ -1933,7 +1933,21 @@ export default function App() {
     if (!code) return;
     if (!session?.user?.id) return;
     if (!profile?.display_name) return;     // wait until profile is set up
-    if (profile.church_id) {                 // already in a church — don't override silently
+    if (profile.church_id) {                 // already in a church — tell them, don't override
+      // Look up invited church name async, then show message
+      fetch(`/api/church/by-invite-code?code=${encodeURIComponent(code)}`)
+        .then((r) => r.ok ? r.json() : {})
+        .then(({ church: invited }) => {
+          setJoinResult({
+            ok: false,
+            message: invited
+              ? `You're already part of a church. To join ${invited.name}, leave your current church first.`
+              : `You're already part of a church on kinwove.`,
+          });
+        })
+        .catch(() => {
+          setJoinResult({ ok: false, message: `You're already part of a church on kinwove.` });
+        });
       setInitialJoinCode(null);
       window.history.replaceState({}, '', window.location.pathname);
       return;
@@ -2314,6 +2328,15 @@ export default function App() {
     return (
       <>
         <style>{globalCss}</style>
+        {initialJoinCode && (
+          <div style={{
+            background: T.ink, color: T.cream,
+            padding: '12px 20px', textAlign: 'center',
+            fontSize: 14, fontFamily: T.sans, lineHeight: 1.4,
+          }}>
+            ✶ You've been invited to join a church on kinwove — sign in or create an account to accept.
+          </div>
+        )}
         <Auth
           onAuth={async (s) => {
             setSession(s);

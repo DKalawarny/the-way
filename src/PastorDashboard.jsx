@@ -139,14 +139,23 @@ function SetupChecklist({ items, allDone, onDismiss }) {
   );
 }
 
-function StatTile({ label, value, sublabel, accent }) {
+function StatTile({ label, value, sublabel, accent, onClick }) {
+  const clickable = !!onClick;
   return (
-    <div style={{
-      background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
-      padding: '16px 18px', flex: 1, minWidth: 0,
-    }}>
-      <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 6 }}>
+    <div
+      onClick={onClick}
+      style={{
+        background: T.white, border: `1px solid ${clickable ? 'rgba(184,115,58,0.25)' : T.line}`,
+        borderRadius: 14, padding: '16px 18px', flex: 1, minWidth: 0,
+        cursor: clickable ? 'pointer' : 'default',
+        transition: 'border-color 0.15s, background 0.15s',
+      }}
+      onMouseEnter={clickable ? (e) => { e.currentTarget.style.background = T.parchment; e.currentTarget.style.borderColor = 'rgba(184,115,58,0.45)'; } : undefined}
+      onMouseLeave={clickable ? (e) => { e.currentTarget.style.background = T.white; e.currentTarget.style.borderColor = 'rgba(184,115,58,0.25)'; } : undefined}
+    >
+      <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         {label}
+        {clickable && <span style={{ fontSize: 11, color: T.goldDark, opacity: 0.7 }}>→</span>}
       </div>
       <div style={{
         fontFamily: T.serif, fontSize: 34, fontWeight: 600, letterSpacing: '-0.02em',
@@ -667,10 +676,10 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
 
         {/* Top row stats */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
-          <StatTile label="Members" value={memberCount} sublabel="on kinwove" />
+          <StatTile label="Members" value={memberCount} sublabel="on kinwove" onClick={onOpenPeople} />
           <StatTile label="Questions asked" value={recentAnonCount} sublabel="last 7 days" accent={T.goldDark} />
-          <StatTile label="Care convos" value={careCount} sublabel="last 7 days" />
-          <StatTile label="Care team" value={careTeamSize} sublabel="active" />
+          <StatTile label="Care convos" value={careCount} sublabel="last 7 days" onClick={onOpenCareAdmin} />
+          <StatTile label="Care team" value={careTeamSize} sublabel="active" onClick={onOpenCareAdmin} />
         </div>
 
         {/* Question heatmap */}
