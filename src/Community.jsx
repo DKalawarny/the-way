@@ -1238,6 +1238,7 @@ useEffect(() => {
     let query = supabase
       .from('posts')
       .select(`*, profiles!author_id(display_name, city, country, tradition, person_type, avatar_config, avatar_url, show_flag, flags), post_comments(id, body, created_at, profiles!author_id(display_name, avatar_config, avatar_url))`)
+      .eq('scope', 'me')        // community feed = personal posts only; church posts stay in church
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
       .limit(60);
