@@ -44,7 +44,9 @@ function NotificationRow({ n, onClick, onFriendAction }) {
       .update({ status: action === 'accept' ? 'accepted' : 'declined' })
       .eq('id', n.target_id);
     setFriendState(action === 'accept' ? 'accepted' : 'declined');
-    onFriendAction?.();
+    // Don't call onFriendAction/loadRecent — it sets loading=true which
+    // unmounts and remounts all rows, resetting friendState back to null.
+    // The confirmed label stays until the user closes and reopens the panel.
   }
 
   return (
@@ -101,10 +103,13 @@ function NotificationRow({ n, onClick, onFriendAction }) {
         {isFriendReq && (
           <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: 7, marginTop: 8 }}>
             {friendState === 'accepted' && (
-              <span style={{ fontSize: 12, color: T.goldDark, fontWeight: 600 }}>✓ Friends now</span>
+              <span style={{ fontSize: 12, color: T.goldDark, fontWeight: 600 }}>✓ Request accepted</span>
             )}
             {friendState === 'declined' && (
               <span style={{ fontSize: 12, color: T.inkMuted }}>Request declined</span>
+            )}
+            {friendState === 'busy' && (
+              <span style={{ fontSize: 12, color: T.inkMuted }}>Saving…</span>
             )}
             {!friendState && (
               <>
