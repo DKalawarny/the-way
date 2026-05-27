@@ -1260,7 +1260,9 @@ useEffect(() => {
     const churchPostPromise = (filter === 'all' && session?.user?.id)
       ? supabase.from('church_follows').select('church_id').eq('user_id', session.user.id)
           .then(async ({ data: follows }) => {
-            const ids = (follows ?? []).map((f) => f.church_id).filter(Boolean);
+            // Exclude the user's own church — they already see it in the church tab
+            const memberChurchId = profile?.church_id;
+            const ids = (follows ?? []).map((f) => f.church_id).filter((id) => id && id !== memberChurchId);
             if (!ids.length) return { data: [], sermonTeasers: [] };
             // Church metadata: pastor_id + name
             const { data: churchRows } = await supabase
@@ -1354,7 +1356,7 @@ useEffect(() => {
     setPastorMap(pMap);
     setChurchMap(cMap);
     setLoading(false);
-  }, [filter, session]);
+  }, [filter, session, profile?.church_id]);
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 
