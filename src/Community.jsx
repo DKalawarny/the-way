@@ -1309,13 +1309,9 @@ useEffect(() => {
 
   useEffect(() => { if (feedType === 'prayers') loadCommunityPrayers(); }, [feedType, loadCommunityPrayers]);
 
-  // Default filter to user's own faith stage on first open (before they manually change it)
-  useEffect(() => {
-    if (!filterPersonalized && profile?.person_type && filter === 'all') {
-      setFilter(profile.person_type);
-      setFilterPersonalized(true);
-    }
-  }, [profile?.person_type, filterPersonalized, filter]);
+  // Feed always opens to "All" — let people self-select if they want to filter
+  // by faith stage. Auto-filtering exposed the user's person_type label publicly
+  // and fragmented the community by default.
 
   async function submitPrayer(e) {
     e.preventDefault();
