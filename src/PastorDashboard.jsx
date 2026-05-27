@@ -277,6 +277,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
   const [memberCount, setMemberCount] = useState(0);
   const [themes, setThemes] = useState([]);
   const [prayerThemes, setPrayerThemes] = useState([]);
+  const [prayedIds, setPrayedIds] = useState(new Set());
   const [careCount, setCareCount] = useState(0);
   const [careTeamSize, setCareTeamSize] = useState(0);
   const [sermons, setSermons] = useState([]);
@@ -462,7 +463,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
           .gte('created_at', sevenDaysAgo),
         supabase
           .from('personal_prayers')
-          .select('id, body, created_at, user_id, profiles!user_id(church_id)')
+          .select('id, body, created_at, user_id, profiles!user_id(church_id, display_name)')
           .eq('is_public', true)
           .gte('created_at', sevenDaysAgo)
           .limit(100),
@@ -511,7 +512,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
         .filter((p) => p.profiles?.church_id === churchId)
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
         .slice(0, 6)
-        .map((p) => ({ theme: p.body, count: 1, id: p.id }));
+        .map((p) => ({ id: p.id, body: p.body, name: p.profiles?.display_name ?? 'Anonymous' }));
       setPrayerThemes(churchPrayers);
 
       setCareCount(careConvCount ?? 0);
@@ -689,21 +690,48 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
         {/* Prayer themes */}
         <Section
           title="Prayer pulse"
-          hint="What your congregation is praying about (anonymous, public prayers only)."
+          hint="Public prayer requests from your congregation this week."
         >
           {prayerThemes.length === 0 ? (
             <div style={{ color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', textAlign: 'center', padding: '20px 0' }}>
               No prayer requests this week.
             </div>
           ) : (
-            prayerThemes.map((t) => (
-              <div key={t.id} style={{
-                fontFamily: T.serif, fontSize: 14, color: T.inkSoft, lineHeight: 1.55,
-                padding: '9px 0', borderBottom: `1px solid ${T.line}`,
-              }}>
-                🙏 {t.theme.length > 120 ? t.theme.slice(0, 120) + '…' : t.theme}
-              </div>
-            ))
+            prayerThemes.map((t) => {
+              const prayed = prayedIds.has(t.id);
+              return (
+                <div key={t.id} style={{
+                  padding: '10px 0', borderBottom: `1px solid ${T.line}`,
+                  display: 'flex', alignItems: 'flex-start', gap: 10,
+                }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: T.goldDark, marginBottom: 3 }}>
+                      {t.name}
+                    </div>
+                    <div style={{ fontFamily: T.serif, fontSize: 14, color: T.inkSoft, lineHeight: 1.55 }}>
+                      {t.body.length > 120 ? t.body.slice(0, 120) + '…' : t.body}
+                    </div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (prayed) return;
+                      await supabase.from('personal_prayer_support').insert({ prayer_id: t.id, user_id: session?.user?.id });
+                      setPrayedIds((prev) => new Set([...prev, t.id]));
+                    }}
+                    style={{
+                      flexShrink: 0, border: `1px solid ${prayed ? T.gold : T.line}`,
+                      borderRadius: 999, padding: '5px 12px', fontSize: 12,
+                      background: prayed ? 'rgba(184,115,58,0.10)' : 'transparent',
+                      color: prayed ? T.goldDark : T.inkMuted,
+                      cursor: prayed ? 'default' : 'pointer', fontWeight: 600,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {prayed ? '🙏 Prayed' : '🙏 Pray'}
+                  </button>
+                </div>
+              );
+            })
           )}
         </Section>
 
