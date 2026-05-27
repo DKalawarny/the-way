@@ -220,7 +220,7 @@ export default function WalkCreator({ session, churchId, onBack, onSaved }) {
           scope:       'church',
           scope_id:    churchId,
           visibility:  'public',
-          body:        { text: announceMsg.trim() },
+          body:        announceMsg.trim(),
           body_data:   { is_walk_announcement: true, walk_id: walk.id, walk_title: form.title, walk_emoji: form.emoji },
         });
       }

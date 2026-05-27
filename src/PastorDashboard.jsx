@@ -416,7 +416,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
         scope_id: churchId,
         kind: 'text',
         body,
-        body_data: { walk_id: w.id, walk_title: w.title, walk_emoji: w.cover_emoji, walk_length_days: w.length_days },
+        body_data: { is_walk_announcement: true, walk_id: w.id, walk_title: w.title, walk_emoji: w.cover_emoji, walk_length_days: w.length_days },
         is_anonymous: false,
         person_type: profile?.person_type ?? null,
       }),

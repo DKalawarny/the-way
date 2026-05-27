@@ -850,8 +850,8 @@ export default function PostCard({
         )}
         {!editing && <PostImageGrid urls={effectiveItem.body?.image_urls} />}
 
-        {/* Walk announcement card */}
-        {!editing && item.body_data?.is_walk_announcement && (
+        {/* Walk announcement card — body_data is merged into body by feed_items view */}
+        {!editing && (effectiveItem.body?.is_walk_announcement || effectiveItem.body?.walk_id) && (
           <div style={{
             marginTop: 12,
             background: T.parchment,
@@ -868,12 +868,12 @@ export default function PostCard({
                 🚶 New Walk
               </div>
               <div style={{ fontFamily: T.serif, fontSize: 16, fontWeight: 600, color: T.ink, lineHeight: 1.3 }}>
-                {item.body_data.walk_emoji} {item.body_data.walk_title}
+                {effectiveItem.body.walk_emoji} {effectiveItem.body.walk_title}
               </div>
             </div>
             {onPickWalk && (
               <button
-                onClick={() => onPickWalk(item.body_data.walk_id)}
+                onClick={() => onPickWalk(effectiveItem.body.walk_id)}
                 style={{
                   flexShrink: 0,
                   background: T.ink, color: T.cream, border: 'none',
