@@ -1129,7 +1129,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
   const [loading, setLoading] = useState(true);
   const [feedError, setFeedError] = useState(false);
   const [filter, setFilter] = useState('all');
-  const [filterPersonalized, setFilterPersonalized] = useState(false);
+  // filterPersonalized removed — auto-filter by person_type was removed 2026-05-27
   const [blockedIds, setBlockedIds] = useState([]);
   const [savedPostIds, setSavedPostIds] = useState(new Set());
   const [following, setFollowing] = useState(new Set());
@@ -1188,6 +1188,8 @@ useEffect(() => {
         }
       });
   }, []);
+
+  const { showToast, ui: communityToastUi } = useUiKit();
 
   async function handleFollow(userId, isFollowing) {
     if (!session) return;
@@ -1440,7 +1442,7 @@ useEffect(() => {
       .single();
     setPrayerSubmitting(false);
     if (error) {
-      console.error('[submitPrayer] insert failed', error);
+      showToast("Couldn't post your prayer. Try again.", 'error');
       return;
     }
     if (data) {
@@ -1465,6 +1467,7 @@ useEffect(() => {
 
   return (
     <div className="scene" style={{ height: sceneH, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {communityToastUi}
       {!hideHeader && (
         <>
           {/* App top bar — deep walnut "leather cover" so the page has an
