@@ -566,18 +566,29 @@ export default function PostCard({
       {postCardUi}
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: '50%',
-          background: showAsChurch ? T.parchment : (item.is_anonymous ? T.line : T.parchment),
-          color: T.goldDark,
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 13, fontWeight: 700,
-        }}>
+        {/* Avatar — clickable to view profile */}
+        <div
+          onClick={() => !item.is_anonymous && onViewProfile?.(item.author_id)}
+          style={{
+            width: 32, height: 32, borderRadius: '50%',
+            background: showAsChurch ? T.parchment : (item.is_anonymous ? T.line : T.parchment),
+            color: T.goldDark,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 13, fontWeight: 700,
+            cursor: (!item.is_anonymous && onViewProfile) ? 'pointer' : 'default',
+          }}
+        >
           {avatarLabel}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: T.ink, lineHeight: 1.2 }}>
+            <span
+              onClick={() => !item.is_anonymous && onViewProfile?.(item.author_id)}
+              style={{
+                fontSize: 14, fontWeight: 600, color: T.ink, lineHeight: 1.2,
+                cursor: (!item.is_anonymous && onViewProfile) ? 'pointer' : 'default',
+              }}
+            >
               {displayName}
             </span>
             {!item.is_anonymous && !showAsChurch && authorProfile?.show_flag && (authorProfile?.flags ?? []).length > 0 && (

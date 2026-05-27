@@ -881,6 +881,7 @@ export default function ChurchPage({
                     sessionUserId={session?.user?.id}
                     refreshKey={feedRefresh}
                     onOpenSermon={onOpenSermon}
+                    onViewProfile={onViewProfile}
                     userPlan={profile?.plan ?? 'free'}
                     isPastor={isPastor}
                     emptyMessage={isPastor
