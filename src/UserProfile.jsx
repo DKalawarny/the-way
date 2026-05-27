@@ -335,6 +335,17 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
                   </button>
                 )}
 
+                {/* ── Message ── pill alongside Follow */}
+                {onStartDM && (
+                  <button onClick={() => onStartDM(userId)} style={{
+                    background: 'transparent', color: T.ink,
+                    border: `1.5px solid ${T.ink}`,
+                    borderRadius: 999, padding: '8px 14px',
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}>✉ Message</button>
+                )}
+
                 {/* ── ⋯ overflow: Pray + Block ── */}
                 <div ref={actionMenuRef} style={{ position: 'relative' }}>
                   <button
@@ -460,24 +471,6 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
         </div>
       </div>
 
-      {/* Direct message — primary action, right under the header */}
-      {onStartDM && session?.user?.id !== userId && (
-        <button
-          onClick={() => onStartDM(userId)}
-          style={{
-            width: '100%', marginBottom: 16,
-            background: T.ink, color: T.cream,
-            border: 'none', borderRadius: 12,
-            padding: '13px 18px', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 10,
-            fontFamily: 'inherit', fontSize: 15, fontWeight: 600,
-          }}
-        >
-          <span style={{ fontSize: 17 }}>✉</span>
-          <span>Message {profile?.display_name?.split(' ')[0] ?? 'them'}</span>
-          <span style={{ marginLeft: 'auto', fontSize: 15 }}>→</span>
-        </button>
-      )}
 
       {/* Their church + this week's sermon */}
       {session?.user?.id !== userId && (
