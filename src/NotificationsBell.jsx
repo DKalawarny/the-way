@@ -26,12 +26,26 @@ const KIND_COPY = {
   follow:                    { verb: 'started following you', Icon: UserPlus },
 };
 
-function NotificationRow({ n, onClick }) {
+function NotificationRow({ n, onClick, onFriendAction }) {
   const copy = KIND_COPY[n.kind] ?? { verb: n.kind, Icon: null, emoji: <KinwoveStar size={10} /> };
   const actor = n.actor_profile;
   const actorName = actor?.display_name ?? 'Someone';
   const snippet = n.data?.snippet;
   const unread = !n.read_at;
+  const isFriendReq = n.kind === 'friend_request_received';
+
+  const [friendState, setFriendState] = useState(null); // null | 'busy' | 'accepted' | 'declined'
+
+  async function handleFriend(e, action) {
+    e.stopPropagation();
+    setFriendState('busy');
+    await supabase
+      .from('friend_requests')
+      .update({ status: action === 'accept' ? 'accepted' : 'declined' })
+      .eq('id', n.target_id);
+    setFriendState(action === 'accept' ? 'accepted' : 'declined');
+    onFriendAction?.();
+  }
 
   return (
     <button
@@ -79,6 +93,42 @@ function NotificationRow({ n, onClick }) {
         <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 4 }}>
           {timeAgo(n.created_at)}
         </div>
+
+        {/* Accept / Decline buttons for friend requests */}
+        {isFriendReq && (
+          <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: 7, marginTop: 8 }}>
+            {friendState === 'accepted' && (
+              <span style={{ fontSize: 12, color: T.goldDark, fontWeight: 600 }}>✓ Friends now</span>
+            )}
+            {friendState === 'declined' && (
+              <span style={{ fontSize: 12, color: T.inkMuted }}>Request declined</span>
+            )}
+            {!friendState && (
+              <>
+                <button
+                  onClick={(e) => handleFriend(e, 'accept')}
+                  disabled={friendState === 'busy'}
+                  style={{
+                    background: T.ink, color: T.cream,
+                    border: 'none', borderRadius: 8,
+                    padding: '5px 14px', fontSize: 12, fontWeight: 600,
+                    cursor: 'pointer', opacity: friendState === 'busy' ? 0.5 : 1,
+                  }}
+                >Accept</button>
+                <button
+                  onClick={(e) => handleFriend(e, 'decline')}
+                  disabled={friendState === 'busy'}
+                  style={{
+                    background: 'transparent', color: T.inkSoft,
+                    border: `1px solid ${T.line}`, borderRadius: 8,
+                    padding: '5px 14px', fontSize: 12, fontWeight: 600,
+                    cursor: 'pointer', opacity: friendState === 'busy' ? 0.5 : 1,
+                  }}
+                >Decline</button>
+              </>
+            )}
+          </div>
+        )}
       </div>
       {unread && (
         <div style={{
@@ -275,7 +325,7 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
                 </div>
               )}
               {!loading && notifs.map(n => (
-                <NotificationRow key={n.id} n={n} onClick={handleClick} />
+                <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} />
               ))}
             </div>
           </div>
