@@ -31,7 +31,6 @@ export default function ChurchDirectory({ session, profile, onBack, onOpenChurch
       .from('churches')
       .select('id, name, denomination, city, country, pastor_id, pinned_post, verification_status')
       .eq('is_public', true)
-      .eq('verification_status', 'verified')
       .order('created_at', { ascending: false })
       .then(async ({ data }) => {
         const list = data ?? [];

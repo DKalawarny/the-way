@@ -1069,13 +1069,27 @@ app.get('/api/church/by-invite-code', async (req, res) => {
   const code = (req.query.code ?? '').trim().toUpperCase();
   if (!code) return res.status(400).json({ church: null });
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ church: null });
-  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
-  const rows = await fetch(
-    `${SUPABASE_URL}/rest/v1/churches?invite_code=eq.${encodeURIComponent(code)}&select=id,name&limit=1`,
-    { headers: h }
-  ).then(r => r.json()).catch(() => []);
-  const church = Array.isArray(rows) ? (rows[0] ?? null) : null;
-  res.json({ church });
+  const h = {
+    apikey: SUPABASE_SERVICE_KEY,
+    Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+    'X-Client-Info': 'kinwove-server',
+  };
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/churches?invite_code=eq.${encodeURIComponent(code)}&select=id,name&limit=1`,
+      { headers: h }
+    );
+    const rows = await r.json();
+    if (!Array.isArray(rows)) {
+      console.error('[invite-code] unexpected response:', JSON.stringify(rows).slice(0, 300));
+      return res.json({ church: null });
+    }
+    const church = rows[0] ?? null;
+    res.json({ church });
+  } catch (err) {
+    console.error('[invite-code] fetch error:', err.message);
+    res.json({ church: null });
+  }
 });
 
 // Rotate a church's invite code — requires auth, verifies caller is the pastor
