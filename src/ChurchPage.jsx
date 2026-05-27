@@ -989,6 +989,36 @@ export default function ChurchPage({
               </div>
             )}
 
+            {/* ── Featured walk companion — members + pastor, Sermons tab ── */}
+            {(isMember || isPastor) && featuredWalk && onOpenWalks && (
+              <button
+                onClick={onOpenWalks}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left',
+                  background: `linear-gradient(135deg, rgba(184,115,58,0.10) 0%, rgba(184,115,58,0.05) 100%)`,
+                  border: `1px solid ${T.goldLight}`,
+                  borderLeft: `3px solid ${T.gold}`,
+                  borderRadius: 14, padding: '16px 18px', marginBottom: 16, cursor: 'pointer',
+                }}
+              >
+                <div style={{ fontSize: 28, flexShrink: 0, lineHeight: 1 }}>{featuredWalk.cover_emoji}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 3 }}>
+                    Walking together
+                  </div>
+                  <div style={{ fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.2 }}>
+                    {featuredWalk.title}
+                  </div>
+                  {featuredWalk.subtitle && (
+                    <div style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.4, marginTop: 3 }}>
+                      {featuredWalk.subtitle}
+                    </div>
+                  )}
+                </div>
+                <div style={{ fontSize: 18, color: T.goldDark, flexShrink: 0 }}>→</div>
+              </button>
+            )}
+
             {/* Sermon series + empty states — members and pastor only */}
             {/* Empty-state — no published sermon and no series */}
             {(isMember || isPastor) && !latestSermon && seriesList.length === 0 && (
