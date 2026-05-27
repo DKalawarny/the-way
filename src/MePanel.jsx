@@ -816,7 +816,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
     if (!session?.user?.id) return;
     const uid = session.user.id;
     Promise.all([
-      supabase.from('posts').select('*', { count: 'exact', head: true }).eq('author_id', uid),
+      supabase.from('posts').select('*', { count: 'exact', head: true }).eq('author_id', uid).eq('scope', 'me'),
       supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', uid),
       supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', uid),
     ]).then(([{ count: p }, { count: ing }, { count: ers }]) => {
@@ -914,7 +914,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
 
   async function loadPosts(uid) {
     setLoading(true);
-    const { data } = await supabase.from('posts').select('*, post_comments(id)').eq('author_id', uid).order('created_at', { ascending: false });
+    const { data } = await supabase.from('posts').select('*, post_comments(id)').eq('author_id', uid).eq('scope', 'me').order('created_at', { ascending: false });
     if (!data) { setLoading(false); return; }
     const { data: reactions } = await supabase.from('reactions').select('post_id, kind, author_id').in('post_id', data.map((p) => p.id));
     setPosts(data.map((p) => {

@@ -43,7 +43,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
       setChurchCtx(await loadChurchContext(data?.church_id));
     });
     Promise.all([
-      supabase.from('posts').select('*', { count: 'exact', head: true }).eq('author_id', userId),
+      supabase.from('posts').select('*', { count: 'exact', head: true }).eq('author_id', userId).eq('scope', 'me'),
       supabase.from('follows').select('*', { count: 'exact', head: true }).eq('follower_id', userId),
       supabase.from('follows').select('*', { count: 'exact', head: true }).eq('following_id', userId),
       supabase.from('friend_requests').select('id', { count: 'exact', head: true })
