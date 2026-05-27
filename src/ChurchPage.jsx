@@ -45,6 +45,8 @@ export default function ChurchPage({
   const [pendingInvites, setPendingInvites] = useState([]);
   const [isCareTeam, setIsCareTeam] = useState(false);
   const [featuredWalk, setFeaturedWalk] = useState(null);
+  const [churchPrayers, setChurchPrayers] = useState([]);
+  const [prayedIds, setPrayedIds] = useState(() => new Set());
   const [feedRefresh, setFeedRefresh] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -184,7 +186,8 @@ export default function ChurchPage({
     let cancelled = false;
     (async () => {
       const userId = session?.user?.id;
-      const [invitesRes, careRes, walkRes] = await Promise.all([
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      const [invitesRes, careRes, walkRes, prayersRes] = await Promise.all([
         userId
           ? supabase.from('church_role_invites')
               .select('id, role_key, role_label, message, created_at, invited_by')
@@ -199,11 +202,24 @@ export default function ChurchPage({
           ? supabase.from('walks').select('id, title, subtitle, cover_emoji, length_days')
               .eq('id', church.featured_walk_id).eq('is_published', true).maybeSingle()
           : Promise.resolve({ data: null }),
+        supabase
+          .from('personal_prayers')
+          .select('id, body, created_at, user_id, profiles!user_id(church_id, display_name)')
+          .eq('is_public', true)
+          .gte('created_at', sevenDaysAgo)
+          .order('created_at', { ascending: false })
+          .limit(50),
       ]);
       if (cancelled) return;
       setPendingInvites(invitesRes.data ?? []);
       setIsCareTeam(!!careRes.data);
       setFeaturedWalk(walkRes.data ?? null);
+      // Filter prayers to this church's members only
+      const prayers = (prayersRes.data ?? [])
+        .filter((p) => p.profiles?.church_id === churchId)
+        .slice(0, 6)
+        .map((p) => ({ id: p.id, body: p.body, name: p.profiles?.display_name ?? 'Someone' }));
+      setChurchPrayers(prayers);
     })();
     return () => { cancelled = true; };
   }, [isMember, churchId, session?.user?.id, church?.featured_walk_id]);
@@ -825,6 +841,59 @@ export default function ChurchPage({
                     }}>Pick a walk</button>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* ── Congregation prayers ─────────────────────────── */}
+            {isMember && churchPrayers.length > 0 && (
+              <div style={{
+                background: T.white, border: `1px solid ${T.line}`,
+                borderRadius: 14, padding: '16px 18px', marginBottom: 20,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700 }}>
+                    🙏 Praying together
+                  </div>
+                  {onOpenPrayer && (
+                    <button onClick={onOpenPrayer} style={{
+                      background: 'none', border: 'none', color: T.goldDark,
+                      fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0,
+                    }}>
+                      + Add yours
+                    </button>
+                  )}
+                </div>
+                {churchPrayers.map((p, i) => (
+                  <div key={p.id} style={{
+                    paddingTop: i > 0 ? 10 : 0,
+                    marginTop: i > 0 ? 10 : 0,
+                    borderTop: i > 0 ? `1px solid ${T.line}` : 'none',
+                    display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 700, color: T.goldDark, marginBottom: 2 }}>{p.name}</div>
+                      <div style={{ fontSize: 13.5, color: T.ink, lineHeight: 1.5, fontFamily: T.serif,
+                        overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                      }}>{p.body}</div>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (prayedIds.has(p.id) || !session?.user?.id) return;
+                        await supabase.from('personal_prayer_support').insert({ prayer_id: p.id, user_id: session.user.id }).then(null, () => {});
+                        setPrayedIds((s) => new Set([...s, p.id]));
+                      }}
+                      style={{
+                        flexShrink: 0, border: `1px solid ${prayedIds.has(p.id) ? T.goldDark : T.line}`,
+                        background: prayedIds.has(p.id) ? 'rgba(184,115,58,0.08)' : 'transparent',
+                        borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600,
+                        color: prayedIds.has(p.id) ? T.goldDark : T.inkSoft,
+                        cursor: prayedIds.has(p.id) ? 'default' : 'pointer',
+                      }}
+                    >
+                      {prayedIds.has(p.id) ? '🙏 Prayed' : '🙏 Pray'}
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
 
