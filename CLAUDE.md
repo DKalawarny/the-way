@@ -342,17 +342,14 @@ email, it's the trigger anchor for system DMs. Only the display_name changes.
 - [ ] `localStorage` keys (`theway:notes`, etc.) intentionally NOT renamed
       — would wipe existing users' local state.
 
-### Supabase (must be done)
-- [ ] Run the two pending SQL migrations above (sermon_discussions + kinwove DM display name).
+### Supabase (done — applied 2026-05-26)
+- [x] sermon_discussions image_urls column
+- [x] profiles.display_name = 'kinwove' for system DM account
+- [x] trg_notify_sermon_published trigger (applied 2026-05-27)
 
-### Remaining rough edges from 2026-05-24 audit
-- Feed.jsx: load error shows empty feed instead of an error state (silent failure)
-- ChurchPage.jsx: load error logged to console but no UI error state shown
-- Some console.error() calls in Community/PostCard don't surface as toasts
-  (post delete/edit/hide/report failures)
-- BibleReader AI sidebar has no loading indicator when fetching explanations
+### Remaining rough edges
 - `PastorDashboard.jsx` SETUP_KEY still uses old `the-way:church-setup:${churchId}`
-  localStorage key (intentionally not renamed to avoid breaking existing pastor setup state)
+  localStorage key — intentionally not renamed to avoid wiping existing pastor setup state
 
 ## 10. ChurchAdmin tabs
 
@@ -381,7 +378,7 @@ git log --oneline -5        # see recent commits
 npm run dev                 # server: localhost:8787, web: localhost:5173
 ```
 
-Latest commit as of 2026-05-26: `c2ba5a3` — Connect screen enabled.
+Latest commit as of 2026-05-27: `c977fc1` — BibleReader animated typing dots.
 Branch: `main`. Everything is committed and pushed.
 
 Daniel also has a side project — **deconstructors.ca** (demolition company,
