@@ -142,6 +142,21 @@ Profiles query fetches `avatar_config, avatar_url`. `Bubble` component renders `
 ### 24. SermonDiscussion multiple replies (FIXED 2026-05-26)
 Reply button shows at ALL depths (removed `depth === 0` gate). After posting, calls `reload()` instead of optimistic append so `profMap` is populated and names show correctly (not "Someone").
 
+### 25. Prayer.jsx — NO photo upload code (FIXED 2026-05-27)
+`personal_prayers` table has no `image_urls` column. All photo upload code was removed from Prayer.jsx — do NOT re-add `PostImageGrid`, `useImageDrafts`, `ImageDraftGrid`, `ImageAttachButton`, or `image_urls` to any prayer insert. Saves will fail with a 400 if you include that column.
+
+### 26. Prayer Pulse — no `category` column (FIXED 2026-05-27)
+`personal_prayers` has no `category` column. Do NOT query it. The Pulse now queries `is_public=true` prayers joined to `profiles!user_id(church_id, display_name)`, filtered to the pastor's church. Shows snippets + member name + Pray button.
+
+### 27. walk_steps RLS — INSERT/UPDATE/DELETE policies needed (ADDED 2026-05-27)
+`walk_steps` previously had SELECT only. Walk saves were blocked. Added policies via `scripts/2026-05-27-walk-steps-rls.sql` — run in Supabase SQL editor if not already applied. Keyed on `walks.created_by = auth.uid()` via subquery.
+
+### 28. Nav stage persistence — 300ms debounce + mobile flush (FIXED 2026-05-27)
+`App.jsx`: DB debounce reduced to 300ms. Added `visibilitychange` + `pagehide` listeners to flush `last_stage` immediately when tab goes hidden. Walk page and all major stages now restore correctly after mobile tab recycling.
+
+### 29. Sermon discussion question-first format (LOCKED 2026-05-27)
+`SERMON_SYSTEM` prompt generates `body` field as: question first (ends `?`), blank line, 2–3 context sentences. PostCard (`sermon_item`) renders the leading `?` paragraph as the hero at top (17px bold serif). Legacy fallback for old posts (last line ending `?`). Do not revert to context-before-question ordering.
+
 ---
 
 ## 1. Who you're working with
@@ -378,7 +393,7 @@ git log --oneline -5        # see recent commits
 npm run dev                 # server: localhost:8787, web: localhost:5173
 ```
 
-Latest commit as of 2026-05-27: `c977fc1` — BibleReader animated typing dots.
+Latest commit as of 2026-05-27: `d8ab18e` — nav stage persistence fix (visibilitychange flush).
 Branch: `main`. Everything is committed and pushed.
 
 Daniel also has a side project — **deconstructors.ca** (demolition company,
