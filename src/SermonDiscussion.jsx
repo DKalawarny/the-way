@@ -94,16 +94,15 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
       sermon_content_id: sermonContentId ?? null,
       image_urls,
     };
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('sermon_discussions')
-      .insert(insertRow)
-      .select()
-      .single();
+      .insert(insertRow);
     setBusy(false);
     if (error) { showToast(`Couldn't post: ${error.message}`, 'error'); return; }
-    setRows((r) => [...r, data]);
     setText(''); setAnon(false); setReplyTo(null);
     imageDrafts.clear();
+    // Reload so profMap gets populated for the new comment (prevents "Someone" name).
+    reload();
   }
 
   async function remove(id) {
@@ -167,12 +166,10 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
               <PostImageGrid urls={row.image_urls} />
             </div>
           )}
-          {depth === 0 && (
-            <button onClick={() => setReplyTo(row)} style={{
-              background: 'none', border: 'none', color: T.goldDark, fontSize: 12, cursor: 'pointer',
-              marginTop: 4, padding: '6px 0', fontWeight: 600, minHeight: 28,
-            }}>↳ Reply</button>
-          )}
+          <button onClick={() => setReplyTo(row)} style={{
+            background: 'none', border: 'none', color: T.goldDark, fontSize: 12, cursor: 'pointer',
+            marginTop: 4, padding: '6px 0', fontWeight: 600, minHeight: 28,
+          }}>↳ Reply</button>
         </div>
         {repliesOf(row.id).map((r) => <Bubble key={r.id} row={r} depth={depth + 1} />)}
       </div>
