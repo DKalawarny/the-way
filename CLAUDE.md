@@ -157,6 +157,19 @@ Reply button shows at ALL depths (removed `depth === 0` gate). After posting, ca
 ### 29. Sermon discussion question-first format (LOCKED 2026-05-27)
 `SERMON_SYSTEM` prompt generates `body` field as: question first (ends `?`), blank line, 2–3 context sentences. PostCard (`sermon_item`) renders the leading `?` paragraph as the hero at top (17px bold serif). Legacy fallback for old posts (last line ending `?`). Do not revert to context-before-question ordering.
 
+### 30. feed_items view — body_data merges into body (CRITICAL)
+The `feed_items` Postgres view merges `body_data` into `body`:
+```sql
+coalesce(p.body_data, '{}'::jsonb) || jsonb_build_object('text', p.body) as body
+```
+`item.body_data` is ALWAYS undefined in PostCard — the view doesn't return it. All structured fields (walk_id, walk_title, is_walk_announcement, sermon_id, etc.) are on `item.body`. The `posts.body` column is plain `text` — NEVER insert an object there; structured data goes in `body_data jsonb`.
+
+### 31. Walk announcement card (ADDED 2026-05-27)
+PostCard renders a "🚶 New Walk" card when `item.body?.is_walk_announcement || item.body?.walk_id`. Fields are `item.body.walk_emoji`, `item.body.walk_title`, `item.body.walk_id`. `onPickWalk` prop chains Feed → ChurchPage → `onOpenWalks`.
+
+### 32. ChurchAttendsCard — no sermon row (FIXED 2026-05-27)
+`profileShared.jsx` `ChurchAttendsCard` no longer shows the "This week" sermon row. Church content doesn't belong on personal profile. Card redesigned: parchment bg, `rgba(184,115,58,0.2)` border, serif church name. Do not re-add the sermon row.
+
 ---
 
 ## 1. Who you're working with
@@ -393,7 +406,7 @@ git log --oneline -5        # see recent commits
 npm run dev                 # server: localhost:8787, web: localhost:5173
 ```
 
-Latest commit as of 2026-05-27: `d8ab18e` — nav stage persistence fix (visibilitychange flush).
+Latest commit as of 2026-05-27: `182403f` — church card redesign, sermon row removed from profile.
 Branch: `main`. Everything is committed and pushed.
 
 Daniel also has a side project — **deconstructors.ca** (demolition company,
