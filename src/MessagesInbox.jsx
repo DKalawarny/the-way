@@ -414,7 +414,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
   // Desktop: two-panel layout
   return (
     <>
-    <div style={{ display: 'flex', height: '100vh', background: T.cream, overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: 'calc(100vh - var(--global-header-h, 0px))', background: T.cream, overflow: 'hidden' }}>
       {/* Sidebar */}
       <div style={{
         width: 300, minWidth: 240,

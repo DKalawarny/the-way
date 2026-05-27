@@ -228,7 +228,7 @@ export default function DMConversation({ session, profile, conversationId, other
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '100vh', background: T.cream }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: T.cream }}>
       {/* Header */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
@@ -256,6 +256,21 @@ export default function DMConversation({ session, profile, conversationId, other
 
       {/* Message list */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 8px' }}>
+        {messages.length === 0 && !isSystem && (
+          <div style={{
+            height: '100%', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', gap: 10,
+            color: T.inkMuted, fontFamily: T.serif, textAlign: 'center', padding: '0 24px',
+          }}>
+            <div style={{ fontSize: 36 }}>✉</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: T.inkSoft, fontFamily: T.display }}>
+              Start a conversation with {other?.display_name?.split(' ')[0] ?? 'them'}
+            </div>
+            <div style={{ fontSize: 13, fontStyle: 'italic', lineHeight: 1.6 }}>
+              Say hello, share something on your heart, or ask how they're doing.
+            </div>
+          </div>
+        )}
         {messages.map((msg, i) => {
           const isMe = msg.sender_id === session?.user?.id;
           const prevMsg = messages[i - 1];
