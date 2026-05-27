@@ -92,6 +92,7 @@ export default function WalkCreator({ session, churchId, onBack, onSaved }) {
   });
   const [steps, setSteps]   = useState([]);
   const [progress, setProgress] = useState(0); // 0-100 during generation
+  const [announceMsg, setAnnounceMsg] = useState(''); // optional church feed announcement
 
   function setF(key, val) { setForm((f) => ({ ...f, [key]: val })); }
 
@@ -211,6 +212,18 @@ export default function WalkCreator({ session, churchId, onBack, onSaved }) {
 
       const { error: sErr } = await supabase.from('walk_steps').insert(stepRows);
       if (sErr) throw new Error(sErr.message);
+
+      // Post a church feed announcement if the pastor wrote one
+      if (publish && announceMsg.trim() && churchId) {
+        await supabase.from('posts').insert({
+          author_id:   session.user.id,
+          scope:       'church',
+          scope_id:    churchId,
+          visibility:  'public',
+          body:        announceMsg.trim(),
+          body_data:   { is_walk_announcement: true, walk_id: walk.id, walk_title: form.title, walk_emoji: form.emoji },
+        });
+      }
 
       onSaved?.(walk);
     } catch (e) {
@@ -381,7 +394,32 @@ export default function WalkCreator({ session, churchId, onBack, onSaved }) {
         />
       ))}
 
-      <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+      {/* Congregation announcement — only relevant on publish */}
+      <div style={{
+        marginTop: 24, background: T.parchment,
+        border: `1px solid rgba(184,115,58,0.22)`, borderRadius: 14, padding: '16px 18px',
+      }}>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: T.goldDark, marginBottom: 6 }}>
+          📣 Announce to congregation <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: T.inkMuted }}>— optional</span>
+        </div>
+        <div style={{ fontSize: 12.5, color: T.inkSoft, marginBottom: 10 }}>
+          When you publish, this message posts to your church feed so members know about the new walk.
+        </div>
+        <textarea
+          value={announceMsg}
+          onChange={(e) => setAnnounceMsg(e.target.value)}
+          placeholder={`We've added a new walk — ${form.emoji} ${form.title || 'this journey'} (${form.length} days). Give it a try this week.`}
+          rows={3}
+          style={{
+            width: '100%', boxSizing: 'border-box', resize: 'vertical',
+            border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 13px',
+            fontFamily: T.serif, fontSize: 14, color: T.ink,
+            background: T.white, outline: 'none', lineHeight: 1.6,
+          }}
+        />
+      </div>
+
+      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
         <button
           onClick={() => save(false)}
           style={{
