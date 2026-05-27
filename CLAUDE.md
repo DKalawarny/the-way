@@ -167,6 +167,15 @@ coalesce(p.body_data, '{}'::jsonb) || jsonb_build_object('text', p.body) as body
 ### 31. Walk announcement card (ADDED 2026-05-27)
 PostCard renders a "🚶 New Walk" card when `item.body?.is_walk_announcement || item.body?.walk_id`. Fields are `item.body.walk_emoji`, `item.body.walk_title`, `item.body.walk_id`. `onPickWalk` prop chains Feed → ChurchPage → `onOpenWalks`.
 
+### 33. Featured walk shows on Sermons tab too (ADDED 2026-05-27)
+`ChurchPage.jsx`: `featuredWalk` card rendered on Sermons tab (below latest sermon, above series) for members + pastor. Same style as Feed tab card. Both tabs show it — Feed and Sermons.
+
+### 34. Milestones wired to walk completions (ADDED 2026-05-27)
+`Walks.jsx` `handleAdvance`: on final day completion, fire-and-forget `posts.insert` with `kind: 'journey_milestone'`, `scope: 'me'`, body = `Finished "${title}" — N-day walk.` Do not block the view transition.
+
+### 35. PlanLine hidden until Stripe live (2026-05-27)
+`MePanel.jsx` `<PlanLine>` is commented out — `/?upgrade=1` has no handler. Do NOT uncomment until the Stripe individual upgrade flow exists.
+
 ### 32. ChurchAttendsCard — no sermon row (FIXED 2026-05-27)
 `profileShared.jsx` `ChurchAttendsCard` no longer shows the "This week" sermon row. Church content doesn't belong on personal profile. Card redesigned: parchment bg, `rgba(184,115,58,0.2)` border, serif church name. Do not re-add the sermon row.
 
@@ -406,7 +415,7 @@ git log --oneline -5        # see recent commits
 npm run dev                 # server: localhost:8787, web: localhost:5173
 ```
 
-Latest commit as of 2026-05-27: `182403f` — church card redesign, sermon row removed from profile.
+Latest commit as of 2026-05-27: `7a4c2a3` — walk card on Sermons tab.
 Branch: `main`. Everything is committed and pushed.
 
 Daniel also has a side project — **deconstructors.ca** (demolition company,
