@@ -1547,7 +1547,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
                         background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
                         padding: '7px 14px', fontSize: 13, color: T.inkSoft, cursor: 'pointer',
                       }}
-                    >{emailCopied ? '✓ Copied' : '✉️ Copy email'}</button>
+                    >{emailCopied ? '✓ Copied' : '✉️ Copy email template'}</button>
                     <a
                       href={`sms:?body=Join ${encodeURIComponent(church?.name ?? 'our church')} on kinwove: ${encodeURIComponent(joinUrl)}`}
                       style={{
@@ -2053,6 +2053,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
           <ChurchAiChat
             session={session}
             profile={profile}
+            churchId={churchId}
             churchPlan={plan ?? 'church_base'}
           />
         )}

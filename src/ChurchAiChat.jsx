@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { T } from './theme.js';
-import { authedFetch } from './supabase.js';
+import { authedFetch, supabase } from './supabase.js';
 import { useAiUsage } from './useAiUsage.js';
 import AiLimitWall from './AiLimitWall.jsx';
 import MsgText from './MsgText.jsx';
@@ -44,16 +44,17 @@ const STARTERS = [
   'How did the early church understand communion — what do the church fathers say?',
 ];
 
-export default function ChurchAiChat({ session, profile, churchPlan }) {
+export default function ChurchAiChat({ session, profile, churchId, churchPlan }) {
   const userId = session?.user?.id;
   const plan = churchPlan ?? 'church_base';
 
   const aiUsage = useAiUsage(userId, plan);
 
-  const [messages, setMessages] = useState([]);
-  const [input, setInput]       = useState('');
-  const [busy, setBusy]         = useState(false);
-  const [error, setError]       = useState(null);
+  const [messages, setMessages]   = useState([]);
+  const [input, setInput]         = useState('');
+  const [busy, setBusy]           = useState(false);
+  const [error, setError]         = useState(null);
+  const [savedIdx, setSavedIdx]   = useState({}); // tracks which assistant messages have been saved
 
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
@@ -132,6 +133,31 @@ export default function ChurchAiChat({ session, profile, churchPlan }) {
     }
   }
 
+  async function saveToBoard(assistantIdx) {
+    if (!churchId || !userId) return;
+    // Find the user message immediately before this assistant message
+    const question = messages.slice(0, assistantIdx).reverse().find((m) => m.role === 'user')?.content ?? '';
+    const answer   = messages[assistantIdx]?.content ?? '';
+    if (!answer) return;
+
+    const body = question
+      ? `**Q: ${question}**\n\n${answer}`
+      : answer;
+
+    const { error: err } = await supabase.from('posts').insert({
+      author_id:  userId,
+      scope:      'church',
+      scope_id:   churchId,
+      visibility: 'public',
+      body,
+      body_data:  { saved_from_ask: true, question },
+    });
+
+    if (!err) {
+      setSavedIdx((prev) => ({ ...prev, [assistantIdx]: true }));
+    }
+  }
+
   const isEmpty = messages.length === 0;
 
   return (
@@ -187,20 +213,48 @@ export default function ChurchAiChat({ session, profile, churchPlan }) {
                 {m.content}
               </div>
             ) : (
-              <div style={{
-                maxWidth: '92%',
-                background: T.white,
-                border: `1px solid ${T.line}`,
-                borderRadius: '4px 16px 16px 16px',
-                padding: '12px 16px',
-                fontSize: 14,
-                lineHeight: 1.65,
-                color: T.ink,
-              }}>
-                {m.content
-                  ? <MsgText text={m.content} />
-                  : <span style={{ color: T.inkMuted, fontStyle: 'italic' }}>…</span>
-                }
+              <div style={{ maxWidth: '92%' }}>
+                <div style={{
+                  background: T.white,
+                  border: `1px solid ${T.line}`,
+                  borderRadius: '4px 16px 16px 16px',
+                  padding: '12px 16px',
+                  fontSize: 14,
+                  lineHeight: 1.65,
+                  color: T.ink,
+                }}>
+                  {m.content
+                    ? <MsgText text={m.content} />
+                    : <span style={{ color: T.inkMuted, fontStyle: 'italic' }}>…</span>
+                  }
+                </div>
+                {/* Save to board — only show when message is complete and churchId exists */}
+                {m.content && !busy && churchId && (
+                  <div style={{ marginTop: 6, paddingLeft: 2 }}>
+                    {savedIdx[i] ? (
+                      <span style={{ fontSize: 12, color: T.goldDark, fontWeight: 600 }}>✓ Saved to board</span>
+                    ) : (
+                      <button
+                        onClick={() => saveToBoard(i)}
+                        style={{
+                          background: 'none',
+                          border: `1px solid ${T.goldLight}`,
+                          borderRadius: 8,
+                          padding: '4px 10px',
+                          fontSize: 12,
+                          color: T.inkSoft,
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                        }}
+                      >
+                        📌 Save to board
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
