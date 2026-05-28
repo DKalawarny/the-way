@@ -179,6 +179,27 @@ PostCard renders a "🚶 New Walk" card when `item.body?.is_walk_announcement ||
 ### 32. ChurchAttendsCard — no sermon row (FIXED 2026-05-27)
 `profileShared.jsx` `ChurchAttendsCard` no longer shows the "This week" sermon row. Church content doesn't belong on personal profile. Card redesigned: parchment bg, `rgba(184,115,58,0.2)` border, serif church name. Do not re-add the sermon row.
 
+### 36. ChurchPage Pray tab (ADDED 2026-05-28)
+Congregation prayers live in their own "🙏 Pray" tab between Sermons and Info. Members + pastors only. Full prayer text, Pray/Prayed buttons (`personal_prayer_support`), empty state. "Pray together" chip on Feed navigates to this tab. Prayer fetch returns ALL church member prayers (no slice limit).
+
+### 37. church_roles write RLS — SECURITY DEFINER (FIXED 2026-05-28)
+INSERT/UPDATE/DELETE policies on `church_roles` used a self-referential subquery → infinite recursion. Fix: `public.church_roles_is_manager(uuid)` SECURITY DEFINER function. All write policies call this function. Script: `scripts/2026-05-27-fix-church-roles-write-rls.sql`. Do not revert to inline subquery.
+
+### 38. Role assignment notification (ADDED 2026-05-28)
+DB trigger `trg_notify_role_granted` fires on `church_roles` INSERT. Uses `add_notification()` helper — `kind='role_assigned'`, `data={church_id, role_key, role_label, church_name}`. Skips owner rows + self-assign. Script: `scripts/2026-05-27-notify-role-granted.sql`. Notification tap (App.jsx): care team → await loadChurchRoles then setStage('care-inbox'); other roles → church page.
+
+### 39. Care team role → auto care_team_members (ADDED 2026-05-28)
+`grantRole()` in ChurchAdmin upserts to `care_team_members` when `role_key='care'`. DB trigger `trg_sync_care_role_insert` also does this. Both run. `care-inbox` stage gate: `careTeamRecord || profile?.church_id` (loosened to avoid race on notification tap).
+
+### 40. Role title on posts + comments (ADDED 2026-05-28)
+`src/PostCard.jsx`: top role shown as gold text in subline — "Care team · 2h · in Grace Church". `presetForRole` imported. Same pattern in `Comments.jsx` and `SermonDiscussion.jsx`. Replaced pill `<BadgeList>` in name row.
+
+### 41. DM notifications (ADDED 2026-05-28)
+DB trigger `trg_notify_dm_message` on `dm_messages` INSERT sends notification to other participant. `kind='dm_message'`, `data={snippet, conversation_id}`. Script: `scripts/2026-05-28-dm-notifications.sql`. App.jsx tap → fetch other profile, open conversation directly. `MessagesInbox` ThreadRow shows gold unread dot + bold name when `lastMsg.sender_id !== session.user.id`.
+
+### 42. Invite card — QR + Email/Text/Print (ADDED 2026-05-28)
+`ChurchAdmin.jsx` PeoplePanel invite card: QR code (quickchart.io, 120×120) inline, ✉️ Email (mailto: pre-filled), 💬 Text (sms:), 🖨️ Print (new window styled HTML + QR). `qrUrl()` function defined at top of ChurchAdmin.jsx — always reuse it.
+
 ---
 
 ## 1. Who you're working with
