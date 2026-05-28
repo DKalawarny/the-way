@@ -1480,35 +1480,105 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
         opacity: (churchPlan === 'church_base' && members.length >= CHURCH_BASE_MEMBER_LIMIT) ? 0.45 : 1,
         pointerEvents: (churchPlan === 'church_base' && members.length >= CHURCH_BASE_MEMBER_LIMIT) ? 'none' : 'auto',
       }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center' }}>
+        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center' }}>
           <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Invite your congregation
         </div>
         {code ? (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            {/* Two-column: QR code left, actions right */}
+            <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              {/* QR code */}
               <div style={{
-                fontFamily: 'ui-monospace, SFMono-Regular, monospace',
-                fontSize: 28, fontWeight: 700, letterSpacing: 4, color: T.ink,
-                background: T.white, border: `1px solid ${T.line}`, borderRadius: 10,
-                padding: '8px 16px',
+                background: T.white, border: `1px solid ${T.line}`, borderRadius: 12,
+                padding: 10, flexShrink: 0,
               }}>
-                {code}
+                <img
+                  src={qrUrl(joinUrl)}
+                  alt="Join QR code"
+                  width={120} height={120}
+                  style={{ display: 'block', borderRadius: 4 }}
+                />
               </div>
-              <button onClick={() => copy(code, 'code')} style={{
-                background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
-                padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-              }}>{copied ? 'Copied ✓' : 'Copy code'}</button>
-              {joinUrl && (
-                <button onClick={() => copy(joinUrl, 'link')} style={{
-                  background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
-                  padding: '8px 14px', fontSize: 13, color: T.inkSoft, cursor: 'pointer',
-                }}>{linkCopied ? 'Copied ✓' : 'Copy join link'}</button>
-              )}
+              {/* Right side */}
+              <div style={{ flex: 1, minWidth: 200 }}>
+                {/* Code display */}
+                <div style={{
+                  fontFamily: 'ui-monospace, SFMono-Regular, monospace',
+                  fontSize: 24, fontWeight: 700, letterSpacing: 4, color: T.ink,
+                  background: T.white, border: `1px solid ${T.line}`, borderRadius: 10,
+                  padding: '6px 14px', display: 'inline-block', marginBottom: 10,
+                }}>
+                  {code}
+                </div>
+                {/* Action buttons */}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button onClick={() => copy(code, 'code')} style={{
+                    background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+                    padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  }}>{copied ? '✓ Copied' : 'Copy code'}</button>
+                  {joinUrl && (<>
+                    <button onClick={() => copy(joinUrl, 'link')} style={{
+                      background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
+                      padding: '7px 14px', fontSize: 13, color: T.inkSoft, cursor: 'pointer',
+                    }}>{linkCopied ? '✓ Copied' : 'Copy link'}</button>
+                    <a
+                      href={`mailto:?subject=Join ${church?.name ?? 'our church'} on kinwove&body=Hi!%0A%0AYou're invited to join ${encodeURIComponent(church?.name ?? 'our church')} on kinwove — a space where our congregation connects between Sundays.%0A%0AJoin here: ${encodeURIComponent(joinUrl)}%0A%0AOr open kinwove and enter the code: ${code}%0A%0ASee you there!`}
+                      style={{
+                        display: 'inline-block',
+                        background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
+                        padding: '7px 14px', fontSize: 13, color: T.inkSoft,
+                        textDecoration: 'none', cursor: 'pointer',
+                      }}
+                    >✉️ Email</a>
+                    <a
+                      href={`sms:?body=Join ${encodeURIComponent(church?.name ?? 'our church')} on kinwove: ${encodeURIComponent(joinUrl)}`}
+                      style={{
+                        display: 'inline-block',
+                        background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
+                        padding: '7px 14px', fontSize: 13, color: T.inkSoft,
+                        textDecoration: 'none', cursor: 'pointer',
+                      }}
+                    >💬 Text</a>
+                    <button
+                      onClick={() => {
+                        const w = window.open('', '_blank');
+                        w.document.write(`<!DOCTYPE html><html><head><title>Join ${church?.name ?? 'our church'} on kinwove</title><style>
+                          body{font-family:Georgia,serif;background:#FDF8F0;color:#2C1810;margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;}
+                          .card{border:2px solid #B8733A;border-radius:18px;padding:48px 56px;max-width:480px;text-align:center;}
+                          .eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#B8733A;font-weight:700;margin-bottom:16px;}
+                          h1{font-size:28px;font-weight:600;margin:0 0 8px;letter-spacing:-0.5px;}
+                          .sub{font-size:15px;color:#5A4733;line-height:1.6;margin-bottom:28px;}
+                          .code{font-family:monospace;font-size:36px;font-weight:700;letter-spacing:6px;border:1.5px solid #D9C9A8;border-radius:10px;padding:10px 20px;display:inline-block;margin-bottom:20px;}
+                          .url{font-size:13px;color:#8E5528;word-break:break-all;margin-bottom:32px;}
+                          img{border-radius:8px;border:1px solid #D9C9A8;}
+                          .footer{font-size:11px;color:#A89070;margin-top:32px;letter-spacing:1px;}
+                          @media print{body{background:#fff;} .card{border-color:#ccc;}}
+                        </style></head><body><div class="card">
+                          <div class="eyebrow">kinwove · Join your church</div>
+                          <h1>${church?.name ?? 'Our Church'}</h1>
+                          <p class="sub">Scan the QR code or enter the code below<br>to join us on kinwove.</p>
+                          <img src="${qrUrl(joinUrl)}" width="200" height="200" />
+                          <br><br>
+                          <div class="code">${code}</div>
+                          <div class="url">${joinUrl}</div>
+                          <div class="footer">kinwove.com</div>
+                        </div></body></html>`);
+                        w.document.close();
+                        w.focus();
+                        setTimeout(() => w.print(), 600);
+                      }}
+                      style={{
+                        background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
+                        padding: '7px 14px', fontSize: 13, color: T.inkSoft, cursor: 'pointer',
+                      }}
+                    >🖨️ Print</button>
+                  </>)}
+                </div>
+                <p style={{ fontFamily: T.serif, fontSize: 12.5, color: T.inkMuted, lineHeight: 1.5, margin: '10px 0 0' }}>
+                  Scan the QR, share the link, email the code, or print for your bulletin.
+                </p>
+              </div>
             </div>
-            <p style={{ fontFamily: T.serif, fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, margin: '12px 0 0' }}>
-              Share this code during a service, in a group chat, or by sending the link.
-              Anyone with a kinwove profile can join your church by entering it.
-            </p>
           </>
         ) : (
           <p style={{ fontFamily: T.serif, fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, margin: '0 0 4px' }}>
@@ -1516,17 +1586,10 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
           </p>
         )}
         <button onClick={() => setConfirmRotate(true)} style={{
-          background: code ? 'transparent' : T.ink,
-          color: code ? T.goldDark : T.cream,
-          border: code ? 'none' : 'none',
-          borderRadius: code ? 0 : 999,
-          padding: code ? 0 : '10px 20px',
-          marginTop: 12,
-          fontSize: code ? 12.5 : 14,
-          cursor: 'pointer',
-          fontWeight: 600,
-          textDecoration: code ? 'underline' : 'none',
-          textUnderlineOffset: 3,
+          background: 'transparent', color: T.goldDark, border: 'none',
+          padding: 0, marginTop: code ? 10 : 12,
+          fontSize: code ? 12 : 14, cursor: 'pointer', fontWeight: 600,
+          textDecoration: 'underline', textUnderlineOffset: 3,
         }}>
           {code ? 'Reset code…' : 'Generate invite code →'}
         </button>
