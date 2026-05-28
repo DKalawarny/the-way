@@ -26,6 +26,7 @@ const KIND_COPY = {
   sermon_published:          { verb: 'published a new sermon', Icon: BookOpen },
   follow:                    { verb: 'started following you', Icon: UserPlus },
   role_assigned:             { verb: 'gave you a role', Icon: null, emoji: '🎖' },
+  dm_message:                { verb: 'sent you a message', Icon: MessageCircle },
 };
 
 function NotificationRow({ n, onClick, onFriendAction }) {

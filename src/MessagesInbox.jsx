@@ -58,7 +58,7 @@ function DeleteConfirmModal({ name, onConfirm, onCancel }) {
   );
 }
 
-function ThreadRow({ name, avatarConfig, photoUrl, subtitle, subtitleColor, lastBody, ts, onOpen, accent, active, onDelete }) {
+function ThreadRow({ name, avatarConfig, photoUrl, subtitle, subtitleColor, lastBody, ts, onOpen, accent, active, onDelete, unread }) {
   const [hovered, setHovered] = useState(false);
   return (
     <div
@@ -70,8 +70,8 @@ function ThreadRow({ name, avatarConfig, photoUrl, subtitle, subtitleColor, last
         onClick={onOpen}
         style={{
           display: 'block', width: '100%', textAlign: 'left',
-          background: active ? `${T.gold}1A` : accent ? T.parchment : T.white,
-          border: active ? `1px solid ${T.gold}66` : accent ? `1px solid ${T.gold}88` : `1px solid ${T.line}`,
+          background: active ? `${T.gold}1A` : unread ? `rgba(184,115,58,0.06)` : accent ? T.parchment : T.white,
+          border: active ? `1px solid ${T.gold}66` : unread ? `1px solid rgba(184,115,58,0.3)` : accent ? `1px solid ${T.gold}88` : `1px solid ${T.line}`,
           borderRadius: 14,
           padding: '12px 14px',
           paddingRight: onDelete ? 42 : 14,
@@ -91,14 +91,17 @@ function ThreadRow({ name, avatarConfig, photoUrl, subtitle, subtitleColor, last
             }}><KinwoveStar size={16} color={T.goldDark} /></div>
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 600, fontSize: 13.5, color: T.ink, marginBottom: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontWeight: unread ? 700 : 600, fontSize: 13.5, color: T.ink, marginBottom: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {name ?? 'Someone from your church'}
             </div>
             <div style={{ fontSize: 11.5, color: subtitleColor ?? T.inkMuted }}>
               {subtitle}{ts && <> · {timeAgo(ts)}</>}
             </div>
           </div>
-          <span style={{ color: T.inkMuted, fontSize: 13 }}>›</span>
+          {unread && (
+            <div style={{ width: 9, height: 9, borderRadius: '50%', background: T.goldDark, flexShrink: 0 }} />
+          )}
+          {!unread && <span style={{ color: T.inkMuted, fontSize: 13 }}>›</span>}
         </div>
         {lastBody && (
           <div style={{
@@ -319,6 +322,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
                 subtitleColor={isSystem ? T.goldDark : undefined}
                 ts={c.last_message_at ?? c.created_at}
                 lastBody={dmLastMsgs[c.id]?.body}
+                unread={!!dmLastMsgs[c.id] && dmLastMsgs[c.id].sender_id !== session?.user?.id}
                 onOpen={() => { setOpenCare(null); setOpenDm({ id: c.id, otherProfile: c.otherProfile }); }}
                 accent={isSystem}
                 active={!isMobile && openDm?.id === c.id}

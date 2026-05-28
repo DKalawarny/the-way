@@ -3159,6 +3159,20 @@ export default function App() {
             else if (n.target_type === 'sermon')    { setViewingSermonId(n.target_id); setStage('sermon-view'); }
             else if (n.target_type === 'friend_request') { setViewingUserId(n.actor_id); }
             else if (n.kind === 'follow') { setViewingUserId(n.actor_id); }
+            else if (n.kind === 'dm_message' || n.target_type === 'dm_conversation') {
+              const convId = n.data?.conversation_id ?? n.target_id;
+              if (convId && n.actor_id) {
+                const { data: otherProf } = await supabase
+                  .from('profiles')
+                  .select('id, display_name, avatar_config, avatar_url')
+                  .eq('id', n.actor_id)
+                  .maybeSingle();
+                setActiveDmConv({ id: convId, otherProfile: otherProf ?? null });
+                setStage('dm-conversation');
+              } else {
+                setStage('messages');
+              }
+            }
             else if (n.target_type === 'church' || n.kind === 'role_assigned') {
               const cId = n.data?.church_id ?? n.target_id;
               if (n.data?.role_key === 'care') {
