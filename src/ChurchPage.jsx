@@ -214,10 +214,9 @@ export default function ChurchPage({
       setPendingInvites(invitesRes.data ?? []);
       setIsCareTeam(!!careRes.data);
       setFeaturedWalk(walkRes.data ?? null);
-      // Filter prayers to this church's members only
+      // Filter prayers to this church's members only (no slice — show all on dedicated tab)
       const prayers = (prayersRes.data ?? [])
         .filter((p) => p.profiles?.church_id === churchId)
-        .slice(0, 6)
         .map((p) => ({ id: p.id, body: p.body, name: p.profiles?.display_name ?? 'Someone' }));
       setChurchPrayers(prayers);
     })();
@@ -686,6 +685,7 @@ export default function ChurchPage({
         {[
           { id: 'feed',    label: 'Feed' },
           { id: 'sermons', label: 'Sermons' },
+          ...(isMember || isPastor ? [{ id: 'pray', label: '🙏 Pray' }] : []),
           { id: 'info',    label: 'Info' },
         ].map((t) => (
           <button
@@ -828,72 +828,17 @@ export default function ChurchPage({
                 )}
                 {/* Secondary actions */}
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 10, flexWrap: 'wrap' }}>
-                  {onOpenPrayer && (
-                    <button onClick={onOpenPrayer} style={{
-                      background: 'none', border: `1px solid rgba(168,85,48,0.30)`, borderRadius: 999,
-                      color: T.inkSoft, fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: '8px 18px',
-                    }}>🙏 Pray together</button>
-                  )}
                   {onOpenWalks && (
                     <button onClick={onOpenWalks} style={{
                       background: 'none', border: `1px solid rgba(168,85,48,0.30)`, borderRadius: 999,
                       color: T.inkSoft, fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: '8px 18px',
                     }}>Pick a walk</button>
                   )}
+                  <button onClick={() => setTab('pray')} style={{
+                    background: 'none', border: `1px solid rgba(168,85,48,0.30)`, borderRadius: 999,
+                    color: T.inkSoft, fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: '8px 18px',
+                  }}>🙏 Pray together</button>
                 </div>
-              </div>
-            )}
-
-            {/* ── Congregation prayers ─────────────────────────── */}
-            {isMember && churchPrayers.length > 0 && (
-              <div style={{
-                background: T.white, border: `1px solid ${T.line}`,
-                borderRadius: 14, padding: '16px 18px', marginBottom: 20,
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div style={{ fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700 }}>
-                    🙏 Praying together
-                  </div>
-                  {onOpenPrayer && (
-                    <button onClick={onOpenPrayer} style={{
-                      background: 'none', border: 'none', color: T.goldDark,
-                      fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0,
-                    }}>
-                      + Add yours
-                    </button>
-                  )}
-                </div>
-                {churchPrayers.map((p, i) => (
-                  <div key={p.id} style={{
-                    paddingTop: i > 0 ? 10 : 0,
-                    marginTop: i > 0 ? 10 : 0,
-                    borderTop: i > 0 ? `1px solid ${T.line}` : 'none',
-                    display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
-                  }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 11.5, fontWeight: 700, color: T.goldDark, marginBottom: 2 }}>{p.name}</div>
-                      <div style={{ fontSize: 13.5, color: T.ink, lineHeight: 1.5, fontFamily: T.serif,
-                        overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                      }}>{p.body}</div>
-                    </div>
-                    <button
-                      onClick={async () => {
-                        if (prayedIds.has(p.id) || !session?.user?.id) return;
-                        await supabase.from('personal_prayer_support').insert({ prayer_id: p.id, user_id: session.user.id }).then(null, () => {});
-                        setPrayedIds((s) => new Set([...s, p.id]));
-                      }}
-                      style={{
-                        flexShrink: 0, border: `1px solid ${prayedIds.has(p.id) ? T.goldDark : T.line}`,
-                        background: prayedIds.has(p.id) ? 'rgba(184,115,58,0.08)' : 'transparent',
-                        borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600,
-                        color: prayedIds.has(p.id) ? T.goldDark : T.inkSoft,
-                        cursor: prayedIds.has(p.id) ? 'default' : 'pointer',
-                      }}
-                    >
-                      {prayedIds.has(p.id) ? '🙏 Prayed' : '🙏 Pray'}
-                    </button>
-                  </div>
-                ))}
               </div>
             )}
 
@@ -1188,6 +1133,97 @@ export default function ChurchPage({
                     );
                   })}
                 </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Pray tab ── */}
+        {tab === 'pray' && (isMember || isPastor) && (
+          <>
+            {/* Header + add button */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 700, color: T.ink, letterSpacing: '-0.015em' }}>
+                Praying together
+              </div>
+              {onOpenPrayer && (
+                <button
+                  onClick={onOpenPrayer}
+                  style={{
+                    background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
+                    padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  }}
+                >+ Add yours</button>
+              )}
+            </div>
+
+            {/* Prayer list */}
+            {churchPrayers.length === 0 ? (
+              <div style={{
+                textAlign: 'center', padding: '48px 20px',
+                background: T.white, border: `1px dashed ${T.line}`, borderRadius: 14,
+              }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>🙏</div>
+                <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, marginBottom: 8 }}>
+                  No prayers shared yet
+                </div>
+                <div style={{ fontSize: 14, color: T.inkSoft, lineHeight: 1.6, maxWidth: 280, margin: '0 auto 20px' }}>
+                  Be the first to share a prayer with your congregation.
+                </div>
+                {onOpenPrayer && (
+                  <button onClick={onOpenPrayer} style={{
+                    background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+                    padding: '10px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                  }}>Share a prayer</button>
+                )}
+              </div>
+            ) : (
+              <div style={{
+                background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, overflow: 'hidden',
+              }}>
+                {churchPrayers.map((p, i) => (
+                  <div key={p.id} style={{
+                    padding: '14px 18px',
+                    borderBottom: i < churchPrayers.length - 1 ? `1px solid ${T.line}` : 'none',
+                    display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14,
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: T.goldDark, marginBottom: 4 }}>{p.name}</div>
+                      <div style={{
+                        fontSize: 14.5, color: T.ink, lineHeight: 1.6, fontFamily: T.serif,
+                        fontVariationSettings: '"opsz" 18',
+                      }}>{p.body}</div>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (prayedIds.has(p.id) || !session?.user?.id) return;
+                        await supabase.from('personal_prayer_support').insert({ prayer_id: p.id, user_id: session.user.id }).then(null, () => {});
+                        setPrayedIds((s) => new Set([...s, p.id]));
+                      }}
+                      style={{
+                        flexShrink: 0, marginTop: 2,
+                        border: `1px solid ${prayedIds.has(p.id) ? T.goldDark : T.line}`,
+                        background: prayedIds.has(p.id) ? 'rgba(184,115,58,0.08)' : 'transparent',
+                        borderRadius: 999, padding: '6px 14px', fontSize: 13, fontWeight: 600,
+                        color: prayedIds.has(p.id) ? T.goldDark : T.inkSoft,
+                        cursor: prayedIds.has(p.id) ? 'default' : 'pointer',
+                        transition: 'border-color 0.15s, background 0.15s',
+                      }}
+                    >
+                      {prayedIds.has(p.id) ? '🙏 Prayed' : '🙏 Pray'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Soft nudge to open personal prayer */}
+            {onOpenPrayer && churchPrayers.length > 0 && (
+              <div style={{ textAlign: 'center', marginTop: 20 }}>
+                <button onClick={onOpenPrayer} style={{
+                  background: 'none', border: 'none', color: T.inkSoft,
+                  fontSize: 13, cursor: 'pointer', textDecoration: 'underline',
+                }}>Open your prayer journal</button>
               </div>
             )}
           </>
