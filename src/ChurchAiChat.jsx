@@ -258,7 +258,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
   function toggleDark() { setDark((d) => { localStorage.setItem('church_ask_dark', d ? '0' : '1'); return !d; }); }
 
   const aiUsage = useAiUsage(userId, plan);
-  const { speakingId, speak: speakMsg, supported: ttsSupported } = useTextToSpeech({ voice: ttsVoice });
+  const { speakingId, paused: ttsPaused, speak: speakMsg, stop: stopTts, pause: pauseTts, resume: resumeTts, rewind: rewindTts, supported: ttsSupported } = useTextToSpeech({ voice: ttsVoice });
 
   // Conversation persistence
   const [convId, setConvId]       = useState(() => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`);
@@ -532,22 +532,59 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
                           {copiedIdx === i ? 'Copied' : 'Copy'}
                         </ActionBtn>
 
-                        {/* Listen */}
+                        {/* Listen / playback controls */}
                         {ttsSupported && (
-                          <ActionBtn
-                            onClick={() => speakMsg(i, m.content)}
-                            title={speakingId === i ? 'Stop reading' : 'Read aloud'}
-                            active={speakingId === i}
-                          >
-                            {speakingId === i ? (
-                              <span style={{ display: 'inline-flex', alignItems: 'flex-end', gap: 2, height: 13 }}>
-                                {[1, 0.5, 0.8, 0.4].map((h, k) => (
-                                  <span key={k} style={{ width: 3, borderRadius: 2, background: T.gold, height: `${h * 100}%`, animation: `micPulse 0.8s ease-in-out ${k * 0.15}s infinite alternate` }} />
-                                ))}
-                              </span>
-                            ) : <SpeakerIcon size={13} />}
-                            {speakingId === i ? 'Stop' : 'Listen'}
-                          </ActionBtn>
+                          speakingId === i ? (
+                            // ── Active playback bar ──
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, background: dark ? 'rgba(184,115,58,0.12)' : 'rgba(184,115,58,0.08)', borderRadius: 999, padding: '2px 6px 2px 4px' }}>
+                              {/* Waveform indicator */}
+                              {!ttsPaused && (
+                                <span style={{ display: 'inline-flex', alignItems: 'flex-end', gap: 2, height: 13, marginRight: 4, marginLeft: 2 }}>
+                                  {[1, 0.5, 0.8, 0.4].map((h, k) => (
+                                    <span key={k} style={{ width: 3, borderRadius: 2, background: T.gold, height: `${h * 100}%`, animation: `micPulse 0.8s ease-in-out ${k * 0.15}s infinite alternate` }} />
+                                  ))}
+                                </span>
+                              )}
+                              {/* ⏪ -10s */}
+                              <button
+                                onClick={() => rewindTts(10)}
+                                title="Back 10 seconds"
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.gold, fontSize: 12, padding: '4px 6px', display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/>
+                                </svg>
+                                <span style={{ fontSize: 10, fontWeight: 700 }}>10</span>
+                              </button>
+                              {/* ⏸/▶ pause/resume */}
+                              <button
+                                onClick={() => ttsPaused ? resumeTts() : pauseTts()}
+                                title={ttsPaused ? 'Resume' : 'Pause'}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.gold, fontSize: 12, padding: '4px 6px', display: 'inline-flex', alignItems: 'center' }}
+                              >
+                                {ttsPaused ? (
+                                  // ▶ play
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill={T.gold} stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                ) : (
+                                  // ⏸ pause
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill={T.gold} stroke="none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                                )}
+                              </button>
+                              {/* ■ stop */}
+                              <button
+                                onClick={() => stopTts()}
+                                title="Stop"
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.soft, fontSize: 12, padding: '4px 6px', display: 'inline-flex', alignItems: 'center' }}
+                              >
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                              </button>
+                            </span>
+                          ) : (
+                            <ActionBtn onClick={() => speakMsg(i, m.content)} title="Read aloud">
+                              <SpeakerIcon size={13} />
+                              Listen
+                            </ActionBtn>
+                          )
                         )}
                       </div>
                     )}

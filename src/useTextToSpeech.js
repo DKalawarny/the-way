@@ -19,6 +19,7 @@ const VOICE_SHAPE = {
 
 export function useTextToSpeech({ voice = 'onyx' } = {}) {
   const [speakingId, setSpeakingId] = useState(null);
+  const [paused, setPaused]         = useState(false);
   const audioRef    = useRef(null);
   const msRef       = useRef(null);   // MediaSource
   const blobUrl     = useRef(null);
@@ -55,6 +56,35 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
     stopAudio();
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     setSpeakingId(null);
+    setPaused(false);
+  }
+
+  function pause() {
+    if (audioRef.current && !audioRef.current.paused) {
+      audioRef.current.pause();
+      setPaused(true);
+    } else if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+      window.speechSynthesis.pause();
+      setPaused(true);
+    }
+  }
+
+  function resume() {
+    if (audioRef.current && audioRef.current.paused) {
+      audioCtxRef.current?.resume();
+      audioRef.current.play().catch(() => {});
+      setPaused(false);
+    } else if ('speechSynthesis' in window && window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+      setPaused(false);
+    }
+  }
+
+  function rewind(seconds = 10) {
+    if (audioRef.current) {
+      audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - seconds);
+    }
+    // Web Speech API doesn't support seeking — no-op for fallback
   }
 
   useEffect(() => {
@@ -124,8 +154,8 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
         const audio = new Audio(url);
         audioRef.current = audio;
         shapeAudio(audio);
-        audio.onended = () => { stopAudio(); setSpeakingId(null); };
-        audio.onerror = () => { stopAudio(); setSpeakingId(null); };
+        audio.onended = () => { stopAudio(); setSpeakingId(null); setPaused(false); };
+        audio.onerror = () => { stopAudio(); setSpeakingId(null); setPaused(false); };
 
         ms.addEventListener('sourceopen', async () => {
           let sb;
@@ -160,8 +190,8 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
         const audio = new Audio(url);
         audioRef.current = audio;
         shapeAudio(audio);
-        audio.onended = () => { stopAudio(); setSpeakingId(null); };
-        audio.onerror = () => { stopAudio(); setSpeakingId(null); };
+        audio.onended = () => { stopAudio(); setSpeakingId(null); setPaused(false); };
+        audio.onerror = () => { stopAudio(); setSpeakingId(null); setPaused(false); };
         await audio.play();
       }
     } catch (e) {
@@ -231,5 +261,5 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
     window.speechSynthesis.speak(utt);
   }
 
-  return { speakingId, speak, stop, supported };
+  return { speakingId, paused, speak, stop, pause, resume, rewind, supported };
 }
