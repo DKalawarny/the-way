@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
-import { BadgeList } from './Badge.jsx';
+import { BadgeList, presetForRole } from './Badge.jsx';
 import { relativeTime } from './time.js';
 import { useUiKit, EmptyState, TextButton } from './uikit.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
@@ -174,9 +174,11 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
             <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{name}</span>
-            {!row.is_anonymous && rolesMap[row.author_id]?.length > 0 && (
-              <BadgeList roles={rolesMap[row.author_id]} />
-            )}
+            {!row.is_anonymous && rolesMap[row.author_id]?.length > 0 && (() => {
+              const top = rolesMap[row.author_id][0];
+              const label = top.role_label ?? presetForRole(top.role_key)?.label ?? top.role_key;
+              return <span style={{ fontSize: 11, fontWeight: 700, color: T.goldDark }}>{label}</span>;
+            })()}
             <span style={{ fontSize: 11.5, color: T.inkMuted }}>{relativeTime(row.created_at)}</span>
             <div style={{ flex: 1 }} />
             {canDelete && (

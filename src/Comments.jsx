@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Smile } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
-import { BadgeList } from './Badge.jsx';
+import { BadgeList, presetForRole } from './Badge.jsx';
 import { relativeTime } from './time.js';
 import { useUiKit, TextButton } from './uikit.jsx';
 import { codeToFlag } from './countries.js';
@@ -155,9 +155,11 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
                   {!c.is_anonymous && profMap?.[c.author_id]?.show_flag && (profMap[c.author_id]?.flags ?? []).length > 0 && (
                     <span style={{ fontSize: 13, lineHeight: 1 }}>{codeToFlag(profMap[c.author_id].flags[0])}</span>
                   )}
-                  {!c.is_anonymous && rolesMap?.[c.author_id]?.length > 0 && (
-                    <BadgeList roles={rolesMap[c.author_id]} />
-                  )}
+                  {!c.is_anonymous && rolesMap?.[c.author_id]?.length > 0 && (() => {
+                    const top = rolesMap[c.author_id][0];
+                    const label = top.role_label ?? presetForRole(top.role_key)?.label ?? top.role_key;
+                    return <span style={{ fontSize: 11, fontWeight: 700, color: T.goldDark }}>{label}</span>;
+                  })()}
                   <span style={{ fontSize: 11.5, color: T.inkMuted }}>{relativeTime(c.created_at)}</span>
                   <div style={{ flex: 1 }} />
                   {isMine && (
