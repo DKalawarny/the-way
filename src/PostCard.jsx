@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Heart, Bookmark } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
-import { BadgeList } from './Badge.jsx';
+import { BadgeList, presetForRole } from './Badge.jsx';
 import { relativeTime } from './time.js';
 import Comments from './Comments.jsx';
 import SermonDiscussion from './SermonDiscussion.jsx';
@@ -653,11 +653,14 @@ export default function PostCard({
             {!item.is_anonymous && authorProfile?.show_flag && (authorProfile?.flags ?? []).length > 0 && (
               <span style={{ fontSize: 14, lineHeight: 1 }}>{codeToFlag(authorProfile.flags[0])}</span>
             )}
-            {!item.is_anonymous && authorRoles && authorRoles.length > 0 && (
-              <BadgeList roles={authorRoles} />
-            )}
           </div>
           <div style={{ fontSize: 11.5, color: T.inkMuted }}>
+            {/* Role title inline — shows the top role as readable text */}
+            {!item.is_anonymous && authorRoles && authorRoles.length > 0 && (() => {
+              const top = authorRoles[0];
+              const label = top.role_label ?? presetForRole(top.role_key)?.label ?? top.role_key;
+              return <span style={{ color: T.goldDark, fontWeight: 600, marginRight: 4 }}>{label} · </span>;
+            })()}
             {relativeTime(item.created_at)}
             {item.scope === 'church' && churchInfo?.name && <> · in {churchInfo.name}</>}
             {item.source === 'post' && localVisibility !== 'public' && ` · ${visMeta.emoji} ${visMeta.label}`}
