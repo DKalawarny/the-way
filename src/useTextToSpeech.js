@@ -133,6 +133,33 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
     setSpeakingId(id);
     abortRef.current = new AbortController();
 
+    // ── Mobile audio unlock ─────────────────────────────────────────────────
+    // iOS Safari blocks audio.play() after any await (gesture context is gone).
+    // Platforms that don't support MediaSource audio/mpeg (iOS Safari) go
+    // straight to Web Speech while the user gesture is still live.
+    const canStream = typeof MediaSource !== 'undefined' && MediaSource.isTypeSupported('audio/mpeg');
+    if (!canStream) {
+      fallbackSpeak(id, text);
+      return;
+    }
+
+    // Unlock the AudioContext synchronously (before any await) so audio.play()
+    // succeeds on Android Chrome after the async fetch.
+    try {
+      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
+        audioCtxRef.current = new AudioContext();
+      }
+      if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume(); // intentionally not awaited — keep sync
+      }
+      // Play a 1-frame silent buffer to fully activate the context
+      const buf = audioCtxRef.current.createBuffer(1, 1, audioCtxRef.current.sampleRate);
+      const src = audioCtxRef.current.createBufferSource();
+      src.buffer = buf;
+      src.connect(audioCtxRef.current.destination);
+      src.start(0);
+    } catch {}
+
     try {
       const res = await authedFetch('/api/tts', {
         method: 'POST',
@@ -145,55 +172,41 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
       if (!abortRef.current) return; // was stopped while fetching
 
       // Stream into MediaSource so playback starts on the first chunk
-      if (typeof MediaSource !== 'undefined' && MediaSource.isTypeSupported('audio/mpeg')) {
-        const ms  = new MediaSource();
-        msRef.current = ms;
-        const url = URL.createObjectURL(ms);
-        blobUrl.current = url;
+      const ms  = new MediaSource();
+      msRef.current = ms;
+      const url = URL.createObjectURL(ms);
+      blobUrl.current = url;
 
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        shapeAudio(audio);
-        audio.onended = () => { stopAudio(); setSpeakingId(null); setPaused(false); };
-        audio.onerror = () => { stopAudio(); setSpeakingId(null); setPaused(false); };
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      shapeAudio(audio);
+      audio.onended = () => { stopAudio(); setSpeakingId(null); setPaused(false); };
+      audio.onerror = () => { stopAudio(); setSpeakingId(null); setPaused(false); };
 
-        ms.addEventListener('sourceopen', async () => {
-          let sb;
-          try { sb = ms.addSourceBuffer('audio/mpeg'); } catch { return; }
+      ms.addEventListener('sourceopen', async () => {
+        let sb;
+        try { sb = ms.addSourceBuffer('audio/mpeg'); } catch { return; }
 
-          const reader = res.body.getReader();
-          const pump   = async () => {
-            const { done, value } = await reader.read();
-            if (done) {
-              try { if (ms.readyState === 'open') ms.endOfStream(); } catch {}
-              return;
-            }
-            // Wait for previous append to finish before sending next chunk
-            const waitUpdate = () => new Promise((r) =>
-              sb.updating ? sb.addEventListener('updateend', r, { once: true }) : r()
-            );
-            await waitUpdate();
-            if (!audioRef.current) return; // stopped mid-stream
-            try { sb.appendBuffer(value); } catch {}
-            sb.addEventListener('updateend', pump, { once: true });
-          };
-          pump();
-        });
+        const reader = res.body.getReader();
+        const pump   = async () => {
+          const { done, value } = await reader.read();
+          if (done) {
+            try { if (ms.readyState === 'open') ms.endOfStream(); } catch {}
+            return;
+          }
+          // Wait for previous append to finish before sending next chunk
+          const waitUpdate = () => new Promise((r) =>
+            sb.updating ? sb.addEventListener('updateend', r, { once: true }) : r()
+          );
+          await waitUpdate();
+          if (!audioRef.current) return; // stopped mid-stream
+          try { sb.appendBuffer(value); } catch {}
+          sb.addEventListener('updateend', pump, { once: true });
+        };
+        pump();
+      });
 
-        await audio.play();
-      } else {
-        // Safari fallback — blob approach
-        const blob = await res.blob();
-        if (!abortRef.current) return;
-        const url = URL.createObjectURL(blob);
-        blobUrl.current = url;
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        shapeAudio(audio);
-        audio.onended = () => { stopAudio(); setSpeakingId(null); setPaused(false); };
-        audio.onerror = () => { stopAudio(); setSpeakingId(null); setPaused(false); };
-        await audio.play();
-      }
+      await audio.play();
     } catch (e) {
       if (e?.name === 'AbortError') return;
       console.warn('[tts] falling back to Web Speech:', e?.message);
