@@ -400,7 +400,11 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
       <BoardModal open={boardOpen} onClose={() => setBoardOpen(false)} churchId={churchId} onReopenInAsk={reopenInAsk} />
       <HistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} conversations={history} onLoad={loadConversation} onDelete={deleteConversation} onNew={newConversation} />
 
-      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)', minHeight: 400, background: C.bg, color: C.text, transition: 'background 0.2s, color 0.2s' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)', minHeight: 400, color: C.text, transition: 'color 0.2s' }}
+           data-dark={dark ? '1' : undefined}
+      >
+        {/* dark mode bg sits behind content — doesn't fight the shell's side padding */}
+        {dark && <div style={{ position: 'fixed', inset: 0, background: DARK.bg, zIndex: -1, pointerEvents: 'none' }} />}
 
         {/* ── Header ── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10, borderBottom: `1px solid ${C.border}`, marginBottom: 4, flexShrink: 0 }}>
@@ -466,7 +470,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
                   </div>
                 ) : (
                   <>
-                    <div style={{ maxWidth: '100%', background: 'transparent', fontSize: 15, lineHeight: 1.7, color: C.text, fontFamily: T.serif }}>
+                    <div style={{ maxWidth: '100%', background: 'transparent', fontSize: 15, lineHeight: 1.72, color: C.text, fontFamily: T.serif, letterSpacing: '-0.01em', wordBreak: 'break-word' }}>
                       {isStreaming
                         ? <span style={{ color: T.inkMuted, fontStyle: 'italic' }}>…</span>
                         : <MsgText text={m.content} />
