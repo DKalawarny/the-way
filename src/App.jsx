@@ -3150,7 +3150,7 @@ export default function App() {
           session={session}
           isDesktop={isDesktop}
           rightOffset={isDocked ? chatPanelWidth : 0}
-          onNavigate={(n) => {
+          onNavigate={async (n) => {
             if (n.target_type === 'post' || n.type === 'post_comment' || n.type === 'post_comment_reply') {
               setOpenCommentPostId(n.target_id);
               setStage('feed');
@@ -3161,9 +3161,15 @@ export default function App() {
             else if (n.kind === 'follow') { setViewingUserId(n.actor_id); }
             else if (n.target_type === 'church' || n.kind === 'role_assigned') {
               const cId = n.data?.church_id ?? n.target_id;
-              if (cId) { setViewingChurchId(cId); setStage('church'); }
-              // If it's a care team role, reload church roles so nav updates immediately
-              if (n.data?.role_key === 'care') { loadChurchRoles(session?.user?.id); }
+              if (n.data?.role_key === 'care') {
+                // Care team: reload roles first so careTeamRecord is populated,
+                // then drop them straight into the care inbox (not the church page)
+                await loadChurchRoles(session?.user?.id);
+                setStage('care-inbox');
+              } else {
+                // All other roles: go to church page where their badge is visible
+                if (cId) { setViewingChurchId(cId); setStage('church'); }
+              }
             }
           }}
         />
