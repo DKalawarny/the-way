@@ -3,28 +3,30 @@ import { authedFetch } from './supabase.js';
 
 /**
  * High-quality TTS via /api/tts (OpenAI tts-1).
- * Streams audio so playback starts on the first chunk — minimal delay.
- * Falls back to Web Speech API if the endpoint is unavailable.
  *
- * useTextToSpeech({ voice: 'onyx' })
- * speak(id, text) — tap same id again to stop.
+ * Desktop/Android: streams audio via MediaSource — playback starts on first chunk.
+ * iOS: fetches full buffer, decodes via Web Audio API (ctx.decodeAudioData).
+ *   AudioContext is unlocked synchronously during the tap gesture, so playback
+ *   works even after async fetch/decode — same OpenAI voice as desktop.
+ * Fallback: Web Speech API if the endpoint is unavailable.
  */
-// No client-side EQ — let gpt-4o-mini-tts output pass through clean.
-// Post-processing was muddying the voice; the model handles everything.
 const VOICE_SHAPE = {
-  onyx:    { playbackRate: 1.0, bassFreq: 200, bassGain: 0, presenceFreq: 3000, presenceGain: 0 },
-  nova:    { playbackRate: 1.0, bassFreq: 200, bassGain: 0, presenceFreq: 3000, presenceGain: 0 },
-  shimmer: { playbackRate: 1.0, bassFreq: 200, bassGain: 0, presenceFreq: 3000, presenceGain: 0 },
+  onyx:    { playbackRate: 1.0 },
+  nova:    { playbackRate: 1.0 },
+  shimmer: { playbackRate: 1.0 },
 };
+
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
 export function useTextToSpeech({ voice = 'onyx' } = {}) {
   const [speakingId, setSpeakingId] = useState(null);
   const [paused, setPaused]         = useState(false);
+  // audioRef holds either an HTMLAudioElement (desktop) or a Web Audio adapter (iOS)
   const audioRef    = useRef(null);
-  const msRef       = useRef(null);   // MediaSource
+  const msRef       = useRef(null);   // MediaSource — desktop streaming only
   const blobUrl     = useRef(null);
   const abortRef    = useRef(null);
-  const audioCtxRef = useRef(null);   // reuse AudioContext across calls
+  const audioCtxRef = useRef(null);   // shared AudioContext
 
   const supported = true;
 
@@ -36,9 +38,17 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
 
   function stopAudio() {
     if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.onended = null;
-      audioRef.current.onerror = null;
+      if (audioRef.current._isWebAudio) {
+        // Web Audio BufferSource adapter (iOS)
+        audioRef.current._node.onended = null;
+        try { audioRef.current._node.stop(); } catch {}
+        try { audioRef.current._node.disconnect(); } catch {}
+      } else {
+        // HTMLAudioElement (desktop)
+        audioRef.current.pause();
+        audioRef.current.onended = null;
+        audioRef.current.onerror = null;
+      }
       audioRef.current = null;
     }
     if (msRef.current) {
@@ -60,9 +70,14 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
   }
 
   function pause() {
-    if (audioRef.current && !audioRef.current.paused) {
-      audioRef.current.pause();
-      setPaused(true);
+    if (audioRef.current) {
+      if (audioRef.current._isWebAudio) {
+        audioCtxRef.current?.suspend().catch(() => {});
+        setPaused(true);
+      } else if (!audioRef.current.paused) {
+        audioRef.current.pause();
+        setPaused(true);
+      }
     } else if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
       window.speechSynthesis.pause();
       setPaused(true);
@@ -70,10 +85,15 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
   }
 
   function resume() {
-    if (audioRef.current && audioRef.current.paused) {
-      audioCtxRef.current?.resume();
-      audioRef.current.play().catch(() => {});
-      setPaused(false);
+    if (audioRef.current) {
+      if (audioRef.current._isWebAudio) {
+        audioCtxRef.current?.resume().catch(() => {});
+        setPaused(false);
+      } else if (audioRef.current.paused) {
+        audioCtxRef.current?.resume();
+        audioRef.current.play().catch(() => {});
+        setPaused(false);
+      }
     } else if ('speechSynthesis' in window && window.speechSynthesis.paused) {
       window.speechSynthesis.resume();
       setPaused(false);
@@ -82,9 +102,14 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
 
   function rewind(seconds = 10) {
     if (audioRef.current) {
-      audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - seconds);
+      if (audioRef.current._isWebAudio) {
+        // Recreate BufferSource at new offset
+        audioRef.current.rewindTo(Math.max(0, audioRef.current.currentTime - seconds));
+      } else {
+        audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - seconds);
+      }
     }
-    // Web Speech API doesn't support seeking — no-op for fallback
+    // Web Speech API doesn't support seeking — no-op
   }
 
   useEffect(() => {
@@ -92,37 +117,108 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
     return () => { stop(); window.removeEventListener('beforeunload', stop); };
   }, []);
 
-  // Apply pitch / EQ shaping via Web Audio API
-  function shapeAudio(audio) {
-    const shape = VOICE_SHAPE[voice] ?? VOICE_SHAPE.onyx;
+  // ── AudioContext unlock ────────────────────────────────────────────────────
+  // Must be called SYNCHRONOUSLY in the user-gesture handler (before any await).
+  // Once the context is created + a silent buffer played, it stays unlocked
+  // for subsequent async playback — even on iOS.
+
+  function unlockAudioCtx() {
     try {
       if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
         audioCtxRef.current = new AudioContext();
       }
-      const ctx    = audioCtxRef.current;
+      if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume(); // intentionally not awaited
+      }
+      // Play a 1-frame silent buffer to fully activate
+      const buf = audioCtxRef.current.createBuffer(1, 1, audioCtxRef.current.sampleRate);
+      const src = audioCtxRef.current.createBufferSource();
+      src.buffer = buf;
+      src.connect(audioCtxRef.current.destination);
+      src.start(0);
+    } catch {}
+  }
+
+  // ── Desktop: shape HTML Audio through Web Audio ────────────────────────────
+
+  function shapeAudio(audio) {
+    try {
+      const ctx = audioCtxRef.current;
+      if (!ctx) return;
       const source = ctx.createMediaElementSource(audio);
-
-      // Bass boost — warms up and deepens the voice
-      const bass = ctx.createBiquadFilter();
-      bass.type            = 'lowshelf';
-      bass.frequency.value = shape.bassFreq;
-      bass.gain.value      = shape.bassGain;
-
-      // Presence shelf — tame harshness or add clarity
-      const presence = ctx.createBiquadFilter();
-      presence.type            = 'highshelf';
-      presence.frequency.value = shape.presenceFreq;
-      presence.gain.value      = shape.presenceGain;
-
-      source.connect(bass);
-      bass.connect(presence);
-      presence.connect(ctx.destination);
-
+      source.connect(ctx.destination);
       if (ctx.state === 'suspended') ctx.resume();
     } catch {}
+    audio.playbackRate = VOICE_SHAPE[voice]?.playbackRate ?? 1.0;
+  }
 
-    // Slightly lower playback rate deepens pitch naturally
-    audio.playbackRate = shape.playbackRate;
+  // ── iOS: fetch TTS → decode → play via Web Audio BufferSource ─────────────
+
+  async function iosFetch(signal) {
+    const res = await authedFetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: iosFetch._text, voice }),
+      signal,
+    });
+    if (!res.ok) throw new Error('tts error');
+    return res;
+  }
+
+  async function iosSpeak(id, text, signal) {
+    const res = await authedFetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voice }),
+      signal,
+    });
+    if (!res.ok) throw new Error('tts error');
+    if (!abortRef.current) return;
+
+    const arrayBuffer = await res.arrayBuffer();
+    if (!abortRef.current) return;
+
+    const ctx = audioCtxRef.current;
+    // Resume context if it suspended during the async fetch
+    if (ctx.state === 'suspended') await ctx.resume();
+
+    const decoded = await ctx.decodeAudioData(arrayBuffer);
+    if (!abortRef.current) return;
+
+    // playFrom creates a new BufferSource starting at the given offset.
+    // Stored as a Web Audio adapter on audioRef so pause/resume/rewind work.
+    const playFrom = (offset) => {
+      const node = ctx.createBufferSource();
+      node.buffer = decoded;
+      node.playbackRate.value = VOICE_SHAPE[voice]?.playbackRate ?? 1.0;
+      node.connect(ctx.destination);
+
+      const startCtxTime = ctx.currentTime;
+
+      audioRef.current = {
+        _isWebAudio: true,
+        _node: node,
+        get paused()      { return ctx.state === 'suspended'; },
+        get currentTime() { return offset + (ctx.currentTime - startCtxTime); },
+        rewindTo(t) {
+          node.onended = null;
+          try { node.stop(); node.disconnect(); } catch {}
+          playFrom(Math.max(0, t));
+        },
+      };
+
+      node.onended = () => {
+        if (audioRef.current?._node === node) {
+          audioRef.current = null;
+          setSpeakingId(null);
+          setPaused(false);
+        }
+      };
+
+      node.start(0, offset);
+    };
+
+    playFrom(0);
   }
 
   // ── speak ──────────────────────────────────────────────────────────────────
@@ -133,41 +229,24 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
     setSpeakingId(id);
     abortRef.current = new AbortController();
 
-    // ── Mobile audio unlock ─────────────────────────────────────────────────
-    // iOS Safari (all versions) kills the user-gesture context after ANY await.
-    // audio.play() and speechSynthesis.speak() both silently fail once gesture
-    // is gone. Detect iOS explicitly and call Web Speech NOW while gesture is live.
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (isIOS) {
-      fallbackSpeak(id, text);
-      return;
-    }
-
-    // Non-iOS platforms that can't stream (old Android, Firefox) also fall back.
-    const canStream = typeof MediaSource !== 'undefined' && MediaSource.isTypeSupported('audio/mpeg');
-    if (!canStream) {
-      fallbackSpeak(id, text);
-      return;
-    }
-
-    // Unlock the AudioContext synchronously (before any await) so audio.play()
-    // succeeds on Android Chrome after the async fetch.
-    try {
-      if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
-        audioCtxRef.current = new AudioContext();
-      }
-      if (audioCtxRef.current.state === 'suspended') {
-        audioCtxRef.current.resume(); // intentionally not awaited — keep sync
-      }
-      // Play a 1-frame silent buffer to fully activate the context
-      const buf = audioCtxRef.current.createBuffer(1, 1, audioCtxRef.current.sampleRate);
-      const src = audioCtxRef.current.createBufferSource();
-      src.buffer = buf;
-      src.connect(audioCtxRef.current.destination);
-      src.start(0);
-    } catch {}
+    // MUST be called synchronously here, before any await, while the user
+    // gesture context is still live. This unlocks the AudioContext for all
+    // subsequent playback — including after async fetch/decode on iOS.
+    unlockAudioCtx();
 
     try {
+      if (IS_IOS) {
+        // iOS: decode through Web Audio API — same OpenAI voice as desktop
+        await iosSpeak(id, text, abortRef.current.signal);
+        return;
+      }
+
+      const canStream = typeof MediaSource !== 'undefined' && MediaSource.isTypeSupported('audio/mpeg');
+      if (!canStream) {
+        fallbackSpeak(id, text);
+        return;
+      }
+
       const res = await authedFetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -176,9 +255,8 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
       });
 
       if (!res.ok) throw new Error('tts error');
-      if (!abortRef.current) return; // was stopped while fetching
+      if (!abortRef.current) return;
 
-      // Stream into MediaSource so playback starts on the first chunk
       const ms  = new MediaSource();
       msRef.current = ms;
       const url = URL.createObjectURL(ms);
@@ -195,18 +273,17 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
         try { sb = ms.addSourceBuffer('audio/mpeg'); } catch { return; }
 
         const reader = res.body.getReader();
-        const pump   = async () => {
+        const pump = async () => {
           const { done, value } = await reader.read();
           if (done) {
             try { if (ms.readyState === 'open') ms.endOfStream(); } catch {}
             return;
           }
-          // Wait for previous append to finish before sending next chunk
           const waitUpdate = () => new Promise((r) =>
             sb.updating ? sb.addEventListener('updateend', r, { once: true }) : r()
           );
           await waitUpdate();
-          if (!audioRef.current) return; // stopped mid-stream
+          if (!audioRef.current) return;
           try { sb.appendBuffer(value); } catch {}
           sb.addEventListener('updateend', pump, { once: true });
         };
@@ -235,7 +312,6 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
     if (!en.length) return null;
     const wantMale = voice === 'onyx';
     if (wantMale) {
-      // Prefer natural-sounding male voices — iOS: Aaron, Eddy, Daniel, Gordon, James, Tom; Android: Google UK English Male
       return (
         en.find((v) => /\b(aaron|eddy|daniel|gordon|james|tom|rishi)\b/i.test(v.name)) ||
         en.find((v) => /male/i.test(v.name)) ||
@@ -244,7 +320,6 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
         en[0]
       );
     }
-    // Female — prefer enhanced/premium, then named female voices
     return (
       en.find((v) => /enhanced|premium|neural/i.test(v.name)) ||
       en.find((v) => /google/i.test(v.name) && v.lang === 'en-US') ||
