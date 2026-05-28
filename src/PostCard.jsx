@@ -657,7 +657,8 @@ export default function PostCard({
           <div style={{ fontSize: 11.5, color: T.inkMuted }}>
             {/* Role title inline — shows the top role as readable text */}
             {!item.is_anonymous && authorRoles && authorRoles.length > 0 && (() => {
-              const top = authorRoles[0];
+              const top = authorRoles.find((r) => r.role_key !== 'owner');
+              if (!top) return null;
               const label = top.role_label ?? presetForRole(top.role_key)?.label ?? top.role_key;
               return <span style={{ color: T.goldDark, fontWeight: 600, marginRight: 4 }}>{label} · </span>;
             })()}

@@ -175,7 +175,8 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{name}</span>
             {!row.is_anonymous && rolesMap[row.author_id]?.length > 0 && (() => {
-              const top = rolesMap[row.author_id][0];
+              const top = rolesMap[row.author_id].find((r) => r.role_key !== 'owner');
+              if (!top) return null;
               const label = top.role_label ?? presetForRole(top.role_key)?.label ?? top.role_key;
               return <span style={{ fontSize: 11, fontWeight: 700, color: T.goldDark }}>{label}</span>;
             })()}

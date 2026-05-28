@@ -156,7 +156,8 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
                     <span style={{ fontSize: 13, lineHeight: 1 }}>{codeToFlag(profMap[c.author_id].flags[0])}</span>
                   )}
                   {!c.is_anonymous && rolesMap?.[c.author_id]?.length > 0 && (() => {
-                    const top = rolesMap[c.author_id][0];
+                    const top = rolesMap[c.author_id].find((r) => r.role_key !== 'owner');
+                    if (!top) return null;
                     const label = top.role_label ?? presetForRole(top.role_key)?.label ?? top.role_key;
                     return <span style={{ fontSize: 11, fontWeight: 700, color: T.goldDark }}>{label}</span>;
                   })()}
