@@ -44,22 +44,44 @@ const STARTERS = [
   'How did the early church understand communion — what do the church fathers say?',
 ];
 
+function storageKey(userId, churchId) {
+  return `church-pastoral-convs-${userId ?? 'anon'}-${churchId ?? 'x'}`;
+}
+
+function loadConvs(userId, churchId) {
+  try { return JSON.parse(localStorage.getItem(storageKey(userId, churchId))) ?? []; }
+  catch { return []; }
+}
+
+function saveConvs(userId, churchId, convs) {
+  try { localStorage.setItem(storageKey(userId, churchId), JSON.stringify(convs)); }
+  catch {}
+}
+
 export default function ChurchAiChat({ session, profile, churchId, churchPlan }) {
   const userId = session?.user?.id;
   const plan = churchPlan ?? 'church_base';
 
   const aiUsage = useAiUsage(userId, plan);
 
+  // ── Conversation history (localStorage) ──────────────────────────
+  const [convId, setConvId]       = useState(() => `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`);
+  const [convTitle, setConvTitle] = useState('New conversation');
+
+  // ── Chat state ────────────────────────────────────────────────────
   const [messages, setMessages]   = useState([]);
   const [input, setInput]         = useState('');
   const [busy, setBusy]           = useState(false);
   const [error, setError]         = useState(null);
-  const [savedIdx, setSavedIdx]   = useState({});   // which assistant messages are saved
-  const [saveError, setSaveError] = useState(null); // surface save failures
+  const [savedIdx, setSavedIdx]   = useState({});
+  const [saveError, setSaveError] = useState(null);
+
+  // ── UI state ──────────────────────────────────────────────────────
   const [menuOpen, setMenuOpen]   = useState(false);
-  const [showBoard, setShowBoard] = useState(false); // board history panel
-  const [boardPosts, setBoardPosts] = useState([]);
+  const [panel, setPanel]         = useState(null); // null | 'history' | 'board'
+  const [boardPosts, setBoardPosts]   = useState([]);
   const [boardLoading, setBoardLoading] = useState(false);
+  const [history, setHistory]     = useState(() => loadConvs(userId, churchId));
 
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
@@ -68,6 +90,28 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Persist conversation to localStorage whenever messages change
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const firstUser = messages.find((m) => m.role === 'user')?.content ?? '';
+    const title = firstUser ? firstUser.slice(0, 70) + (firstUser.length > 70 ? '…' : '') : convTitle;
+    const updated = {
+      id: convId,
+      title,
+      messages,
+      updatedAt: Date.now(),
+    };
+    setConvTitle(title);
+    setHistory((prev) => {
+      const without = prev.filter((c) => c.id !== convId);
+      const next = [updated, ...without].slice(0, 50); // keep last 50
+      saveConvs(userId, churchId, next);
+      return next;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
+
+  // ── Send ─────────────────────────────────────────────────────────
   async function send(text) {
     const prompt = (text ?? input).trim();
     if (!prompt || busy || aiUsage.atLimit) return;
@@ -138,6 +182,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
     }
   }
 
+  // ── Save to board ─────────────────────────────────────────────────
   async function saveToBoard(assistantIdx) {
     if (!churchId || !userId) return;
     setSaveError(null);
@@ -146,9 +191,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
     const answer   = messages[assistantIdx]?.content ?? '';
     if (!answer) return;
 
-    const body = question
-      ? `**Q: ${question}**\n\n${answer}`
-      : answer;
+    const body = question ? `**Q: ${question}**\n\n${answer}` : answer;
 
     const { error: err } = await supabase.from('posts').insert({
       author_id:  userId,
@@ -161,15 +204,15 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
     });
 
     if (err) {
-      console.error('saveToBoard error:', err);
-      setSaveError(err.message || 'Could not save — check permissions.');
+      console.error('saveToBoard:', err);
+      setSaveError(err.message || 'Could not save.');
     } else {
       setSavedIdx((prev) => ({ ...prev, [assistantIdx]: true }));
-      // Refresh board list if panel is open
-      if (showBoard) loadBoard();
+      if (panel === 'board') loadBoard();
     }
   }
 
+  // ── Board history ─────────────────────────────────────────────────
   async function loadBoard() {
     if (!churchId) return;
     setBoardLoading(true);
@@ -185,91 +228,148 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
     setBoardLoading(false);
   }
 
-  async function openBoard() {
-    setShowBoard(true);
-    loadBoard();
+  async function deleteFromBoard(postId) {
+    await supabase.from('posts').delete().eq('id', postId);
+    setBoardPosts((prev) => prev.filter((p) => p.id !== postId));
   }
 
+  // ── New conversation ──────────────────────────────────────────────
   function newConversation() {
     setMessages([]);
     setInput('');
     setError(null);
     setSavedIdx({});
     setSaveError(null);
+    const newId = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    setConvId(newId);
+    setConvTitle('New conversation');
+    setPanel(null);
   }
 
-  async function deleteFromBoard(postId) {
-    await supabase.from('posts').delete().eq('id', postId);
-    setBoardPosts((prev) => prev.filter((p) => p.id !== postId));
+  // ── Load a past conversation ──────────────────────────────────────
+  function loadConversation(conv) {
+    setConvId(conv.id);
+    setConvTitle(conv.title);
+    setMessages(conv.messages);
+    setSavedIdx({});
+    setSaveError(null);
+    setError(null);
+    setPanel(null);
+  }
+
+  function deleteConversation(convId) {
+    setHistory((prev) => {
+      const next = prev.filter((c) => c.id !== convId);
+      saveConvs(userId, churchId, next);
+      return next;
+    });
   }
 
   const isEmpty = messages.length === 0;
 
-  // ── Board history panel ──────────────────────────────────────────────────
-  if (showBoard) {
+  // ── Panel: Conversation history ───────────────────────────────────
+  if (panel === 'history') {
+    const convs = history.filter((c) => c.messages.length > 0);
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)', minHeight: 400 }}>
-        {/* Board header */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 10,
-          padding: '0 0 12px', borderBottom: `1px solid ${T.line}`, marginBottom: 16,
-          flexShrink: 0,
+          paddingBottom: 12, borderBottom: `1px solid ${T.line}`, marginBottom: 16, flexShrink: 0,
         }}>
+          <button onClick={() => setPanel(null)} style={{ background: 'none', border: 'none', fontSize: 18, color: T.inkSoft, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>←</button>
+          <div>
+            <div style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 2 }}>Your history</div>
+            <div style={{ fontFamily: T.serif, fontSize: 16, fontWeight: 600, color: T.ink }}>Conversations</div>
+          </div>
           <button
-            onClick={() => setShowBoard(false)}
-            style={{
-              background: 'none', border: 'none', fontSize: 18,
-              color: T.inkSoft, cursor: 'pointer', padding: '0 4px', lineHeight: 1,
-            }}
-          >←</button>
-          <span style={{ fontFamily: T.serif, fontSize: 16, fontWeight: 600, color: T.ink }}>
-            📌 Board history
-          </span>
+            onClick={newConversation}
+            style={{ marginLeft: 'auto', background: T.ink, color: T.cream, border: 'none', borderRadius: 999, padding: '7px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+          >+ New</button>
         </div>
 
-        {/* Board list */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
-          {boardLoading && (
-            <div style={{ textAlign: 'center', padding: 32, color: T.inkSoft, fontSize: 13 }}>Loading…</div>
+          {convs.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '48px 20px', color: T.inkSoft, fontFamily: T.serif, fontSize: 15, lineHeight: 1.6 }}>
+              No conversations yet.<br />Start asking — your history will appear here.
+            </div>
           )}
+          {convs.map((c) => (
+            <div
+              key={c.id}
+              onClick={() => loadConversation(c)}
+              style={{
+                padding: '14px 16px', borderBottom: `1px solid ${T.line}`,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12,
+                background: T.white, borderRadius: 0,
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = T.parchment)}
+              onMouseLeave={(e) => (e.currentTarget.style.background = T.white)}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: T.serif, fontSize: 14, fontWeight: 600, color: T.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {c.title}
+                </div>
+                <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 2 }}>
+                  {new Date(c.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {' · '}{c.messages.length} message{c.messages.length !== 1 ? 's' : ''}
+                </div>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); deleteConversation(c.id); }}
+                style={{ background: 'none', border: 'none', fontSize: 12, color: T.inkMuted, cursor: 'pointer', flexShrink: 0, padding: '2px 4px' }}
+              >✕</button>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Panel: Board (saved to church feed) ───────────────────────────
+  if (panel === 'board') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)', minHeight: 400 }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          paddingBottom: 12, borderBottom: `1px solid ${T.line}`, marginBottom: 16, flexShrink: 0,
+        }}>
+          <button onClick={() => setPanel(null)} style={{ background: 'none', border: 'none', fontSize: 18, color: T.inkSoft, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>←</button>
+          <div>
+            <div style={{ fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 2 }}>Church feed</div>
+            <div style={{ fontFamily: T.serif, fontSize: 16, fontWeight: 600, color: T.ink }}>📌 Board</div>
+          </div>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          {boardLoading && <div style={{ textAlign: 'center', padding: 32, color: T.inkSoft, fontSize: 13 }}>Loading…</div>}
           {!boardLoading && boardPosts.length === 0 && (
             <div style={{ textAlign: 'center', padding: '40px 20px', color: T.inkSoft, fontSize: 14 }}>
               <div style={{ fontSize: 24, marginBottom: 10 }}>📌</div>
-              <div>Nothing saved yet.<br />Hit "Save to board" on any AI response.</div>
+              <div>Nothing saved yet.<br />Hit "Save to board" on any AI response to share it with your congregation.</div>
             </div>
           )}
           {boardPosts.map((p) => {
             const q = p.body_data?.question ?? '';
-            // Show just the question as title, truncate answer
-            const preview = p.body.length > 220 ? p.body.slice(0, 220) + '…' : p.body;
+            const preview = p.body.replace(/^\*\*Q:.*?\*\*\n\n/, '');
             return (
               <div key={p.id} style={{
-                background: T.parchment,
-                border: `1px solid rgba(26,17,8,0.09)`,
-                borderRadius: 12,
-                padding: '14px 16px',
-                marginBottom: 10,
+                background: T.parchment, border: `1px solid rgba(26,17,8,0.09)`,
+                borderRadius: 12, padding: '14px 16px', marginBottom: 10,
               }}>
                 {q && (
                   <div style={{ fontFamily: T.serif, fontSize: 13, fontWeight: 700, color: T.ink, marginBottom: 6 }}>
                     {q.length > 100 ? q.slice(0, 100) + '…' : q}
                   </div>
                 )}
-                <div style={{ fontSize: 12, color: T.inkSoft, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
-                  {/* Strip the Q: header since we show it above */}
-                  {preview.replace(/^\*\*Q:.*?\*\*\n\n/, '')}
+                <div style={{ fontSize: 12, color: T.inkSoft, lineHeight: 1.55, whiteSpace: 'pre-wrap',
+                  maxHeight: 120, overflow: 'hidden', WebkitMaskImage: 'linear-gradient(to bottom, black 70%, transparent 100%)' }}>
+                  {preview.length > 300 ? preview.slice(0, 300) + '…' : preview}
                 </div>
                 <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 11, color: T.inkMuted }}>
                     {new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
-                  <button
-                    onClick={() => deleteFromBoard(p.id)}
-                    style={{
-                      background: 'none', border: 'none', fontSize: 11,
-                      color: T.inkMuted, cursor: 'pointer', padding: '2px 4px',
-                    }}
-                  >
+                  <button onClick={() => deleteFromBoard(p.id)} style={{ background: 'none', border: 'none', fontSize: 11, color: T.inkMuted, cursor: 'pointer', padding: '2px 4px' }}>
                     Remove
                   </button>
                 </div>
@@ -281,7 +381,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
     );
   }
 
-  // ── Main chat view ───────────────────────────────────────────────────────
+  // ── Main chat view ────────────────────────────────────────────────
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)', minHeight: 400 }}>
 
@@ -309,15 +409,8 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
             }}
           >⋮</button>
 
-          {/* Backdrop */}
-          {menuOpen && (
-            <div
-              onClick={() => setMenuOpen(false)}
-              style={{ position: 'fixed', inset: 0, zIndex: 199 }}
-            />
-          )}
+          {menuOpen && <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 199 }} />}
 
-          {/* Dropdown */}
           {menuOpen && (
             <div style={{
               position: 'absolute', top: 'calc(100% + 8px)', right: 0,
@@ -325,32 +418,27 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
               borderRadius: 14, boxShadow: '0 8px 32px rgba(44,24,16,0.15)',
               overflow: 'hidden', minWidth: 210, zIndex: 200,
             }}>
-              {/* New conversation */}
               <button
                 onClick={() => { newConversation(); setMenuOpen(false); }}
-                style={{
-                  width: '100%', textAlign: 'left', background: 'none',
-                  border: 'none', borderBottom: `1px solid ${T.line}`,
-                  padding: '12px 16px', fontSize: 14, color: T.ink,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
-                }}
+                style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid ${T.line}`, padding: '12px 16px', fontSize: 14, color: T.ink, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
               >
-                <KinwoveStar size={14} style={{ flexShrink: 0 }} />
+                <KinwoveStar size={13} style={{ flexShrink: 0 }} />
                 <span style={{ fontWeight: 600 }}>New conversation</span>
               </button>
-
-              {/* Board history */}
+              <button
+                onClick={() => { setPanel('history'); setMenuOpen(false); }}
+                style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid ${T.line}`, padding: '12px 16px', fontSize: 14, color: T.ink, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
+              >
+                <span style={{ fontSize: 14 }}>◷</span>
+                <span>Conversation history</span>
+              </button>
               {churchId && (
                 <button
-                  onClick={() => { openBoard(); setMenuOpen(false); }}
-                  style={{
-                    width: '100%', textAlign: 'left', background: 'none',
-                    border: 'none', padding: '12px 16px', fontSize: 14, color: T.ink,
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
-                  }}
+                  onClick={() => { setPanel('board'); loadBoard(); setMenuOpen(false); }}
+                  style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '12px 16px', fontSize: 14, color: T.ink, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
                 >
                   <span style={{ fontSize: 14 }}>📌</span>
-                  <span>Board history</span>
+                  <span>Board</span>
                 </button>
               )}
             </div>
@@ -371,61 +459,30 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 440, margin: '0 auto', textAlign: 'left' }}>
               {STARTERS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => send(s)}
-                  style={{
-                    background: T.parchment, border: `1px solid ${T.goldLight}`,
-                    borderRadius: 10, padding: '10px 14px',
-                    fontSize: 13, color: T.inkSoft, cursor: 'pointer',
-                    textAlign: 'left', lineHeight: 1.45,
-                    fontFamily: T.serif, fontStyle: 'italic',
-                  }}
-                >
-                  {s}
-                </button>
+                <button key={s} onClick={() => send(s)} style={{
+                  background: T.parchment, border: `1px solid ${T.goldLight}`,
+                  borderRadius: 10, padding: '10px 14px',
+                  fontSize: 13, color: T.inkSoft, cursor: 'pointer',
+                  textAlign: 'left', lineHeight: 1.45,
+                  fontFamily: T.serif, fontStyle: 'italic',
+                }}>{s}</button>
               ))}
             </div>
           </div>
         )}
 
         {messages.map((m, i) => (
-          <div key={i} style={{
-            marginBottom: 16,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: m.role === 'user' ? 'flex-end' : 'flex-start',
-          }}>
+          <div key={i} style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', alignItems: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
             {m.role === 'user' ? (
-              <div style={{
-                maxWidth: '80%',
-                background: T.ink,
-                color: T.cream,
-                borderRadius: '16px 16px 4px 16px',
-                padding: '10px 14px',
-                fontSize: 14,
-                lineHeight: 1.55,
-              }}>
+              <div style={{ maxWidth: '80%', background: T.ink, color: T.cream, borderRadius: '16px 16px 4px 16px', padding: '10px 14px', fontSize: 14, lineHeight: 1.55 }}>
                 {m.content}
               </div>
             ) : (
               <div style={{ maxWidth: '92%' }}>
-                <div style={{
-                  background: T.white,
-                  border: `1px solid ${T.line}`,
-                  borderRadius: '4px 16px 16px 16px',
-                  padding: '12px 16px',
-                  fontSize: 14,
-                  lineHeight: 1.65,
-                  color: T.ink,
-                }}>
-                  {m.content
-                    ? <MsgText text={m.content} />
-                    : <span style={{ color: T.inkMuted, fontStyle: 'italic' }}>…</span>
-                  }
+                <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: '4px 16px 16px 16px', padding: '12px 16px', fontSize: 14, lineHeight: 1.65, color: T.ink }}>
+                  {m.content ? <MsgText text={m.content} /> : <span style={{ color: T.inkMuted, fontStyle: 'italic' }}>…</span>}
                 </div>
 
-                {/* Save to board button — only when done streaming + churchId exists */}
                 {m.content && !busy && churchId && (
                   <div style={{ marginTop: 6, paddingLeft: 2 }}>
                     {savedIdx[i] ? (
@@ -433,22 +490,8 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
                     ) : (
                       <button
                         onClick={() => saveToBoard(i)}
-                        style={{
-                          background: 'none',
-                          border: `1px solid ${T.goldLight}`,
-                          borderRadius: 8,
-                          padding: '4px 10px',
-                          fontSize: 12,
-                          color: T.inkSoft,
-                          cursor: 'pointer',
-                          fontFamily: 'inherit',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                        }}
-                      >
-                        📌 Save to board
-                      </button>
+                        style={{ background: 'none', border: `1px solid ${T.goldLight}`, borderRadius: 8, padding: '4px 10px', fontSize: 12, color: T.inkSoft, cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                      >📌 Save to board</button>
                     )}
                   </div>
                 )}
@@ -457,12 +500,8 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
           </div>
         ))}
 
-        {error && (
-          <div style={{ fontSize: 13, color: '#A53F2B', padding: '8px 0', textAlign: 'center' }}>{error}</div>
-        )}
-        {saveError && (
-          <div style={{ fontSize: 12, color: '#A53F2B', padding: '6px 0', textAlign: 'center' }}>{saveError}</div>
-        )}
+        {error && <div style={{ fontSize: 13, color: '#A53F2B', padding: '8px 0', textAlign: 'center' }}>{error}</div>}
+        {saveError && <div style={{ fontSize: 12, color: '#A53F2B', padding: '6px 0', textAlign: 'center' }}>{saveError}</div>}
         <div ref={bottomRef} />
       </div>
 
@@ -470,52 +509,21 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
       {aiUsage.atLimit ? (
         <AiLimitWall plan={plan} panelMode onTopupSuccess={() => aiUsage.refreshAfterTopup()} />
       ) : (
-        <div style={{
-          borderTop: `1px solid ${T.line}`,
-          padding: '12px 0 0',
-          flexShrink: 0,
-        }}>
+        <div style={{ borderTop: `1px solid ${T.line}`, padding: '12px 0 0', flexShrink: 0 }}>
           <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
             <textarea
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
-              }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
               placeholder="Ask a theological question…"
               rows={2}
-              style={{
-                flex: 1,
-                padding: '10px 14px',
-                borderRadius: 12,
-                border: `1px solid ${T.line}`,
-                fontSize: 14,
-                fontFamily: T.sans ?? 'inherit',
-                background: T.white,
-                color: T.ink,
-                outline: 'none',
-                resize: 'none',
-                lineHeight: 1.5,
-              }}
+              style={{ flex: 1, padding: '10px 14px', borderRadius: 12, border: `1px solid ${T.line}`, fontSize: 14, fontFamily: T.sans ?? 'inherit', background: T.white, color: T.ink, outline: 'none', resize: 'none', lineHeight: 1.5 }}
             />
             <button
               onClick={() => send()}
               disabled={busy || !input.trim()}
-              style={{
-                padding: '10px 18px',
-                borderRadius: 12,
-                border: 'none',
-                background: busy || !input.trim() ? T.line : T.ink,
-                color: T.cream,
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: busy || !input.trim() ? 'default' : 'pointer',
-                flexShrink: 0,
-                alignSelf: 'flex-end',
-                marginBottom: 0,
-                transition: 'background 0.15s',
-              }}
+              style={{ padding: '10px 18px', borderRadius: 12, border: 'none', background: busy || !input.trim() ? T.line : T.ink, color: T.cream, fontSize: 14, fontWeight: 600, cursor: busy || !input.trim() ? 'default' : 'pointer', flexShrink: 0, alignSelf: 'flex-end', transition: 'background 0.15s' }}
             >
               {busy ? '…' : '↑'}
             </button>
