@@ -344,6 +344,59 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
 
       <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
 
+      {/* ── Why not Google / ChatGPT ── */}
+      <section style={{ padding: '88px 32px 92px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
+        <div style={{ textAlign: 'center', marginBottom: 52 }}>
+          <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 18 }}>Why not Google or ChatGPT?</div>
+          <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(26px, 3.6vw, 40px)', color: T.cream, fontWeight: 600, margin: '0 auto 20px', letterSpacing: '-0.022em', lineHeight: 1.12, maxWidth: 660 }}>
+            Google gives you a list.<br />ChatGPT gives you an answer.<br /><em style={{ color: T.gold, fontStyle: 'italic', fontWeight: 500 }}>kinwove gives you a conversation.</em>
+          </h2>
+          <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, maxWidth: 480, margin: '0 auto', lineHeight: 1.75 }}>
+            One that knows what it's talking about — and knows why you're really asking.
+          </p>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, maxWidth: 820, margin: '0 auto', justifyContent: 'center' }}>
+          <div style={{ flex: '1 1 280px', maxWidth: 380, padding: '32px 28px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.18)', borderRadius: 20 }}>
+            <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.gold, marginBottom: 12, letterSpacing: '-0.005em' }}>No judgment. No pressure.</div>
+            <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.75, margin: '0 0 18px' }}>
+              Some questions you'd never say out loud to a pastor or a friend.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
+              {[
+                'Is God even real?',
+                'Why do I feel nothing when I pray?',
+                'I want to believe — I just don\'t know if I do.',
+              ].map((q) => (
+                <div key={q} style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 14.5, color: T.cream, opacity: 0.72, paddingLeft: 14, borderLeft: '2px solid rgba(184,115,58,0.35)' }}>{q}</div>
+              ))}
+            </div>
+            <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.75, margin: 0 }}>
+              Ask anything here. Nobody flinches. Just an honest conversation, at whatever pace feels right.
+            </p>
+          </div>
+          <div style={{ flex: '1 1 280px', maxWidth: 380, padding: '32px 28px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.18)', borderRadius: 20 }}>
+            <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.gold, marginBottom: 12, letterSpacing: '-0.005em' }}>Built for this conversation.</div>
+            <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.75, margin: '0 0 18px' }}>
+              General AI tools weren't trained to sit with scripture. kinwove was.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[
+                { icon: '📖', label: 'Stays in the text' },
+                { icon: '🤝', label: 'Honest when scholars disagree' },
+                { icon: '🧭', label: 'Points toward Jesus, not itself' },
+              ].map((p) => (
+                <div key={p.label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 16 }}>{p.icon}</span>
+                  <span style={{ fontFamily: T.sans, fontSize: 13.5, color: DIM, lineHeight: 1.5 }}>{p.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
+
       {/* ── Social proof — live community activity ── */}
       <CommunityPreview onBegin={onBegin} />
 
