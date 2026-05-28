@@ -1165,6 +1165,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
 
   const [copied, setCopied]       = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [emailCopied, setEmailCopied] = useState(false);
   const [rotating, setRotating]   = useState(false);
   const [confirmRotate, setConfirmRotate] = useState(false);
 
@@ -1521,11 +1522,12 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
                       background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
                       padding: '7px 14px', fontSize: 13, color: T.inkSoft, cursor: 'pointer',
                     }}>{linkCopied ? '✓ Copied' : 'Copy link'}</button>
-                    <a
-                      href={(() => {
+                    <button
+                      onClick={() => {
                         const churchName = church?.name ?? 'our church';
-                        const subject = `Join ${churchName} on kinwove`;
-                        const body = [
+                        const template = [
+                          `Subject: Join ${churchName} on kinwove`,
+                          ``,
                           `Hi!`,
                           ``,
                           `You're invited to join ${churchName} on kinwove — a space where our congregation connects between Sundays.`,
@@ -1536,15 +1538,16 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
                           ``,
                           `See you there!`,
                         ].join('\n');
-                        return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                      })()}
-                      style={{
-                        display: 'inline-block',
-                        background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
-                        padding: '7px 14px', fontSize: 13, color: T.inkSoft,
-                        textDecoration: 'none', cursor: 'pointer',
+                        navigator.clipboard.writeText(template).then(() => {
+                          setEmailCopied(true);
+                          setTimeout(() => setEmailCopied(false), 2500);
+                        });
                       }}
-                    >✉️ Email</a>
+                      style={{
+                        background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
+                        padding: '7px 14px', fontSize: 13, color: T.inkSoft, cursor: 'pointer',
+                      }}
+                    >{emailCopied ? '✓ Copied' : '✉️ Copy email'}</button>
                     <a
                       href={`sms:?body=Join ${encodeURIComponent(church?.name ?? 'our church')} on kinwove: ${encodeURIComponent(joinUrl)}`}
                       style={{
