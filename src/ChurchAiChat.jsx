@@ -400,11 +400,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
       <BoardModal open={boardOpen} onClose={() => setBoardOpen(false)} churchId={churchId} onReopenInAsk={reopenInAsk} />
       <HistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} conversations={history} onLoad={loadConversation} onDelete={deleteConversation} onNew={newConversation} />
 
-      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)', minHeight: 400, color: C.text, transition: 'color 0.2s' }}
-           data-dark={dark ? '1' : undefined}
-      >
-        {/* dark mode bg sits behind content — doesn't fight the shell's side padding */}
-        {dark && <div style={{ position: 'fixed', inset: 0, background: DARK.bg, zIndex: -1, pointerEvents: 'none' }} />}
+      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)', minHeight: 400, background: C.bg, color: C.text, transition: 'background 0.2s, color 0.2s', borderRadius: 8 }}>
 
         {/* ── Header ── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10, borderBottom: `1px solid ${C.border}`, marginBottom: 4, flexShrink: 0 }}>
