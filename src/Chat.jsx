@@ -1736,11 +1736,7 @@ export default function Chat({
             );
           })}
 
-          {messages.length >= 3 && (
-            <div style={{ marginTop: 8, marginBottom: 12, borderRadius: 10, overflow: 'hidden', border: `1px solid ${T.line}` }}>
-              <AdStrip />
-            </div>
-          )}
+          {/* AdStrip hidden until real sponsors are onboarded */}
 
           {showNudge && (
             <div style={{
@@ -1753,12 +1749,12 @@ export default function Chat({
             }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: T.goldDark, marginBottom: 3 }}>
-                  Your questions are getting deeper
+                  Unlock unlimited, deeper answers
                 </div>
                 <div style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.5 }}>
                   {aiPlan === 'free'
-                    ? 'Get deeper responses with Individual. $6.99 CAD/mo.'
-                    : 'Get deeper responses with Individual Pro. $13.99 CAD/mo.'}
+                    ? 'Upgrade for longer responses, more questions, and no weekly limits — $6.99 CAD/mo.'
+                    : 'Go further with priority responses and higher limits — $13.99 CAD/mo.'}
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
