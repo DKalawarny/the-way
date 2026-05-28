@@ -25,13 +25,16 @@ const KIND_COPY = {
   sermon_comment:            { verb: 'commented on your sermon', Icon: BookOpen },
   sermon_published:          { verb: 'published a new sermon', Icon: BookOpen },
   follow:                    { verb: 'started following you', Icon: UserPlus },
+  role_assigned:             { verb: 'gave you a role', Icon: null, emoji: '🎖' },
 };
 
 function NotificationRow({ n, onClick, onFriendAction }) {
   const copy = KIND_COPY[n.kind] ?? { verb: n.kind, Icon: null, emoji: <KinwoveStar size={10} /> };
   const actor = n.actor_profile;
   const actorName = actor?.display_name ?? 'Someone';
-  const snippet = n.data?.snippet;
+  const snippet = n.kind === 'role_assigned'
+    ? [n.data?.role_label, n.data?.church_name].filter(Boolean).join(' at ')
+    : n.data?.snippet;
   const unread = !n.read_at;
   const isFriendReq = n.kind === 'friend_request_received';
 

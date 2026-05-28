@@ -3159,11 +3159,11 @@ export default function App() {
             else if (n.target_type === 'sermon')    { setViewingSermonId(n.target_id); setStage('sermon-view'); }
             else if (n.target_type === 'friend_request') { setViewingUserId(n.actor_id); }
             else if (n.kind === 'follow') { setViewingUserId(n.actor_id); }
-            else if (n.target_type === 'church' || n.type === 'role_assigned') {
-              const churchId = n.metadata?.church_id ?? n.target_id;
-              if (churchId) { setViewingChurchId(churchId); setStage('church'); }
-              // If it's a care team role, also reload church roles so nav updates
-              if (n.metadata?.role_key === 'care') { loadChurchRoles(session?.user?.id); }
+            else if (n.target_type === 'church' || n.kind === 'role_assigned') {
+              const cId = n.data?.church_id ?? n.target_id;
+              if (cId) { setViewingChurchId(cId); setStage('church'); }
+              // If it's a care team role, reload church roles so nav updates immediately
+              if (n.data?.role_key === 'care') { loadChurchRoles(session?.user?.id); }
             }
           }}
         />
