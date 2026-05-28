@@ -838,6 +838,13 @@ export default function ChurchPage({
                     background: 'none', border: `1px solid rgba(168,85,48,0.30)`, borderRadius: 999,
                     color: T.inkSoft, fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: '8px 18px',
                   }}>🙏 Pray together</button>
+                  {/* Care team members get a clear entry point to their inbox */}
+                  {isCareTeam && onOpenCareInbox && (
+                    <button onClick={onOpenCareInbox} style={{
+                      background: 'none', border: `1px solid rgba(168,85,48,0.30)`, borderRadius: 999,
+                      color: T.inkSoft, fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: '8px 18px',
+                    }}>💙 Care inbox</button>
+                  )}
                 </div>
               </div>
             )}

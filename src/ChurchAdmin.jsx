@@ -1402,6 +1402,17 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
         granted_by: session?.user?.id ?? null,
       }, { onConflict: 'church_id,user_id,role_key' });
     if (error) return { error: error.message };
+
+    // Care team role → also add to care_team_members so they get care inbox access
+    if (role_key === 'care') {
+      await supabase
+        .from('care_team_members')
+        .upsert(
+          { church_id: churchId, user_id, role_label: role_label ?? 'Care team', is_active: true },
+          { onConflict: 'church_id,user_id' }
+        ).then(null, () => {});
+    }
+
     loadAll();
     return { error: null };
   }
