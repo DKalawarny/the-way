@@ -152,6 +152,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
 
     const { error: err } = await supabase.from('posts').insert({
       author_id:  userId,
+      kind:       'text',
       scope:      'church',
       scope_id:   churchId,
       visibility: 'public',
