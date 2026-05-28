@@ -1522,7 +1522,22 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
                       padding: '7px 14px', fontSize: 13, color: T.inkSoft, cursor: 'pointer',
                     }}>{linkCopied ? '✓ Copied' : 'Copy link'}</button>
                     <a
-                      href={`mailto:?subject=Join ${church?.name ?? 'our church'} on kinwove&body=Hi!%0A%0AYou're invited to join ${encodeURIComponent(church?.name ?? 'our church')} on kinwove — a space where our congregation connects between Sundays.%0A%0AJoin here: ${encodeURIComponent(joinUrl)}%0A%0AOr open kinwove and enter the code: ${code}%0A%0ASee you there!`}
+                      href={(() => {
+                        const churchName = church?.name ?? 'our church';
+                        const subject = `Join ${churchName} on kinwove`;
+                        const body = [
+                          `Hi!`,
+                          ``,
+                          `You're invited to join ${churchName} on kinwove — a space where our congregation connects between Sundays.`,
+                          ``,
+                          `Join here: ${joinUrl}`,
+                          ``,
+                          `Or open kinwove and enter the code: ${code}`,
+                          ``,
+                          `See you there!`,
+                        ].join('\n');
+                        return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                      })()}
                       style={{
                         display: 'inline-block',
                         background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
