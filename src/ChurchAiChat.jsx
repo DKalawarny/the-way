@@ -108,6 +108,16 @@ function ActionBtn({ onClick, title, active, children, onMouseEnter, onMouseLeav
   );
 }
 
+// ── Color schemes ────────────────────────────────────────────────────────────
+const LIGHT = {
+  bg: '#FDF8F0', text: T.ink, muted: T.inkMuted, soft: T.inkSoft,
+  border: T.line, headerBg: '#FFFFFF', card: '#F5ECD9', inputBg: '#FDF8F0',
+};
+const DARK = {
+  bg: '#150D05', text: 'rgba(253,248,240,0.92)', muted: 'rgba(253,248,240,0.38)', soft: 'rgba(253,248,240,0.6)',
+  border: 'rgba(184,115,58,0.2)', headerBg: '#1A0E07', card: 'rgba(255,255,255,0.06)', inputBg: 'rgba(255,255,255,0.07)',
+};
+
 // ── localStorage helpers ─────────────────────────────────────────────────────
 function convKey(userId, churchId) { return `church-pastoral-convs-${userId ?? 'anon'}-${churchId ?? 'x'}`; }
 function readConvs(userId, churchId) { try { return JSON.parse(localStorage.getItem(convKey(userId, churchId))) ?? []; } catch { return []; } }
@@ -242,6 +252,10 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
   const userId  = session?.user?.id;
   const plan    = churchPlan ?? 'church_base';
   const ttsVoice = profile?.tts_voice ?? 'onyx';
+
+  const [dark, setDark] = useState(() => localStorage.getItem('church_ask_dark') === '1');
+  const C = dark ? DARK : LIGHT;
+  function toggleDark() { setDark((d) => { localStorage.setItem('church_ask_dark', d ? '0' : '1'); return !d; }); }
 
   const aiUsage = useAiUsage(userId, plan);
   const { speakingId, speak: speakMsg, supported: ttsSupported } = useTextToSpeech({ voice: ttsVoice });
@@ -386,28 +400,35 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
       <BoardModal open={boardOpen} onClose={() => setBoardOpen(false)} churchId={churchId} onReopenInAsk={reopenInAsk} />
       <HistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} conversations={history} onLoad={loadConversation} onDelete={deleteConversation} onNew={newConversation} />
 
-      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)', minHeight: 400 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)', minHeight: 400, background: C.bg, color: C.text, transition: 'background 0.2s, color 0.2s' }}>
 
         {/* ── Header ── */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10, borderBottom: `1px solid ${T.line}`, marginBottom: 4, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10, borderBottom: `1px solid ${C.border}`, marginBottom: 4, flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <KinwoveStar size={15} />
-            <span style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 600, color: T.ink, letterSpacing: '-0.01em' }}>Pastoral AI</span>
+            <span style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 600, color: C.text, letterSpacing: '-0.01em' }}>Pastoral AI</span>
           </div>
           <div style={{ position: 'relative' }}>
-            <button onClick={() => setMenuOpen((v) => !v)} style={{ background: menuOpen ? 'rgba(184,115,58,0.12)' : 'transparent', border: `1px solid ${menuOpen ? T.gold : T.line}`, color: T.inkSoft, borderRadius: 999, padding: '5px 11px', fontSize: 16, cursor: 'pointer', lineHeight: 1 }}>⋮</button>
+            <button onClick={() => setMenuOpen((v) => !v)} style={{ background: menuOpen ? 'rgba(184,115,58,0.18)' : 'transparent', border: `1px solid ${menuOpen ? T.gold : C.border}`, color: C.soft, borderRadius: 999, padding: '5px 11px', fontSize: 16, cursor: 'pointer', lineHeight: 1 }}>⋮</button>
             {menuOpen && <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 199 }} />}
             {menuOpen && (
-              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: T.cream, border: `1px solid ${T.line}`, borderRadius: 14, boxShadow: '0 8px 32px rgba(44,24,16,0.15)', overflow: 'hidden', minWidth: 220, zIndex: 200 }}>
-                <button onClick={() => { newConversation(); setMenuOpen(false); }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid ${T.line}`, padding: '13px 16px', fontSize: 14, color: T.ink, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: C.headerBg, border: `1px solid ${C.border}`, borderRadius: 14, boxShadow: '0 8px 32px rgba(44,24,16,0.18)', overflow: 'hidden', minWidth: 220, zIndex: 200 }}>
+                {/* Dark mode toggle */}
+                <button onClick={() => { toggleDark(); setMenuOpen(false); }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid ${C.border}`, padding: '13px 16px', fontSize: 14, color: C.text, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontSize: 15 }}>{dark ? '☀' : '🌙'}</span>
+                    <span>{dark ? 'Light mode' : 'Dark mode'}</span>
+                  </span>
+                </button>
+                <button onClick={() => { newConversation(); setMenuOpen(false); }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid ${C.border}`, padding: '13px 16px', fontSize: 14, color: C.text, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ fontSize: 16, lineHeight: 1 }}>+</span><span style={{ fontWeight: 700 }}>New conversation</span>
                 </button>
                 {churchId && (
-                  <button onClick={() => { setBoardOpen(true); setMenuOpen(false); }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid ${T.line}`, padding: '13px 16px', fontSize: 14, color: T.ink, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <button onClick={() => { setBoardOpen(true); setMenuOpen(false); }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid ${C.border}`, padding: '13px 16px', fontSize: 14, color: C.text, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
                     <span style={{ fontSize: 15 }}>📌</span><span>Your board</span>
                   </button>
                 )}
-                <button onClick={() => { setHistoryOpen(true); setMenuOpen(false); }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '13px 16px', fontSize: 14, color: T.ink, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button onClick={() => { setHistoryOpen(true); setMenuOpen(false); }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '13px 16px', fontSize: 14, color: C.text, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ fontSize: 15 }}>◷</span><span>Conversation history</span>
                 </button>
               </div>
@@ -420,11 +441,11 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
           {isEmpty && !aiUsage.atLimit && (
             <div style={{ textAlign: 'center', padding: '24px 0 32px' }}>
               <div style={{ marginBottom: 10 }}><KinwoveStar size={22} /></div>
-              <div style={{ fontFamily: T.serif, fontSize: 17, fontWeight: 500, color: T.ink, marginBottom: 6, letterSpacing: '-0.01em' }}>Pastoral AI</div>
-              <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.6, maxWidth: 340, margin: '0 auto 24px' }}>Theology, sermon prep, pastoral care, exegesis — ask anything.</div>
+              <div style={{ fontFamily: T.serif, fontSize: 17, fontWeight: 500, color: C.text, marginBottom: 6, letterSpacing: '-0.01em' }}>Pastoral AI</div>
+              <div style={{ fontSize: 13, color: C.soft, lineHeight: 1.6, maxWidth: 340, margin: '0 auto 24px' }}>Theology, sermon prep, pastoral care, exegesis — ask anything.</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 440, margin: '0 auto', textAlign: 'left' }}>
                 {STARTERS.map((s) => (
-                  <button key={s} onClick={() => send(s)} style={{ background: T.parchment, border: `1px solid ${T.goldLight}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: T.inkSoft, cursor: 'pointer', textAlign: 'left', lineHeight: 1.45, fontFamily: T.serif, fontStyle: 'italic' }}>{s}</button>
+                  <button key={s} onClick={() => send(s)} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: C.soft, cursor: 'pointer', textAlign: 'left', lineHeight: 1.45, fontFamily: T.serif, fontStyle: 'italic' }}>{s}</button>
                 ))}
               </div>
             </div>
@@ -445,7 +466,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
                   </div>
                 ) : (
                   <>
-                    <div style={{ maxWidth: '100%', background: 'transparent', fontSize: 15, lineHeight: 1.7, color: T.ink, fontFamily: T.serif }}>
+                    <div style={{ maxWidth: '100%', background: 'transparent', fontSize: 15, lineHeight: 1.7, color: C.text, fontFamily: T.serif }}>
                       {isStreaming
                         ? <span style={{ color: T.inkMuted, fontStyle: 'italic' }}>…</span>
                         : <MsgText text={m.content} />
@@ -545,7 +566,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
         {aiUsage.atLimit ? (
           <AiLimitWall plan={plan} panelMode onTopupSuccess={() => aiUsage.refreshAfterTopup()} />
         ) : (
-          <div style={{ borderTop: `1px solid ${T.line}`, padding: '12px 0 0', flexShrink: 0 }}>
+          <div style={{ borderTop: `1px solid ${C.border}`, padding: '12px 0 0', flexShrink: 0 }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
               <textarea
                 ref={inputRef}
@@ -554,7 +575,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                 placeholder="Ask a theological question…"
                 rows={2}
-                style={{ flex: 1, padding: '10px 14px', borderRadius: 12, border: `1px solid ${T.line}`, fontSize: 14, fontFamily: T.sans ?? 'inherit', background: T.white, color: T.ink, outline: 'none', resize: 'none', lineHeight: 1.5 }}
+                style={{ flex: 1, padding: '10px 14px', borderRadius: 12, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: T.sans ?? 'inherit', background: C.inputBg, color: C.text, outline: 'none', resize: 'none', lineHeight: 1.5 }}
               />
               <button
                 onClick={() => send()}
