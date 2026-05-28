@@ -134,9 +134,16 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
     abortRef.current = new AbortController();
 
     // ── Mobile audio unlock ─────────────────────────────────────────────────
-    // iOS Safari blocks audio.play() after any await (gesture context is gone).
-    // Platforms that don't support MediaSource audio/mpeg (iOS Safari) go
-    // straight to Web Speech while the user gesture is still live.
+    // iOS Safari (all versions) kills the user-gesture context after ANY await.
+    // audio.play() and speechSynthesis.speak() both silently fail once gesture
+    // is gone. Detect iOS explicitly and call Web Speech NOW while gesture is live.
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) {
+      fallbackSpeak(id, text);
+      return;
+    }
+
+    // Non-iOS platforms that can't stream (old Android, Firefox) also fall back.
     const canStream = typeof MediaSource !== 'undefined' && MediaSource.isTypeSupported('audio/mpeg');
     if (!canStream) {
       fallbackSpeak(id, text);
