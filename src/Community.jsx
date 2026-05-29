@@ -1866,36 +1866,52 @@ useEffect(() => {
                               background: T.white,
                               border: `1px solid ${T.line}`,
                               borderRadius: 16,
-                              padding: '16px 18px',
+                              padding: '16px 0 16px 18px',
+                              overflow: 'hidden',
                             }}>
-                              <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.gold, fontWeight: 700, marginBottom: 14 }}>
+                              <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.gold, fontWeight: 700, marginBottom: 14, paddingRight: 18 }}>
                                 People you might know
                               </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                              {/* Horizontal scroll row */}
+                              <div className="hide-scroll" style={{
+                                display: 'flex', gap: 10,
+                                overflowX: 'auto', paddingRight: 18, paddingBottom: 4,
+                              }}>
                                 {suggestions.map((sp) => (
-                                  <div key={sp.id} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                  <div key={sp.id} style={{
+                                    flexShrink: 0, width: 130,
+                                    background: T.parchment,
+                                    border: `1px solid ${T.line}`,
+                                    borderRadius: 14,
+                                    padding: '16px 10px 12px',
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                                  }}>
                                     <button
                                       onClick={() => onViewProfile?.(sp.id)}
-                                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }}
+                                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                                     >
-                                      <Avatar name={sp.display_name} avatarConfig={sp.avatar_config} photoUrl={sp.avatar_url} size={38} />
+                                      <Avatar name={sp.display_name} avatarConfig={sp.avatar_config} photoUrl={sp.avatar_url} size={56} />
                                     </button>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                      <button
-                                        onClick={() => onViewProfile?.(sp.id)}
-                                        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
-                                      >
-                                        <div style={{ fontWeight: 600, fontSize: 14, color: T.ink }}>{sp.display_name}</div>
-                                        {sp.tradition && <div style={{ fontSize: 12, color: T.inkMuted }}>{sp.tradition}</div>}
-                                      </button>
-                                    </div>
+                                    <button
+                                      onClick={() => onViewProfile?.(sp.id)}
+                                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'center' }}
+                                    >
+                                      <div style={{ fontWeight: 600, fontSize: 13, color: T.ink, lineHeight: 1.3, marginBottom: 2 }}>{sp.display_name}</div>
+                                      {sp.tradition && (
+                                        <div style={{ fontSize: 11, color: T.inkMuted, lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                          {sp.tradition}
+                                        </div>
+                                      )}
+                                    </button>
                                     <button
                                       onClick={() => handleFollow(sp.id, false)}
                                       style={{
-                                        background: 'rgba(184,115,58,0.08)',
-                                        color: T.gold, border: '1px solid rgba(184,115,58,0.30)',
-                                        borderRadius: 999, padding: '6px 14px',
-                                        fontSize: 13, fontWeight: 600, cursor: 'pointer', flexShrink: 0,
+                                        marginTop: 2,
+                                        width: '100%',
+                                        background: 'rgba(184,115,58,0.10)',
+                                        color: T.goldDark, border: `1px solid rgba(184,115,58,0.28)`,
+                                        borderRadius: 999, padding: '6px 0',
+                                        fontSize: 13, fontWeight: 600, cursor: 'pointer',
                                       }}
                                     >
                                       + Follow
