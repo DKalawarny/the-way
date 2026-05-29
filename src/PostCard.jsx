@@ -1036,9 +1036,9 @@ export default function PostCard({
         </div>
       )}
 
-      {/* Reactions + comments row — hidden for sermon announcements (discussion lives in SermonView) */}
+      {/* Reactions + comments row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingTop: 8, borderTop: `1px solid ${T.line}`, flexWrap: 'wrap' }}>
-        {isPostLike && !item.body?.is_sermon_announcement && REACTIONS.map((r) => (
+        {isPostLike && REACTIONS.map((r) => (
           <ReactionButton
             key={r.id}
             kind={r}
@@ -1055,13 +1055,13 @@ export default function PostCard({
             🙏 {item.body?.prayer_count ?? 0} praying
           </span>
         )}
-        {isPostLike && !item.body?.is_sermon_announcement && viewCount > 0 && (
+        {isPostLike && viewCount > 0 && (
           <span style={{ fontSize: 11.5, color: T.inkMuted, marginLeft: 2 }}>
             {viewCount.toLocaleString()} {viewCount === 1 ? 'view' : 'views'}
           </span>
         )}
         <div style={{ flex: 1 }} />
-        {isPostLike && !item.body?.is_sermon_announcement && (
+        {isPostLike && (
           <button
             onClick={() => setCommentsOpen((v) => !v)}
             style={{
@@ -1077,7 +1077,7 @@ export default function PostCard({
             💬 Comment{localCommentCount > 0 ? <span style={{ marginLeft: 3, opacity: 0.75 }}>{localCommentCount}</span> : null}
           </button>
         )}
-        {isPostLike && !item.body?.is_sermon_announcement && onSaveToggle && !!sessionUserId && (
+        {isPostLike && onSaveToggle && !!sessionUserId && (
           <button
             onClick={() => onSaveToggle(item.id, isSaved)}
             title={isSaved ? 'Remove private save' : 'Private save'}
