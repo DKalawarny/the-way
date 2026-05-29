@@ -147,8 +147,9 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
             const name = c.is_anonymous ? 'Anonymous' : (profMap?.[c.author_id]?.display_name ?? 'Someone');
             return (
               <div key={c.id} style={{
-                background: T.parchment, borderRadius: 12,
+                background: T.cream, borderRadius: 12,
                 padding: '8px 12px', marginBottom: 6,
+                border: `1px solid rgba(26,17,8,0.07)`,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{name}</span>
@@ -221,7 +222,7 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
             width: '100%', boxSizing: 'border-box',
             border: `1px solid ${T.line}`, borderRadius: 10, padding: '8px 12px',
             fontSize: 14, fontFamily: T.serif, lineHeight: 1.55,
-            background: T.white, color: T.ink, outline: 'none', resize: 'vertical',
+            background: T.cream, color: T.ink, outline: 'none', resize: 'vertical',
           }}
         />
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
