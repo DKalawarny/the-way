@@ -3,6 +3,7 @@ import { Heart, Bookmark } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { BadgeList, presetForRole } from './Badge.jsx';
+import { Avatar } from './ProfilePage.jsx';
 import { relativeTime } from './time.js';
 import Comments from './Comments.jsx';
 import SermonDiscussion from './SermonDiscussion.jsx';
@@ -397,7 +398,11 @@ function bodyForKind(item, onViewProfile, onViewChurch, sessionUserId, onOpenSer
               {b.scripture_ref}
             </div>
           )}
-          <div style={{ fontFamily: T.serif, fontSize: 15.5, lineHeight: 1.65, color: T.ink, whiteSpace: 'pre-wrap' }}>
+          <div style={{
+            fontFamily: T.display, fontSize: 17, lineHeight: 1.55, color: T.ink,
+            whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word',
+            letterSpacing: '-0.01em', fontVariationSettings: '"opsz" 18',
+          }}>
             {renderWithMentions(b.text, mentions, onViewProfile, onViewChurch)}
           </div>
         </>
@@ -618,8 +623,8 @@ export default function PostCard({
 
   return (
     <div style={{
-      background: T.white, border: `1px solid ${T.line}`, borderRadius: 18,
-      padding: '18px 20px', marginBottom: 16,
+      background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 14,
+      padding: '18px 20px', marginBottom: 14,
       opacity: hiddenLocally ? 0.55 : 1,
     }}>
       {postCardUi}
@@ -628,16 +633,14 @@ export default function PostCard({
         {/* Avatar — clickable to view profile */}
         <div
           onClick={() => !item.is_anonymous && onViewProfile?.(item.author_id)}
-          style={{
-            width: 32, height: 32, borderRadius: '50%',
-            background: item.is_anonymous ? T.line : T.parchment,
-            color: T.goldDark,
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 13, fontWeight: 700,
-            cursor: (!item.is_anonymous && onViewProfile) ? 'pointer' : 'default',
-          }}
+          style={{ cursor: (!item.is_anonymous && onViewProfile) ? 'pointer' : 'default', flexShrink: 0, lineHeight: 0 }}
         >
-          {avatarLabel}
+          <Avatar
+            name={item.is_anonymous ? null : (authorProfile?.display_name ?? displayName)}
+            avatarConfig={item.is_anonymous ? null : authorProfile?.avatar_config}
+            photoUrl={item.is_anonymous ? null : authorProfile?.avatar_url}
+            size={36}
+          />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -1096,9 +1099,8 @@ export default function PostCard({
         )}
       </div>
 
-      {/* Inline FB-style comments — toggled by the Comment button above */}
       {/* FB-style comment modal */}
-      {isPostLike && !item.body?.is_sermon_announcement && commentsOpen && (
+      {isPostLike && commentsOpen && (
         <div
           onClick={() => setCommentsOpen(false)}
           style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
