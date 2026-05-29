@@ -2,10 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Smile } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
-import { BadgeList, presetForRole } from './Badge.jsx';
+import { presetForRole } from './Badge.jsx';
 import { relativeTime } from './time.js';
 import { useUiKit, TextButton } from './uikit.jsx';
 import { codeToFlag } from './countries.js';
+import { Avatar } from './ProfilePage.jsx';
 
 const EMOJIS = [
   '😀','😊','😂','🥹','😍','🥰','😭','😅','🤔','😏','😌','🙃','😇','🤩','😬','🤯',
@@ -14,7 +15,8 @@ const EMOJIS = [
 ];
 
 /**
- * Inline comments block — renders directly inside a PostCard, Facebook-style.
+ * Facebook-style comments block — avatar + parchment bubble layout,
+ * matching Community.jsx's modal comment style.
  * Only native posts (source === 'post') support comments today.
  */
 export default function Comments({ item, sessionUserId, authorMap, rolesByUser, onCountChange }) {
@@ -26,11 +28,11 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
   const [profMap, setProfMap]   = useState({});
   const [rolesMap, setRolesMap] = useState({});
   const [emojiOpen, setEmojiOpen] = useState(false);
-  const textareaRef = useRef(null);
+  const inputRef = useRef(null);
   const { showToast, askConfirm, ui: uikitUi } = useUiKit();
 
   function insertEmoji(emoji) {
-    const el = textareaRef.current;
+    const el = inputRef.current;
     if (!el) { setText((t) => t + emoji); setEmojiOpen(false); return; }
     const start = el.selectionStart;
     const end   = el.selectionEnd;
@@ -66,7 +68,7 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
       if (missing.length) {
         const { data: profs } = await supabase
           .from('profiles')
-          .select('id, display_name, flags, show_flag')
+          .select('id, display_name, flags, show_flag, avatar_config, avatar_url')
           .in('id', missing);
         (profs ?? []).forEach((p) => { extra[p.id] = p; });
       }
@@ -131,45 +133,60 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
   }
 
   return (
-    <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.line}` }}>
+    <div>
       {uikitUi}
 
       {loading ? (
         <div style={{ color: T.inkMuted, fontFamily: T.serif, textAlign: 'center', padding: 16, fontSize: 13 }}>Loading…</div>
       ) : comments.length === 0 ? (
-        <div style={{ color: T.inkMuted, fontFamily: T.serif, fontSize: 13, fontStyle: 'italic', padding: '6px 2px 10px' }}>
+        <div style={{ color: T.inkMuted, fontStyle: 'italic', fontSize: 14, textAlign: 'center', padding: '20px 0' }}>
           No comments yet — be the first.
         </div>
       ) : (
         <div style={{ marginBottom: 10 }}>
           {comments.map((c) => {
             const isMine = c.author_id === sessionUserId;
-            const name = c.is_anonymous ? 'Anonymous' : (profMap?.[c.author_id]?.display_name ?? 'Someone');
+            const prof   = c.is_anonymous ? null : profMap?.[c.author_id];
+            const name   = c.is_anonymous ? 'Anonymous' : (prof?.display_name ?? 'Someone');
+
             return (
-              <div key={c.id} style={{
-                background: T.cream, borderRadius: 12,
-                padding: '8px 12px', marginBottom: 6,
-                border: `1px solid rgba(26,17,8,0.07)`,
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{name}</span>
-                  {!c.is_anonymous && profMap?.[c.author_id]?.show_flag && (profMap[c.author_id]?.flags ?? []).length > 0 && (
-                    <span style={{ fontSize: 13, lineHeight: 1 }}>{codeToFlag(profMap[c.author_id].flags[0])}</span>
-                  )}
-                  {!c.is_anonymous && rolesMap?.[c.author_id]?.length > 0 && (() => {
-                    const top = rolesMap[c.author_id].find((r) => r.role_key !== 'owner');
-                    if (!top) return null;
-                    const label = top.role_label ?? presetForRole(top.role_key)?.label ?? top.role_key;
-                    return <span style={{ fontSize: 11, fontWeight: 700, color: T.goldDark }}>{label}</span>;
-                  })()}
-                  <span style={{ fontSize: 11.5, color: T.inkMuted }}>{relativeTime(c.created_at)}</span>
-                  <div style={{ flex: 1 }} />
-                  {isMine && (
-                    <TextButton onClick={() => remove(c.id)} danger>delete</TextButton>
-                  )}
-                </div>
-                <div style={{ fontFamily: T.serif, fontSize: 14, lineHeight: 1.55, color: T.ink, whiteSpace: 'pre-wrap' }}>
-                  {c.body}
+              <div key={c.id} style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'flex-start' }}>
+                {/* Avatar */}
+                <Avatar
+                  name={c.is_anonymous ? null : name}
+                  avatarConfig={c.is_anonymous ? null : prof?.avatar_config}
+                  photoUrl={c.is_anonymous ? null : prof?.avatar_url}
+                  size={34}
+                  style={{ flexShrink: 0 }}
+                />
+                {/* Bubble + meta */}
+                <div style={{ flex: 1 }}>
+                  <div style={{ background: T.parchment, borderRadius: 16, padding: '9px 13px' }}>
+                    {/* Name + role */}
+                    <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      {name}
+                      {!c.is_anonymous && prof?.show_flag && (prof?.flags ?? []).length > 0 && (
+                        <span style={{ fontSize: 13, lineHeight: 1 }}>{codeToFlag(prof.flags[0])}</span>
+                      )}
+                      {!c.is_anonymous && rolesMap?.[c.author_id]?.length > 0 && (() => {
+                        const top = rolesMap[c.author_id].find((r) => r.role_key !== 'owner');
+                        if (!top) return null;
+                        const label = top.role_label ?? presetForRole(top.role_key)?.label ?? top.role_key;
+                        return <span style={{ fontSize: 11, fontWeight: 700, color: T.goldDark }}>{label}</span>;
+                      })()}
+                    </div>
+                    {/* Body */}
+                    <div style={{ fontFamily: T.serif, fontSize: 14, color: T.inkSoft, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
+                      {c.body}
+                    </div>
+                  </div>
+                  {/* Timestamp + delete */}
+                  <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 4, paddingLeft: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span>{relativeTime(c.created_at)}</span>
+                    {isMine && (
+                      <TextButton onClick={() => remove(c.id)} danger>delete</TextButton>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -177,8 +194,8 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
         </div>
       )}
 
-      {/* Inline composer */}
-      <div style={{ position: 'relative' }}>
+      {/* Pill comment input */}
+      <div style={{ position: 'relative', marginTop: 4 }}>
         {emojiOpen && (
           <>
             <div onClick={() => setEmojiOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
@@ -186,8 +203,8 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
               position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, zIndex: 11,
               background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
               boxShadow: '0 8px 24px rgba(44,24,16,0.13)', padding: 10,
-              display: 'grid', gridTemplateColumns: 'repeat(16, 1fr)', gap: 2,
-              width: 'min(100%, 380px)',
+              display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 4,
+              width: 'min(100%, 340px)',
             }}>
               {EMOJIS.map((e) => (
                 <button
@@ -195,8 +212,9 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
                   onClick={() => insertEmoji(e)}
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer',
-                    fontSize: 20, lineHeight: 1, padding: '4px 2px', borderRadius: 6,
-                    transition: 'background 0.1s',
+                    fontSize: 20, lineHeight: 1, padding: '6px 2px', borderRadius: 6,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    minHeight: 40, transition: 'background 0.1s',
                   }}
                   onMouseEnter={(el) => el.currentTarget.style.background = T.parchment}
                   onMouseLeave={(el) => el.currentTarget.style.background = 'none'}
@@ -205,51 +223,66 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
             </div>
           </>
         )}
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && text.trim() && !busy) {
-              e.preventDefault();
-              submit();
-            }
-          }}
-          placeholder="Write a comment…"
-          rows={2}
-          autoFocus
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            border: `1px solid ${T.line}`, borderRadius: 10, padding: '8px 12px',
-            fontSize: 14, fontFamily: T.serif, lineHeight: 1.55,
-            background: T.cream, color: T.ink, outline: 'none', resize: 'vertical',
-          }}
-        />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: T.inkSoft, cursor: 'pointer' }}>
-            <input type="checkbox" checked={anon} onChange={(e) => setAnon(e.target.checked)} style={{ accentColor: T.gold }} />
-            Anonymously
-          </label>
-          <div style={{ flex: 1 }} />
+
+        {/* Pill input */}
+        <div style={{ background: T.parchment, borderRadius: 18, border: `1px solid ${T.line}`, padding: '9px 14px' }}>
+          <input
+            ref={inputRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && text.trim() && !busy) {
+                e.preventDefault();
+                submit();
+              }
+            }}
+            placeholder="Write a comment…"
+            autoFocus
+            style={{
+              width: '100%', border: 'none', outline: 'none',
+              fontFamily: T.serif, fontSize: 14, color: T.ink,
+              background: 'transparent',
+            }}
+          />
+        </div>
+
+        {/* Controls row */}
+        <div style={{ display: 'flex', alignItems: 'center', marginTop: 6, paddingLeft: 2, gap: 2 }}>
           <button
             onClick={() => setEmojiOpen((v) => !v)}
             title="Add emoji"
             style={{
-              border: `1px solid ${emojiOpen ? T.gold : T.line}`, borderRadius: 999,
-              width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: emojiOpen ? T.goldDark : T.inkSoft,
-              background: emojiOpen ? T.parchment : 'transparent',
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '4px 6px', borderRadius: 8,
+              color: emojiOpen ? T.goldDark : T.inkSoft,
+              display: 'flex', alignItems: 'center',
             }}
-          ><Smile size={16} strokeWidth={1.75} /></button>
-          <button
-            onClick={submit}
-            disabled={busy || !text.trim()}
-            style={{
-              background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
-              padding: '6px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-              opacity: (busy || !text.trim()) ? 0.5 : 1,
-            }}
-          >{busy ? 'Posting…' : 'Post'}</button>
+          >
+            <Smile size={20} strokeWidth={1.75} />
+          </button>
+          <label style={{ fontSize: 12, color: T.inkSoft, display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', marginLeft: 6 }}>
+            <input type="checkbox" checked={anon} onChange={(e) => setAnon(e.target.checked)} style={{ accentColor: T.gold }} />
+            Anon
+          </label>
+          <div style={{ flex: 1 }} />
+          {text.trim() && (
+            <button
+              onClick={submit}
+              disabled={busy}
+              style={{
+                background: T.ink, border: 'none', borderRadius: '50%',
+                width: 30, height: 30,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: T.cream, cursor: busy ? 'wait' : 'pointer', flexShrink: 0,
+                opacity: busy ? 0.6 : 1,
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="19" x2="12" y2="5"/>
+                <polyline points="5 12 12 5 19 12"/>
+              </svg>
+            </button>
+          )}
         </div>
       </div>
     </div>

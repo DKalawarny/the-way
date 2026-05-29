@@ -1099,51 +1099,104 @@ export default function PostCard({
         )}
       </div>
 
-      {/* FB-style comment modal */}
+      {/* FB-style comment modal — matches Community.jsx modal design */}
       {isPostLike && commentsOpen && (
         <div
           onClick={() => setCommentsOpen(false)}
-          style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+          style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
+            className="full-screen-mobile"
             style={{
-              background: T.parchment, borderRadius: 18, width: '100%', maxWidth: 580,
-              maxHeight: '85vh', display: 'flex', flexDirection: 'column',
-              boxShadow: '0 12px 48px rgba(0,0,0,0.22)',
+              background: T.white, borderRadius: 10,
+              width: 'min(660px, 96vw)', height: '85vh',
+              display: 'flex', flexDirection: 'column',
+              boxShadow: '0 8px 48px rgba(0,0,0,0.3)',
+              animation: 'fadeIn 0.18s ease',
               overflow: 'hidden',
             }}
           >
-            {/* Modal header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: `1px solid ${T.line}` }}>
-              <span style={{ fontFamily: T.serif, fontWeight: 600, fontSize: 15, color: T.ink }}>
-                {displayName}'s post
+            {/* Centered header */}
+            <div style={{ padding: '14px 18px', borderBottom: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0 }}>
+              <span style={{ fontSize: 17, fontWeight: 700, color: T.ink }}>
+                {displayName}'s Post
               </span>
-              <button onClick={() => setCommentsOpen(false)} style={{ background: 'none', border: 'none', fontSize: 20, color: T.inkMuted, cursor: 'pointer', lineHeight: 1, padding: 4 }}>×</button>
+              <button
+                onClick={() => setCommentsOpen(false)}
+                style={{ position: 'absolute', right: 14, width: 34, height: 34, borderRadius: '50%', background: T.parchment, border: 'none', cursor: 'pointer', fontSize: 20, color: T.inkMuted, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >×</button>
             </div>
+
             {/* Scrollable body */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px' }}>
-              {/* Post body preview */}
-              <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: `1px solid ${T.line}` }}>
-                {bodyForKind(effectiveItem, onViewProfile, onViewChurch, sessionUserId, onOpenSermon)}
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {/* Author info + post body */}
+              <div style={{ padding: '16px 18px 0' }}>
+                {!item.is_anonymous && authorProfile && (
+                  <div style={{ display: 'flex', gap: 11, alignItems: 'center', marginBottom: 12 }}>
+                    <Avatar
+                      name={authorProfile.display_name}
+                      avatarConfig={authorProfile.avatar_config}
+                      photoUrl={authorProfile.avatar_url}
+                      size={42}
+                    />
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: T.ink }}>{displayName}</div>
+                      <div style={{ fontSize: 12, color: T.inkMuted }}>{relativeTime(item.created_at)}</div>
+                    </div>
+                  </div>
+                )}
+                <div style={{ marginBottom: 14 }}>
+                  {bodyForKind(effectiveItem, onViewProfile, onViewChurch, sessionUserId, onOpenSermon)}
+                </div>
               </div>
+
+              {/* Reaction bar inside modal — regular posts only */}
+              {item.source !== 'sermon_item' && (
+                <div style={{ display: 'flex', borderTop: `1px solid ${T.line}`, borderBottom: `1px solid ${T.line}` }}>
+                  {REACTIONS.map((kind, i) => {
+                    const count = reactions[kind.id] ?? 0;
+                    const isMine = !!mine[kind.id];
+                    return (
+                      <button
+                        key={kind.id}
+                        onClick={() => toggleReaction(kind.id)}
+                        style={{
+                          flex: 1, padding: '10px 4px', background: 'none',
+                          border: 'none', borderRight: i < REACTIONS.length - 1 ? `1px solid ${T.line}` : 'none',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                          fontSize: 13, fontWeight: 600, color: isMine ? T.goldDark : T.inkSoft,
+                        }}
+                      >
+                        {kind.Icon
+                          ? <kind.Icon size={13} strokeWidth={isMine ? 0 : 1.75} fill={isMine ? T.goldDark : 'none'} />
+                          : <span style={{ fontSize: 13 }}>{kind.emoji}</span>}
+                        {kind.label}{count > 0 ? <span style={{ opacity: 0.75 }}>{count}</span> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
               {/* Thread */}
-              {item.source === 'sermon_item'
-                ? <SermonDiscussion
-                    sermonContentId={item.id}
-                    churchId={item.scope_id}
-                    sessionUserId={sessionUserId}
-                    isPastor={isPastor}
-                    defaultOpen
-                  />
-                : <Comments
-                    item={item}
-                    sessionUserId={sessionUserId}
-                    authorMap={authorMap}
-                    rolesByUser={rolesByUser}
-                    onCountChange={(delta) => setLocalCommentCount((n) => Math.max(0, n + delta))}
-                  />
-              }
+              <div style={{ padding: '14px 18px 18px' }}>
+                {item.source === 'sermon_item'
+                  ? <SermonDiscussion
+                      sermonContentId={item.id}
+                      churchId={item.scope_id}
+                      sessionUserId={sessionUserId}
+                      isPastor={isPastor}
+                      defaultOpen
+                    />
+                  : <Comments
+                      item={item}
+                      sessionUserId={sessionUserId}
+                      authorMap={authorMap}
+                      rolesByUser={rolesByUser}
+                      onCountChange={(delta) => setLocalCommentCount((n) => Math.max(0, n + delta))}
+                    />
+                }
+              </div>
             </div>
           </div>
         </div>
