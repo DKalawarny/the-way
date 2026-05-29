@@ -1,13 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
+import { Smile } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
-import { BadgeList, presetForRole } from './Badge.jsx';
+import { presetForRole } from './Badge.jsx';
 import { relativeTime } from './time.js';
-import { useUiKit, EmptyState, TextButton } from './uikit.jsx';
+import { useUiKit, TextButton } from './uikit.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
 import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { Avatar } from './ProfilePage.jsx';
+
+const EMOJIS = [
+  '😀','😊','😂','🥹','😍','🥰','😭','😅','🤔','😏','😌','🙃','😇','🤩','😬','🤯',
+  '🙏','✝️','🕊️','🌿','🌸','🌺','🌻','☀️','🌙','⭐','🔥','💫','✨','🌈','🌊','🍃',
+  '❤️','🧡','💛','💚','💙','💜','🤍','🫶','👏','🙌','💪','👍','🎉','🫂','💝','🎊',
+];
 
 /**
  * Threaded discussion anchored to either:
@@ -23,24 +30,38 @@ import { Avatar } from './ProfilePage.jsx';
  * the main attraction, not an aside.
  */
 export default function SermonDiscussion({ sermonContentId, sermonId, churchId, sessionUserId, isPastor, defaultOpen = false }) {
-  const [rows, setRows]       = useState([]);
-  const [profMap, setProfMap] = useState({});
+  const [rows, setRows]         = useState([]);
+  const [profMap, setProfMap]   = useState({});
   const [rolesMap, setRolesMap] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [text, setText]       = useState('');
-  const [anon, setAnon]       = useState(false);
-  const [busy, setBusy]       = useState(false);
-  const [replyTo, setReplyTo] = useState(null);
-  const [open, setOpen]       = useState(defaultOpen);
+  const [loading, setLoading]   = useState(true);
+  const [text, setText]         = useState('');
+  const [anon, setAnon]         = useState(false);
+  const [busy, setBusy]         = useState(false);
+  const [replyTo, setReplyTo]   = useState(null);
+  const [open, setOpen]         = useState(defaultOpen);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const { showToast, askConfirm, ui: uikitUi } = useUiKit();
   const imageDrafts = useImageDrafts(4);
-  const textareaRef = useRef(null);
+  const inputRef = useRef(null);
 
-  // Which anchor column to filter / insert against. The component is a no-op
-  // if neither is provided, but that's a developer error — render nothing
-  // rather than silently misbehaving.
+  // Which anchor column to filter / insert against.
   const anchorCol = sermonId ? 'sermon_id' : 'sermon_content_id';
   const anchorVal = sermonId ?? sermonContentId;
+
+  function insertEmoji(emoji) {
+    const el = inputRef.current;
+    if (!el) { setText((t) => t + emoji); setEmojiOpen(false); return; }
+    const start = el.selectionStart;
+    const end   = el.selectionEnd;
+    const next  = text.slice(0, start) + emoji + text.slice(end);
+    setText(next);
+    setEmojiOpen(false);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + [...emoji].length;
+      el.setSelectionRange(pos, pos);
+    });
+  }
 
   async function reload() {
     if (!anchorVal) return;
@@ -81,17 +102,15 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
     reload();
   }, [anchorCol, anchorVal, open]);
 
-  // Focus the textarea whenever a reply target is set (or when the composer first mounts open)
+  // Focus the input whenever a reply target is set (or when the composer first mounts open)
   useEffect(() => {
-    if (open) requestAnimationFrame(() => textareaRef.current?.focus());
+    if (open) requestAnimationFrame(() => inputRef.current?.focus());
   }, [replyTo, open]);
 
   async function submit() {
     if (!sessionUserId || !text.trim() || !anchorVal) return;
     setBusy(true);
     const image_urls = await imageDrafts.uploadAll(sessionUserId);
-    // Set whichever anchor was supplied; leave the other null. The DB
-    // CHECK constraint enforces the same invariant — exactly one set.
     const insertRow = {
       author_id:    sessionUserId,
       parent_id:    replyTo?.id ?? null,
@@ -101,14 +120,11 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
       sermon_content_id: sermonContentId ?? null,
       image_urls,
     };
-    const { error } = await supabase
-      .from('sermon_discussions')
-      .insert(insertRow);
+    const { error } = await supabase.from('sermon_discussions').insert(insertRow);
     setBusy(false);
     if (error) { showToast(`Couldn't post: ${error.message}`, 'error'); return; }
     setText(''); setAnon(false); setReplyTo(null);
     imageDrafts.clear();
-    // Reload so profMap gets populated for the new comment (prevents "Someone" name).
     reload();
   }
 
@@ -125,9 +141,9 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
     setRows((r) => r.filter((x) => x.id !== id && x.parent_id !== id));
   }
 
-  const top      = rows.filter((r) => !r.parent_id);
+  const top       = rows.filter((r) => !r.parent_id);
   const repliesOf = (id) => rows.filter((r) => r.parent_id === id);
-  const total    = rows.length;
+  const total     = rows.length;
 
   if (!open) {
     return (
@@ -145,131 +161,191 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
   }
 
   function Bubble({ row, depth = 0 }) {
-    const isMine = row.author_id === sessionUserId;
+    const isMine    = row.author_id === sessionUserId;
     const canDelete = isMine || isPastor;
     const prof = profMap[row.author_id];
     const name = row.is_anonymous ? 'Anonymous' : (prof?.display_name || 'Someone');
+    const children = repliesOf(row.id);
+
     return (
-      <div style={{ marginLeft: depth * 22, marginTop: 8 }}>
-        <div style={{
-          background: T.white, border: `1px solid ${T.line}`, borderRadius: 12,
-          padding: '10px 12px',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
-            {!row.is_anonymous && (
-              <Avatar
-                name={prof?.display_name}
-                avatarConfig={prof?.avatar_config}
-                photoUrl={prof?.avatar_url}
-                size={30}
-              />
-            )}
-            {row.is_anonymous && (
-              <div style={{
-                width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-                background: T.line, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 12, color: T.inkMuted, fontWeight: 700,
-              }}>·</div>
-            )}
-            <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{name}</span>
-            {!row.is_anonymous && rolesMap[row.author_id]?.length > 0 && (() => {
-              const top = rolesMap[row.author_id].find((r) => r.role_key !== 'owner');
-              if (!top) return null;
-              const label = top.role_label ?? presetForRole(top.role_key)?.label ?? top.role_key;
-              return <span style={{ fontSize: 11, fontWeight: 700, color: T.goldDark }}>{label}</span>;
-            })()}
-            <span style={{ fontSize: 11.5, color: T.inkMuted }}>{relativeTime(row.created_at)}</span>
-            <div style={{ flex: 1 }} />
-            {canDelete && (
-              <TextButton onClick={() => remove(row.id)} danger>delete</TextButton>
-            )}
-          </div>
-          <div style={{ fontFamily: T.serif, fontSize: 14.5, color: T.ink, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
-            {row.body}
-          </div>
-          {Array.isArray(row.image_urls) && row.image_urls.length > 0 && (
-            <div style={{ marginTop: 8 }}>
-              <PostImageGrid urls={row.image_urls} />
+      <div style={{ marginLeft: depth * 20, marginTop: depth > 0 ? 10 : 0 }}>
+        {/* FB-style: avatar on left, parchment bubble on right */}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <Avatar
+            name={row.is_anonymous ? null : name}
+            avatarConfig={row.is_anonymous ? null : prof?.avatar_config}
+            photoUrl={row.is_anonymous ? null : prof?.avatar_url}
+            size={34}
+            style={{ flexShrink: 0 }}
+          />
+          <div style={{ flex: 1 }}>
+            <div style={{ background: T.parchment, borderRadius: 16, padding: '9px 13px' }}>
+              {/* Name + role badge */}
+              <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                {name}
+                {!row.is_anonymous && rolesMap[row.author_id]?.length > 0 && (() => {
+                  const topRole = rolesMap[row.author_id].find((r) => r.role_key !== 'owner');
+                  if (!topRole) return null;
+                  const label = topRole.role_label ?? presetForRole(topRole.role_key)?.label ?? topRole.role_key;
+                  return <span style={{ fontSize: 11, fontWeight: 700, color: T.goldDark }}>{label}</span>;
+                })()}
+              </div>
+              {/* Body */}
+              <div style={{ fontFamily: T.serif, fontSize: 14, color: T.inkSoft, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
+                {row.body}
+              </div>
+              {Array.isArray(row.image_urls) && row.image_urls.length > 0 && (
+                <div style={{ marginTop: 8 }}>
+                  <PostImageGrid urls={row.image_urls} />
+                </div>
+              )}
             </div>
-          )}
-          <button onClick={() => setReplyTo(row)} style={{
-            background: 'none', border: 'none', color: T.goldDark, fontSize: 12, cursor: 'pointer',
-            marginTop: 4, padding: '6px 0', fontWeight: 600, minHeight: 28,
-          }}>↳ Reply</button>
+            {/* Timestamp + actions below bubble */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4, paddingLeft: 10 }}>
+              <span style={{ fontSize: 12, color: T.inkMuted }}>{relativeTime(row.created_at)}</span>
+              <button
+                onClick={() => setReplyTo(row)}
+                style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 12, cursor: 'pointer', padding: 0, fontWeight: 600 }}
+              >↳ Reply</button>
+              {canDelete && (
+                <TextButton onClick={() => remove(row.id)} danger>delete</TextButton>
+              )}
             </div>
           </div>
         </div>
-        {repliesOf(row.id).map((r) => <Bubble key={r.id} row={r} depth={depth + 1} />)}
+        {/* Nested replies */}
+        {children.length > 0 && (
+          <div style={{ marginTop: 10 }}>
+            {children.map((r) => <Bubble key={r.id} row={r} depth={depth + 1} />)}
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div style={{ marginTop: 10 }}>
+    <div>
       {uikitUi}
+
       {loading ? (
-        <div style={{ color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', fontSize: 13, padding: 8 }}>
-          Loading discussion…
-        </div>
+        <div style={{ color: T.inkMuted, fontFamily: T.serif, textAlign: 'center', padding: 16, fontSize: 13 }}>Loading…</div>
       ) : top.length === 0 ? (
-        <EmptyState
-          glyph={<KinwoveStar size={22} />}
-          title="No replies yet"
-          body="Be the first to share a thought."
-          dense
-        />
+        <div style={{ color: T.inkMuted, fontStyle: 'italic', fontSize: 14, textAlign: 'center', padding: '20px 0' }}>
+          No comments yet — be the first.
+        </div>
       ) : (
-        top.map((r) => <Bubble key={r.id} row={r} />)
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 10 }}>
+          {top.map((r) => <Bubble key={r.id} row={r} />)}
+        </div>
       )}
 
-      {/* Composer */}
-      <div style={{ marginTop: 12, padding: '10px 12px', background: T.cream, borderRadius: 12, border: `1px solid ${T.line}` }}>
+      {/* Pill composer */}
+      <div style={{ position: 'relative', marginTop: 4 }}>
         {replyTo && (
-          <div style={{
-            fontSize: 12, color: T.inkMuted, marginBottom: 6,
-            display: 'flex', alignItems: 'center', gap: 6,
-          }}>
+          <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
             ↳ Replying to {replyTo.is_anonymous ? 'Anonymous' : (profMap[replyTo.author_id]?.display_name || 'someone')}
-            <button onClick={() => setReplyTo(null)} style={{
-              background: 'none', border: 'none', color: T.goldDark, cursor: 'pointer', fontSize: 12,
-            }}>cancel</button>
+            <button onClick={() => setReplyTo(null)} style={{ background: 'none', border: 'none', color: T.goldDark, cursor: 'pointer', fontSize: 12, padding: 0, fontWeight: 600 }}>cancel</button>
           </div>
         )}
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={replyTo ? 'Write a reply…' : 'Share a thought…'}
-          rows={2}
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            border: `1px solid ${T.line}`, borderRadius: 10, padding: '9px 12px',
-            fontSize: 14, fontFamily: T.serif, lineHeight: 1.55,
-            background: T.white, color: T.ink, outline: 'none', resize: 'vertical',
-          }}
-        />
-        <ImageDraftGrid drafts={imageDrafts.drafts} onRemove={imageDrafts.remove} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: T.inkSoft, cursor: 'pointer' }}>
+
+        {emojiOpen && (
+          <>
+            <div onClick={() => setEmojiOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
+            <div style={{
+              position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, zIndex: 11,
+              background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
+              boxShadow: '0 8px 24px rgba(44,24,16,0.13)', padding: 10,
+              display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 4,
+              width: 'min(100%, 340px)',
+            }}>
+              {EMOJIS.map((e) => (
+                <button
+                  key={e}
+                  onClick={() => insertEmoji(e)}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    fontSize: 20, lineHeight: 1, padding: '6px 2px', borderRadius: 6,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    minHeight: 40, transition: 'background 0.1s',
+                  }}
+                  onMouseEnter={(ev) => ev.currentTarget.style.background = T.parchment}
+                  onMouseLeave={(ev) => ev.currentTarget.style.background = 'none'}
+                >{e}</button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Pill input */}
+        <div style={{ background: T.parchment, borderRadius: 18, border: `1px solid ${T.line}`, padding: '9px 14px' }}>
+          <input
+            ref={inputRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && text.trim() && !busy) {
+                e.preventDefault();
+                submit();
+              }
+            }}
+            placeholder={replyTo ? 'Write a reply…' : 'Share a thought…'}
+            autoFocus
+            style={{
+              width: '100%', border: 'none', outline: 'none',
+              fontFamily: T.serif, fontSize: 14, color: T.ink,
+              background: 'transparent',
+            }}
+          />
+        </div>
+
+        {/* Image previews above controls */}
+        {imageDrafts.drafts.length > 0 && (
+          <div style={{ marginTop: 6 }}>
+            <ImageDraftGrid drafts={imageDrafts.drafts} onRemove={imageDrafts.remove} />
+          </div>
+        )}
+
+        {/* Controls row */}
+        <div style={{ display: 'flex', alignItems: 'center', marginTop: 6, paddingLeft: 2, gap: 2 }}>
+          <button
+            onClick={() => setEmojiOpen((v) => !v)}
+            title="Add emoji"
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: '4px 6px', borderRadius: 8,
+              color: emojiOpen ? T.goldDark : T.inkSoft,
+              display: 'flex', alignItems: 'center',
+            }}
+          >
+            <Smile size={20} strokeWidth={1.75} />
+          </button>
+          <label style={{ fontSize: 12, color: T.inkSoft, display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', marginLeft: 4 }}>
             <input type="checkbox" checked={anon} onChange={(e) => setAnon(e.target.checked)} style={{ accentColor: T.gold }} />
-            Anonymously
+            Anon
           </label>
           <ImageAttachButton
             drafts={imageDrafts.drafts} max={imageDrafts.max}
             fileInputRef={imageDrafts.fileInputRef} onPick={imageDrafts.pick}
           />
           <div style={{ flex: 1 }} />
-          <button
-            onClick={submit}
-            disabled={busy || !text.trim()}
-            style={{
-              background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
-              padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-              opacity: (busy || !text.trim()) ? 0.5 : 1,
-            }}
-          >{busy ? 'Posting…' : 'Post'}</button>
+          {text.trim() && (
+            <button
+              onClick={submit}
+              disabled={busy}
+              style={{
+                background: T.ink, border: 'none', borderRadius: '50%',
+                width: 30, height: 30,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: T.cream, cursor: busy ? 'wait' : 'pointer', flexShrink: 0,
+                opacity: busy ? 0.6 : 1,
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="19" x2="12" y2="5"/>
+                <polyline points="5 12 12 5 19 12"/>
+              </svg>
+            </button>
+          )}
         </div>
       </div>
     </div>
