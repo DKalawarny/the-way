@@ -247,12 +247,13 @@ export default function SermonView({ session, profile, sermonId, onBack, onChang
                 No questions have dropped yet — they'll appear here on their scheduled days.
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: SPACE[5] }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {dailies.map((q, i) => (
                   <QuestionCard
                     key={q.id}
                     number={i + 1}
                     item={q}
+                    sermonTitle={sermon?.title}
                     churchId={sermon?.church_id}
                     sessionUserId={session?.user?.id}
                     isPastor={isPastor}
@@ -333,19 +334,23 @@ export default function SermonView({ session, profile, sermonId, onBack, onChang
   );
 }
 
-function QuestionCard({ number, item, churchId, sessionUserId, isPastor, isScheduledFuture }) {
-  const tone = KIND_TONE.group_question;
-  const isDaily = item.kind === 'daily_verse';
-
-  // Daily questions land in the body as "context lines\nclosing question?".
-  // Split so we can style the question separately (same logic as ContentCard).
-  const lines = isDaily
-    ? (item.body ?? '').split('\n').map((l) => l.trim()).filter(Boolean)
-    : null;
-  const lastLine = lines ? lines[lines.length - 1] ?? '' : '';
-  const hasQuestion = isDaily && lastLine.endsWith('?');
-  const contextLines = hasQuestion ? lines.slice(0, -1) : lines;
-  const question = hasQuestion ? lastLine : null;
+function QuestionCard({ number, item, sermonTitle, churchId, sessionUserId, isPastor, isScheduledFuture }) {
+  // Parse body: new format = question first (ends ?), blank line, then context.
+  // Legacy: question is the last line ending with ?.
+  const rawText = item.body ?? '';
+  const paras = rawText.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+  const firstPara = paras[0] ?? '';
+  const isQuestionFirst = firstPara.endsWith('?');
+  let question, contextLines;
+  if (isQuestionFirst) {
+    question = firstPara;
+    contextLines = paras.slice(1);
+  } else {
+    const lines = rawText.split('\n').map((l) => l.trim()).filter(Boolean);
+    const lastLine = lines[lines.length - 1] ?? '';
+    question = lastLine.endsWith('?') ? lastLine : null;
+    contextLines = question ? [lines.slice(0, -1).join(' ')] : [lines.join(' ')];
+  }
 
   const scheduledLabel = item.scheduled_at
     ? new Date(item.scheduled_at).toLocaleString(undefined, {
@@ -356,61 +361,81 @@ function QuestionCard({ number, item, churchId, sessionUserId, isPastor, isSched
 
   return (
     <article style={{
-      position: 'relative',
-      background: `linear-gradient(180deg, ${tone.bg}, ${T.white} 70%)`,
-      border: `1px solid ${T.line}`, borderRadius: RADIUS.lg,
-      padding: `${SPACE[5]}px ${SPACE[5]}px ${SPACE[4]}px ${SPACE[6]}px`,
+      background: T.white,
+      border: `1px solid ${T.line}`,
+      borderRadius: 14,
       overflow: 'hidden',
       opacity: isScheduledFuture ? 0.78 : 1,
     }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: tone.rail }} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-        <div className="section-eyebrow" style={{ color: tone.eyebrow }}>
-          {item.day != null ? `Day ${item.day}` : `Question ${number}`}
-        </div>
-        {isScheduledFuture && (
-          <span style={{
-            fontSize: 10.5, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase',
-            background: T.parchment, color: T.goldDark,
-            border: `1px solid ${T.goldLight}`, borderRadius: 999,
-            padding: '2px 8px',
-          }}>
-            {item.scheduled_at ? `⏰ Scheduled · ${scheduledLabel}` : '✎ Draft · not scheduled'}
+      {/* Inner parchment block — matches Feed PostCard sermon_item style exactly */}
+      <div style={{
+        background: T.parchment,
+        border: `1px solid rgba(184,115,58,0.28)`,
+        borderRadius: 12,
+        padding: '14px 16px',
+        margin: '14px 14px 0',
+      }}>
+        {/* Eyebrow */}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 12, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.2, textTransform: 'uppercase', color: T.goldDark }}>
+            💬 {item.day != null ? `Day ${item.day}` : `Question ${number}`}
           </span>
+          {sermonTitle && (
+            <span style={{ fontSize: 11, color: T.inkMuted }}>· {sermonTitle}</span>
+          )}
+          {isScheduledFuture && (
+            <span style={{
+              fontSize: 10.5, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase',
+              background: 'rgba(184,115,58,0.12)', color: T.goldDark,
+              border: `1px solid ${T.goldLight}`, borderRadius: 999,
+              padding: '2px 8px', marginLeft: 4,
+            }}>
+              {item.scheduled_at ? `⏰ ${scheduledLabel}` : '✎ Draft'}
+            </span>
+          )}
+        </div>
+        {/* Question hero */}
+        {question && (
+          <div style={{
+            fontFamily: T.serif, fontSize: 17, fontWeight: 600, lineHeight: 1.5,
+            letterSpacing: '-0.02em', color: T.ink,
+            marginBottom: (item.scripture || contextLines.length) ? 12 : 0,
+          }}>
+            {question}
+          </div>
+        )}
+        {/* Scripture / topic label */}
+        {item.scripture && (
+          <div style={{ fontSize: 11.5, color: T.goldDark, fontStyle: 'italic', marginBottom: contextLines.length ? 8 : 0 }}>
+            {item.scripture}
+          </div>
+        )}
+        {/* Context */}
+        {contextLines.length > 0 && (
+          <div style={{ fontFamily: T.serif, fontSize: 14.5, lineHeight: 1.7, color: T.inkSoft }}>
+            {contextLines.join('\n\n')}
+          </div>
+        )}
+        {/* Fallback for items with no parseable question */}
+        {!question && contextLines.length === 0 && rawText && (
+          <div style={{ fontFamily: T.serif, fontSize: 15, lineHeight: 1.7, color: T.ink, whiteSpace: 'pre-wrap' }}>
+            {rawText}
+          </div>
         )}
       </div>
-      {item.scripture && (
-        <div style={{ fontSize: 13.5, fontWeight: 700, color: T.ink, lineHeight: 1.3, marginBottom: 8 }}>
-          {item.scripture}
-        </div>
-      )}
-      {isDaily ? (
-        <>
-          {contextLines && contextLines.length > 0 && (
-            <div style={{ fontFamily: T.serif, fontSize: 15, color: T.inkSoft, lineHeight: 1.65, marginBottom: question ? 10 : SPACE[4] }}>
-              {contextLines.join('\n')}
-            </div>
-          )}
-          {question && (
-            <div className="editorial-h2" style={{ fontSize: 18, lineHeight: 1.4, marginBottom: SPACE[4] }}>
-              {question}
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="editorial-h2" style={{ fontSize: 19, lineHeight: 1.4, marginBottom: SPACE[4] }}>
-          {item.body}
-        </div>
-      )}
-      <Suspense fallback={<div style={{ color: T.inkMuted, fontSize: 13, fontFamily: T.serif }}>Loading…</div>}>
-        <SermonDiscussion
-          sermonContentId={item.id}
-          churchId={churchId}
-          sessionUserId={sessionUserId}
-          isPastor={isPastor}
-          defaultOpen
-        />
-      </Suspense>
+
+      {/* Discussion thread */}
+      <div style={{ padding: '10px 14px 14px' }}>
+        <Suspense fallback={<div style={{ color: T.inkMuted, fontSize: 13, fontFamily: T.serif, padding: '8px 0' }}>Loading…</div>}>
+          <SermonDiscussion
+            sermonContentId={item.id}
+            churchId={churchId}
+            sessionUserId={sessionUserId}
+            isPastor={isPastor}
+            defaultOpen
+          />
+        </Suspense>
+      </div>
     </article>
   );
 }
