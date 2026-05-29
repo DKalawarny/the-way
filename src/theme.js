@@ -46,6 +46,25 @@ export const MOTION = {
   base:  '0.28s cubic-bezier(0.2, 0.8, 0.2, 1)',
   slow:  '0.55s cubic-bezier(0.2, 0.8, 0.2, 1)',
 };
+
+// ── Z-index hierarchy (use these everywhere — no magic numbers) ─────
+// Inline / sticky            1–49
+// Dropdowns / tooltips      50–99
+// Sticky headers             100
+// Overlapping sheets         150
+// Sheets / drawers           200
+// Modals / dialogs           300
+// Alert / confirm dialogs    400
+// Toasts / snackbars         500
+// Dev / debug                9000
+export const Z = {
+  dropdown: 60,
+  stickyHeader: 100,
+  sheet: 200,
+  modal: 300,
+  alert: 400,
+  toast: 500,
+};
 // Type scale — display feels editorial; body stays Lora for contemplative reading.
 export const TYPE = {
   eyebrow: { fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', fontWeight: 700 },

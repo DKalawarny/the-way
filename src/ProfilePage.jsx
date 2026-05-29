@@ -153,6 +153,7 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
       onProfileUpdate?.({ ...profile, ...updates });
     } catch (err) {
       console.error('saveAvatar failed:', err.message);
+      setBannerError("Couldn't save avatar — try again.");
     }
   }
 

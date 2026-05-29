@@ -54,6 +54,7 @@ function ProfilePost({ post, session, profile, onReact, churchCtx, onDelete }) {
   const [localBody,          setLocalBody]          = useState(null);
   const [confirmingDelete,   setConfirmingDelete]   = useState(false);
   const [deleteBusy,         setDeleteBusy]         = useState(false);
+  const [actionError,        setActionError]        = useState(null);
 
   const isOwn = !!session?.user?.id && session.user.id === post.author_id;
   const displayBody = localBody ?? post.body;
@@ -72,7 +73,8 @@ function ProfilePost({ post, session, profile, onReact, churchCtx, onDelete }) {
     setEditBusy(true);
     const { error } = await supabase.from('posts').update({ body: next }).eq('id', post.id);
     setEditBusy(false);
-    if (error) { console.error('edit failed', error.message); return; }
+    if (error) { console.error('edit failed', error.message); setActionError("Couldn't save — try again."); return; }
+    setActionError(null);
     setLocalBody(next);
     setEditing(false);
   }
@@ -84,7 +86,7 @@ function ProfilePost({ post, session, profile, onReact, churchCtx, onDelete }) {
     setDeleteBusy(false);
     setConfirmingDelete(false);
     setMenuOpen(false);
-    if (error) { console.error('delete failed', error.message); return; }
+    if (error) { console.error('delete failed', error.message); setActionError("Couldn't delete — try again."); return; }
     onDelete?.(post.id);
   }
 
@@ -183,9 +185,12 @@ function ProfilePost({ post, session, profile, onReact, churchCtx, onDelete }) {
                   color: T.ink, background: T.cream, outline: 'none', resize: 'vertical',
                 }}
               />
+              {actionError && (
+                <div style={{ fontSize: 12, color: T.error, marginTop: 6 }}>{actionError}</div>
+              )}
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
                 <button
-                  onClick={() => setEditing(false)}
+                  onClick={() => { setEditing(false); setActionError(null); }}
                   disabled={editBusy}
                   style={{
                     background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
@@ -646,6 +651,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
   const [prayers, setPrayers] = useState([]);
   const [prayerText, setPrayerText] = useState('');
   const [prayerSubmitting, setPrayerSubmitting] = useState(false);
+  const [prayerError, setPrayerError] = useState(null);
   const [prayersLoaded, setPrayersLoaded] = useState(false);
   const [prayerComposeOpen, setPrayerComposeOpen] = useState(false);
   const [praiseTarget,      setPraiseTarget]      = useState(null);
@@ -778,8 +784,10 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
     setPrayerSubmitting(false);
     if (error) {
       console.error('[addPrayer] insert failed', error);
+      setPrayerError("Couldn't save prayer — try again.");
       return;
     }
+    setPrayerError(null);
     if (data) { setPrayers((prev) => [data, ...prev]); setPrayerText(''); setPrayerComposeOpen(false); }
   }
 
@@ -942,6 +950,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
       onProfileUpdate?.({ ...profile, ...updates });
     } catch (err) {
       console.error('saveAvatar failed:', err.message);
+      setBannerError("Couldn't save avatar — try again.");
     }
   }
 
@@ -1447,6 +1456,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                         color: T.ink, background: 'transparent',
                       }}
                     />
+                    {prayerError && <div style={{ fontSize: 12, color: T.error, marginTop: 6 }}>{prayerError}</div>}
                     <div style={{ marginTop: 10, borderTop: `1px solid rgba(90,128,100,0.2)`, paddingTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                       <span style={{ fontSize: 11, color: '#5a7a5a', fontStyle: 'italic' }}>🔒 Private — only you can see this. Never shared, sold, or used for AI training.</span>
                       <div style={{ display: 'flex', gap: 8 }}>

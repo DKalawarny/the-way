@@ -291,6 +291,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
   const [careTeamSize, setCareTeamSize] = useState(0);
   const [sermons, setSermons] = useState([]);
   const [sermonBusy, setSermonBusy] = useState(null); // id currently toggling
+  const [publishError, setPublishError] = useState(null);
   const [recentAnonCount, setRecentAnonCount] = useState(0);
 
   const [walks, setWalks] = useState([]);
@@ -611,8 +612,10 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
     setSermonBusy(null);
     if (err) {
       console.error('toggle publish failed', err.message);
+      setPublishError("Couldn't update sermon status — try again.");
       return;
     }
+    setPublishError(null);
     setSermons((rows) => rows.map((s) => s.id === sermon.id ? { ...s, is_published: next } : s));
   }
 
@@ -771,6 +774,9 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
                 busy={sermonBusy === s.id}
               />
             ))
+          )}
+          {publishError && (
+            <div style={{ fontSize: 12, color: T.error, padding: '6px 2px' }}>{publishError}</div>
           )}
         </Section>
 

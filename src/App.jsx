@@ -53,6 +53,42 @@ class PageErrorBoundary extends Component {
   }
 }
 
+// Lighter error boundary for individual lazy-loaded routes.
+// If one route crashes, only that screen shows the error — the rest of the
+// app (nav, other tabs) stays intact.
+class RouteErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(e) { return { error: e }; }
+  render() {
+    const { error } = this.state;
+    if (!error) return this.props.children;
+    const isChunkError = /failed to fetch dynamically imported module|loading chunk/i.test(error.message ?? '');
+    return (
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', gap: 12, padding: 40, textAlign: 'center',
+      }}>
+        <div style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 600, color: T.ink }}>
+          {isChunkError ? 'New version — reload to continue' : 'This screen hit an error'}
+        </div>
+        <div style={{ fontSize: 13, color: T.inkSoft, maxWidth: 300, lineHeight: 1.6 }}>
+          {isChunkError ? 'A new build was deployed.' : 'Try going back or reloading.'}
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => this.setState({ error: null })}
+            style={{ background: 'none', border: `1px solid ${T.line}`, borderRadius: 999, padding: '8px 16px', fontSize: 13, color: T.inkSoft, cursor: 'pointer' }}
+          >Try again</button>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ background: T.ink, color: T.cream, border: 'none', borderRadius: 999, padding: '8px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+          >Reload</button>
+        </div>
+      </div>
+    );
+  }
+}
+
 import { supabase, authedFetch } from './supabase.js';
 import { getDailyVerse } from './dailyVerse.js';
 import {
@@ -2481,9 +2517,11 @@ export default function App() {
     return (
       <>
         <style>{globalCss}</style>
-        <Suspense fallback={<ScreenLoader />}>
-          <SharedView shareId={shareId} onBegin={() => { window.history.replaceState({}, '', '/'); window.location.reload(); }} />
-        </Suspense>
+        <RouteErrorBoundary>
+          <Suspense fallback={<ScreenLoader />}>
+            <SharedView shareId={shareId} onBegin={() => { window.history.replaceState({}, '', '/'); window.location.reload(); }} />
+          </Suspense>
+        </RouteErrorBoundary>
       </>
     );
   }
@@ -2492,9 +2530,11 @@ export default function App() {
     return (
       <>
         <style>{globalCss}</style>
-        <Suspense fallback={<ScreenLoader />}>
-          <StudySession sessionId={studySessionId} onBegin={() => { window.history.replaceState({}, '', '/'); window.location.reload(); }} />
-        </Suspense>
+        <RouteErrorBoundary>
+          <Suspense fallback={<ScreenLoader />}>
+            <StudySession sessionId={studySessionId} onBegin={() => { window.history.replaceState({}, '', '/'); window.location.reload(); }} />
+          </Suspense>
+        </RouteErrorBoundary>
       </>
     );
   }

@@ -61,7 +61,11 @@ export default function DMConversation({ session, profile, conversationId, other
           plan: profile?.plan ?? 'free',
         }),
       });
-      if (!res.ok || !res.body) { setAiLoading(false); return; }
+      if (!res.ok || !res.body) {
+        setAiLoading(false);
+        setAiThread((prev) => [...prev, { role: 'assistant', content: "Sorry, I couldn't get a response. Check your connection and try again." }]);
+        return;
+      }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buf = '';
@@ -88,7 +92,12 @@ export default function DMConversation({ session, profile, conversationId, other
           }
         }
       }
-    } catch {}
+    } catch (e) {
+      if (e?.name !== 'AbortError') {
+        console.error('[DMConversation] AI fetch error:', e);
+        setAiThread((prev) => [...prev, { role: 'assistant', content: "Something went wrong. Try again in a moment." }]);
+      }
+    }
     setAiLoading(false);
   }
 

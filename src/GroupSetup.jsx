@@ -98,9 +98,13 @@ export default function GroupSetup({ session, onJoined, onClose }) {
       );
       const { url } = await res.json();
       if (url) { window.location.href = url; return; }
-    } catch {}
+    } catch (e) {
+      console.error('[GroupSetup] Stripe checkout error:', e);
+      // Payment not configured yet — land on the success screen anyway so
+      // the group invite code is visible. Payment can be collected separately.
+    }
 
-    // Stripe redirect failed — land on the success screen anyway
+    // Stripe redirect not available — show the group anyway with invite code
     setBusy(false);
     setCreated({ group, inviteCode });
   }

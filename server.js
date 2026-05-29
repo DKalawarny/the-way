@@ -30,7 +30,9 @@ function normalize(text) {
 }
 
 app.use(cors());
-app.use(express.json({ limit: '256kb' }));
+// Hard cap on request body size before JSON.parse() runs.
+// 64 KB is more than enough for any legitimate chat payload.
+app.use(express.json({ limit: '64kb' }));
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON = process.env.VITE_SUPABASE_ANON_KEY;
@@ -599,7 +601,12 @@ app.post('/api/chat', optionalAuth, limitEither(
     stream.on('text', (delta) => send('text', { delta }));
     stream.on('error', (err) => {
       console.error('[kinwove] stream error:', err);
-      send('error', { message: err?.message || err?.error?.message || 'stream error' });
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'stream error' });
+      } else {
+        send('error', { message: err?.message || err?.error?.message || 'stream error' });
+        res.end();
+      }
     });
 
     const final = await stream.finalMessage();
