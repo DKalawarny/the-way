@@ -1638,6 +1638,9 @@ export default function App() {
   // Which tab ChurchAdmin should land on when entered. Set by ChurchPage's
   // "Edit in Pastor settings" deep-link, consumed by the ChurchAdmin mount.
   const [pastorAdminInitialTab, setPastorAdminInitialTab] = useState('overview');
+  // Which tab ChurchPage should open on. Set when returning from sermon-view
+  // so the user lands back on Sermons, not Feed. Cleared one tick after mount.
+  const [churchReturnTab, setChurchReturnTab] = useState(null);
   // QR-scan -> Join: when a signed-out visitor lands on /?church=<id> and
   // taps "Sign up & join", we stash the church id here, send them through
   // auth, and auto-attach them as a member once their profile is set up.
@@ -1862,6 +1865,15 @@ export default function App() {
     setComposerSermonId(prev.composerSermonId);
     setActiveCareConv(prev.activeCareConv);
   }
+
+  // Clear churchReturnTab one tick after ChurchPage mounts so subsequent
+  // church navigations use ChurchPage's own default tab logic.
+  useEffect(() => {
+    if (stage === 'church' && churchReturnTab !== null) {
+      const t = setTimeout(() => setChurchReturnTab(null), 0);
+      return () => clearTimeout(t);
+    }
+  }, [stage, churchReturnTab]);
 
   const STAGE_SAFE = new Set(['home','feed','read','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
 
@@ -2554,12 +2566,13 @@ export default function App() {
       )}
       {stage === 'sermon-view' && session && viewingSermonId && (() => {
         const isOwnSermon = pastorChurchId && sermonChurchId && pastorChurchId === sermonChurchId;
+        const handleSermonBack = () => { setChurchReturnTab('sermons'); goBack('home'); };
         const view = (
           <SermonView
             session={session}
             profile={profile}
             sermonId={viewingSermonId}
-            onBack={() => goBack('home')}
+            onBack={handleSermonBack}
             chromeless={isOwnSermon}
           />
         );
@@ -2570,7 +2583,7 @@ export default function App() {
               tab={null}
               onTabChange={(t) => { setPastorAdminInitialTab(t); setStage('church-admin'); }}
               onBack={() => goBack('me')}
-              onOpenChurchPage={() => { setViewingChurchId(pastorChurchId); setStage('church'); }}
+              onOpenChurchPage={() => { setChurchReturnTab('sermons'); setViewingChurchId(pastorChurchId); setStage('church'); }}
             >
               {view}
             </ChurchModeShell>
@@ -2739,6 +2752,7 @@ export default function App() {
             churchId={viewingChurchId}
             pastorChurchId={pastorChurchId}
             chromeless={isOwnChurch}
+            initialTab={churchReturnTab}
             onBack={() => {
               if (initialChurchId) {
                 window.history.replaceState({}, '', '/');

@@ -20,6 +20,7 @@ export default function ChurchPage({
   onOpenPastorDashboard, onOpenWalks, onFindChurches,
   onNewSermon,
   chromeless = false,
+  initialTab = null,
 }) {
   const [church, setChurch] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -61,7 +62,7 @@ export default function ChurchPage({
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/?church=${churchId}` : '';
 
   const [tab, setTab] = useState(() =>
-    (!!churchId && profile?.church_id === churchId) ? 'feed' : 'info'
+    initialTab || ((!!churchId && profile?.church_id === churchId) ? 'feed' : 'info')
   );
   const { showToast, ui: uikitUi } = useUiKit();
 
