@@ -2573,6 +2573,7 @@ export default function App() {
             profile={profile}
             sermonId={viewingSermonId}
             onBack={handleSermonBack}
+            onChangeSermon={(id) => setViewingSermonId(id)}
             chromeless={isOwnSermon}
           />
         );

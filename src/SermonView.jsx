@@ -29,10 +29,11 @@ function formatWeekOf(dateStr) {
   } catch { return null; }
 }
 
-export default function SermonView({ session, profile, sermonId, onBack, chromeless = false }) {
+export default function SermonView({ session, profile, sermonId, onBack, onChangeSermon, chromeless = false }) {
   const [sermon, setSermon]   = useState(null);
   const [items, setItems]     = useState([]);
   const [loading, setLoading] = useState(true);
+  const [siblings, setSiblings] = useState([]); // other published sermons for same church
   // Pastor-only: when true, also reveal items that haven't dropped yet
   // (drafts with no scheduled_at, or future-scheduled).
   const [pastorPreview, setPastorPreview] = useState(false);
@@ -66,6 +67,18 @@ export default function SermonView({ session, profile, sermonId, onBack, chromel
     return () => { cancelled = true; };
   }, [sermonId]);
 
+  // Load sibling sermons once we know the church_id
+  useEffect(() => {
+    if (!sermon?.church_id) return;
+    supabase
+      .from('sermons')
+      .select('id, title, week_starts_on')
+      .eq('church_id', sermon.church_id)
+      .eq('is_published', true)
+      .order('week_starts_on', { ascending: false })
+      .then(({ data }) => setSiblings(data ?? []));
+  }, [sermon?.church_id]);
+
   if (loading) {
     return (
       <div className="scene" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -87,6 +100,18 @@ export default function SermonView({ session, profile, sermonId, onBack, chromel
       </div>
     );
   }
+
+  // Siblings are sorted newest-first; prev = older (higher index), next = newer (lower index)
+  const sibIdx    = siblings.findIndex((s) => s.id === sermonId);
+  const prevSerm  = sibIdx < siblings.length - 1 ? siblings[sibIdx + 1] : null; // older
+  const nextSerm  = sibIdx > 0                   ? siblings[sibIdx - 1] : null; // newer
+  const navBtn    = (label, onClick) => (
+    <button onClick={onClick} style={{
+      background: 'none', border: 'none', color: T.goldDark, fontSize: 13, cursor: 'pointer',
+      padding: '6px 0', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500,
+      whiteSpace: 'nowrap', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis',
+    }}>{label}</button>
+  );
 
   const week    = formatWeekOf(sermon.week_starts_on);
   const now     = Date.now();
@@ -117,14 +142,15 @@ export default function SermonView({ session, profile, sermonId, onBack, chromel
           position: 'sticky', top: 0, zIndex: 10,
           paddingTop: 'env(safe-area-inset-top, 0px)',
         }}>
-          <div style={{ padding: '0 16px', height: 56, display: 'flex', alignItems: 'center' }}>
-          <button onClick={onBack} style={{
-            background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer',
-            padding: '0 12px', minHeight: 44, display: 'flex', alignItems: 'center',
-          }}>← Back</button>
-          <div style={{ marginLeft: 'auto', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700 }}>
-            This week
-          </div>
+          <div style={{ padding: '0 16px', height: 56, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button onClick={onBack} style={{
+              background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer',
+              padding: '0 12px 0 0', minHeight: 44, display: 'flex', alignItems: 'center', flexShrink: 0,
+            }}>← Sermons</button>
+            <div style={{ flex: 1 }} />
+            {onChangeSermon && prevSerm && navBtn('← ' + prevSerm.title.slice(0, 22) + (prevSerm.title.length > 22 ? '…' : ''), () => onChangeSermon(prevSerm.id))}
+            {onChangeSermon && prevSerm && nextSerm && <span style={{ color: T.line, fontSize: 16 }}>|</span>}
+            {onChangeSermon && nextSerm && navBtn(nextSerm.title.slice(0, 22) + (nextSerm.title.length > 22 ? '…' : '') + ' →', () => onChangeSermon(nextSerm.id))}
           </div>
         </header>
       )}
@@ -159,6 +185,18 @@ export default function SermonView({ session, profile, sermonId, onBack, chromel
             <PostImageGrid urls={sermon.image_urls} />
           )}
         </article>
+
+        {/* Sermon prev/next navigation — always visible below the hero */}
+        {onChangeSermon && (prevSerm || nextSerm) && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, gap: 8 }}>
+            <div>
+              {prevSerm && navBtn('← ' + prevSerm.title, () => onChangeSermon(prevSerm.id))}
+            </div>
+            <div>
+              {nextSerm && navBtn(nextSerm.title + ' →', () => onChangeSermon(nextSerm.id))}
+            </div>
+          </div>
+        )}
 
         {/* Daily questions — the heart of the page.
             Each one drops here (and into the church feed) on its scheduled
