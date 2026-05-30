@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, useCallback } from 'react';
 import { Smile } from 'lucide-react';
 import SwipeableSheet from './SwipeableSheet.jsx';
 import { supabase, uploadProfileImage, directProfileUpdate } from './supabase.js';
@@ -10,6 +10,7 @@ import PostImageGrid from './PostImageGrid.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 const PostComposer = lazy(() => import('./PostComposer.jsx'));
+const PostCard     = lazy(() => import('./PostCard.jsx'));
 // Shared with UserProfile — same constants, same helpers, same church card.
 // PRAYER_REACTIONS stays local because it's only used here (the prayer tab).
 import { REACTIONS, TYPE_COLORS, timeAgo, loadChurchContext, ChurchAttendsCard } from './profileShared.jsx';
@@ -2006,56 +2007,21 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                   Tap the bookmark icon on any post to privately save it here. Only you can see this.
                 </div>
               </div>
-            ) : savedPosts.map((post) => {
-              const authorName = post.authorProfile?.display_name ?? 'Someone';
-              const bodyText = post.body?.text ?? '';
-              return (
-                <div key={post.id} style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '14px 16px', marginBottom: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{
-                        width: 28, height: 28, borderRadius: '50%',
-                        background: T.parchment, color: T.goldDark,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 11, fontWeight: 700, flexShrink: 0,
-                      }}>
-                        {(authorName[0] ?? '·').toUpperCase()}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 13.5, fontWeight: 600, color: T.ink, lineHeight: 1.2 }}>{authorName}</div>
-                        <div style={{ fontSize: 11, color: T.inkMuted }}>{timeAgo(post.created_at)}</div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={async () => {
-                        await supabase.from('saved_posts').delete().eq('user_id', session.user.id).eq('post_id', post.id);
-                        setSavedPosts((prev) => prev.filter((p) => p.id !== post.id));
-                      }}
-                      title="Unsave"
-                      style={{
-                        background: 'none', border: `1px solid ${T.line}`, borderRadius: 999,
-                        padding: '5px 10px', fontSize: 12, color: T.inkMuted,
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-                      }}
-                    >🔒 Remove</button>
-                  </div>
-                  {bodyText && (
-                    <div style={{
-                      fontFamily: T.serif, fontSize: 15, lineHeight: 1.65, color: T.ink,
-                      overflow: 'hidden', display: '-webkit-box',
-                      WebkitLineClamp: 4, WebkitBoxOrient: 'vertical',
-                    }}>
-                      {bodyText}
-                    </div>
-                  )}
-                  {post.body?.scripture_ref && (
-                    <div style={{ fontSize: 12.5, color: T.goldDark, fontStyle: 'italic', marginTop: 4 }}>
-                      {post.body.scripture_ref}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            ) : savedPosts.map((post) => (
+              <Suspense key={post.id} fallback={null}>
+                <PostCard
+                  item={post}
+                  authorProfile={post.authorProfile}
+                  sessionUserId={session?.user?.id}
+                  authorMap={{ [post.author_id]: post.authorProfile }}
+                  isSaved
+                  onSaveToggle={async (postId) => {
+                    await supabase.from('saved_posts').delete().eq('user_id', session.user.id).eq('post_id', postId);
+                    setSavedPosts((prev) => prev.filter((p) => p.id !== postId));
+                  }}
+                />
+              </Suspense>
+            ))}
           </div>
         )}
       </div>
