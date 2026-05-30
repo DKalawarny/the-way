@@ -1132,12 +1132,12 @@ export default function PostCard({
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {/* Author info + post body */}
               <div style={{ padding: '16px 18px 0' }}>
-                {!item.is_anonymous && authorProfile && (
+                {!item.is_anonymous && (
                   <div style={{ display: 'flex', gap: 11, alignItems: 'center', marginBottom: 12 }}>
                     <Avatar
-                      name={authorProfile.display_name}
-                      avatarConfig={authorProfile.avatar_config}
-                      photoUrl={authorProfile.avatar_url}
+                      name={authorProfile?.display_name ?? displayName}
+                      avatarConfig={authorProfile?.avatar_config}
+                      photoUrl={authorProfile?.avatar_url}
                       size={42}
                     />
                     <div>
