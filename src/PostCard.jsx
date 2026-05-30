@@ -1118,30 +1118,34 @@ export default function PostCard({
         </div>
       )}
 
-      {/* Action bar — single row, FB-style: icon-only reactions left, Comment + Save right */}
-      <div style={{ display: 'flex', alignItems: 'center', borderTop: `1px solid ${T.line}`, paddingTop: 4, gap: 0 }}>
+      {/* Action bar — FB-style: icon + label stacked, equal-width columns */}
+      <div style={{ display: 'flex', alignItems: 'stretch', borderTop: `1px solid ${T.line}`, paddingTop: 2 }}>
         {isPostLike && REACTIONS.map((r) => {
           const count = reactions[r.id] ?? 0;
           const isMine = !!mine[r.id];
+          // Short display labels so they fit on one row
+          const shortLabel = r.id === 'same' ? 'Same' : r.label;
           return (
             <button
               key={r.id}
               onClick={() => toggleReaction(r.id)}
-              title={r.label}
               style={{
-                background: 'none', border: 'none',
+                flex: 1, background: 'none', border: 'none',
                 color: isMine ? T.goldDark : T.inkSoft,
-                cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 3,
-                padding: '8px 7px', borderRadius: 8, fontFamily: T.sans,
-                transition: 'color 0.15s',
+                cursor: 'pointer',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                padding: '8px 2px', borderRadius: 8, fontFamily: T.sans,
+                transition: 'color 0.15s', minWidth: 0,
               }}
               onMouseEnter={(e) => { if (!isMine) e.currentTarget.style.color = T.ink; }}
               onMouseLeave={(e) => { if (!isMine) e.currentTarget.style.color = T.inkSoft; }}
             >
               {r.Icon
-                ? <r.Icon size={17} strokeWidth={isMine ? 0 : 1.75} fill={isMine ? T.goldDark : 'none'} />
-                : <span style={{ fontSize: 17, lineHeight: 1 }}>{r.emoji}</span>}
-              {count > 0 && <span style={{ fontSize: 11, fontWeight: 600 }}>{count}</span>}
+                ? <r.Icon size={16} strokeWidth={isMine ? 0 : 1.75} fill={isMine ? T.goldDark : 'none'} />
+                : <span style={{ fontSize: 16, lineHeight: 1 }}>{r.emoji}</span>}
+              <span style={{ fontSize: 9.5, lineHeight: 1.2, fontWeight: isMine ? 700 : 400, whiteSpace: 'nowrap' }}>
+                {shortLabel}{count > 0 ? ` ${count}` : ''}
+              </span>
             </button>
           );
         })}
@@ -1149,30 +1153,34 @@ export default function PostCard({
           <span style={{
             background: 'rgba(122,149,104,0.18)', color: '#3F5635',
             borderRadius: 999, padding: '5px 11px', fontSize: 12.5, fontWeight: 600,
+            alignSelf: 'center',
           }}>
             🙏 {item.body?.prayer_count ?? 0} praying
           </span>
         )}
 
-        <div style={{ flex: 1 }} />
+        {/* Divider */}
+        {isPostLike && <div style={{ width: 1, background: T.line, margin: '6px 0', flexShrink: 0 }} />}
 
         {/* Comment */}
         {isPostLike && (
           <button
             onClick={() => setCommentsOpen((v) => !v)}
             style={{
-              background: 'none', border: 'none',
+              flex: 1, background: 'none', border: 'none',
               color: commentsOpen ? T.goldDark : T.inkSoft,
-              fontSize: 13, cursor: 'pointer', padding: '8px 8px',
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              transition: 'color 0.15s', fontFamily: T.sans,
-              fontWeight: commentsOpen ? 600 : 400,
+              cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+              padding: '8px 2px', borderRadius: 8, fontFamily: T.sans,
+              transition: 'color 0.15s', minWidth: 0,
             }}
             onMouseEnter={(e) => { if (!commentsOpen) e.currentTarget.style.color = T.ink; }}
             onMouseLeave={(e) => { if (!commentsOpen) e.currentTarget.style.color = T.inkSoft; }}
           >
-            <span style={{ fontSize: 16 }}>💬</span>
-            <span>{localCommentCount > 0 ? localCommentCount : 'Comment'}</span>
+            <span style={{ fontSize: 16, lineHeight: 1 }}>💬</span>
+            <span style={{ fontSize: 9.5, lineHeight: 1.2, fontWeight: commentsOpen ? 700 : 400, whiteSpace: 'nowrap' }}>
+              Comment{localCommentCount > 0 ? ` ${localCommentCount}` : ''}
+            </span>
           </button>
         )}
 
@@ -1180,18 +1188,19 @@ export default function PostCard({
         {isPostLike && onSaveToggle && !!sessionUserId && (
           <button
             onClick={() => onSaveToggle(item.id, isSaved)}
-            title={isSaved ? 'Remove private save' : 'Private save'}
             style={{
-              background: 'none', border: 'none',
+              flex: 1, background: 'none', border: 'none',
               color: isSaved ? T.goldDark : T.inkMuted,
-              cursor: 'pointer', padding: '8px 8px',
-              display: 'flex', alignItems: 'center',
-              transition: 'color 0.15s',
+              cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+              padding: '8px 2px', borderRadius: 8,
+              transition: 'color 0.15s', minWidth: 0,
             }}
             onMouseEnter={(e) => { if (!isSaved) e.currentTarget.style.color = T.ink; }}
             onMouseLeave={(e) => { if (!isSaved) e.currentTarget.style.color = T.inkMuted; }}
           >
             <Bookmark size={16} strokeWidth={2} fill={isSaved ? T.goldDark : 'none'} />
+            <span style={{ fontSize: 9.5, lineHeight: 1.2, fontFamily: T.sans, fontWeight: isSaved ? 700 : 400 }}>Save</span>
           </button>
         )}
       </div>
