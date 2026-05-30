@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Camera, Lock, Globe, Building2, X, ChevronDown, Smile, Plus, Trash2 } from 'lucide-react';
 import { supabase, uploadPostImage } from './supabase.js';
 import { T } from './theme.js';
+import { track } from './analytics.js';
 import MentionInput from './MentionInput.jsx';
 import { Avatar } from './ProfilePage.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
@@ -196,6 +197,7 @@ export default function PostComposer({
 
     setBusy(false);
     if (err) { setError(err.message); return; }
+    track('post_created', { scope, kind: dbKind });
     reset(); setOpen(false);
     onPosted?.(data);
   }

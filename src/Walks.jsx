@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
+import { track } from './analytics.js';
 
 const CATEGORY_LABEL = {
   'new-believer': 'New to faith',
@@ -454,6 +455,7 @@ export default function Walks({ session, onClose }) {
       setProgressMap((m) => ({ ...m, [selected.id]: data }));
       setDay(1);
       setView('day');
+      track('walk_started', { title: selected.title });
     }
   }
 
@@ -499,6 +501,7 @@ export default function Walks({ session, onClose }) {
     if (data) {
       setProgressMap((m) => ({ ...m, [selected.id]: data }));
       if (isLast) {
+        track('walk_completed', { title: selected.title });
         // Auto-post a journey milestone when the walk is finished
         if (session?.user?.id) {
           supabase.from('posts').insert({

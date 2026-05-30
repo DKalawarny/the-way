@@ -13,6 +13,7 @@ import { getDailyVerse } from './dailyVerse.js';
 import { codeToFlag } from './countries.js';
 import EmptyState from './EmptyState.jsx';
 import SponsoredCard from './SponsoredCard.jsx';
+import { track } from './analytics.js';
 const PostComposer = lazy(() => import('./PostComposer.jsx'));
 
 // Each reaction owns its own register: Love is warm + relational (rose),
@@ -1431,6 +1432,7 @@ useEffect(() => {
       setPrayers(prev => [{ ...data, support_count: 0, enc_count: 0, my_prayed: false }, ...prev]);
       setPrayerText('');
       setPrayerComposeOpen(false);
+      track('prayer_shared');
     }
   }
 

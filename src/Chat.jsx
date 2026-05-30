@@ -12,6 +12,7 @@ import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach
 import { getDailyVerse } from './dailyVerse.js';
 import { useAiUsage } from './useAiUsage.js';
 import AiLimitWall, { AiUsageWarning } from './AiLimitWall.jsx';
+import { track } from './analytics.js';
 import Tip from './Tip.jsx';
 import { extractRefs, parseRef, toApiVerseId, VALIDATION_BIBLE_ID } from './bibleRefUtils.js';
 
@@ -1166,7 +1167,7 @@ export default function Chat({
       setError(e.message || 'Something went wrong.');
     } finally {
       setBusy(false);
-      if (assistantContent && session) aiUsage.increment();
+      if (assistantContent && session) { aiUsage.increment(); track('ai_question', { plan: aiPlan }); }
       // Validate refs in the background — does not block UI
       if (assistantContent) {
         const lastAssistantIdx = next.length; // next = messages + user msg; assistant msg is appended after
@@ -1805,7 +1806,7 @@ export default function Chat({
       )}
 
       {/* ── Low-messages warning strip ── */}
-      {!aiUsage.atLimit && session && <AiUsageWarning remaining={aiUsage.remaining} />}
+      {!aiUsage.atLimit && session && <AiUsageWarning remaining={aiUsage.remaining} limit={aiUsage.limit} plan={aiPlan} />}
 
       <div
         style={{

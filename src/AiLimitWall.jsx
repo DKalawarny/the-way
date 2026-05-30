@@ -102,19 +102,51 @@ function currentPeriod(plan) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-// ── Small inline banner shown when user is getting close (≤3 remaining) ──────
-export function AiUsageWarning({ remaining }) {
-  if (remaining > 3) return null;
+// ── Inline usage warning — two tiers:
+//    amber at ≥80% used ("X messages left this month")
+//    red   at ≤3 remaining ("3 messages left — reset Monday" etc.)
+export function AiUsageWarning({ remaining, limit = 0, plan }) {
+  if (remaining <= 0) return null;
+
+  const isFree     = plan === 'free' || !plan;
+  const pct        = limit > 0 ? remaining / limit : 1;
+  const isCritical = remaining <= 3;
+  const isWarning  = !isCritical && pct <= 0.2; // ≥80% used
+
+  if (!isCritical && !isWarning) return null;
+
+  const periodLabel = isFree ? 'this week' : 'this month';
+
+  if (isCritical) {
+    const label = isFree
+      ? (remaining === 0
+          ? 'No free questions left this week'
+          : `${remaining} free question${remaining === 1 ? '' : 's'} left this week`)
+      : `${remaining} message${remaining === 1 ? '' : 's'} left ${periodLabel}`;
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '5px 16px',
+        background: 'rgba(165,63,43,0.06)',
+        borderBottom: '1px solid rgba(165,63,43,0.18)',
+        flexShrink: 0,
+      }}>
+        <span style={{ fontSize: 11, color: '#A53F2B', fontWeight: 600 }}>{label}</span>
+      </div>
+    );
+  }
+
+  // Amber 80% nudge
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: '5px 16px',
-      background: 'rgba(165,63,43,0.06)',
-      borderBottom: `1px solid rgba(165,63,43,0.18)`,
+      background: 'rgba(184,115,58,0.06)',
+      borderBottom: `1px solid rgba(184,115,58,0.18)`,
       flexShrink: 0,
     }}>
-      <span style={{ fontSize: 11, color: '#A53F2B', fontWeight: 600 }}>
-        {remaining === 0 ? 'No free questions left this week' : `${remaining} free question${remaining === 1 ? '' : 's'} left this week`}
+      <span style={{ fontSize: 11, color: T.goldDark, fontWeight: 600 }}>
+        {remaining} messages left {periodLabel}
       </span>
     </div>
   );

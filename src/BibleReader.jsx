@@ -8,6 +8,7 @@ import { authedFetch } from './supabase.js';
 import { verseCountFor } from './bibleVerseCounts.js';
 import { useAiUsage } from './useAiUsage.js';
 import AiLimitWall, { AiUsageWarning } from './AiLimitWall.jsx';
+import { track } from './analytics.js';
 import Tip from './Tip.jsx';
 
 // Bible API is proxied through /api/bible to keep the key server-side
@@ -1039,6 +1040,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
       });
     }
     aiUsage.increment();
+    track('ai_question', { plan: profile?.plan ?? 'free', surface: 'bible' });
     setChatBusy(false);
   }
 
@@ -1815,7 +1817,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
         <AiLimitWall plan={profile?.plan ?? 'free'} panelMode />
       ) : (
         <div style={{ flexShrink: 0 }}>
-          <AiUsageWarning remaining={aiUsage.remaining} />
+          <AiUsageWarning remaining={aiUsage.remaining} limit={aiUsage.limit} plan={profile?.plan ?? 'free'} />
           <div style={{ padding: '10px 12px 14px', borderTop: `1px solid ${chatDark ? CC.border : 'rgba(184,115,58,0.2)'}`, background: chatDark ? 'transparent' : '#FAF3E4' }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: chatDark ? CC.inputBg : '#FDF8EE', borderRadius: 999, border: `1px solid ${chatDark ? CC.border : 'rgba(184,115,58,0.3)'}`, padding: '6px 6px 6px 14px' }}>
               <input

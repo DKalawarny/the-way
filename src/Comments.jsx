@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Smile } from 'lucide-react';
 import { supabase } from './supabase.js';
+import { track } from './analytics.js';
 import { T } from './theme.js';
 import { presetForRole } from './Badge.jsx';
 import { relativeTime } from './time.js';
@@ -116,6 +117,7 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
     setComments((c) => [...c, data]);
     setText(''); setAnon(false);
     onCountChange?.(+1);
+    track('comment_posted');
   }
 
   async function remove(id) {

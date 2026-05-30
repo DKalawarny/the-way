@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Heart, Bookmark, Smile } from 'lucide-react';
+import { track } from './analytics.js';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { BadgeList, presetForRole } from './Badge.jsx';
@@ -511,7 +512,7 @@ export default function PostCard({
         body: modalText.trim(), is_anonymous: modalAnon,
       }).select().single();
       if (error) { showToast(`Couldn't post: ${error.message}`, 'error'); }
-      else { setModalText(''); setModalAnon(false); setLocalCommentCount((n) => n + 1); setModalRefreshKey((k) => k + 1); }
+      else { setModalText(''); setModalAnon(false); setLocalCommentCount((n) => n + 1); setModalRefreshKey((k) => k + 1); track('comment_posted'); }
     }
     setModalBusy(false);
   }

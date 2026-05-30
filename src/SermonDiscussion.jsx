@@ -9,6 +9,7 @@ import PostImageGrid from './PostImageGrid.jsx';
 import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { Avatar } from './ProfilePage.jsx';
+import { track } from './analytics.js';
 
 const EMOJIS = [
   '😀','😊','😂','🥹','😍','🥰','😭','😅','🤔','😏','😌','🙃','😇','🤩','😬','🤯',
@@ -125,6 +126,7 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
     if (error) { showToast(`Couldn't post: ${error.message}`, 'error'); return; }
     setText(''); setAnon(false); setReplyTo(null);
     imageDrafts.clear();
+    track('sermon_discussion_posted');
     reload();
   }
 
