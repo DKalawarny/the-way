@@ -326,6 +326,7 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
           <ImageAttachButton
             drafts={imageDrafts.drafts} max={imageDrafts.max}
             fileInputRef={imageDrafts.fileInputRef} onPick={imageDrafts.pick}
+            label="📷" showHint={false} compact
           />
           <div style={{ flex: 1 }} />
           {text.trim() && (

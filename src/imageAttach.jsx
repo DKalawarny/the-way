@@ -123,7 +123,7 @@ export function ImageDraftGrid({ drafts, onRemove, columns = 110 }) {
   );
 }
 
-export function ImageAttachButton({ drafts, max, fileInputRef, onPick, label = '📷 Photo', showHint = true }) {
+export function ImageAttachButton({ drafts, max, fileInputRef, onPick, label = '📷 Photo', showHint = true, compact = false }) {
   const full = drafts.length >= max;
   return (
     <>
@@ -140,7 +140,12 @@ export function ImageAttachButton({ drafts, max, fileInputRef, onPick, label = '
         onClick={() => fileInputRef.current?.click()}
         disabled={full}
         title={full ? `Up to ${max} images` : 'Add photo (up to 10 MB · auto-resized)'}
-        style={{
+        style={compact ? {
+          background: 'none', border: 'none', cursor: full ? 'not-allowed' : 'pointer',
+          padding: '4px 6px', borderRadius: 8, fontSize: 18, lineHeight: 1,
+          color: T.inkSoft, opacity: full ? 0.5 : 1,
+          display: 'flex', alignItems: 'center',
+        } : {
           display: 'inline-flex', alignItems: 'center', gap: 6,
           background: T.cream, border: `1px solid ${T.line}`, borderRadius: 999,
           padding: '6px 10px', fontSize: 12.5, color: T.inkSoft,
