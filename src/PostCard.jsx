@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Heart, Bookmark } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Heart, Bookmark, Smile } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { BadgeList, presetForRole } from './Badge.jsx';
@@ -461,7 +461,60 @@ export default function PostCard({
   const [reportBusy, setReportBusy] = useState(false);
   const [reportDone, setReportDone] = useState(false);
 
+  // Pinned modal input state (kept here so input stays pinned outside scroll area)
+  const [modalText, setModalText]       = useState('');
+  const [modalAnon, setModalAnon]       = useState(false);
+  const [modalBusy, setModalBusy]       = useState(false);
+  const [modalEmojiOpen, setModalEmojiOpen] = useState(false);
+  const [modalRefreshKey, setModalRefreshKey] = useState(0);
+  const modalInputRef = useRef(null);
+
   const { showToast, ui: postCardUi } = useUiKit();
+
+  const MODAL_EMOJIS = [
+    '😀','😊','😂','🥹','😍','🥰','😭','😅','🤔','😏','😌','🙃','😇','🤩','😬','🤯',
+    '🙏','✝️','🕊️','🌿','🌸','🌺','🌻','☀️','🌙','⭐','🔥','💫','✨','🌈','🌊','🍃',
+    '❤️','🧡','💛','💚','💙','💜','🤍','🫶','👏','🙌','💪','👍','🎉','🫂','💝','🎊',
+  ];
+
+  function insertModalEmoji(emoji) {
+    const el = modalInputRef.current;
+    if (!el) { setModalText((t) => t + emoji); setModalEmojiOpen(false); return; }
+    const start = el.selectionStart;
+    const end   = el.selectionEnd;
+    const next  = modalText.slice(0, start) + emoji + modalText.slice(end);
+    setModalText(next);
+    setModalEmojiOpen(false);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + [...emoji].length;
+      el.setSelectionRange(pos, pos);
+    });
+  }
+
+  async function submitModalComment() {
+    if (!sessionUserId || !modalText.trim() || modalBusy) return;
+    setModalBusy(true);
+    if (item.source === 'sermon_item') {
+      const { error } = await supabase.from('sermon_discussions').insert({
+        author_id: sessionUserId,
+        sermon_content_id: item.id,
+        body: modalText.trim(),
+        is_anonymous: modalAnon,
+        sermon_id: null,
+      });
+      if (error) { showToast(`Couldn't post: ${error.message}`, 'error'); }
+      else { setModalText(''); setModalAnon(false); setModalRefreshKey((k) => k + 1); }
+    } else {
+      const { error } = await supabase.from('post_comments').insert({
+        post_id: item.id, author_id: sessionUserId,
+        body: modalText.trim(), is_anonymous: modalAnon,
+      }).select().single();
+      if (error) { showToast(`Couldn't post: ${error.message}`, 'error'); }
+      else { setModalText(''); setModalAnon(false); setLocalCommentCount((n) => n + 1); setModalRefreshKey((k) => k + 1); }
+    }
+    setModalBusy(false);
+  }
 
   const isSermonAnnouncement = item.source === 'post' && !!item.body?.is_sermon_announcement;
   const isPostLike = item.source === 'post' || item.source === 'sermon_item';
@@ -1128,7 +1181,7 @@ export default function PostCard({
               >×</button>
             </div>
 
-            {/* Scrollable body */}
+            {/* Scrollable body — list only, no input inside */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {/* Author info + post body */}
               <div style={{ padding: '16px 18px 0' }}>
@@ -1151,7 +1204,7 @@ export default function PostCard({
                 </div>
               </div>
 
-              {/* Reaction bar inside modal — regular posts only */}
+              {/* Reaction bar — regular posts only */}
               {item.source !== 'sermon_item' && (
                 <div style={{ display: 'flex', borderTop: `1px solid ${T.line}`, borderBottom: `1px solid ${T.line}` }}>
                   {REACTIONS.map((kind, i) => {
@@ -1178,8 +1231,8 @@ export default function PostCard({
                 </div>
               )}
 
-              {/* Thread */}
-              <div style={{ padding: '14px 18px 18px' }}>
+              {/* Comment list — listOnly so input is pinned below */}
+              <div style={{ padding: '14px 18px 4px' }}>
                 {item.source === 'sermon_item'
                   ? <SermonDiscussion
                       sermonContentId={item.id}
@@ -1187,6 +1240,8 @@ export default function PostCard({
                       sessionUserId={sessionUserId}
                       isPastor={isPastor}
                       defaultOpen
+                      listOnly
+                      refreshKey={modalRefreshKey}
                     />
                   : <Comments
                       item={item}
@@ -1194,10 +1249,75 @@ export default function PostCard({
                       authorMap={authorMap}
                       rolesByUser={rolesByUser}
                       onCountChange={(delta) => setLocalCommentCount((n) => Math.max(0, n + delta))}
+                      listOnly
+                      refreshKey={modalRefreshKey}
                     />
                 }
               </div>
             </div>
+
+            {/* Pinned input — always visible at bottom, never scrolls away */}
+            {sessionUserId && (
+              <div style={{ borderTop: `1px solid ${T.line}`, padding: '10px 16px 14px', flexShrink: 0, background: T.white, position: 'relative' }}>
+                {/* Emoji picker */}
+                {modalEmojiOpen && (
+                  <>
+                    <div onClick={() => setModalEmojiOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
+                    <div style={{
+                      position: 'absolute', bottom: 'calc(100% + 4px)', left: 16, right: 16, zIndex: 11,
+                      background: T.white, border: `1px solid ${T.line}`, borderRadius: 14,
+                      boxShadow: '0 8px 24px rgba(44,24,16,0.13)', padding: 10,
+                      display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 4,
+                    }}>
+                      {MODAL_EMOJIS.map((e) => (
+                        <button key={e} onClick={() => insertModalEmoji(e)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '6px 2px', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 40 }}
+                          onMouseEnter={(ev) => ev.currentTarget.style.background = T.parchment}
+                          onMouseLeave={(ev) => ev.currentTarget.style.background = 'none'}
+                        >{e}</button>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {/* Pill input */}
+                <div style={{ background: T.parchment, borderRadius: 18, border: `1px solid ${T.line}`, padding: '9px 14px' }}>
+                  <input
+                    ref={modalInputRef}
+                    value={modalText}
+                    onChange={(e) => setModalText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey && modalText.trim() && !modalBusy) {
+                        e.preventDefault();
+                        submitModalComment();
+                      }
+                    }}
+                    placeholder={item.source === 'sermon_item' ? 'Share a thought…' : 'Write a comment…'}
+                    autoFocus
+                    style={{ width: '100%', border: 'none', outline: 'none', fontFamily: T.serif, fontSize: 14, color: T.ink, background: 'transparent' }}
+                  />
+                </div>
+                {/* Controls */}
+                <div style={{ display: 'flex', alignItems: 'center', marginTop: 6, paddingLeft: 2, gap: 2 }}>
+                  <button onClick={() => setModalEmojiOpen((v) => !v)} title="Emoji"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 8, color: modalEmojiOpen ? T.goldDark : T.inkSoft, display: 'flex', alignItems: 'center' }}>
+                    <Smile size={20} strokeWidth={1.75} />
+                  </button>
+                  <label style={{ fontSize: 12, color: T.inkSoft, display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', marginLeft: 4 }}>
+                    <input type="checkbox" checked={modalAnon} onChange={(e) => setModalAnon(e.target.checked)} style={{ accentColor: T.gold }} />
+                    Anon
+                  </label>
+                  <div style={{ flex: 1 }} />
+                  {modalText.trim() && (
+                    <button onClick={submitModalComment} disabled={modalBusy}
+                      style={{ background: T.ink, border: 'none', borderRadius: '50%', width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.cream, cursor: modalBusy ? 'wait' : 'pointer', flexShrink: 0, opacity: modalBusy ? 0.6 : 1 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

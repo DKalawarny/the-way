@@ -19,7 +19,7 @@ const EMOJIS = [
  * matching Community.jsx's modal comment style.
  * Only native posts (source === 'post') support comments today.
  */
-export default function Comments({ item, sessionUserId, authorMap, rolesByUser, onCountChange }) {
+export default function Comments({ item, sessionUserId, authorMap, rolesByUser, onCountChange, listOnly = false, refreshKey = 0 }) {
   const [comments, setComments] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [text, setText]         = useState('');
@@ -96,7 +96,7 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
       setLoading(false);
     })();
     return () => { active = false; };
-  }, [item.id, authorMap, rolesByUser, churchScopeId]);
+  }, [item.id, authorMap, rolesByUser, churchScopeId, refreshKey]);
 
   async function submit() {
     if (!sessionUserId || !text.trim()) return;
@@ -130,6 +130,45 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
     if (error) { showToast(`Couldn't delete: ${error.message}`, 'error'); return; }
     setComments((c) => c.filter((x) => x.id !== id));
     onCountChange?.(-1);
+  }
+
+  // List-only mode: no input, used when PostCard pins the input below the modal scroll area
+  if (listOnly) {
+    return (
+      <div>
+        {uikitUi}
+        {loading ? (
+          <div style={{ color: T.inkMuted, fontFamily: T.serif, textAlign: 'center', padding: 16, fontSize: 13 }}>Loading…</div>
+        ) : comments.length === 0 ? (
+          <div style={{ color: T.inkMuted, fontStyle: 'italic', fontSize: 14, textAlign: 'center', padding: '20px 0' }}>
+            No comments yet — be the first.
+          </div>
+        ) : (
+          <div style={{ marginBottom: 10 }}>
+            {comments.map((c) => {
+              const isMine = c.author_id === sessionUserId;
+              const prof   = c.is_anonymous ? null : profMap?.[c.author_id];
+              const name   = c.is_anonymous ? 'Anonymous' : (prof?.display_name ?? 'Someone');
+              return (
+                <div key={c.id} style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'flex-start' }}>
+                  <Avatar name={c.is_anonymous ? null : name} avatarConfig={c.is_anonymous ? null : prof?.avatar_config} photoUrl={c.is_anonymous ? null : prof?.avatar_url} size={34} style={{ flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ background: T.parchment, borderRadius: 16, padding: '9px 13px' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, marginBottom: 2 }}>{name}</div>
+                      <div style={{ fontFamily: T.serif, fontSize: 14, color: T.inkSoft, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{c.body}</div>
+                    </div>
+                    <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 4, paddingLeft: 10, display: 'flex', gap: 10 }}>
+                      <span>{relativeTime(c.created_at)}</span>
+                      {isMine && <TextButton onClick={() => remove(c.id)} danger>delete</TextButton>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (

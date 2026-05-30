@@ -29,7 +29,7 @@ const EMOJIS = [
  * expanded immediately — used for the bottom-of-sermon thread where it's
  * the main attraction, not an aside.
  */
-export default function SermonDiscussion({ sermonContentId, sermonId, churchId, sessionUserId, isPastor, defaultOpen = false }) {
+export default function SermonDiscussion({ sermonContentId, sermonId, churchId, sessionUserId, isPastor, defaultOpen = false, listOnly = false, refreshKey = 0 }) {
   const [rows, setRows]         = useState([]);
   const [profMap, setProfMap]   = useState({});
   const [rolesMap, setRolesMap] = useState({});
@@ -98,9 +98,9 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
   }
 
   useEffect(() => {
-    if (!open) return;
+    if (!open && !listOnly) return;
     reload();
-  }, [anchorCol, anchorVal, open]);
+  }, [anchorCol, anchorVal, open, listOnly, refreshKey]);
 
   // Focus the input whenever a reply target is set (or when the composer first mounts open)
   useEffect(() => {
@@ -217,6 +217,26 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
         {children.length > 0 && (
           <div style={{ marginTop: 10 }}>
             {children.map((r) => <Bubble key={r.id} row={r} depth={depth + 1} />)}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // List-only mode: no composer, used when PostCard pins the input below the modal scroll area
+  if (listOnly) {
+    return (
+      <div>
+        {uikitUi}
+        {loading ? (
+          <div style={{ color: T.inkMuted, fontFamily: T.serif, textAlign: 'center', padding: 16, fontSize: 13 }}>Loading…</div>
+        ) : top.length === 0 ? (
+          <div style={{ color: T.inkMuted, fontStyle: 'italic', fontSize: 14, textAlign: 'center', padding: '20px 0' }}>
+            No comments yet — be the first.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 10 }}>
+            {top.map((r) => <Bubble key={r.id} row={r} />)}
           </div>
         )}
       </div>
