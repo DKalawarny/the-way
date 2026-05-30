@@ -779,35 +779,7 @@ export default function ChurchPage({
               );
             })}
 
-            {/* ── Featured walk for the whole church (pastor-curated) ── */}
-            {isMember && !isPastor && featuredWalk && onOpenWalks && (
-              <button
-                onClick={onOpenWalks}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left',
-                  background: `linear-gradient(135deg, rgba(184,115,58,0.10) 0%, rgba(184,115,58,0.05) 100%)`,
-                  border: `1px solid ${T.goldLight}`,
-                  borderLeft: `3px solid ${T.gold}`,
-                  borderRadius: 14, padding: '16px 18px', marginBottom: 16, cursor: 'pointer',
-                }}
-              >
-                <div style={{ fontSize: 30, flexShrink: 0, lineHeight: 1 }}>{featuredWalk.cover_emoji}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 3 }}>
-                    Walking together
-                  </div>
-                  <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.2 }}>
-                    {featuredWalk.title}
-                  </div>
-                  {featuredWalk.subtitle && (
-                    <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.4, marginTop: 3 }}>
-                      {featuredWalk.subtitle}
-                    </div>
-                  )}
-                </div>
-                <div style={{ fontSize: 20, color: T.goldDark, flexShrink: 0 }}>→</div>
-              </button>
-            )}
+            {/* Walk card moved to top of Latest section — see below */}
 
             {/* ── Quick action chips — only shown in non-chromeless view;
                 chromeless shows these above the tabs in the info card. ── */}
@@ -857,6 +829,36 @@ export default function ChurchPage({
                   <div className="section-eyebrow">Latest</div>
                   <div className="rule-gold" style={{ flex: 1 }} />
                 </div>
+
+                {/* ── Featured walk — top of feed, pinned for duration ── */}
+                {featuredWalk && onOpenWalks && (
+                  <button
+                    onClick={onOpenWalks}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left',
+                      background: `linear-gradient(135deg, rgba(184,115,58,0.10) 0%, rgba(184,115,58,0.05) 100%)`,
+                      border: `1px solid ${T.goldLight}`,
+                      borderLeft: `3px solid ${T.gold}`,
+                      borderRadius: 14, padding: '16px 18px', marginBottom: 14, cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ fontSize: 30, flexShrink: 0, lineHeight: 1 }}>{featuredWalk.cover_emoji}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 3 }}>
+                        Walking together
+                      </div>
+                      <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.2 }}>
+                        {featuredWalk.title}
+                      </div>
+                      {featuredWalk.subtitle && (
+                        <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.4, marginTop: 3 }}>
+                          {featuredWalk.subtitle}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 20, color: T.goldDark, flexShrink: 0 }}>→</div>
+                  </button>
+                )}
 
                 {/* ── Sermon status card — only when a sermon exists ─────── */}
                 {isPastor && latestSermon && (
