@@ -1186,19 +1186,19 @@ export default function ChurchPage({
                 )}
               </div>
             ) : (
-              <div style={{
-                background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, overflow: 'hidden',
-              }}>
-                {churchPrayers.map((p, i) => (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {churchPrayers.map((p) => (
                   <div key={p.id} style={{
-                    padding: '14px 18px',
-                    borderBottom: i < churchPrayers.length - 1 ? `1px solid ${T.line}` : 'none',
+                    background: T.parchment,
+                    border: `1px solid rgba(26,17,8,0.10)`,
+                    borderRadius: 14,
+                    padding: '16px 18px',
                     display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14,
                   }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: T.goldDark, marginBottom: 4 }}>{p.name}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: T.goldDark, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>{p.name}</div>
                       <div style={{
-                        fontSize: 14.5, color: T.ink, lineHeight: 1.6, fontFamily: T.serif,
+                        fontSize: 15, color: T.ink, lineHeight: 1.65, fontFamily: T.serif,
                         fontVariationSettings: '"opsz" 18',
                       }}>{p.body}</div>
                     </div>
@@ -1210,12 +1210,12 @@ export default function ChurchPage({
                       }}
                       style={{
                         flexShrink: 0, marginTop: 2,
-                        border: `1px solid ${prayedIds.has(p.id) ? T.goldDark : T.line}`,
-                        background: prayedIds.has(p.id) ? 'rgba(184,115,58,0.08)' : 'transparent',
-                        borderRadius: 999, padding: '6px 14px', fontSize: 13, fontWeight: 600,
+                        border: `1px solid ${prayedIds.has(p.id) ? T.goldDark : 'rgba(26,17,8,0.15)'}`,
+                        background: prayedIds.has(p.id) ? 'rgba(184,115,58,0.10)' : T.white,
+                        borderRadius: 999, padding: '7px 16px', fontSize: 13, fontWeight: 600,
                         color: prayedIds.has(p.id) ? T.goldDark : T.inkSoft,
                         cursor: prayedIds.has(p.id) ? 'default' : 'pointer',
-                        transition: 'border-color 0.15s, background 0.15s',
+                        transition: 'border-color 0.15s, background 0.15s, color 0.15s',
                       }}
                     >
                       {prayedIds.has(p.id) ? '🙏 Prayed' : '🙏 Pray'}
