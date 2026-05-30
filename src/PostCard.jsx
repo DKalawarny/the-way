@@ -1092,17 +1092,58 @@ export default function PostCard({
         </div>
       )}
 
-      {/* Reactions + comments row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingTop: 8, borderTop: `1px solid ${T.line}`, flexWrap: 'wrap' }}>
-        {isPostLike && REACTIONS.map((r) => (
-          <ReactionButton
-            key={r.id}
-            kind={r}
-            count={reactions[r.id] ?? 0}
-            mine={!!mine[r.id]}
-            onToggle={() => toggleReaction(r.id)}
-          />
-        ))}
+      {/* FB-style stats summary — only shown when there's something to display */}
+      {isPostLike && (Object.values(reactions).some(c => c > 0) || localCommentCount > 0 || viewCount > 0) && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 0 6px', fontSize: 12.5, color: T.inkMuted }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+            {REACTIONS
+              .filter(r => (reactions[r.id] ?? 0) > 0)
+              .sort((a, b) => (reactions[b.id] ?? 0) - (reactions[a.id] ?? 0))
+              .slice(0, 3)
+              .map(r => r.emoji
+                ? <span key={r.id} style={{ fontSize: 14 }}>{r.emoji}</span>
+                : <r.Icon key={r.id} size={13} fill={T.inkMuted} stroke="none" color={T.inkMuted} />
+              )}
+            {(() => { const tot = Object.values(reactions).reduce((a, b) => a + b, 0); return tot > 0 ? <span style={{ marginLeft: 2 }}>{tot}</span> : null; })()}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {localCommentCount > 0 && (
+              <button onClick={() => setCommentsOpen(true)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 12.5, cursor: 'pointer', padding: 0 }}>
+                {localCommentCount} {localCommentCount === 1 ? 'comment' : 'comments'}
+              </button>
+            )}
+            {viewCount > 0 && <span>{viewCount.toLocaleString()} {viewCount === 1 ? 'view' : 'views'}</span>}
+          </div>
+        </div>
+      )}
+
+      {/* Action bar — single row, FB-style: icon-only reactions left, Comment + Save right */}
+      <div style={{ display: 'flex', alignItems: 'center', borderTop: `1px solid ${T.line}`, paddingTop: 4, gap: 0 }}>
+        {isPostLike && REACTIONS.map((r) => {
+          const count = reactions[r.id] ?? 0;
+          const isMine = !!mine[r.id];
+          return (
+            <button
+              key={r.id}
+              onClick={() => toggleReaction(r.id)}
+              title={r.label}
+              style={{
+                background: 'none', border: 'none',
+                color: isMine ? T.goldDark : T.inkSoft,
+                cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 3,
+                padding: '8px 7px', borderRadius: 8, fontFamily: T.sans,
+                transition: 'color 0.15s',
+              }}
+              onMouseEnter={(e) => { if (!isMine) e.currentTarget.style.color = T.ink; }}
+              onMouseLeave={(e) => { if (!isMine) e.currentTarget.style.color = T.inkSoft; }}
+            >
+              {r.Icon
+                ? <r.Icon size={17} strokeWidth={isMine ? 0 : 1.75} fill={isMine ? T.goldDark : 'none'} />
+                : <span style={{ fontSize: 17, lineHeight: 1 }}>{r.emoji}</span>}
+              {count > 0 && <span style={{ fontSize: 11, fontWeight: 600 }}>{count}</span>}
+            </button>
+          );
+        })}
         {item.source === 'prayer' && (
           <span style={{
             background: 'rgba(122,149,104,0.18)', color: '#3F5635',
@@ -1111,28 +1152,30 @@ export default function PostCard({
             🙏 {item.body?.prayer_count ?? 0} praying
           </span>
         )}
-        {isPostLike && viewCount > 0 && (
-          <span style={{ fontSize: 11.5, color: T.inkMuted, marginLeft: 2 }}>
-            {viewCount.toLocaleString()} {viewCount === 1 ? 'view' : 'views'}
-          </span>
-        )}
+
         <div style={{ flex: 1 }} />
+
+        {/* Comment */}
         {isPostLike && (
           <button
             onClick={() => setCommentsOpen((v) => !v)}
             style={{
               background: 'none', border: 'none',
               color: commentsOpen ? T.goldDark : T.inkSoft,
-              fontSize: 13, cursor: 'pointer', padding: '6px 8px',
+              fontSize: 13, cursor: 'pointer', padding: '8px 8px',
               display: 'inline-flex', alignItems: 'center', gap: 5,
               transition: 'color 0.15s', fontFamily: T.sans,
+              fontWeight: commentsOpen ? 600 : 400,
             }}
             onMouseEnter={(e) => { if (!commentsOpen) e.currentTarget.style.color = T.ink; }}
             onMouseLeave={(e) => { if (!commentsOpen) e.currentTarget.style.color = T.inkSoft; }}
           >
-            💬 Comment{localCommentCount > 0 ? <span style={{ marginLeft: 3, opacity: 0.75 }}>{localCommentCount}</span> : null}
+            <span style={{ fontSize: 16 }}>💬</span>
+            <span>{localCommentCount > 0 ? localCommentCount : 'Comment'}</span>
           </button>
         )}
+
+        {/* Save */}
         {isPostLike && onSaveToggle && !!sessionUserId && (
           <button
             onClick={() => onSaveToggle(item.id, isSaved)}
@@ -1140,14 +1183,14 @@ export default function PostCard({
             style={{
               background: 'none', border: 'none',
               color: isSaved ? T.goldDark : T.inkMuted,
-              cursor: 'pointer', padding: '6px 8px',
+              cursor: 'pointer', padding: '8px 8px',
               display: 'flex', alignItems: 'center',
               transition: 'color 0.15s',
             }}
             onMouseEnter={(e) => { if (!isSaved) e.currentTarget.style.color = T.ink; }}
             onMouseLeave={(e) => { if (!isSaved) e.currentTarget.style.color = T.inkMuted; }}
           >
-            <Bookmark size={15} strokeWidth={2} fill={isSaved ? T.goldDark : 'none'} />
+            <Bookmark size={16} strokeWidth={2} fill={isSaved ? T.goldDark : 'none'} />
           </button>
         )}
       </div>
