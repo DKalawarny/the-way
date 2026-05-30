@@ -41,6 +41,20 @@ function NotificationRow({ n, onClick, onFriendAction }) {
 
   const [friendState, setFriendState] = useState(null); // null | 'busy' | 'accepted' | 'declined'
 
+  // On mount, check if this request was already actioned (e.g. accepted in Find Friends tab)
+  useEffect(() => {
+    if (!isFriendReq || !n.target_id) return;
+    supabase
+      .from('friend_requests')
+      .select('status')
+      .eq('id', n.target_id)
+      .single()
+      .then(({ data }) => {
+        if (data?.status === 'accepted') setFriendState('accepted');
+        else if (data?.status === 'declined') setFriendState('declined');
+      });
+  }, [n.target_id, isFriendReq]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function handleFriend(e, action) {
     e.stopPropagation();
     setFriendState('busy');
