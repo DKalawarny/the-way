@@ -93,10 +93,8 @@ Comments open as a fixed overlay modal (zIndex: 400) with backdrop click to clos
 `App.jsx` has `openCommentPostId` state. When a notification with `target_type='post'` or `type='post_comment'` is tapped, it sets `openCommentPostId = n.target_id` and navigates to feed. This is threaded through to `Community.jsx` and `Feed.jsx` as the `openCommentPostId` prop, then to each `PostCard` as `defaultCommentsOpen={openCommentPostId === item.id}`. Do not break this chain.
 
 ### 16. Reaction + comment counts (PostCard.jsx — ADDED 2026-05-26)
-Reaction buttons show label AND count side by side. Comment button shows count next to the 💬 label. Do not hide counts or remove the label — both must show.
-```jsx
-<span>{kind.label}{count > 0 ? <span style={{ marginLeft: 3, opacity: 0.75 }}>{count}</span> : null}</span>
-```
+PostCard.jsx action bar (UPDATED 2026-05-29): **icon-only reactions** — no text label on reaction buttons. Count badge appears next to the icon only when > 0. `title` attribute = label (tooltip). Comment button shows count when > 0, "Comment" text when 0. All on one row, no flexWrap.
+Stats summary line above the border: `🙏❤️ N · M comments · K views` — small gray, only renders when there's data.
 
 ### 17. Church search shows ALL public churches (FIXED 2026-05-26)
 `ChurchDirectory.jsx` no longer filters by `verification_status = 'verified'`. All `is_public=true` churches appear in search regardless of verification status. Do not re-add the verified filter.
