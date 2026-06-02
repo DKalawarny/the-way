@@ -50,6 +50,12 @@ export const PERSON_TYPES = [
     label: 'For Kids',
     description: 'Simple words, fun examples. Explain it like I\'m a child.',
   },
+  {
+    id: 'relationships',
+    emoji: '💛',
+    label: 'Relationships',
+    description: 'Dating, marriage, family, forgiveness — through a faith lens.',
+  },
 ];
 
 export const INTAKE_QUESTIONS = {
@@ -207,6 +213,13 @@ export const STARTERS = {
     'What is the Bible about?',
     'Why is Jesus so important?',
   ],
+  relationships: [
+    'How do I forgive someone who hasn\'t apologized?',
+    'What does the Bible actually say about dating?',
+    'I\'m struggling in my marriage — what does faith say?',
+    'How do I honour my parents when they\'ve hurt me?',
+    'I\'m lonely. What does faith say about that?',
+  ],
 };
 
 export const DEEPER_STARTERS = {
@@ -279,6 +292,13 @@ export const DEEPER_STARTERS = {
     'How did Jesus feed thousands of people with just a little food?',
     'What does it mean that God loves everyone?',
     "Why did the disciples leave everything to follow Jesus?",
+  ],
+  relationships: [
+    "What does the Bible actually say about divorce — and where does grace fit?",
+    "What does Paul mean by 'submit to one another' in Ephesians 5?",
+    "What does it look like to honour parents who were harmful?",
+    "How do Christian theology and psychology think differently about forgiveness?",
+    "What does scripture say about loneliness and singleness honestly?",
   ],
 };
 
