@@ -469,7 +469,7 @@ const PLAN_LABELS = {
   church_pro:    { label: 'Church Pro', color: '#4a1542'  },
 };
 
-function PlanCard({ plan, aiUsage, session }) {
+function PlanCard({ plan, aiUsage, session, onUpgrade }) {
   const meta      = PLAN_LABELS[plan] ?? PLAN_LABELS.free;
   const cfg       = PLAN_LIMITS[plan]  ?? PLAN_LIMITS.free;
   const pct       = cfg.limit > 0 ? Math.min(100, Math.round((aiUsage.used / (cfg.limit + aiUsage.topup)) * 100)) : 0;
@@ -542,12 +542,12 @@ function PlanCard({ plan, aiUsage, session }) {
             {openingPortal ? 'Opening…' : 'Manage subscription'}
           </button>
         ) : (
-          <a
-            href="/?upgrade=1"
-            style={{ fontSize: 12, fontWeight: 600, color: T.goldDark, textDecoration: 'none' }}
+          <button
+            onClick={() => onUpgrade?.()}
+            style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, fontWeight: 600, color: T.goldDark, cursor: 'pointer' }}
           >
             Upgrade →
-          </a>
+          </button>
         )}
       </div>
 
@@ -582,7 +582,7 @@ function PlanCard({ plan, aiUsage, session }) {
   );
 }
 
-function PlanLine({ plan, aiUsage, session }) {
+function PlanLine({ plan, aiUsage, session, onUpgrade }) {
   const meta  = PLAN_LABELS[plan] ?? PLAN_LABELS.free;
   const cfg   = PLAN_LIMITS[plan]  ?? PLAN_LIMITS.free;
   const used  = aiUsage.used ?? 0;
@@ -619,7 +619,7 @@ function PlanLine({ plan, aiUsage, session }) {
         <span style={{ color: meta.color, fontWeight: 600 }}>{meta.label}</span>
         <span>·</span>
         {plan === 'free' ? (
-          <a href="/?upgrade=1" style={{ color: T.goldDark, fontWeight: 600, textDecoration: 'none' }}>Upgrade →</a>
+          <button onClick={() => onUpgrade?.()} style={{ background: 'none', border: 'none', padding: 0, color: T.goldDark, fontWeight: 600, cursor: 'pointer', fontSize: 12.5 }}>Upgrade →</button>
         ) : (
           <button onClick={openPortal} disabled={opening} style={{ background: 'none', border: 'none', padding: 0, color: T.goldDark, fontWeight: 600, cursor: 'pointer', fontSize: 12.5 }}>
             {opening ? 'Opening…' : 'Manage →'}
@@ -633,7 +633,7 @@ function PlanLine({ plan, aiUsage, session }) {
   );
 }
 
-export default function MePanel({ session, profile, onClose, onEditProfile, onSignOut, onDeleteAccount, onOpenBoard, onOpenHistory, onProfileUpdate, onOpenChat, onViewProfile, onFindPeople, onInviteFriends, onFindChurches, onApplyAsPastor, onOpenPastorAdminQueue, onOpenChurchDisputesQueue, onOpenChurch, onOpenSermon, onOpenWalks, onOpenTalkToSomeone, onOpenCareInbox, onOpenMessages, onOpenConnect, onOpenPastorDashboard, hasCareTeamRole, hasPastoredChurch }) {
+export default function MePanel({ session, profile, onClose, onEditProfile, onSignOut, onDeleteAccount, onOpenBoard, onOpenHistory, onProfileUpdate, onOpenChat, onViewProfile, onFindPeople, onInviteFriends, onFindChurches, onApplyAsPastor, onOpenPastorAdminQueue, onOpenChurchDisputesQueue, onOpenChurch, onOpenSermon, onOpenWalks, onOpenTalkToSomeone, onOpenCareInbox, onOpenMessages, onOpenConnect, onOpenPastorDashboard, hasCareTeamRole, hasPastoredChurch, onUpgrade }) {
   const [posts, setPosts] = useState([]);
   const [stats, setStats] = useState({ posts: 0, following: 0, followers: 0 });
   const [followingList, setFollowingList] = useState([]);
@@ -1251,8 +1251,10 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
         </div>
 
 
-        {/* ── Plan & AI usage — hidden until Stripe upgrade flow is live ──── */}
-        {/* <PlanLine plan={profile?.plan ?? 'free'} aiUsage={aiUsage} session={session} /> */}
+        {/* ── Plan & AI usage ──── */}
+        <div style={{ padding: '10px 20px 4px' }}>
+          <PlanLine plan={profile?.plan ?? 'free'} aiUsage={aiUsage} session={session} onUpgrade={onUpgrade} />
+        </div>
 
         {/* Tabs — 4 tabs, gold accent, hairline anchor */}
         <div style={{

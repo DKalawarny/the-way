@@ -144,6 +144,7 @@ const CareConversation  = lazy(() => import('./CareConversation.jsx'));
 const Chat              = lazy(() => import('./Chat.jsx'));
 const AdminPage         = lazy(() => import('./AdminPage.jsx'));
 const HelpPage          = lazy(() => import('./HelpPage.jsx'));
+const UpgradeModal      = lazy(() => import('./UpgradeModal.jsx'));
 import { getJourneyProgress, advanceJourneyProgress } from './journeys.js';
 import FeatureTour, { isTourDone } from './FeatureTour.jsx';
 import CoachMark, { incrementLoginCount } from './CoachMark.jsx';
@@ -1662,6 +1663,7 @@ export default function App() {
   const [initialAnonChurchId] = useState(() => new URLSearchParams(window.location.search).get('anon'));
   const [initialJoinCode, setInitialJoinCode] = useState(() => new URLSearchParams(window.location.search).get('join'));
   const [stripeSuccess] = useState(() => new URLSearchParams(window.location.search).get('stripe_success') === '1');
+  const [showUpgrade, setShowUpgrade] = useState(() => new URLSearchParams(window.location.search).get('upgrade') === '1');
   const [joinResult, setJoinResult] = useState(null); // { ok: bool, message: string, churchName? }
   const [careTeamRecord, setCareTeamRecord] = useState(null);
   const [pastorChurchId, setPastorChurchId] = useState(null);
@@ -2722,6 +2724,7 @@ export default function App() {
           onOpenPastorDashboard={pastorChurchId ? () => setStage('church-admin') : undefined}
           hasCareTeamRole={!!careTeamRecord}
           hasPastoredChurch={!!pastorChurchId}
+          onUpgrade={() => setShowUpgrade(true)}
         />
       )}
       {stage === 'read' && session && (
@@ -3295,6 +3298,13 @@ export default function App() {
             }
           }}
         />
+      )}
+
+      {/* ── Upgrade modal ── */}
+      {showUpgrade && session && (
+        <Suspense fallback={null}>
+          <UpgradeModal session={session} onClose={() => setShowUpgrade(false)} />
+        </Suspense>
       )}
 
       {/* ── Feature tour — shown once to new users, re-openable from Help ── */}
