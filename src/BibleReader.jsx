@@ -988,13 +988,26 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
 
   const getSystemPrompt = useCallback(() => {
     const passage = verses.map((v) => `[${v.number}] ${v.text}`).join('\n');
+    const LANG_NAMES = {
+      es: 'Spanish', fr: 'French', pt: 'Portuguese', de: 'German',
+      it: 'Italian', pl: 'Polish', ro: 'Romanian', nl: 'Dutch',
+      ru: 'Russian', uk: 'Ukrainian', ja: 'Japanese', ko: 'Korean',
+      zh: 'Simplified Chinese (Mandarin)', 'zh-TW': 'Traditional Chinese (Mandarin)',
+      yue: 'Cantonese', hi: 'Hindi', id: 'Indonesian', tl: 'Tagalog',
+      vi: 'Vietnamese', ar: 'Arabic', am: 'Amharic', sw: 'Swahili',
+      yo: 'Yorùbá', ig: 'Igbo', ha: 'Hausa',
+    };
+    const lang = profile?.preferred_language ?? 'en';
+    const langInstruction = lang !== 'en'
+      ? `\n\nRespond in ${LANG_NAMES[lang] ?? lang}. Use the script and conventions native speakers expect.`
+      : '';
     return `You are a Bible reading companion. The reader is in ${book.name} chapter ${chNum} (${VERSIONS.find((v) => v.id === bibleId)?.abbr ?? 'KJV'}).
 
 Passage:
 ${passage}
 
-Answer questions about this passage clearly and honestly. Offer plain-language explanations, historical context, cross-references, and original language insights when relevant. Keep answers readable on a phone screen — short paragraphs, no walls of text. Don't be preachy.`;
-  }, [verses, book, chNum, bibleId]);
+Answer questions about this passage clearly and honestly. Offer plain-language explanations, historical context, cross-references, and original language insights when relevant. Keep answers readable on a phone screen — short paragraphs, no walls of text. Don't be preachy.${langInstruction}`;
+  }, [verses, book, chNum, bibleId, profile?.preferred_language]);
 
   async function sendChat(text) {
     const prompt = (text ?? chatInput).trim();
