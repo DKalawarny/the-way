@@ -920,7 +920,17 @@ export default function Chat({
   const system = useMemo(() => {
     const base = getSystemPrompt(personType, seekingContext, totalMessages);
     const lang = preferredLanguage ?? 'en';
-    return lang !== 'en' ? `${base}\n\nRespond in the user's preferred language: ${lang}.` : base;
+    const LANG_NAMES = {
+      es: 'Spanish', fr: 'French', pt: 'Portuguese', de: 'German',
+      it: 'Italian', pl: 'Polish', ro: 'Romanian', nl: 'Dutch',
+      ru: 'Russian', uk: 'Ukrainian', ja: 'Japanese', ko: 'Korean',
+      zh: 'Simplified Chinese (Mandarin)', 'zh-TW': 'Traditional Chinese (Mandarin)',
+      yue: 'Cantonese', hi: 'Hindi', id: 'Indonesian', tl: 'Tagalog',
+      vi: 'Vietnamese', ar: 'Arabic', am: 'Amharic', sw: 'Swahili',
+      yo: 'Yorùbá', ig: 'Igbo', ha: 'Hausa',
+    };
+    const langName = LANG_NAMES[lang] ?? lang;
+    return lang !== 'en' ? `${base}\n\nRespond in ${langName}. Use the script and conventions native speakers expect.` : base;
   }, [personType, seekingContext, totalMessages, preferredLanguage]);
   const starters = useMemo(() => {
     const base = getStarters(personType, conversations ?? []);

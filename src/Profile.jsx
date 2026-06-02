@@ -130,7 +130,9 @@ const LANGUAGES = [
   // Asia & Pacific
   { code: 'ja', label: 'Japanese',   native: '日本語' },
   { code: 'ko', label: 'Korean',     native: '한국어' },
-  { code: 'zh', label: 'Chinese',    native: '中文' },
+  { code: 'zh',    label: 'Chinese (Simplified)', native: '中文 (简体)' },
+  { code: 'zh-TW', label: 'Chinese (Traditional)', native: '中文 (繁體)' },
+  { code: 'yue',   label: 'Cantonese',             native: '廣東話' },
   { code: 'hi', label: 'Hindi',      native: 'हिन्दी' },
   { code: 'id', label: 'Indonesian', native: 'Bahasa Indonesia' },
   { code: 'tl', label: 'Tagalog',    native: 'Tagalog' },
