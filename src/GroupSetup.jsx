@@ -82,12 +82,11 @@ export default function GroupSetup({ session, onJoined, onClose }) {
     });
 
     try {
-      const { data: { session: authSession } } = await supabase.auth.getSession();
       const res = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authSession.access_token}` },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
           body: JSON.stringify({
             price_plan: selectedPlan,
             user_id: session.user.id,

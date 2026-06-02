@@ -2020,13 +2020,20 @@ export default function App() {
 
   // ?stripe_success=1 — poll for profile update after returning from Stripe.
   // Webhook can take 2-8s to process; try at 2s, 5s, and 10s.
+  // If the plan is a church plan, navigate to groups so the user sees their group.
   useEffect(() => {
     if (!stripeSuccess || !session?.user?.id) return;
     window.history.replaceState({}, '', window.location.pathname);
     const uid = session.user.id;
+    const checkAndNavigate = async () => {
+      await loadProfile(uid);
+      // If user has a group, send them there
+      const { data } = await supabase.from('group_members').select('role, church_groups(*)').eq('member_id', uid).limit(1).maybeSingle();
+      if (data?.church_groups) setStage('groups');
+    };
     const t1 = setTimeout(() => loadProfile(uid), 2000);
     const t2 = setTimeout(() => loadProfile(uid), 5000);
-    const t3 = setTimeout(() => loadProfile(uid), 10000);
+    const t3 = setTimeout(checkAndNavigate, 10000);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [stripeSuccess, session?.user?.id]);
 
