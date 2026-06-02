@@ -1727,13 +1727,10 @@ export default function App() {
   const effectiveChurchId = pastorChurchId || (profile?.church_id ?? null);
   const churchPlan = useChurchPlanReadOnly(effectiveChurchId);
 
-  // Set <html lang> so browsers offer native auto-translate.
-  // Falls back to the browser locale when the user has no saved preference.
-  useEffect(() => {
-    const lang = profile?.preferred_language
-      ?? (navigator.language?.split('-')[0] ?? 'en');
-    document.documentElement.lang = lang;
-  }, [profile?.preferred_language]);
+  // UI is in English — always keep <html lang="en"> so browsers correctly
+  // detect the page language and offer their native auto-translate to users
+  // whose browser is in another language. The AI preferred_language is separate.
+  useEffect(() => { document.documentElement.lang = 'en'; }, []);
 
   // On first profile load: if the user still has the default 'en' but their
   // browser is in another language, silently adopt the browser language so AI

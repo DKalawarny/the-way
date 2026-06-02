@@ -115,14 +115,30 @@ function Toggle({ checked, onChange, label }) {
 
 // ── iPhone-style first-time wizard ───────────────────────────────────────────
 const LANGUAGES = [
+  // European
   { code: 'en', label: 'English',    native: 'English' },
   { code: 'es', label: 'Spanish',    native: 'Español' },
   { code: 'fr', label: 'French',     native: 'Français' },
   { code: 'pt', label: 'Portuguese', native: 'Português' },
   { code: 'de', label: 'German',     native: 'Deutsch' },
+  { code: 'it', label: 'Italian',    native: 'Italiano' },
+  { code: 'pl', label: 'Polish',     native: 'Polski' },
+  { code: 'ro', label: 'Romanian',   native: 'Română' },
+  { code: 'nl', label: 'Dutch',      native: 'Nederlands' },
+  { code: 'ru', label: 'Russian',    native: 'Русский' },
+  { code: 'uk', label: 'Ukrainian',  native: 'Українська' },
+  // Asia & Pacific
+  { code: 'ja', label: 'Japanese',   native: '日本語' },
   { code: 'ko', label: 'Korean',     native: '한국어' },
   { code: 'zh', label: 'Chinese',    native: '中文' },
   { code: 'hi', label: 'Hindi',      native: 'हिन्दी' },
+  { code: 'id', label: 'Indonesian', native: 'Bahasa Indonesia' },
+  { code: 'tl', label: 'Tagalog',    native: 'Tagalog' },
+  { code: 'vi', label: 'Vietnamese', native: 'Tiếng Việt' },
+  // Middle East
+  { code: 'ar', label: 'Arabic',     native: 'العربية' },
+  // Africa
+  { code: 'am', label: 'Amharic',    native: 'አማርኛ' },
   { code: 'sw', label: 'Swahili',    native: 'Kiswahili' },
   { code: 'yo', label: 'Yorùbá',     native: 'Yorùbá' },
   { code: 'ig', label: 'Igbo',       native: 'Igbo' },
