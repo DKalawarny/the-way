@@ -211,57 +211,82 @@ export default function CareConversation({ session, profile, conversationId, vie
   const closed = conversation.status === 'closed';
 
   return (
-    <div style={{ height: '100vh', background: T.cream, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div style={{ height: '100%', background: T.cream, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {uikitUi}
       {/* Top bar */}
       <header style={{
-        padding: '0 16px', height: 60, background: T.white,
+        padding: '0 14px', height: 58, background: T.white,
         borderBottom: `1px solid ${T.line}`,
-        display: 'flex', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10, gap: 10,
+        display: 'flex', alignItems: 'center', gap: 10,
+        flexShrink: 0,
       }}>
+        {/* Back button */}
         <button onClick={onBack} style={{
-          background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: '6px 4px',
-        }}>← Back</button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-          {viewerRole === 'requester' && otherProfile && (
-            <Avatar name={otherProfile.display_name} avatarConfig={otherProfile.avatar_config} photoUrl={otherProfile.avatar_url} size={32} />
-          )}
-          {viewerRole !== 'requester' && conversation.is_anonymous && (
-            <div style={{
-              width: 32, height: 32, borderRadius: '50%', background: T.parchment,
-              border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: T.goldDark, fontSize: 14,
-            }}>?</div>
-          )}
-          {viewerRole !== 'requester' && !conversation.is_anonymous && otherProfile && (
-            <Avatar name={otherProfile.display_name} avatarConfig={otherProfile.avatar_config} photoUrl={otherProfile.avatar_url} size={32} />
-          )}
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink, lineHeight: 1.2 }}>{headingName}</div>
-            {headingSubtitle && (
-              <div style={{ fontSize: 11.5, color: T.inkMuted, lineHeight: 1.2 }}>{headingSubtitle}</div>
-            )}
+          width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+          background: T.cream, border: `1px solid ${T.line}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', padding: 0,
+        }}>
+          <svg width="7" height="12" viewBox="0 0 7 12" fill="none">
+            <path d="M6 1L1 6l5 5" stroke={T.ink} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+
+        {/* Avatar */}
+        {viewerRole === 'requester' && otherProfile && (
+          <Avatar name={otherProfile.display_name} avatarConfig={otherProfile.avatar_config} photoUrl={otherProfile.avatar_url} size={34} />
+        )}
+        {viewerRole !== 'requester' && conversation.is_anonymous && (
+          <div style={{
+            width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+            background: T.parchment, border: `1px solid ${T.line}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: T.goldDark, fontSize: 16, fontFamily: T.serif,
+          }}>?</div>
+        )}
+        {viewerRole !== 'requester' && !conversation.is_anonymous && otherProfile && (
+          <Avatar name={otherProfile.display_name} avatarConfig={otherProfile.avatar_config} photoUrl={otherProfile.avatar_url} size={34} />
+        )}
+
+        {/* Name + topic */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 650, fontSize: 15, color: T.ink, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {headingName}
           </div>
+          {headingSubtitle && (
+            <div style={{ fontSize: 11.5, color: T.inkMuted, lineHeight: 1.2 }}>{headingSubtitle}</div>
+          )}
         </div>
+
+        {/* Close conversation (pastor only) */}
         {viewerRole === 'care_member' && !closed && conversation.care_member_id === session?.user?.id && (
           <button onClick={handleClose} style={{
             background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
-            padding: '6px 12px', fontSize: 12, color: T.inkMuted, cursor: 'pointer',
-          }}>Close</button>
+            padding: '5px 12px', fontSize: 11.5, fontWeight: 500, color: T.inkMuted,
+            cursor: 'pointer', flexShrink: 0, letterSpacing: '0.01em',
+          }}>Close chat</button>
         )}
       </header>
 
       {/* Body */}
       <div ref={scrollRef} className="scroll" style={{
-        flex: 1, minHeight: 0, overflowY: 'auto', padding: '20px 16px',
+        flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 16px 8px',
       }}>
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
-          {/* Privacy reminder for both sides */}
-          <div style={{
-            fontSize: 12, color: T.inkMuted, textAlign: 'center', fontStyle: 'italic',
-            padding: '0 0 14px', lineHeight: 1.6,
-          }}>
-            Private conversation. Only the two of you can see it. Your pastor cannot read this.
+          {/* Privacy pill */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              background: T.parchment, border: `1px solid rgba(184,115,58,0.18)`,
+              borderRadius: 999, padding: '5px 12px',
+              fontSize: 11.5, color: T.inkMuted, lineHeight: 1,
+            }}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}>
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              Private — only the two of you can see this
+            </div>
           </div>
 
           {/* Unclaimed claim card (for care team viewing routed-to-anyone) */}
@@ -321,14 +346,14 @@ export default function CareConversation({ session, profile, conversationId, vie
         </div>
       </div>
 
-      {/* Composer — sits above the fixed bottom nav (62px) */}
+      {/* Composer */}
       {!closed && !isUnclaimed && (
         <div style={{
           borderTop: `1px solid ${T.line}`,
           padding: '12px 16px',
           paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
           background: T.white,
-          marginBottom: 62,
+          flexShrink: 0,
         }}>
           <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
             <textarea

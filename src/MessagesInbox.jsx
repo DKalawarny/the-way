@@ -69,11 +69,9 @@ function DeleteConfirmModal({ name, onConfirm, onCancel }) {
 
 function ThreadRow({ name, avatarConfig, photoUrl, subtitle, subtitleColor, lastBody, ts, onOpen, accent, active, onDelete, onMarkUnread, unread }) {
   const [hovered, setHovered] = useState(false);
-  // How many action buttons are on the right (delete + mark-unread)
-  const actionCount = (onDelete ? 1 : 0) + (onMarkUnread ? 1 : 0);
   return (
     <div
-      style={{ position: 'relative', marginBottom: 8 }}
+      style={{ position: 'relative', marginBottom: 6 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -81,97 +79,105 @@ function ThreadRow({ name, avatarConfig, photoUrl, subtitle, subtitleColor, last
         onClick={onOpen}
         style={{
           display: 'block', width: '100%', textAlign: 'left',
-          background: active ? `${T.gold}1A` : unread ? `rgba(184,115,58,0.08)` : accent ? T.parchment : T.white,
-          border: active ? `1px solid ${T.gold}66` : unread ? `1px solid rgba(184,115,58,0.35)` : accent ? `1px solid ${T.gold}88` : `1px solid ${T.line}`,
-          borderRadius: 14,
-          padding: '12px 14px',
-          paddingRight: actionCount > 0 ? (actionCount * 36 + 14) : 14,
+          background: active ? `rgba(184,115,58,0.10)` : unread ? `rgba(184,115,58,0.05)` : accent ? T.parchment : T.white,
+          border: 'none',
+          borderLeft: unread ? `3px solid ${T.goldDark}` : active ? `3px solid ${T.gold}` : '3px solid transparent',
+          borderRadius: 12,
+          padding: '11px 14px 11px 13px',
           cursor: 'pointer',
-          boxShadow: accent && !active ? `0 0 0 3px ${T.gold}14` : 'none',
-          transition: 'background 0.12s, border-color 0.12s',
+          outline: 'none',
+          transition: 'background 0.12s',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: lastBody ? 5 : 0 }}>
-          {name ? (
-            <Avatar name={name} avatarConfig={avatarConfig} photoUrl={photoUrl} size={36} />
-          ) : (
-            <div style={{
-              width: 36, height: 36, borderRadius: '50%', background: T.parchment,
-              border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}><KinwoveStar size={16} color={T.goldDark} /></div>
-          )}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: unread ? 700 : 600, fontSize: 13.5, color: T.ink, marginBottom: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {name ?? 'Someone from your church'}
-            </div>
-            <div style={{ fontSize: 11.5, color: subtitleColor ?? T.inkMuted }}>
-              {subtitle}{ts && <> · {timeAgo(ts)}</>}
-            </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Avatar */}
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            {name ? (
+              <Avatar name={name} avatarConfig={avatarConfig} photoUrl={photoUrl} size={38} />
+            ) : (
+              <div style={{
+                width: 38, height: 38, borderRadius: '50%', background: T.parchment,
+                border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}><KinwoveStar size={16} color={T.goldDark} /></div>
+            )}
+            {/* Unread dot anchored to avatar */}
+            {unread && (
+              <div style={{
+                position: 'absolute', bottom: 0, right: -1,
+                width: 10, height: 10, borderRadius: '50%',
+                background: T.goldDark, border: `2px solid ${T.white}`,
+              }} />
+            )}
           </div>
-          {unread && (
-            <div style={{ width: 9, height: 9, borderRadius: '50%', background: T.goldDark, flexShrink: 0 }} />
-          )}
-          {!unread && <span style={{ color: T.inkMuted, fontSize: 13 }}>›</span>}
+
+          {/* Text */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6, marginBottom: 2 }}>
+              <div style={{ fontWeight: unread ? 700 : 600, fontSize: 13.5, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {name ?? 'Someone from your church'}
+              </div>
+              {ts && <div style={{ fontSize: 11, color: T.inkMuted, flexShrink: 0, whiteSpace: 'nowrap' }}>{timeAgo(ts)}</div>}
+            </div>
+            <div style={{ fontSize: 11.5, color: subtitleColor ?? T.inkMuted, marginBottom: lastBody ? 3 : 0 }}>
+              {subtitle}
+            </div>
+            {lastBody && (
+              <div style={{
+                fontSize: 12.5, color: unread ? T.inkSoft : T.inkMuted,
+                fontWeight: unread ? 500 : 400,
+                lineHeight: 1.4, fontFamily: T.serif, fontStyle: 'italic',
+                overflow: 'hidden', textOverflow: 'ellipsis',
+                display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
+              }}>{lastBody}</div>
+            )}
+          </div>
+
+          {/* Chevron — always present, just dimmer when read */}
+          <svg width="7" height="12" viewBox="0 0 7 12" fill="none" style={{ flexShrink: 0, opacity: active ? 0.7 : 0.3 }}>
+            <path d="M1 1l5 5-5 5" stroke={T.ink} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </div>
-        {lastBody && (
-          <div style={{
-            fontSize: 12.5, color: T.inkSoft, lineHeight: 1.45, fontFamily: T.serif, fontStyle: 'italic',
-            overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box',
-            WebkitLineClamp: 1, WebkitBoxOrient: 'vertical',
-            paddingLeft: 46,
-          }}>{lastBody}</div>
-        )}
       </button>
 
-      {/* Action buttons: mark-unread (dot) + delete (×), revealed on hover */}
-      <div style={{
-        position: 'absolute', top: '50%', right: 6,
-        transform: 'translateY(-50%)',
-        display: 'flex', alignItems: 'center', gap: 2,
-        opacity: hovered ? 1 : 0,
-        transition: 'opacity 0.15s',
-        pointerEvents: hovered ? 'auto' : 'none',
-      }}>
-        {onMarkUnread && !unread && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onMarkUnread(); }}
-            title="Mark as unread"
-            style={{
-              width: 28, height: 28,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'transparent', border: 'none',
-              borderRadius: 8, cursor: 'pointer',
-              color: T.goldDark,
-              transition: 'background 0.12s',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = `rgba(184,115,58,0.12)`; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-          >
-            {/* Filled dot = "mark unread" */}
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <circle cx="7" cy="7" r="4.5" fill={T.goldDark} />
-              <circle cx="7" cy="7" r="6" stroke={T.goldDark} strokeWidth="1.2" fill="none" />
-            </svg>
-          </button>
-        )}
-        {onDelete && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            title="Delete conversation"
-            style={{
-              width: 28, height: 28,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'transparent', border: 'none',
-              borderRadius: 8, cursor: 'pointer',
-              color: T.inkMuted, fontSize: 17, lineHeight: 1,
-              transition: 'background 0.12s, color 0.12s',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(192,57,43,0.12)'; e.currentTarget.style.color = '#c0392b'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.inkMuted; }}
-          >×</button>
-        )}
-      </div>
+      {/* Hover actions: mark-unread + delete — slide in from right */}
+      {(onMarkUnread || onDelete) && (
+        <div style={{
+          position: 'absolute', top: '50%', right: 8,
+          transform: 'translateY(-50%)',
+          display: 'flex', alignItems: 'center', gap: 2,
+          opacity: hovered ? 1 : 0,
+          transition: 'opacity 0.15s',
+          pointerEvents: hovered ? 'auto' : 'none',
+        }}>
+          {onMarkUnread && !unread && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onMarkUnread(); }}
+              title="Mark as unread"
+              style={{
+                width: 28, height: 28, borderRadius: 8, border: 'none', cursor: 'pointer',
+                background: `rgba(184,115,58,0.12)`, color: T.goldDark,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <svg width="11" height="11" viewBox="0 0 11 11" fill={T.goldDark}>
+                <circle cx="5.5" cy="5.5" r="5.5" />
+              </svg>
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              title="Delete"
+              style={{
+                width: 28, height: 28, borderRadius: 8, border: 'none', cursor: 'pointer',
+                background: 'rgba(192,57,43,0.10)', color: '#c0392b',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 16, lineHeight: 1,
+              }}
+            >×</button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -582,17 +588,23 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
       }}>
         {/* Header */}
         <div style={{
-          padding: '18px 16px 12px',
-          paddingTop: 'calc(18px + env(safe-area-inset-top, 0px))',
+          padding: '16px 14px 10px',
+          paddingTop: 'calc(16px + env(safe-area-inset-top, 0px))',
           borderBottom: `1px solid ${T.line}`,
           flexShrink: 0,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
             <button onClick={onBack} style={{
-              background: 'none', border: 'none', color: T.goldDark,
-              fontSize: 18, cursor: 'pointer', padding: 0, lineHeight: 1,
-            }}>←</button>
-            <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em' }}>
+              width: 30, height: 30, borderRadius: '50%',
+              background: T.cream, border: `1px solid ${T.line}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', flexShrink: 0, padding: 0,
+            }}>
+              <svg width="7" height="12" viewBox="0 0 7 12" fill="none">
+                <path d="M6 1L1 6l5 5" stroke={T.ink} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, letterSpacing: '-0.01em' }}>
               Messages
             </div>
           </div>
@@ -602,8 +614,8 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
             placeholder="Search…"
             style={{
               width: '100%', boxSizing: 'border-box',
-              background: T.cream, border: `1px solid ${T.line}`, borderRadius: 999,
-              padding: '8px 13px', fontSize: 13, color: T.ink, outline: 'none',
+              background: T.cream, border: `1px solid transparent`, borderRadius: 10,
+              padding: '8px 12px', fontSize: 13, color: T.ink, outline: 'none',
             }}
             onFocus={(e) => (e.target.style.borderColor = T.gold)}
             onBlur={(e) => (e.target.style.borderColor = T.line)}
