@@ -2469,13 +2469,18 @@ export default function App() {
               .select('*')
               .eq('id', s.user.id)
               .maybeSingle();
-            if (existing) {
+            // Require person_type to be set — that's the reliable signal the
+            // wizard was completed. Auto-created profile rows (Supabase trigger)
+            // may have display_name but no person_type; those still go through
+            // the wizard so the user can set their name properly.
+            if (existing?.display_name && existing?.person_type) {
               setProfile(existing);
               loadProfile(s.user.id);
               setAuthStage('idle');
               if (pendingPastorApply) { setPendingPastorApply(false); setStage('pastor-apply'); }
               else { setStage('home'); }
             } else {
+              if (existing) setProfile(existing); // preserve any partial data
               setAuthStage('profile-setup');
             }
           }}
