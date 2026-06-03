@@ -5,7 +5,7 @@ export default function ShareSheet({
   body,
   url,
   title,
-  intro = '✦ kinwove · Big questions, ancient text, modern conversation.',
+  intro = '— shared on kinwove',
   previewBody,
   customActions = [],
   onClose,
@@ -60,7 +60,7 @@ export default function ShareSheet({
   }
 
   const shareUrl = url ?? window.location.origin;
-  const shareText = body ? `"${body}"\n\n${intro}` : intro;
+  const shareText = body ? `${body}\n\n${intro}` : intro;
   const fullText = `${shareText}\n${shareUrl}`;
   const preview = previewBody ?? body ?? '';
 
