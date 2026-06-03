@@ -1,5 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
-import { ArrowLeft, Share2, Check, ExternalLink, MapPin, Clock, Users, Globe, BookOpen } from 'lucide-react';
+import { ArrowLeft, Share2, Check, ExternalLink, Globe } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T, SHADOW, RADIUS, SEMANTIC, SPACE } from './theme.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
@@ -1518,73 +1518,28 @@ export default function ChurchPage({
               </div>
             )}
 
-            {/* ── Church details card ── */}
-            {(() => {
-              const rows = [
-                church.denomination && {
-                  Icon: BookOpen,
-                  label: 'Denomination',
-                  value: church.denomination,
-                },
-                (church.street_address || church.city || church.country) && {
-                  Icon: MapPin,
-                  label: 'Location',
-                  value: [church.street_address, church.city, church.country].filter(Boolean).join(', '),
-                },
-                church.service_info && {
-                  Icon: Clock,
-                  label: 'Services',
-                  value: church.service_info,
-                },
-                memberCount > 0 && {
-                  Icon: Users,
-                  label: 'Members',
-                  value: `${memberCount} ${memberCount === 1 ? 'member' : 'members'}`,
-                },
-                church.website && {
-                  Icon: Globe,
-                  label: 'Website',
-                  value: church.website,
-                  href: church.website.startsWith('http') ? church.website : `https://${church.website}`,
-                },
-              ].filter(Boolean);
+            {/* Website — the one thing not shown in the banner */}
+            {church.website && (
+              <a
+                href={church.website.startsWith('http') ? church.website : `https://${church.website}`}
+                target="_blank" rel="noreferrer"
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '11px 18px', marginBottom: 16,
+                  background: T.white, border: `1px solid ${T.line}`,
+                  borderRadius: 12, textDecoration: 'none',
+                  color: T.goldDark, fontSize: 14, fontWeight: 500,
+                }}
+              >
+                <Globe size={14} strokeWidth={1.8} color={T.goldDark} />
+                {church.website.replace(/^https?:\/\//, '')} ↗
+              </a>
+            )}
 
-              if (!rows.length) return null;
-              return (
-                <div style={{
-                  background: T.white,
-                  border: `1px solid ${T.line}`,
-                  borderRadius: 14, padding: '4px 0', marginBottom: 16,
-                }}>
-                  {rows.map((row, i) => (
-                    <div key={row.label} style={{
-                      display: 'flex', alignItems: 'center', gap: 11,
-                      padding: '11px 18px',
-                      borderBottom: i < rows.length - 1 ? `1px solid rgba(26,17,8,0.07)` : 'none',
-                    }}>
-                      <row.Icon size={14} strokeWidth={1.8} color={T.goldDark} style={{ flexShrink: 0 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        {row.href ? (
-                          <a href={row.href} target="_blank" rel="noreferrer" style={{ fontSize: 14, color: T.goldDark, textDecoration: 'none', fontWeight: 500 }}>
-                            {row.value} ↗
-                          </a>
-                        ) : (
-                          <div style={{ fontSize: 14, color: T.ink }}>{row.value}</div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
-
-            {/* About */}
+            {/* About — longer description if the pastor wrote one */}
             {church.about && (
-              <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '18px 20px', marginBottom: 16 }}>
-                <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 8 }}>
-                  About
-                </div>
-                <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+              <div style={{ marginBottom: 16, padding: '18px 20px', background: T.white, border: `1px solid ${T.line}`, borderRadius: 14 }}>
+                <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
                   {church.about}
                 </div>
               </div>
