@@ -28,18 +28,17 @@ const TIP_W   = 264;
 const H_PAD   = 8;
 const TIP_GAP = 14;
 
+const TIP_H_APPROX = 180; // rough tooltip card height for clamp maths
+
 function placeTooltip(rect) {
   if (!rect) return { style: {}, arrowStyle: {}, arrowDir: null };
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const cx = rect.left + rect.width  / 2;
-  const cy = rect.top  + rect.height / 2;
+  const cx  = rect.left + rect.width  / 2;
+  const cy  = rect.top  + rect.height / 2;
 
-  const isLeft   = rect.right  < vw * 0.38;
-  const isBottom = rect.top    > vh * 0.58;
-  const isTop    = rect.bottom < vh * 0.25;
-
-  if (isLeft) {
+  // Left sidebar → tooltip to the RIGHT
+  if (rect.right < vw * 0.38) {
     const top      = Math.max(12, Math.min(cy - 72, vh - 200));
     const arrowTop = cy - top - 8;
     return {
@@ -53,42 +52,49 @@ function placeTooltip(rect) {
       arrowDir: 'left',
     };
   }
-  if (isBottom) {
-    const left      = Math.max(12, Math.min(cx - TIP_W / 2, vw - TIP_W - 12));
-    const arrowLeft = cx - left - 8;
+
+  const left      = Math.max(12, Math.min(cx - TIP_W / 2, vw - TIP_W - 12));
+  const arrowLeft = cx - left - 8;
+  const arrL      = Math.max(14, Math.min(arrowLeft, TIP_W - 28));
+
+  // Prefer BELOW when element centre is in the top 55% of viewport
+  const preferBelow = cy < vh * 0.55;
+
+  if (preferBelow) {
+    // Tooltip BELOW the element — clamp so it doesn't fall off the bottom
+    const topVal = Math.min(rect.bottom + TIP_GAP, vh - TIP_H_APPROX - 12);
     return {
-      style: { position: 'fixed', left, bottom: vh - rect.top + TIP_GAP, width: TIP_W },
+      style: { position: 'fixed', left, top: topVal, width: TIP_W },
       arrowStyle: {
-        position: 'absolute', bottom: -8,
-        left: Math.max(14, Math.min(arrowLeft, TIP_W - 28)),
-        borderLeft: '8px solid transparent', borderRight: '8px solid transparent',
-        borderTop: `8px solid ${T.white}`, width: 0, height: 0,
-      },
-      arrowDir: 'down',
-    };
-  }
-  if (isTop) {
-    const left      = Math.max(12, Math.min(cx - TIP_W / 2, vw - TIP_W - 12));
-    const arrowLeft = cx - left - 8;
-    return {
-      style: { position: 'fixed', left, top: rect.bottom + TIP_GAP, width: TIP_W },
-      arrowStyle: {
-        position: 'absolute', top: -8,
-        left: Math.max(14, Math.min(arrowLeft, TIP_W - 28)),
+        position: 'absolute', top: -8, left: arrL,
         borderLeft: '8px solid transparent', borderRight: '8px solid transparent',
         borderBottom: `8px solid ${T.white}`, width: 0, height: 0,
       },
       arrowDir: 'up',
     };
   }
-  // fallback — above
-  const left      = Math.max(12, Math.min(cx - TIP_W / 2, vw - TIP_W - 12));
-  const arrowLeft = cx - left - 8;
+
+  // Tooltip ABOVE the element — clamp so it doesn't clip the top
+  const bottomVal = vh - rect.top + TIP_GAP;
+  const topClamp  = vh - bottomVal - TIP_H_APPROX;
+  if (topClamp < 12) {
+    // Not enough room above — fall back to below
+    const topVal = Math.min(rect.bottom + TIP_GAP, vh - TIP_H_APPROX - 12);
+    return {
+      style: { position: 'fixed', left, top: topVal, width: TIP_W },
+      arrowStyle: {
+        position: 'absolute', top: -8, left: arrL,
+        borderLeft: '8px solid transparent', borderRight: '8px solid transparent',
+        borderBottom: `8px solid ${T.white}`, width: 0, height: 0,
+      },
+      arrowDir: 'up',
+    };
+  }
+
   return {
-    style: { position: 'fixed', left, bottom: vh - rect.top + TIP_GAP, width: TIP_W },
+    style: { position: 'fixed', left, bottom: bottomVal, width: TIP_W },
     arrowStyle: {
-      position: 'absolute', bottom: -8,
-      left: Math.max(14, Math.min(arrowLeft, TIP_W - 28)),
+      position: 'absolute', bottom: -8, left: arrL,
       borderLeft: '8px solid transparent', borderRight: '8px solid transparent',
       borderTop: `8px solid ${T.white}`, width: 0, height: 0,
     },
@@ -107,10 +113,12 @@ export default function PageTour({ steps = [], storageKey, onClose }) {
 
   useLayoutEffect(() => {
     if (!s?.tourId) { setTargetRect(null); return; }
-    // Small delay to let the page settle before measuring
     const id = setTimeout(() => {
       const el = document.querySelector(`[data-tour-id="${s.tourId}"]`);
-      setTargetRect(el ? el.getBoundingClientRect() : null);
+      if (!el) { setTargetRect(null); return; }
+      // Scroll into view instantly so getBoundingClientRect() is in-viewport
+      el.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'nearest' });
+      setTargetRect(el.getBoundingClientRect());
     }, 120);
     return () => clearTimeout(id);
   }, [step, s?.tourId]);
