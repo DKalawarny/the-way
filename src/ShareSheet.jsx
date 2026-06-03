@@ -183,10 +183,11 @@ export default function ShareSheet({
   }
 
   const externalApps = [
-    { id: 'facebook', icon: '📘', label: 'Facebook', bg: '#1877F2', onClick: handleFacebook },
+    // Text first — most common share on mobile
+    isMobile && { id: 'sms', icon: '💬', label: 'Text', bg: '#34C759', onClick: handleSMS },
+    { id: 'whatsapp', icon: '📲', label: 'WhatsApp', bg: '#25D366', onClick: handleWhatsApp },
     { id: 'messenger', icon: '💬', label: messengerNote ? (isMobile ? 'Opening…' : 'Copied') : 'Messenger', bg: '#0099FF', onClick: handleMessenger, done: messengerNote },
-    { id: 'whatsapp', icon: '🟢', label: 'WhatsApp', bg: '#25D366', onClick: handleWhatsApp },
-    isMobile && { id: 'sms', icon: '💌', label: 'Text', bg: '#34C759', onClick: handleSMS },
+    { id: 'facebook', icon: '📘', label: 'Facebook', bg: '#1877F2', onClick: handleFacebook },
     canNativeShare && { id: 'more', icon: '📱', label: 'More', bg: T.gold, onClick: handleNativeShare },
     !canNativeShare && { id: 'email', icon: '✉️', label: 'Email', bg: T.gold, onClick: handleEmail },
   ].filter(Boolean);
@@ -457,12 +458,17 @@ export default function ShareSheet({
               onMouseLeave={hasHover ? (e) => { if (!copied) e.currentTarget.style.borderColor = T.line; } : undefined}
             >
               <div style={{ fontSize: 20, width: 28, textAlign: 'center', flexShrink: 0, lineHeight: 1 }}>
-                {copied ? '✅' : '🔗'}
+                {copied ? '✅' : '📋'}
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: copied ? T.goldDark : T.ink }}>
-                  {copied ? 'Copied!' : 'Copy message'}
+                  {copied ? 'Copied — paste anywhere!' : 'Copy to clipboard'}
                 </div>
+                {!copied && (
+                  <div style={{ fontSize: 11.5, color: T.inkMuted, marginTop: 2 }}>
+                    Paste into any app
+                  </div>
+                )}
               </div>
             </button>
           </div>
