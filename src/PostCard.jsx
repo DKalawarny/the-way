@@ -386,6 +386,36 @@ function bodyForKind(item, onViewProfile, onViewChurch, sessionUserId, onOpenSer
         </div>
       );
     default: // 'text'
+      // Repost card — body_data is merged into body by feed_items view,
+      // so b.repost_of is the UUID and b.text is '' (the empty caption body)
+      if (b.repost_of) {
+        return (
+          <div>
+            {b.text ? (
+              <div style={{ fontFamily: T.display, fontSize: 16, color: T.ink, lineHeight: 1.55, whiteSpace: 'pre-wrap', marginBottom: 10 }}>
+                {b.text}
+              </div>
+            ) : null}
+            <div style={{ border: `1px solid ${T.line}`, borderRadius: 10, padding: '12px 14px', background: T.parchment }}>
+              <button
+                onClick={() => b.repost_author_id && onViewProfile?.(b.repost_author_id)}
+                style={{ background: 'none', border: 'none', padding: 0, marginBottom: 8, cursor: b.repost_author_id ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: 8 }}
+              >
+                <Avatar size={26} profile={{ display_name: b.repost_author_name }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: T.inkSoft, fontFamily: T.sans }}>
+                  {b.repost_author_name ?? 'Someone'}
+                </span>
+              </button>
+              {b.repost_body ? (
+                <div style={{ fontFamily: T.display, fontSize: 15, color: T.ink, lineHeight: 1.5, whiteSpace: 'pre-wrap', overflowWrap: 'break-word' }}>
+                  {b.repost_body}
+                </div>
+              ) : null}
+              {b.repost_body && <LinkPreview text={b.repost_body} />}
+            </div>
+          </div>
+        );
+      }
       return (
         <>
           {b.scripture_ref && (
