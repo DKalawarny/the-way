@@ -418,11 +418,12 @@ export default function DMConversation({ session, profile, conversationId, other
                   )}
                   {(() => {
                     const AI_PREFIX = '✦ kinwove says:\n\n';
-                    const isAiMsg = msg.body.startsWith(AI_PREFIX);
-                    const aiBody = isAiMsg ? msg.body.slice(AI_PREFIX.length) : null;
+                    const body = msg.body ?? '';
+                    const isAiMsg = body.startsWith(AI_PREFIX);
+                    const aiBody = isAiMsg ? body.slice(AI_PREFIX.length) : null;
 
                     // Detect kinwove post link — show rich preview instead of raw URL
-                    const postMatch = !isAiMsg && msg.body.match(KINWOVE_POST_RE);
+                    const postMatch = !isAiMsg && body.match(KINWOVE_POST_RE);
                     const linkedPostId = postMatch?.[1] ?? null;
                     // Any non-URL text before/around the link
                     const nonUrlText = linkedPostId
