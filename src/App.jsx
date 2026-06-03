@@ -1657,6 +1657,7 @@ export default function App() {
   const [installTrigger, setInstallTrigger] = useState(false);
   const [userGroup, setUserGroup] = useState(null);   // { group, role }
   const [shareId] = useState(() => new URLSearchParams(window.location.search).get('s'));
+  const [deepLinkPostId] = useState(() => new URLSearchParams(window.location.search).get('post'));
   const [studySessionId] = useState(() => new URLSearchParams(window.location.search).get('gs'));
   const [initialChurchId] = useState(() => new URLSearchParams(window.location.search).get('church'));
   const [referralRef] = useState(() => new URLSearchParams(window.location.search).get('ref'));
@@ -1687,7 +1688,7 @@ export default function App() {
   const [pendingChurchJoin, setPendingChurchJoin] = useState(null);
   const [activeCareConv, setActiveCareConv] = useState(null);
   const [activeDmConv, setActiveDmConv] = useState(null); // { id, otherProfile }
-  const [openCommentPostId, setOpenCommentPostId] = useState(null);
+  const [openCommentPostId, setOpenCommentPostId] = useState(() => deepLinkPostId ?? null);
   const [shareCopied, setShareCopied] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [currentConvId, setCurrentConvId] = useState(null);
@@ -1916,7 +1917,8 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => {
       _setSession(data.session ?? null);
       if (data.session) {
-        if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); loadProfile(data.session.user.id); }
+        if (deepLinkPostId) { setStage('community'); loadProfile(data.session.user.id); }
+        else if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); loadProfile(data.session.user.id); }
         else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); loadProfile(data.session.user.id); }
         else {
           const local = localStorage.getItem('kw:stage');

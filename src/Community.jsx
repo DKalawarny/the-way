@@ -805,11 +805,11 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
       {shareOpen && (
         <ShareSheet
           body={post.body}
+          url={`https://www.kinwove.com/?post=${post.id}`}
           previewBody={stripFirstUrl(post.body ?? '').trim() || undefined}
           title="Share this post"
           customActions={[
             session
-              && post.author_id !== session.user.id
               && post.visibility === 'public'
               && post.scope === 'me'
               && !post.body_data?.repost_of
@@ -1417,7 +1417,7 @@ useEffect(() => {
     // Privacy guards — don't repost private, church/group, or already-reposted posts
     if (post.visibility !== 'public') return;
     if (post.scope !== 'me') return;
-    if (post.body_data?.repost_of) return; // no repost-of-reposts
+    if (post.body_data?.repost_of) return; // no repost-of-reposts (can't repost a repost)
 
     const authorName = post.profiles?.display_name ?? 'Someone';
 
