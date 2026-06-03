@@ -190,17 +190,18 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
     const uid = session.user.id;
 
     (async () => {
+      // Fetch plain rows — no FK joins to avoid PostgREST disambiguation issues
       const [{ data: careOut }, { data: careIn }, { data: dms }] = await Promise.all([
         // Conversations the user initiated (member side)
         supabase
           .from('care_conversations')
-          .select('*, care_member:profiles!care_member_id(id, display_name, avatar_config, avatar_url)')
+          .select('*')
           .eq('requester_id', uid)
           .order('last_message_at', { ascending: false, nullsFirst: false }),
         // Conversations directed at the user (pastor / care team side)
         supabase
           .from('care_conversations')
-          .select('*, requester:profiles!requester_id(id, display_name, avatar_config, avatar_url)')
+          .select('*')
           .eq('care_member_id', uid)
           .order('last_message_at', { ascending: false, nullsFirst: false }),
         supabase
@@ -217,7 +218,25 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
         ...(careIn ?? []).filter((c) => !outIds.has(c.id)).map((c) => ({ ...c, _side: 'in' })),
       ].sort((a, b) => new Date(b.last_message_at ?? b.created_at) - new Date(a.last_message_at ?? a.created_at));
 
-      setCareConvs(merged);
+      // Fetch profiles for all care participants separately (avoids FK join ambiguity)
+      const careProfileIds = [...new Set([
+        ...(careOut ?? []).map((c) => c.care_member_id),
+        ...(careIn ?? []).map((c) => c.requester_id),
+      ].filter(Boolean))];
+      let careProfileMap = {};
+      if (careProfileIds.length) {
+        const { data: careProfs } = await supabase
+          .from('profiles')
+          .select('id, display_name, avatar_config, avatar_url')
+          .in('id', careProfileIds);
+        (careProfs ?? []).forEach((p) => { careProfileMap[p.id] = p; });
+      }
+
+      setCareConvs(merged.map((c) => ({
+        ...c,
+        care_member: c.care_member_id ? (careProfileMap[c.care_member_id] ?? null) : null,
+        requester:   c.requester_id   ? (careProfileMap[c.requester_id]   ?? null) : null,
+      })));
 
       const dmList = dms ?? [];
       const otherIds = dmList.map((c) => c.participant_ids.find((id) => id !== uid)).filter(Boolean);

@@ -27,6 +27,7 @@ const KIND_COPY = {
   follow:                    { verb: 'started following you', Icon: UserPlus },
   role_assigned:             { verb: 'gave you a role', Icon: null, emoji: '🎖' },
   dm_message:                { verb: 'sent you a message', Icon: MessageCircle },
+  care_message:              { verb: 'sent you a care message', Icon: MessageCircle },
 };
 
 function NotificationRow({ n, onClick, onFriendAction }) {
