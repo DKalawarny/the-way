@@ -70,20 +70,20 @@ function countForVersion(completedSet, bibleId) {
 }
 
 const BADGES = [
-  { id: 'first_step',    name: 'Let There Be Light',   desc: '"In the beginning God created the heavens and the earth." — Gen 1:1',          check: (c, id) => countForVersion(c, id) >= 1 },
-  { id: 'well_read',     name: 'Seek and You Will Find', desc: '"Seek and you will find; knock and the door will be opened to you." — Matt 7:7', check: (c, id) => countForVersion(c, id) >= 10 },
-  { id: 'seeking',       name: 'He Restores My Soul',   desc: '"He restores my soul. He leads me in paths of righteousness." — Ps 23:3',       check: (c, id) => countForVersion(c, id) >= 25 },
-  { id: 'faithful',      name: 'Year of Jubilee',       desc: '"Proclaim liberty throughout the land to all its inhabitants." — Lev 25:10',    check: (c, id) => countForVersion(c, id) >= 50 },
-  { id: 'devoted',       name: 'A Hundredfold',         desc: '"Other seeds fell on good soil and produced grain, a hundredfold." — Matt 13:8', check: (c, id) => countForVersion(c, id) >= 100 },
-  { id: 'scholar',       name: 'Great Is Thy Faithfulness', desc: '"His mercies never come to an end; they are new every morning." — Lam 3:23', check: (c, id) => countForVersion(c, id) >= 250 },
-  { id: 'scribe',        name: 'Lamp to My Feet',        desc: '"Your word is a lamp to my feet and a light to my path." — Ps 119:105',        check: (c, id) => countForVersion(c, id) >= 500 },
-  { id: 'genesis',       name: 'In the Beginning',      desc: '"In the beginning, God…" — Complete Genesis, the foundation of all things',     check: (c, id) => bookGroupComplete(['GEN'], c, id) },
-  { id: 'the_law',       name: 'The Law of Moses',      desc: '"Be careful to obey all the law my servant Moses gave you." — Josh 1:7',        check: (c, id) => bookGroupComplete(['GEN','EXO','LEV','NUM','DEU'], c, id) },
-  { id: 'the_psalms',    name: 'Praise the Lord',       desc: '"Let everything that has breath praise the Lord." — Psalm 150:6',               check: (c, id) => bookGroupComplete(['PSA'], c, id) },
-  { id: 'the_gospels',   name: 'The Good News',         desc: '"The beginning of the gospel of Jesus Christ, the Son of God." — Mark 1:1',     check: (c, id) => bookGroupComplete(['MAT','MRK','LUK','JHN'], c, id) },
-  { id: 'new_testament', name: 'The New Covenant',      desc: '"This cup is the new covenant in my blood, poured out for you." — Luke 22:20',  check: (c, id) => bookGroupComplete(NT.map((b) => b.id), c, id) },
-  { id: 'old_testament', name: 'The Ancient Paths',     desc: '"Ask for the ancient paths, where the good way is, and walk in it." — Jer 6:16', check: (c, id) => bookGroupComplete(OT.map((b) => b.id), c, id) },
-  { id: 'the_word',      name: 'The Living Word',       desc: '"The word of God is living and active, sharper than any two-edged sword." — Heb 4:12', check: (c, id) => countForVersion(c, id) >= 1189 },
+  { id: 'first_step',    name: 'Let There Be Light',       req: 'Read your first chapter',               desc: '"In the beginning God created the heavens and the earth." — Gen 1:1',          check: (c, id) => countForVersion(c, id) >= 1 },
+  { id: 'well_read',     name: 'Seek and You Will Find',   req: 'Read 10 chapters',                      desc: '"Seek and you will find; knock and the door will be opened to you." — Matt 7:7', check: (c, id) => countForVersion(c, id) >= 10 },
+  { id: 'seeking',       name: 'He Restores My Soul',      req: 'Read 25 chapters',                      desc: '"He restores my soul. He leads me in paths of righteousness." — Ps 23:3',       check: (c, id) => countForVersion(c, id) >= 25 },
+  { id: 'faithful',      name: 'Year of Jubilee',          req: 'Read 50 chapters',                      desc: '"Proclaim liberty throughout the land to all its inhabitants." — Lev 25:10',    check: (c, id) => countForVersion(c, id) >= 50 },
+  { id: 'devoted',       name: 'A Hundredfold',            req: 'Read 100 chapters',                     desc: '"Other seeds fell on good soil and produced grain, a hundredfold." — Matt 13:8', check: (c, id) => countForVersion(c, id) >= 100 },
+  { id: 'scholar',       name: 'Great Is Thy Faithfulness',req: 'Read 250 chapters',                     desc: '"His mercies never come to an end; they are new every morning." — Lam 3:23', check: (c, id) => countForVersion(c, id) >= 250 },
+  { id: 'scribe',        name: 'Lamp to My Feet',          req: 'Read 500 chapters',                     desc: '"Your word is a lamp to my feet and a light to my path." — Ps 119:105',        check: (c, id) => countForVersion(c, id) >= 500 },
+  { id: 'genesis',       name: 'In the Beginning',         req: 'Complete Genesis',                      desc: '"In the beginning, God…" — Complete Genesis, the foundation of all things',     check: (c, id) => bookGroupComplete(['GEN'], c, id) },
+  { id: 'the_law',       name: 'The Law of Moses',         req: 'Complete the 5 books of Moses',         desc: '"Be careful to obey all the law my servant Moses gave you." — Josh 1:7',        check: (c, id) => bookGroupComplete(['GEN','EXO','LEV','NUM','DEU'], c, id) },
+  { id: 'the_psalms',    name: 'Praise the Lord',          req: 'Complete all 150 Psalms',               desc: '"Let everything that has breath praise the Lord." — Psalm 150:6',               check: (c, id) => bookGroupComplete(['PSA'], c, id) },
+  { id: 'the_gospels',   name: 'The Good News',            req: 'Complete Matthew, Mark, Luke & John',   desc: '"The beginning of the gospel of Jesus Christ, the Son of God." — Mark 1:1',     check: (c, id) => bookGroupComplete(['MAT','MRK','LUK','JHN'], c, id) },
+  { id: 'new_testament', name: 'The New Covenant',         req: 'Complete the entire New Testament',     desc: '"This cup is the new covenant in my blood, poured out for you." — Luke 22:20',  check: (c, id) => bookGroupComplete(NT.map((b) => b.id), c, id) },
+  { id: 'old_testament', name: 'The Ancient Paths',        req: 'Complete the entire Old Testament',     desc: '"Ask for the ancient paths, where the good way is, and walk in it." — Jer 6:16', check: (c, id) => bookGroupComplete(OT.map((b) => b.id), c, id) },
+  { id: 'the_word',      name: 'The Living Word',          req: 'Read all 1,189 chapters of the Bible',  desc: '"The word of God is living and active, sharper than any two-edged sword." — Heb 4:12', check: (c, id) => countForVersion(c, id) >= 1189 },
 ];
 
 // Books to clear when resetting a book-group achievement badge
@@ -1380,10 +1380,11 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                         : 0;
                       return (
                         <div key={badge.id} title={badge.desc}
-                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: 72, textAlign: 'center', flex: '0 0 auto',
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: 80, textAlign: 'center', flex: '0 0 auto',
                             animation: 'badgePop 0.55s cubic-bezier(0.34,1.56,0.64,1) both' }}>
                           <BadgeArt id={badge.id} size={64} earned={true}/>
                           <span style={{ fontSize: 10, fontWeight: 700, color: T.goldDark, lineHeight: 1.3 }}>{badge.name}</span>
+                          <span style={{ fontSize: 9, color: C.muted, lineHeight: 1.3 }}>{badge.req}</span>
                           {resetBookIds && (
                             <button onClick={() => setConfirmReset({ label: badge.name, bookIds: resetBookIds, chCount })}
                               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 10, color: C.muted }}>
@@ -1400,9 +1401,10 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, marginTop: 14 }}>
                     {lockedMilestones.map((badge) => (
                       <div key={badge.id} title={badge.desc}
-                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: 72, textAlign: 'center', flex: '0 0 auto' }}>
+                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: 80, textAlign: 'center', flex: '0 0 auto' }}>
                         <BadgeArt id={badge.id} size={64} earned={false}/>
                         <span style={{ fontSize: 10, fontWeight: 600, color: C.muted, lineHeight: 1.3 }}>{badge.name}</span>
+                        <span style={{ fontSize: 9, color: C.muted, opacity: 0.7, lineHeight: 1.3 }}>{badge.req}</span>
                       </div>
                     ))}
                   </div>
