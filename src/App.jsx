@@ -861,7 +861,7 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         minHeight: 62,
       }}>
-        <button onClick={onGoHome} style={tabStyle('home')}>
+        <button data-tour-id="feed" onClick={onGoHome} style={tabStyle('home')}>
           {activeRail('home')}
           <span style={iconWrap('home')}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -871,7 +871,7 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
           <span style={labelStyle('home')}>Feed</span>
         </button>
 
-        <button onClick={onGoChurch} style={tabStyle('church')}>
+        <button data-tour-id="church" onClick={onGoChurch} style={tabStyle('church')}>
           {activeRail('church')}
           <span style={iconWrap('church')}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -887,7 +887,7 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
             reads as the app's signature action without taking up FAB-sized
             real estate. Same action (toggleChat); the halo intensifies when
             chat is open so it doubles as the active-tab indicator. */}
-        <button onClick={onToggleChat} style={tabStyle('ask')} aria-label="Ask anything">
+        <button data-tour-id="ask" onClick={onToggleChat} style={tabStyle('ask')} aria-label="Ask anything">
           <span style={{
             position: 'relative',
             width: 36, height: 36, borderRadius: '50%',
@@ -906,7 +906,7 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
           }}>Ask</span>
         </button>
 
-        <button onClick={onGoRead} style={tabStyle('read')}>
+        <button data-tour-id="bible" onClick={onGoRead} style={tabStyle('read')}>
           {activeRail('read')}
           <span style={iconWrap('read')}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -917,7 +917,7 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
           <span style={labelStyle('read')}>Bible</span>
         </button>
 
-        <button onClick={onGoMe} style={tabStyle('me')}>
+        <button data-tour-id="you" onClick={onGoMe} style={tabStyle('me')}>
           {activeRail('me')}
           <span style={iconWrap('me')}>
             <Avatar
@@ -1532,7 +1532,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
       <nav style={{ flex: 1, padding: '8px 0', overflowY: 'auto' }}>
 
         {/* Ask — top of sidebar */}
-        <button onClick={onToggleChat} style={{
+        <button data-tour-id="ask" onClick={onToggleChat} style={{
           display: 'flex', alignItems: 'center', gap: 12,
           padding: '10px 14px',
           cursor: 'pointer', background: 'none', border: 'none', width: '100%',
@@ -1550,25 +1550,25 @@ function SidebarNav({ stage, session, profile, chatOpen,
         </button>
 
         {/* Feed */}
-        <button onClick={onGoHome} style={itemSt('home')}>
+        <button data-tour-id="feed" onClick={onGoHome} style={itemSt('home')}>
           <span style={{ fontSize: 17, flexShrink: 0, width: 20, textAlign: 'center', lineHeight: 1 }}>🏠</span>
           <span style={labelSt('home')}>Feed</span>
         </button>
 
         {/* Church */}
-        <button onClick={onGoChurch} style={itemSt('church')}>
+        <button data-tour-id="church" onClick={onGoChurch} style={itemSt('church')}>
           <span style={{ fontSize: 17, flexShrink: 0, width: 20, textAlign: 'center', lineHeight: 1 }}>👥</span>
           <span style={labelSt('church')}>Church</span>
         </button>
 
         {/* Bible */}
-        <button onClick={onGoRead} style={itemSt('read')}>
+        <button data-tour-id="bible" onClick={onGoRead} style={itemSt('read')}>
           <span style={{ fontSize: 17, flexShrink: 0, width: 20, textAlign: 'center', lineHeight: 1 }}>📖</span>
           <span style={labelSt('read')}>Bible</span>
         </button>
 
         {/* You */}
-        <button onClick={onGoMe} style={itemSt('me')}>
+        <button data-tour-id="you" onClick={onGoMe} style={itemSt('me')}>
           <span style={{ flexShrink: 0 }}>
             <Avatar
               name={profile?.display_name}
