@@ -2502,6 +2502,10 @@ export default function App() {
               setStage(profileEditOrigin === 'me' ? 'me' : 'feed');
               if (isFirstTime) {
                 setShowPastorPrompt(true);
+                // Show tour + daily verse for brand new users (may not have been
+                // triggered via loadProfile() if they came through the Auth form path)
+                if (!isTourDone()) setShowTour(true);
+                if (shouldShowDailyVerse()) setShowVerseCard(true);
                 // Fire-and-forget: send welcome DM from "kinwove" system account
                 authedFetch('/api/welcome-dm', { method: 'POST' }).catch(() => {});
               }
