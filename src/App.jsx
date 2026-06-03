@@ -145,6 +145,7 @@ const Chat              = lazy(() => import('./Chat.jsx'));
 const AdminPage         = lazy(() => import('./AdminPage.jsx'));
 const HelpPage          = lazy(() => import('./HelpPage.jsx'));
 const UpgradeModal      = lazy(() => import('./UpgradeModal.jsx'));
+const GuestPostView     = lazy(() => import('./GuestPostView.jsx'));
 import { getJourneyProgress, advanceJourneyProgress } from './journeys.js';
 import FeatureTour, { isTourDone } from './FeatureTour.jsx';
 import CoachMark, { incrementLoginCount } from './CoachMark.jsx';
@@ -1658,6 +1659,7 @@ export default function App() {
   const [userGroup, setUserGroup] = useState(null);   // { group, role }
   const [shareId] = useState(() => new URLSearchParams(window.location.search).get('s'));
   const [deepLinkPostId] = useState(() => new URLSearchParams(window.location.search).get('post'));
+  const [guestPost, setGuestPost] = useState(null);
   const [studySessionId] = useState(() => new URLSearchParams(window.location.search).get('gs'));
   const [initialChurchId] = useState(() => new URLSearchParams(window.location.search).get('church'));
   const [referralRef] = useState(() => new URLSearchParams(window.location.search).get('ref'));
@@ -1932,6 +1934,13 @@ export default function App() {
           }
         }
         if (shouldShowDailyVerse()) setShowVerseCard(true);
+      } else if (deepLinkPostId) {
+        // No session + deep link → fetch the post for a read-only guest preview
+        fetch(`/api/post/${encodeURIComponent(deepLinkPostId)}`)
+          .then((r) => r.ok ? r.json() : null)
+          .then((data) => { if (data?.post) setGuestPost(data.post); })
+          .catch(() => {});
+        window.history.replaceState({}, '', window.location.pathname);
       } else if (initialAnonChurchId) {
         setViewingChurchId(initialAnonChurchId);
         setStage('church-entry');
@@ -2577,7 +2586,15 @@ export default function App() {
         transition: isResizingRef.current ? 'none' : 'padding-right 0.28s ease, margin-left 0.28s ease',
         '--global-header-h': showNav ? `${HEADER_H}px` : '0px',
       }}>
-      {stage === 'landing' && (
+      {stage === 'landing' && guestPost && (
+        <GuestPostView
+          post={guestPost}
+          onSignUp={() => { setAuthInitialMode('signup'); setAuthStage('auth'); }}
+          onSignIn={() => { setAuthInitialMode('signin'); setAuthStage('auth'); }}
+          onBack={() => setGuestPost(null)}
+        />
+      )}
+      {stage === 'landing' && !guestPost && (
         <Landing
           onBegin={() => { setAuthInitialMode('signup'); setAuthStage('auth'); }}
           onSignIn={() => { setAuthInitialMode('signin'); setAuthStage('auth'); }}

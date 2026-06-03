@@ -1340,6 +1340,32 @@ app.delete('/api/account', requireAuth, async (req, res) => {
   }
 });
 
+// ── Guest post preview (no auth required) ────────────────────────────────────
+// Returns a single public post + author profile for the share deep link.
+// Non-members who tap a ?post= link call this to see the post before signing up.
+app.get('/api/post/:id', limitAnon({ capacity: 30, refillPerSec: 30 / 60 }), async (req, res) => {
+  const { id } = req.params;
+  if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return res.status(400).json({ error: 'invalid id' });
+  }
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    return res.status(503).json({ error: 'not configured' });
+  }
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/posts?id=eq.${encodeURIComponent(id)}&visibility=eq.public&select=id,body,body_data,kind,created_at,author_id,profiles!author_id(id,display_name,avatar_config,avatar_url)`,
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
+    );
+    if (!r.ok) return res.status(502).json({ error: 'db error' });
+    const rows = await r.json();
+    if (!rows[0]) return res.status(404).json({ error: 'not found' });
+    res.json({ post: rows[0] });
+  } catch (err) {
+    console.error('[kinwove] guest post fetch error:', err?.message);
+    res.status(500).json({ error: 'server error' });
+  }
+});
+
 // ── AI feedback: user flags a response as inaccurate ─────────────────────────
 app.post('/api/ai-feedback', optionalAuth, limitEither(
   { capacity: 20, refillPerSec: 20 / 60 },
