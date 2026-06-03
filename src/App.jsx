@@ -1692,6 +1692,7 @@ export default function App() {
   const [activeDmConv, setActiveDmConv] = useState(null); // { id, otherProfile }
   const [openCommentPostId, setOpenCommentPostId] = useState(() => deepLinkPostId ?? null);
   const [pendingShareUrl, setPendingShareUrl] = useState(null);
+  const [pendingCareId, setPendingCareId] = useState(null);
   const [shareCopied, setShareCopied] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [currentConvId, setCurrentConvId] = useState(null);
@@ -2948,6 +2949,8 @@ export default function App() {
           pendingShareUrl={pendingShareUrl}
           onShareSent={() => setPendingShareUrl(null)}
           onOpenPost={(postId) => { setOpenCommentPostId(postId); setStage('feed'); }}
+          initialCareId={pendingCareId}
+          onInitialCareConsumed={() => setPendingCareId(null)}
         />
       )}
       {stage === 'dm-conversation' && session && activeDmConv && (
@@ -3313,6 +3316,8 @@ export default function App() {
             else if (n.target_type === 'friend_request') { setViewingUserId(n.actor_id); }
             else if (n.kind === 'follow') { setViewingUserId(n.actor_id); }
             else if (n.kind === 'care_message' || n.target_type === 'care_conversation') {
+              const convId = n.data?.conversation_id ?? n.target_id;
+              setPendingCareId(convId ?? null);
               setStage('messages');
             }
             else if (n.kind === 'dm_message' || n.target_type === 'dm_conversation') {

@@ -1,4 +1,4 @@
-import { lazy, useEffect, useState, Suspense } from 'react';
+import { lazy, useEffect, useRef, useState, Suspense } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { Avatar } from './ProfilePage.jsx';
@@ -148,7 +148,7 @@ function EmptyPane() {
   );
 }
 
-export default function MessagesInbox({ session, profile, onBack, pendingShareUrl, onShareSent, onOpenPost }) {
+export default function MessagesInbox({ session, profile, onBack, pendingShareUrl, onShareSent, onOpenPost, initialCareId, onInitialCareConsumed }) {
   const [careConvs, setCareConvs] = useState([]);
   const [dmConvs, setDmConvs] = useState([]);
   const [careLastMsgs, setCareLastMsgs] = useState({});
@@ -157,6 +157,7 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
   const [openCare, setOpenCare] = useState(null);
   const [openDm, setOpenDm] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const initialCareIdRef = useRef(initialCareId);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -276,6 +277,16 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
       }
 
       setLoading(false);
+
+      // Auto-open a specific care conversation if requested (e.g., via notification tap)
+      if (initialCareIdRef.current) {
+        const target = merged.find((c) => c.id === initialCareIdRef.current);
+        if (target) {
+          setOpenCare({ id: target.id, side: target._side });
+          initialCareIdRef.current = null; // only auto-open once
+          onInitialCareConsumed?.();       // clear pendingCareId in App
+        }
+      }
     })();
   }, [session?.user?.id, refreshKey]);
 
