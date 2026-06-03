@@ -33,7 +33,11 @@ const KIND_COPY = {
 function NotificationRow({ n, onClick, onFriendAction }) {
   const copy = KIND_COPY[n.kind] ?? { verb: n.kind, Icon: null, emoji: <KinwoveStar size={10} /> };
   const actor = n.actor_profile;
-  const actorName = actor?.display_name ?? 'Someone';
+
+  // Anonymous care messages: don't reveal sender identity
+  const isCareAnonymous = n.kind === 'care_message' && (n.data?.is_anonymous || !n.actor_id);
+  const actorName = isCareAnonymous ? 'Anonymous' : (actor?.display_name || 'Someone');
+
   const snippet = n.kind === 'role_assigned'
     ? [n.data?.role_label, n.data?.church_name].filter(Boolean).join(' at ')
     : n.data?.snippet;
@@ -88,8 +92,8 @@ function NotificationRow({ n, onClick, onFriendAction }) {
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <Avatar
           name={actorName}
-          avatarConfig={actor?.avatar_config}
-          photoUrl={actor?.avatar_url}
+          avatarConfig={isCareAnonymous ? null : actor?.avatar_config}
+          photoUrl={isCareAnonymous ? null : actor?.avatar_url}
           size={36}
         />
         <div style={{
