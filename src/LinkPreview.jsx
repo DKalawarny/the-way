@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { T } from './theme.js';
 
 // ── URL extraction ────────────────────────────────────────────────────────────
@@ -31,12 +32,35 @@ function getDomain(url) {
 
 // ── Compact YouTube preview ───────────────────────────────────────────────────
 function YouTubePreview({ url, videoId }) {
-  const thumb = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+  const [playing, setPlaying] = useState(false);
+  const thumb = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+  const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1`;
+
+  if (playing) {
+    return (
+      <div style={{
+        marginTop: 10,
+        borderRadius: 9, overflow: 'hidden',
+        border: `1px solid ${T.line}`,
+        background: '#000',
+        aspectRatio: '16/9',
+        width: '100%',
+      }}>
+        <iframe
+          src={embedUrl}
+          title="YouTube video"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+        />
+      </div>
+    );
+  }
+
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
+    <div
+      onClick={() => setPlaying(true)}
+      role="button"
       style={{
         display: 'flex', alignItems: 'stretch',
         textDecoration: 'none',
@@ -46,6 +70,8 @@ function YouTubePreview({ url, videoId }) {
         background: T.white,
         boxShadow: '0 1px 3px rgba(26,17,8,0.06)',
         maxHeight: 72,
+        cursor: 'pointer',
+        WebkitTapHighlightColor: 'transparent',
       }}
     >
       {/* Thumbnail — narrow left strip */}
@@ -55,21 +81,21 @@ function YouTubePreview({ url, videoId }) {
           alt="Video thumbnail"
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
           onError={(e) => {
-            e.currentTarget.src = `https://img.youtube.com/vi/${videoId}/default.jpg`;
+            e.currentTarget.src = `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
           }}
         />
         {/* Play icon overlay */}
         <div style={{
           position: 'absolute', inset: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.18)',
+          background: 'rgba(0,0,0,0.22)',
         }}>
           <div style={{
-            width: 26, height: 26, borderRadius: '50%',
-            background: 'rgba(255,0,0,0.85)',
+            width: 28, height: 28, borderRadius: '50%',
+            background: 'rgba(255,0,0,0.9)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="white">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="white">
               <polygon points="5,3 19,12 5,21" />
             </svg>
           </div>
@@ -100,11 +126,11 @@ function YouTubePreview({ url, videoId }) {
         </div>
       </div>
 
-      {/* Arrow */}
+      {/* Play hint */}
       <div style={{ display: 'flex', alignItems: 'center', paddingRight: 12, color: T.inkMuted, fontSize: 13, flexShrink: 0 }}>
-        ↗
+        ▶
       </div>
-    </a>
+    </div>
   );
 }
 
