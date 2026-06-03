@@ -62,10 +62,10 @@ export default function ShareSheet({
   const shareUrl = url ?? window.location.origin;
   const shareText = body ? `${body}\n\n${intro}` : intro;
   const fullText = `${shareText}\n${shareUrl}`;
-  // SMS-specific text: omit the kinwove URL so iMessage shows the content's
-  // own link preview (e.g. YouTube card) instead of the kinwove OG card.
-  // If there's no body URL to show, fall back to the kinwove URL.
-  const smsText = body ? shareText : fullText;
+  // SMS: send just the kinwove deep link so iMessage shows one clean OG card.
+  // The deep link opens kinwove at the specific post — recipient taps and sees
+  // the full content (YouTube video etc.) inside the app.
+  const smsText = shareUrl;
   const preview = previewBody ?? body ?? '';
 
   function handleFacebook() {
