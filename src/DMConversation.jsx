@@ -21,6 +21,71 @@ const isSystemAccount = (p) => p?.display_name === 'kinwove';
 const KINWOVE_POST_RE = /(?:kinwove\.com|localhost:\d+)(?:\/[^?\s]*)?[?&]post=([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i;
 const YT_RE_DM = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
 
+// YouTube video card — shown when a bare YouTube URL is sent in a DM
+function YouTubeDmCard({ videoId, isMe }) {
+  const [playing, setPlaying] = useState(false);
+  const thumb = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+  const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1`;
+
+  if (playing) {
+    return (
+      <div style={{ borderRadius: 10, overflow: 'hidden', aspectRatio: '16/9', width: '100%', background: '#000' }}>
+        <iframe
+          src={embedUrl}
+          title="YouTube video"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onClick={() => setPlaying(true)}
+      role="button"
+      style={{
+        borderRadius: 12, overflow: 'hidden', cursor: 'pointer',
+        background: isMe ? 'rgba(255,255,255,0.15)' : T.parchment,
+        border: `1px solid ${isMe ? 'rgba(255,255,255,0.25)' : 'rgba(184,115,58,0.22)'}`,
+        WebkitTapHighlightColor: 'transparent',
+      }}
+    >
+      <div style={{ position: 'relative' }}>
+        <img
+          src={thumb}
+          alt="YouTube video"
+          style={{ width: '100%', display: 'block', aspectRatio: '16/9', objectFit: 'cover' }}
+          onError={(e) => { e.currentTarget.src = `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`; }}
+        />
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.25)',
+        }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: '50%',
+            background: 'rgba(255,0,0,0.9)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21" /></svg>
+          </div>
+        </div>
+      </div>
+      <div style={{ padding: '8px 11px 9px', display: 'flex', alignItems: 'center', gap: 5 }}>
+        <svg width="14" height="10" viewBox="0 0 16 11" fill="none">
+          <rect width="16" height="11" rx="2.5" fill="#FF0000" />
+          <polygon points="6.5,2.5 11.5,5.5 6.5,8.5" fill="white" />
+        </svg>
+        <span style={{ fontSize: 12, fontWeight: 600, color: isMe ? 'rgba(255,255,255,0.7)' : T.inkSoft, fontFamily: T.sans }}>
+          YouTube · Tap to play
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // Rich post link preview — shown inside DM bubbles instead of a raw URL
 function PostLinkCard({ postId, isMe, onOpenPost }) {
   const [post, setPost] = useState(null);
@@ -427,8 +492,15 @@ export default function DMConversation({ session, profile, conversationId, other
                     const linkedPostId = postMatch?.[1] ?? null;
                     // Any non-URL text before/around the link
                     const nonUrlText = linkedPostId
-                      ? msg.body.replace(/https?:\/\/\S+/g, '').trim()
+                      ? body.replace(/https?:\/\/\S+/g, '').trim()
                       : null;
+
+                    // Detect bare YouTube URL — show inline thumbnail/player
+                    const ytMatch = !isAiMsg && !linkedPostId && body.match(YT_RE_DM);
+                    const ytVideoId = ytMatch?.[1] ?? null;
+                    const ytNonUrlText = ytVideoId ? body.replace(/https?:\/\/\S+/g, '').trim() : null;
+
+                    const hasCard = !!linkedPostId || !!ytVideoId;
 
                     return (
                       <div style={{
@@ -437,7 +509,7 @@ export default function DMConversation({ session, profile, conversationId, other
                         color: T.ink,
                         border: isAiMsg ? `1px solid ${T.gold}88` : isMe ? 'none' : `1px solid ${T.line}`,
                         borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                        padding: linkedPostId ? '10px 10px 4px' : isAiMsg ? '0' : '10px 14px',
+                        padding: hasCard ? '10px 10px 4px' : isAiMsg ? '0' : '10px 14px',
                         fontSize: 14.5, lineHeight: 1.6,
                         wordBreak: 'break-word', userSelect: 'text', cursor: 'text',
                         overflow: 'hidden',
@@ -469,6 +541,15 @@ export default function DMConversation({ session, profile, conversationId, other
                               isMe={isMe}
                               onOpenPost={onOpenPost}
                             />
+                          </>
+                        ) : ytVideoId ? (
+                          <>
+                            {ytNonUrlText && (
+                              <div style={{ fontFamily: isMe ? 'inherit' : T.serif, marginBottom: 4 }}>
+                                {ytNonUrlText}
+                              </div>
+                            )}
+                            <YouTubeDmCard videoId={ytVideoId} isMe={isMe} />
                           </>
                         ) : (
                           <div style={{ fontFamily: isMe ? 'inherit' : T.serif }}>
