@@ -168,6 +168,22 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
     return () => window.removeEventListener('resize', handle);
   }, []);
 
+  // Realtime: refresh inbox when care conversations change (new message in or out)
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    const uid = session.user.id;
+    const channel = supabase
+      .channel(`inbox-care-rt-${uid}`)
+      // New conversation directed at this user (pastor/care team)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'care_conversations' },
+        () => setRefreshKey((k) => k + 1))
+      // last_message_at updated (new message in existing convo)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'care_conversations' },
+        () => setRefreshKey((k) => k + 1))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [session?.user?.id]);
+
   useEffect(() => {
     if (!session?.user?.id) return;
     setLoading(true);

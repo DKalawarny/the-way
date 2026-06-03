@@ -3312,6 +3312,9 @@ export default function App() {
             else if (n.target_type === 'sermon')    { setViewingSermonId(n.target_id); setStage('sermon-view'); }
             else if (n.target_type === 'friend_request') { setViewingUserId(n.actor_id); }
             else if (n.kind === 'follow') { setViewingUserId(n.actor_id); }
+            else if (n.kind === 'care_message' || n.target_type === 'care_conversation') {
+              setStage('messages');
+            }
             else if (n.kind === 'dm_message' || n.target_type === 'dm_conversation') {
               const convId = n.data?.conversation_id ?? n.target_id;
               if (convId && n.actor_id) {
