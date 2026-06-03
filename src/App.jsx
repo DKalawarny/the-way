@@ -3350,7 +3350,9 @@ export default function App() {
       )}
 
       {/* ── Feature tour — shown once to new users, re-openable from Help ── */}
-      {showTour && session && (
+      {/* Only show tour when verse card is not active — verse greets first,
+          tour follows after dismissal so they don't stack/fog each other. */}
+      {showTour && !showVerseCard && session && (
         <FeatureTour onClose={() => setShowTour(false)} />
       )}
 
