@@ -403,12 +403,20 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                 padding: '12px 14px',
                 background: T.parchment,
               }}>
-                <div style={{
-                  fontSize: 12.5, fontWeight: 600, color: T.inkSoft,
-                  fontFamily: T.sans, marginBottom: 6,
-                }}>
-                  {post.body_data.repost_author_name}
-                </div>
+                {/* Original author row — tappable to view their profile */}
+                <button
+                  onClick={() => post.body_data.repost_author_id && onViewProfile?.(post.body_data.repost_author_id)}
+                  style={{
+                    background: 'none', border: 'none', padding: 0, marginBottom: 8,
+                    cursor: post.body_data.repost_author_id ? 'pointer' : 'default',
+                    display: 'flex', alignItems: 'center', gap: 8,
+                  }}
+                >
+                  <Avatar size={28} profile={{ display_name: post.body_data.repost_author_name }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: T.inkSoft, fontFamily: T.sans }}>
+                    {post.body_data.repost_author_name ?? 'Someone'}
+                  </span>
+                </button>
                 <div style={{
                   fontFamily: T.display, fontSize: 15, color: T.ink,
                   lineHeight: 1.5, whiteSpace: 'pre-wrap',

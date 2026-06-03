@@ -27,7 +27,7 @@ const PRAYER_REACTIONS = [
   { kind: 'strength', emoji: '💪', label: 'Strength' },
 ];
 
-function ProfilePost({ post, session, profile, onReact, churchCtx, onDelete }) {
+function ProfilePost({ post, session, profile, onReact, churchCtx, onDelete, onViewProfile }) {
   const [expanded,     setExpanded]     = useState(false);
   const [sheetOpen,    setSheetOpen]    = useState(false);
   const [replies,      setReplies]      = useState(null);
@@ -213,18 +213,46 @@ function ProfilePost({ post, session, profile, onReact, churchCtx, onDelete }) {
             </div>
           ) : (
             <>
-              {displayBody && (
-                <div style={{ fontFamily: T.serif, fontSize: 16, color: T.ink, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
-                  {(() => { const t = stripFirstUrl(displayBody); return expanded ? t : (t.slice(0, 300) + (t.length > 300 ? '…' : '')); })()}
+              {/* FB-style repost card */}
+              {post.body_data?.repost_of ? (
+                <div>
+                  {displayBody ? (
+                    <div style={{ fontFamily: T.serif, fontSize: 16, color: T.ink, lineHeight: 1.75, whiteSpace: 'pre-wrap', marginBottom: 10 }}>
+                      {displayBody}
+                    </div>
+                  ) : null}
+                  <div style={{ border: `1px solid ${T.line}`, borderRadius: 10, padding: '12px 14px', background: T.parchment }}>
+                    <button
+                      onClick={() => post.body_data.repost_author_id && onViewProfile?.(post.body_data.repost_author_id)}
+                      style={{ background: 'none', border: 'none', padding: 0, cursor: post.body_data.repost_author_id ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}
+                    >
+                      <Avatar size={26} profile={{ display_name: post.body_data.repost_author_name }} />
+                      <span style={{ fontSize: 12.5, fontWeight: 600, color: T.inkSoft }}>{post.body_data.repost_author_name ?? 'Someone'}</span>
+                    </button>
+                    {post.body_data.repost_body ? (
+                      <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+                        {post.body_data.repost_body}
+                      </div>
+                    ) : null}
+                    {post.body_data.repost_body && <LinkPreview text={post.body_data.repost_body} />}
+                  </div>
                 </div>
+              ) : (
+                <>
+                  {displayBody && (
+                    <div style={{ fontFamily: T.serif, fontSize: 16, color: T.ink, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
+                      {(() => { const t = stripFirstUrl(displayBody); return expanded ? t : (t.slice(0, 300) + (t.length > 300 ? '…' : '')); })()}
+                    </div>
+                  )}
+                  {(stripFirstUrl(displayBody ?? '').length ?? 0) > 300 && (
+                    <button onClick={() => setExpanded((v) => !v)} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 13, cursor: 'pointer', padding: '6px 0 0', display: 'block' }}>
+                      {expanded ? 'Show less' : 'Read more'}
+                    </button>
+                  )}
+                  <LinkPreview text={displayBody} />
+                  <PostImageGrid urls={post.body_data?.image_urls} />
+                </>
               )}
-              {(stripFirstUrl(displayBody ?? '').length ?? 0) > 300 && (
-                <button onClick={() => setExpanded((v) => !v)} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 13, cursor: 'pointer', padding: '6px 0 0', display: 'block' }}>
-                  {expanded ? 'Show less' : 'Read more'}
-                </button>
-              )}
-              <LinkPreview text={displayBody} />
-              <PostImageGrid urls={post.body_data?.image_urls} />
             </>
           )}
         </div>
@@ -1380,6 +1408,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                 profile={profile}
                 onReact={handleReact}
                 churchCtx={churchCtx}
+                onViewProfile={onViewProfile}
                 onDelete={(id) => {
                   setPosts((prev) => prev.filter((x) => x.id !== id));
                   setStats((s) => ({ ...s, posts: Math.max(0, s.posts - 1) }));
