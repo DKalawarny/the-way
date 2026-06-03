@@ -67,8 +67,10 @@ function DeleteConfirmModal({ name, onConfirm, onCancel }) {
   );
 }
 
-function ThreadRow({ name, avatarConfig, photoUrl, subtitle, subtitleColor, lastBody, ts, onOpen, accent, active, onDelete, unread }) {
+function ThreadRow({ name, avatarConfig, photoUrl, subtitle, subtitleColor, lastBody, ts, onOpen, accent, active, onDelete, onMarkUnread, unread }) {
   const [hovered, setHovered] = useState(false);
+  // How many action buttons are on the right (delete + mark-unread)
+  const actionCount = (onDelete ? 1 : 0) + (onMarkUnread ? 1 : 0);
   return (
     <div
       style={{ position: 'relative', marginBottom: 8 }}
@@ -79,11 +81,11 @@ function ThreadRow({ name, avatarConfig, photoUrl, subtitle, subtitleColor, last
         onClick={onOpen}
         style={{
           display: 'block', width: '100%', textAlign: 'left',
-          background: active ? `${T.gold}1A` : unread ? `rgba(184,115,58,0.06)` : accent ? T.parchment : T.white,
-          border: active ? `1px solid ${T.gold}66` : unread ? `1px solid rgba(184,115,58,0.3)` : accent ? `1px solid ${T.gold}88` : `1px solid ${T.line}`,
+          background: active ? `${T.gold}1A` : unread ? `rgba(184,115,58,0.08)` : accent ? T.parchment : T.white,
+          border: active ? `1px solid ${T.gold}66` : unread ? `1px solid rgba(184,115,58,0.35)` : accent ? `1px solid ${T.gold}88` : `1px solid ${T.line}`,
           borderRadius: 14,
           padding: '12px 14px',
-          paddingRight: onDelete ? 42 : 14,
+          paddingRight: actionCount > 0 ? (actionCount * 36 + 14) : 14,
           cursor: 'pointer',
           boxShadow: accent && !active ? `0 0 0 3px ${T.gold}14` : 'none',
           transition: 'background 0.12s, border-color 0.12s',
@@ -121,23 +123,55 @@ function ThreadRow({ name, avatarConfig, photoUrl, subtitle, subtitleColor, last
           }}>{lastBody}</div>
         )}
       </button>
-      {onDelete && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          title="Delete conversation"
-          style={{
-            position: 'absolute', top: '50%', right: 10,
-            transform: 'translateY(-50%)',
-            background: hovered ? 'rgba(192,57,43,0.12)' : 'transparent',
-            border: 'none',
-            color: hovered ? '#c0392b' : T.inkMuted,
-            fontSize: 17, lineHeight: 1,
-            cursor: 'pointer', padding: '4px 8px', borderRadius: 8, zIndex: 1,
-            opacity: hovered ? 1 : 0.4,
-            transition: 'all 0.15s',
-          }}
-        >×</button>
-      )}
+
+      {/* Action buttons: mark-unread (dot) + delete (×), revealed on hover */}
+      <div style={{
+        position: 'absolute', top: '50%', right: 6,
+        transform: 'translateY(-50%)',
+        display: 'flex', alignItems: 'center', gap: 2,
+        opacity: hovered ? 1 : 0,
+        transition: 'opacity 0.15s',
+        pointerEvents: hovered ? 'auto' : 'none',
+      }}>
+        {onMarkUnread && !unread && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onMarkUnread(); }}
+            title="Mark as unread"
+            style={{
+              width: 28, height: 28,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'transparent', border: 'none',
+              borderRadius: 8, cursor: 'pointer',
+              color: T.goldDark,
+              transition: 'background 0.12s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = `rgba(184,115,58,0.12)`; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            {/* Filled dot = "mark unread" */}
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="4.5" fill={T.goldDark} />
+              <circle cx="7" cy="7" r="6" stroke={T.goldDark} strokeWidth="1.2" fill="none" />
+            </svg>
+          </button>
+        )}
+        {onDelete && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            title="Delete conversation"
+            style={{
+              width: 28, height: 28,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'transparent', border: 'none',
+              borderRadius: 8, cursor: 'pointer',
+              color: T.inkMuted, fontSize: 17, lineHeight: 1,
+              transition: 'background 0.12s, color 0.12s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(192,57,43,0.12)'; e.currentTarget.style.color = '#c0392b'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.inkMuted; }}
+          >×</button>
+        )}
+      </div>
     </div>
   );
 }
@@ -167,6 +201,12 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
   const [openDm, setOpenDm] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const initialCareIdRef = useRef(initialCareId);
+  const [readVersion, setReadVersion] = useState(0); // bumped to re-render unread state without full reload
+
+  function markUnread(id) {
+    localStorage.removeItem(`kinwove:conv-read:${id}`);
+    setReadVersion((v) => v + 1);
+  }
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -411,6 +451,7 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
                 accent={isSystem}
                 active={!isMobile && openDm?.id === c.id}
                 onDelete={() => setDeleteConfirm({ type: 'dm', id: c.id, name: c.otherProfile?.display_name ?? 'this person' })}
+                onMarkUnread={() => markUnread(c.id)}
               />
             );
           })}
@@ -440,6 +481,7 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
                 onOpen={() => { markConvRead(c.id); setOpenDm(null); setOpenCare({ id: c.id, side: c._side }); }}
                 active={!isMobile && openCare?.id === c.id}
                 onDelete={() => setDeleteConfirm({ type: 'care', id: c.id, name: displayName })}
+                onMarkUnread={() => markUnread(c.id)}
               />
             );
           })}
