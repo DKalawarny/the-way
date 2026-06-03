@@ -17,7 +17,84 @@ function timeAgo(ts) {
 // The system "kinwove" account is identified by display_name — read-only thread
 const isSystemAccount = (p) => p?.display_name === 'kinwove';
 
-export default function DMConversation({ session, profile, conversationId, otherProfile, onBack, initialMessage }) {
+// Matches a kinwove post deep-link in a message body (also handles localhost in dev)
+const KINWOVE_POST_RE = /(?:kinwove\.com|localhost:\d+)(?:\/[^?\s]*)?[?&]post=([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i;
+const YT_RE_DM = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
+
+// Rich post link preview — shown inside DM bubbles instead of a raw URL
+function PostLinkCard({ postId, isMe, onOpenPost }) {
+  const [post, setPost] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/post/${postId}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.post) setPost(data.post); setLoaded(true); })
+      .catch(() => setLoaded(true));
+  }, [postId]);
+
+  if (!loaded) return (
+    <div style={{ height: 64, background: 'rgba(255,255,255,0.12)', borderRadius: 10, marginTop: 4 }} />
+  );
+  if (!post) return null;
+
+  const bodyData = post.body_data ?? {};
+  const rawText = post.body ?? '';
+  const allText = [rawText, bodyData.repost_body ?? ''].join(' ');
+  const ytMatch = allText.match(YT_RE_DM);
+  const ytId = ytMatch?.[1] ?? null;
+  const displayText = (bodyData.repost_body ?? rawText).replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim();
+  const authorName = post.profiles?.display_name ?? 'kinwove';
+
+  return (
+    <div
+      onClick={() => onOpenPost?.(postId)}
+      role="link"
+      style={{
+        marginTop: 6,
+        background: isMe ? 'rgba(255,255,255,0.15)' : T.parchment,
+        border: `1px solid ${isMe ? 'rgba(255,255,255,0.25)' : 'rgba(184,115,58,0.22)'}`,
+        borderRadius: 12, overflow: 'hidden', cursor: onOpenPost ? 'pointer' : 'default',
+        WebkitTapHighlightColor: 'transparent',
+      }}
+    >
+      {ytId && (
+        <img
+          src={`https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`}
+          alt="Video thumbnail"
+          style={{ width: '100%', display: 'block', aspectRatio: '16/9', objectFit: 'cover' }}
+        />
+      )}
+      <div style={{ padding: '8px 11px 9px' }}>
+        <div style={{
+          fontSize: 11, fontWeight: 700, letterSpacing: '0.03em', textTransform: 'uppercase',
+          color: isMe ? 'rgba(255,255,255,0.6)' : T.goldDark, marginBottom: 3,
+        }}>
+          {authorName} · kinwove
+        </div>
+        {displayText ? (
+          <div style={{
+            fontSize: 13, lineHeight: 1.45, color: isMe ? T.cream : T.ink,
+            display: '-webkit-box', WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          }}>
+            {displayText}
+          </div>
+        ) : null}
+        {onOpenPost && (
+          <div style={{
+            fontSize: 11.5, color: isMe ? 'rgba(255,255,255,0.55)' : T.inkMuted,
+            marginTop: 5, fontWeight: 600,
+          }}>
+            Tap to view post →
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function DMConversation({ session, profile, conversationId, otherProfile, onBack, initialMessage, onOpenPost }) {
   const [messages, setMessages] = useState([]);
   const DRAFT_KEY = `kw:dm-draft:${conversationId}`;
   // initialMessage (e.g. a share URL) takes priority over the saved draft
@@ -343,6 +420,15 @@ export default function DMConversation({ session, profile, conversationId, other
                     const AI_PREFIX = '✦ kinwove says:\n\n';
                     const isAiMsg = msg.body.startsWith(AI_PREFIX);
                     const aiBody = isAiMsg ? msg.body.slice(AI_PREFIX.length) : null;
+
+                    // Detect kinwove post link — show rich preview instead of raw URL
+                    const postMatch = !isAiMsg && msg.body.match(KINWOVE_POST_RE);
+                    const linkedPostId = postMatch?.[1] ?? null;
+                    // Any non-URL text before/around the link
+                    const nonUrlText = linkedPostId
+                      ? msg.body.replace(/https?:\/\/\S+/g, '').trim()
+                      : null;
+
                     return (
                       <div style={{
                         maxWidth: '75%',
@@ -350,7 +436,7 @@ export default function DMConversation({ session, profile, conversationId, other
                         color: T.ink,
                         border: isAiMsg ? `1px solid ${T.gold}88` : isMe ? 'none' : `1px solid ${T.line}`,
                         borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                        padding: isAiMsg ? '0' : '10px 14px',
+                        padding: linkedPostId ? '10px 10px 4px' : isAiMsg ? '0' : '10px 14px',
                         fontSize: 14.5, lineHeight: 1.6,
                         wordBreak: 'break-word', userSelect: 'text', cursor: 'text',
                         overflow: 'hidden',
@@ -369,6 +455,19 @@ export default function DMConversation({ session, profile, conversationId, other
                             <div style={{ padding: '10px 14px', fontFamily: T.serif }}>
                               <MsgText text={aiBody} />
                             </div>
+                          </>
+                        ) : linkedPostId ? (
+                          <>
+                            {nonUrlText && (
+                              <div style={{ fontFamily: isMe ? 'inherit' : T.serif, marginBottom: 4 }}>
+                                {nonUrlText}
+                              </div>
+                            )}
+                            <PostLinkCard
+                              postId={linkedPostId}
+                              isMe={isMe}
+                              onOpenPost={onOpenPost}
+                            />
                           </>
                         ) : (
                           <div style={{ fontFamily: isMe ? 'inherit' : T.serif }}>

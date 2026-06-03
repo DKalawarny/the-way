@@ -2937,6 +2937,7 @@ export default function App() {
           onBack={() => goBack('me')}
           pendingShareUrl={pendingShareUrl}
           onShareSent={() => setPendingShareUrl(null)}
+          onOpenPost={(postId) => { setOpenCommentPostId(postId); setStage('feed'); }}
         />
       )}
       {stage === 'dm-conversation' && session && activeDmConv && (
@@ -2946,6 +2947,7 @@ export default function App() {
           conversationId={activeDmConv.id}
           otherProfile={activeDmConv.otherProfile}
           onBack={() => goBack('messages')}
+          onOpenPost={(postId) => { setOpenCommentPostId(postId); setStage('feed'); }}
         />
       )}
       {stage === 'care-admin' && session && pastorChurchId && (
