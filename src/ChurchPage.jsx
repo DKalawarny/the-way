@@ -1286,31 +1286,31 @@ export default function ChurchPage({
                 background: T.parchment,
                 border: `1px solid rgba(184,115,58,0.20)`,
                 borderRadius: 16,
-                overflow: ‘hidden’,
+                overflow: 'hidden',
                 marginBottom: 16,
               }}>
                 {/* Gold accent bar */}
                 <div style={{ height: 3, background: `linear-gradient(90deg, transparent 0%, ${T.gold} 40%, ${T.goldLight} 70%, transparent 100%)` }} />
-                <div style={{ padding: ‘16px 20px 18px’ }}>
-                  <div style={{ fontSize: 11, letterSpacing: ‘0.12em’, textTransform: ‘uppercase’, color: T.goldDark, fontWeight: 700, marginBottom: 14 }}>
-                    What’s inside
+                <div style={{ padding: '16px 20px 18px' }}>
+                  <div style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 14 }}>
+                    What's inside
                   </div>
-                  <div style={{ display: ‘flex’, flexDirection: ‘column’, gap: 0 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                     {[
-                      { icon: ‘🎙’, title: ‘Sunday’s sermon, all week’, body: ‘Daily questions, discussion, and notes tied to what your pastor preached.’ },
-                      { icon: ‘🙏’, title: ‘Prayer together’, body: ‘Pray with your church between Sundays. Anonymous when you need it to be.’ },
-                      { icon: ‘🔒’, title: ‘A quiet space’, body: ‘No algorithms, no ads, no strangers. Just your church.’ },
+                      { icon: '🎙', title: "Sunday's sermon, all week", body: "Daily questions, discussion, and notes tied to what your pastor preached." },
+                      { icon: '🙏', title: "Prayer together", body: "Pray with your church between Sundays. Anonymous when you need it to be." },
+                      { icon: '🔒', title: "A quiet space", body: "No algorithms, no ads, no strangers. Just your church." },
                     ].map((row, i) => (
                       <div key={row.title} style={{
-                        display: ‘flex’, gap: 13, alignItems: ‘flex-start’,
+                        display: 'flex', gap: 13, alignItems: 'flex-start',
                         paddingTop: i === 0 ? 0 : 12,
                         marginTop: i === 0 ? 0 : 12,
-                        borderTop: i === 0 ? ‘none’ : `1px solid rgba(184,115,58,0.13)`,
+                        borderTop: i === 0 ? 'none' : `1px solid rgba(184,115,58,0.13)`,
                       }}>
                         <div style={{
                           width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-                          background: ‘rgba(255,255,255,0.70)’,
-                          display: ‘flex’, alignItems: ‘center’, justifyContent: ‘center’,
+                          background: 'rgba(255,255,255,0.70)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: 15,
                         }}>{row.icon}</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
