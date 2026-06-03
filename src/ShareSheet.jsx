@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { T } from './theme.js';
-import { stripFirstUrl } from './LinkPreview.jsx';
 
 export default function ShareSheet({
   body,
   url,
   title,
-  intro = '✦ kinwove · Your church, between Sundays',
+  intro = '✦ kinwove · Big questions, ancient text, modern conversation.',
   previewBody,
   customActions = [],
   onClose,
@@ -61,12 +60,9 @@ export default function ShareSheet({
   }
 
   const shareUrl = url ?? window.location.origin;
-  // Strip embedded URLs from the body so links don't duplicate in the share text —
-  // the shareUrl at the end will generate the kinwove OG card preview instead.
-  const cleanBody = body ? stripFirstUrl(body).trim() : '';
-  const shareText = cleanBody ? `"${cleanBody}"\n\n${intro}` : intro;
+  const shareText = body ? `"${body}"\n\n${intro}` : intro;
   const fullText = `${shareText}\n${shareUrl}`;
-  const preview = previewBody ?? cleanBody ?? body ?? '';
+  const preview = previewBody ?? body ?? '';
 
   function handleFacebook() {
     const u = encodeURIComponent(shareUrl);
