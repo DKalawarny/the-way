@@ -1970,9 +1970,10 @@ export default function App() {
               loadProfile(s.user.id);
             } else {
               loadProfile(s.user.id).then((prof) => {
-                // New user arriving via email confirmation link — no profile yet.
-                // Show the wizard instead of sending them to the feed.
-                if (!prof && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
+                // New user — no profile yet, OR profile was auto-created by a
+                // Supabase trigger (has display_name but no person_type, meaning
+                // the wizard was never completed). Route to wizard in both cases.
+                if ((!prof || !prof.person_type) && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
                   setAuthStage('profile-setup');
                   return;
                 }
