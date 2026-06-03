@@ -451,7 +451,7 @@ export default function ShareSheet({
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: copied ? T.goldDark : T.ink }}>
-                  {copied ? 'Copied!' : 'Copy link'}
+                  {copied ? 'Copied!' : 'Copy message'}
                 </div>
               </div>
             </button>

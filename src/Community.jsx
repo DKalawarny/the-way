@@ -765,9 +765,10 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
       {shareOpen && (
         <ShareSheet
           body={post.body}
+          previewBody={stripFirstUrl(post.body ?? '').trim() || undefined}
           title="Share this post"
           customActions={[
-            session && {
+            session && post.author_id !== session.user.id && {
               id: 'repost', icon: '↩', label: 'Repost to feed',
               sub: 'Share with attribution to your followers',
               doneLabel: 'Reposted',
@@ -1371,11 +1372,15 @@ useEffect(() => {
     const authorName = post.profiles?.display_name ?? 'Someone';
     const body = `"${post.body}"\n\n— ${authorName}`;
     if (target === 'feed') {
-      await supabase.from('posts').insert({
+      const { error } = await supabase.from('posts').insert({
         author_id: session.user.id,
+        scope: 'me',
+        scope_id: null,
+        kind: 'text',
         body,
         person_type: post.person_type ?? profile?.person_type ?? null,
       });
+      if (!error) loadPosts();
     } else if (target === 'group' && userGroup) {
       await supabase.from('group_posts').insert({
         group_id: userGroup.group.id,
@@ -1383,7 +1388,6 @@ useEffect(() => {
         body,
       });
     }
-    if (target === 'feed') loadPosts();
   }
 
   const loadCommunityPrayers = useCallback(async () => {
