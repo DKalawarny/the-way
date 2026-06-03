@@ -37,9 +37,15 @@ const STEPS = [
     color: '#4a1542',
   },
   {
+    tourId: 'notifications',
+    title: 'Stay in the loop',
+    body: "You'll be notified when someone reacts to your post, prays for you, or sends you a message. Tap the bell to see it all.",
+    color: '#2e5970',
+  },
+  {
     tourId: 'you',
     title: 'Your space',
-    body: 'Your profile, prayers, messages, faith walks, saved posts, and milestones — everything that\'s yours.',
+    body: 'Your profile, faith walks, messages, prayer wall, and milestones — everything that\'s yours to explore and come back to.',
     color: '#1a3050',
   },
 ];

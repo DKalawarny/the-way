@@ -284,6 +284,7 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
   return (
     <>
       <button
+        data-tour-id="notifications"
         onClick={togglePanel}
         aria-label="Notifications"
         title="Notifications"
