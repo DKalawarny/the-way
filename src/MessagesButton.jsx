@@ -2,53 +2,93 @@ import { useEffect, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 
-const STORAGE_KEY = 'kinwove:messages-last-opened';
+// Per-conversation read timestamps (written by MessagesInbox when a conv is opened)
+const convReadTime = (id) => localStorage.getItem(`kinwove:conv-read:${id}`) ?? '1970-01-01T00:00:00Z';
 
 export default function MessagesButton({ session, rightOffset = 0, isDesktop = false, onClick }) {
   const [unread, setUnread] = useState(0);
 
+  async function computeUnread(uid) {
+    const [{ data: dms }, { data: careOut }, { data: careIn }] = await Promise.all([
+      supabase
+        .from('dm_conversations')
+        .select('id, last_message_at, participant_ids')
+        .contains('participant_ids', [uid]),
+      supabase
+        .from('care_conversations')
+        .select('id, last_message_at')
+        .eq('requester_id', uid),
+      supabase
+        .from('care_conversations')
+        .select('id, last_message_at')
+        .eq('care_member_id', uid),
+    ]);
+
+    // Merge care both directions, deduplicate
+    const careMap = new Map();
+    [...(careOut ?? []), ...(careIn ?? [])].forEach((c) => careMap.set(c.id, c));
+    const allCare = [...careMap.values()];
+
+    // DM unread: last_message_at > convReadTime AND latest message not from me
+    let dmUnread = 0;
+    const staleConvDms = (dms ?? []).filter((c) => c.last_message_at && c.last_message_at > convReadTime(c.id));
+    if (staleConvDms.length) {
+      const { data: latestMsgs } = await supabase
+        .from('dm_messages')
+        .select('conversation_id, sender_id')
+        .in('conversation_id', staleConvDms.map((c) => c.id))
+        .order('created_at', { ascending: false });
+      const seen = new Set();
+      (latestMsgs ?? []).forEach((m) => {
+        if (!seen.has(m.conversation_id)) {
+          seen.add(m.conversation_id);
+          if (m.sender_id !== uid) dmUnread++;
+        }
+      });
+    }
+
+    // Care unread: last_message_at > convReadTime AND latest message not from me
+    let careUnread = 0;
+    const staleCare = allCare.filter((c) => c.last_message_at && c.last_message_at > convReadTime(c.id));
+    if (staleCare.length) {
+      const { data: latestMsgs } = await supabase
+        .from('care_messages')
+        .select('conversation_id, sender_id')
+        .in('conversation_id', staleCare.map((c) => c.id))
+        .order('created_at', { ascending: false });
+      const seen = new Set();
+      (latestMsgs ?? []).forEach((m) => {
+        if (!seen.has(m.conversation_id)) {
+          seen.add(m.conversation_id);
+          if (m.sender_id !== uid) careUnread++;
+        }
+      });
+    }
+
+    setUnread(dmUnread + careUnread);
+  }
+
   useEffect(() => {
     if (!session?.user?.id) return;
     const uid = session.user.id;
-    const lastOpened = localStorage.getItem(STORAGE_KEY) ?? '1970-01-01T00:00:00Z';
+    computeUnread(uid);
 
-    (async () => {
-      const [{ data: dms }, { data: care }] = await Promise.all([
-        supabase
-          .from('dm_conversations')
-          .select('id, last_message_at, participant_ids')
-          .contains('participant_ids', [uid])
-          .gt('last_message_at', lastOpened),
-        supabase
-          .from('care_conversations')
-          .select('id, last_message_at')
-          .eq('requester_id', uid)
-          .gt('last_message_at', lastOpened),
-      ]);
-
-      // Only count DM threads where the latest message was from the other person
-      let dmUnread = 0;
-      if (dms?.length) {
-        const { data: latestMsgs } = await supabase
-          .from('dm_messages')
-          .select('conversation_id, sender_id')
-          .in('conversation_id', dms.map((c) => c.id))
-          .order('created_at', { ascending: false });
-        const seen = new Set();
-        (latestMsgs ?? []).forEach((m) => {
-          if (!seen.has(m.conversation_id)) {
-            seen.add(m.conversation_id);
-            if (m.sender_id !== uid) dmUnread++;
-          }
-        });
-      }
-
-      setUnread(dmUnread + (care?.length ?? 0));
-    })();
+    // Realtime: recompute when any message arrives
+    const channel = supabase
+      .channel(`msg-btn-rt-${uid}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'care_messages' },
+        () => computeUnread(uid))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'dm_messages' },
+        () => computeUnread(uid))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'care_conversations' },
+        () => computeUnread(uid))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'dm_conversations' },
+        () => computeUnread(uid))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [session?.user?.id]);
 
   function handleClick() {
-    localStorage.setItem(STORAGE_KEY, new Date().toISOString());
     setUnread(0);
     onClick?.();
   }
@@ -63,8 +103,6 @@ export default function MessagesButton({ session, rightOffset = 0, isDesktop = f
       title="Messages"
       style={{
         position: 'fixed',
-        // Desktop: centre in the 56px global header (56-44)/2=6px
-        // Mobile: clear the safe-area notch
         top: isDesktop ? 6 : 'calc(env(safe-area-inset-top, 0px) + 10px)',
         right,
         width: 44, height: 44, borderRadius: '50%',

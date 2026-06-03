@@ -6,6 +6,15 @@ import CareConversation from './CareConversation.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar';
 const DMConversation = lazy(() => import('./DMConversation.jsx'));
 
+// Per-conversation read tracking in localStorage
+function markConvRead(id) {
+  if (!id) return;
+  localStorage.setItem(`kinwove:conv-read:${id}`, new Date().toISOString());
+}
+function convReadTime(id) {
+  return localStorage.getItem(`kinwove:conv-read:${id}`) ?? '1970-01-01T00:00:00Z';
+}
+
 function timeAgo(ts) {
   const diff = (Date.now() - new Date(ts)) / 1000;
   if (diff < 60) return 'just now';
@@ -169,21 +178,29 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
     return () => window.removeEventListener('resize', handle);
   }, []);
 
-  // Realtime: refresh inbox when care conversations change (new message in or out)
+  // Realtime: refresh inbox when care/DM conversations change
   useEffect(() => {
     if (!session?.user?.id) return;
     const uid = session.user.id;
     const channel = supabase
       .channel(`inbox-care-rt-${uid}`)
-      // New conversation directed at this user (pastor/care team)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'care_conversations' },
         () => setRefreshKey((k) => k + 1))
-      // last_message_at updated (new message in existing convo)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'care_conversations' },
+        () => setRefreshKey((k) => k + 1))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'dm_conversations' },
         () => setRefreshKey((k) => k + 1))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [session?.user?.id]);
+
+  // Auto-mark currently open conversation as read when new messages arrive
+  useEffect(() => {
+    if (openCare?.id) markConvRead(openCare.id);
+  }, [openCare?.id, careLastMsgs]);
+  useEffect(() => {
+    if (openDm?.id) markConvRead(openDm.id);
+  }, [openDm?.id, dmLastMsgs]);
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -282,6 +299,7 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
       if (initialCareIdRef.current) {
         const target = merged.find((c) => c.id === initialCareIdRef.current);
         if (target) {
+          markConvRead(target.id);
           setOpenCare({ id: target.id, side: target._side });
           initialCareIdRef.current = null; // only auto-open once
           onInitialCareConsumed?.();       // clear pendingCareId in App
@@ -384,8 +402,12 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
                 subtitleColor={isSystem ? T.goldDark : undefined}
                 ts={c.last_message_at ?? c.created_at}
                 lastBody={dmLastMsgs[c.id]?.body}
-                unread={!!dmLastMsgs[c.id] && dmLastMsgs[c.id].sender_id !== session?.user?.id}
-                onOpen={() => { setOpenCare(null); setOpenDm({ id: c.id, otherProfile: c.otherProfile, initialMessage: pendingShareUrl ?? undefined }); if (pendingShareUrl) onShareSent?.(); }}
+                unread={
+                  !!dmLastMsgs[c.id] &&
+                  dmLastMsgs[c.id].sender_id !== session?.user?.id &&
+                  (c.last_message_at ?? c.created_at) > convReadTime(c.id)
+                }
+                onOpen={() => { markConvRead(c.id); setOpenCare(null); setOpenDm({ id: c.id, otherProfile: c.otherProfile, initialMessage: pendingShareUrl ?? undefined }); if (pendingShareUrl) onShareSent?.(); }}
                 accent={isSystem}
                 active={!isMobile && openDm?.id === c.id}
                 onDelete={() => setDeleteConfirm({ type: 'dm', id: c.id, name: c.otherProfile?.display_name ?? 'this person' })}
@@ -410,7 +432,12 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
                 subtitleColor={isIncoming ? T.goldDark : CARE_STATUS_COLOR[c.status]}
                 ts={c.last_message_at ?? c.created_at}
                 lastBody={careLastMsgs[c.id]?.body}
-                onOpen={() => { setOpenDm(null); setOpenCare({ id: c.id, side: c._side }); }}
+                unread={
+                  !!careLastMsgs[c.id] &&
+                  careLastMsgs[c.id].sender_id !== session?.user?.id &&
+                  (c.last_message_at ?? c.created_at) > convReadTime(c.id)
+                }
+                onOpen={() => { markConvRead(c.id); setOpenDm(null); setOpenCare({ id: c.id, side: c._side }); }}
                 active={!isMobile && openCare?.id === c.id}
                 onDelete={() => setDeleteConfirm({ type: 'care', id: c.id, name: displayName })}
               />
