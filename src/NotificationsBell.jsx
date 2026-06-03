@@ -246,15 +246,22 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
     if (!open) {
       setOpen(true);
       loadRecent();
-      // Mark-as-read happens after a brief delay so the user sees the
-      // unread highlight before it fades — matches FB's behavior.
-      setTimeout(() => markAllRead(), 800);
     } else {
       setOpen(false);
     }
   }
 
-  function handleClick(n) {
+  async function handleClick(n) {
+    // Mark this notification read if it isn't already
+    if (!n.read_at) {
+      const now = new Date().toISOString();
+      await supabase
+        .from('notifications')
+        .update({ read_at: now })
+        .eq('id', n.id);
+      setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read_at: now } : x));
+      setUnreadCount(c => Math.max(0, c - 1));
+    }
     setOpen(false);
     onNavigate?.(n);
   }
