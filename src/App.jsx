@@ -1917,7 +1917,7 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => {
       _setSession(data.session ?? null);
       if (data.session) {
-        if (deepLinkPostId) { setStage('feed'); loadProfile(data.session.user.id); }
+        if (deepLinkPostId) { localStorage.removeItem('kw:stage'); setStage('feed'); loadProfile(data.session.user.id); }
         else if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); loadProfile(data.session.user.id); }
         else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); loadProfile(data.session.user.id); }
         else {
@@ -1949,7 +1949,9 @@ export default function App() {
         // here would yank them back to the saved screen mid-session.
         const isInitialLoad = event === 'SIGNED_IN' || event === 'INITIAL_SESSION';
         if (isInitialLoad) {
-          if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); }
+          // Deep link always wins — never let localStorage override it
+          if (deepLinkPostId) { setStage('feed'); loadProfile(s.user.id); }
+          else if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); }
           else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); }
           else {
             const local = localStorage.getItem('kw:stage');
