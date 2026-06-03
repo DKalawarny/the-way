@@ -2756,11 +2756,11 @@ export default function App() {
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
           onOpenWalks={() => setStage('walks')}
           onOpenTalkToSomeone={profile?.church_id ? () => { setViewingChurchId(profile.church_id); setStage('talk-to-someone'); } : undefined}
-          onOpenCareInbox={careTeamRecord ? () => setStage('care-inbox') : undefined}
+          onOpenCareInbox={(careTeamRecord || pastorChurchId) ? () => setStage('care-inbox') : undefined}
           onOpenMessages={() => setStage('messages')}
           onOpenConnect={() => setStage('connect')}
           onOpenPastorDashboard={pastorChurchId ? () => setStage('church-admin') : undefined}
-          hasCareTeamRole={!!careTeamRecord}
+          hasCareTeamRole={!!(careTeamRecord || pastorChurchId)}
           hasPastoredChurch={!!pastorChurchId}
           onUpgrade={() => setShowUpgrade(true)}
         />
@@ -2858,7 +2858,7 @@ export default function App() {
             onOpenTalkToSomeone={(profile?.church_id === viewingChurchId || pastorChurchId === viewingChurchId)
               ? () => setStage('talk-to-someone')
               : undefined}
-            onOpenCareInbox={careTeamRecord ? () => setStage('care-inbox') : undefined}
+            onOpenCareInbox={(careTeamRecord || pastorChurchId) ? () => setStage('care-inbox') : undefined}
             onOpenWalks={() => setStage('walks')}
             onFindChurches={() => setStage('churches')}
             onRequestJoin={!session
@@ -3204,7 +3204,7 @@ export default function App() {
             session={session}
             profile={profile}
             chatOpen={chatPanelOpen}
-            hasCareTeamRole={!!careTeamRecord}
+            hasCareTeamRole={!!(careTeamRecord || pastorChurchId)}
             hasPastoredChurch={!!pastorChurchId}
             onGoHome={() => { setViewingUserId(null); setStage('home'); }}
             onGoChurch={() => {
@@ -3221,7 +3221,7 @@ export default function App() {
             onOpenHistory={() => { setViewingUserId(null); setStage('feed'); setHistoryOpen(true); }}
             onInviteFriends={() => { setViewingUserId(null); setStage('invite'); }}
             onOpenTalkToSomeone={profile?.church_id ? () => { setViewingUserId(null); setViewingChurchId(profile.church_id); setStage('talk-to-someone'); } : undefined}
-            onOpenCareInbox={careTeamRecord ? () => { setViewingUserId(null); setStage('care-inbox'); } : undefined}
+            onOpenCareInbox={(careTeamRecord || pastorChurchId) ? () => { setViewingUserId(null); setStage('care-inbox'); } : undefined}
             onOpenPastorDashboard={pastorChurchId ? () => { setViewingUserId(null); setStage('church-admin'); } : undefined}
             onFindChurches={() => { setViewingUserId(null); setStage('churches'); }}
             onApplyAsPastor={() => { setViewingUserId(null); setStage('pastor-apply'); }}
@@ -3260,7 +3260,7 @@ export default function App() {
       {showTopRight && (
         <TopRightMenu
           profile={profile}
-          hasCareTeamRole={!!careTeamRecord}
+          hasCareTeamRole={!!(careTeamRecord || pastorChurchId)}
           hasPastoredChurch={!!pastorChurchId}
           isDesktop={isDesktop}
           rightOffset={isDocked ? chatPanelWidth : 0}
@@ -3269,7 +3269,7 @@ export default function App() {
           onFindPeople={() => setPeopleSearchOpen(true)}
           onInviteFriends={() => setStage('invite')}
           onOpenTalkToSomeone={profile?.church_id ? () => { setViewingChurchId(profile.church_id); setStage('talk-to-someone'); } : undefined}
-          onOpenCareInbox={careTeamRecord ? () => setStage('care-inbox') : undefined}
+          onOpenCareInbox={(careTeamRecord || pastorChurchId) ? () => setStage('care-inbox') : undefined}
           onOpenPastorDashboard={pastorChurchId ? () => setStage('church-admin') : undefined}
           onFindChurches={() => setStage('churches')}
           onApplyAsPastor={() => setStage('pastor-apply')}
