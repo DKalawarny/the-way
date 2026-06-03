@@ -688,6 +688,12 @@ const BIBLE_TOUR_STEPS = [
     body:   'Browse Old and New Testament anytime. Each book tracks how many chapters you\'ve read.',
     color:  T.goldDark,
   },
+  {
+    tourId: 'bible-badges',
+    title:  'Earn badges as you go',
+    body:   'Read 1 chapter → "Let There Be Light". Finish all 4 Gospels → "The Good News". Complete all 1,189 chapters → "The Living Word". One seal per book, 14 milestone badges total.',
+    color:  '#4a1542',
+  },
 ];
 
 const BIBLE_READ_TOUR_KEY   = 'kinwove:bible_read_tour_done';
@@ -1337,7 +1343,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
           const totalEarned      = earnedMilestones.length + earnedBooks.length;
           const totalBadges      = BADGES.length + ALL_BOOKS.length;
           return (
-            <div style={{ marginBottom: 32 }}>
+            <div data-tour-id="bible-badges" style={{ marginBottom: 32 }}>
               {/* Section header */}
               <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.verse, fontWeight: 700, marginBottom: 18 }}>
                 Badges · {totalEarned}/{totalBadges}
