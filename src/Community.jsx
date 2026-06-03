@@ -13,7 +13,7 @@ import { getDailyVerse } from './dailyVerse.js';
 import { codeToFlag } from './countries.js';
 import EmptyState from './EmptyState.jsx';
 import SponsoredCard from './SponsoredCard.jsx';
-import LinkPreview from './LinkPreview.jsx';
+import LinkPreview, { stripFirstUrl } from './LinkPreview.jsx';
 import { track } from './analytics.js';
 const PostComposer = lazy(() => import('./PostComposer.jsx'));
 
@@ -403,7 +403,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                 color: T.ink, lineHeight: 1.55, whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word',
                 letterSpacing: '-0.01em', fontVariationSettings: '"opsz" 18',
               }}>
-                {bodyExpanded ? post.body : post.body.slice(0, 280) + (post.body.length > 280 ? '…' : '')}
+                {(() => { const t = stripFirstUrl(post.body); return bodyExpanded ? t : t.slice(0, 280) + (t.length > 280 ? '…' : ''); })()}
               </div>
             </div>
           ) : (
@@ -412,11 +412,11 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
               lineHeight: 1.55, margin: '6px 0 16px', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word',
               letterSpacing: '-0.01em', fontWeight: 400, fontVariationSettings: '"opsz" 18',
             }}>
-              {bodyExpanded ? post.body : post.body.slice(0, 280) + (post.body.length > 280 ? '…' : '')}
+              {(() => { const t = stripFirstUrl(post.body); return bodyExpanded ? t : t.slice(0, 280) + (t.length > 280 ? '…' : ''); })()}
             </div>
           )}
 
-          {post.body.length > 280 && (
+          {stripFirstUrl(post.body).length > 280 && (
             <button onClick={() => setBodyExpanded(v => !v)}
               style={{ background: 'none', border: 'none', color: tabText, fontSize: 13, cursor: 'pointer', padding: 0, marginBottom: 10 }}>
               {bodyExpanded ? 'Show less' : 'Read more'}
