@@ -6,6 +6,8 @@ import { useTextToSpeech } from './useTextToSpeech.js';
 import AiLimitWall from './AiLimitWall.jsx';
 import MsgText from './MsgText.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
+import { PERSON_TYPES } from './constants.js';
+import { PER_TYPE } from './prompts.js';
 
 const PASTORAL_SYSTEM = `You are a theological assistant for Christian church leaders and pastors. You speak from within the historic Christian faith — you hold that Jesus is Lord, that the Bible is the authoritative Word of God, and that the gospel is true. You are not a neutral academic observer. You are a well-read, pastorally grounded colleague helping a minister do their work better.
 
@@ -277,6 +279,16 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
   const [copiedIdx, setCopiedIdx] = useState(null);
   const [flaggedMsgs, setFlaggedMsgs] = useState(new Set());
 
+  // Mode
+  const [personType, setPersonType]     = useState(() => localStorage.getItem(`church_ask_mode_${userId}`) ?? 'deeper');
+  const [modePickerOpen, setModePickerOpen] = useState(false);
+
+  function setMode(id) {
+    setPersonType(id);
+    localStorage.setItem(`church_ask_mode_${userId}`, id);
+    setModePickerOpen(false);
+  }
+
   // UI
   const [menuOpen, setMenuOpen]       = useState(false);
   const [boardOpen, setBoardOpen]     = useState(false);
@@ -312,10 +324,11 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
     setBusy(true);
     let assistantContent = '';
     try {
+      const system = PASTORAL_SYSTEM + (PER_TYPE[personType] ?? '');
       const res = await authedFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ system: PASTORAL_SYSTEM, messages: next, personType: 'deeper', plan }),
+        body: JSON.stringify({ system, messages: next, personType, plan }),
       });
       if (!res.ok || !res.body) throw new Error((await res.text().catch(() => '')) || `HTTP ${res.status}`);
       setMessages((m) => [...m, { role: 'assistant', content: '' }]);
@@ -408,6 +421,73 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
             <KinwoveStar size={15} />
             <span style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 600, color: C.text, letterSpacing: '-0.01em' }}>Pastoral AI</span>
           </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* ── Switch Mode button ── */}
+            <div style={{ position: 'relative' }}>
+              {(() => {
+                const person = PERSON_TYPES.find((p) => p.id === personType);
+                return (
+                  <button
+                    onClick={() => setModePickerOpen((v) => !v)}
+                    style={{
+                      background: modePickerOpen ? 'rgba(184,115,58,0.22)' : C.card,
+                      border: `1px solid ${modePickerOpen ? T.gold : C.border}`,
+                      borderRadius: 999, padding: '4px 12px',
+                      fontSize: 12, color: modePickerOpen ? T.goldDark : C.soft,
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    {person?.emoji} {person?.label}
+                    <span style={{ fontSize: 9, opacity: 0.6, marginLeft: 1 }}>▾</span>
+                  </button>
+                );
+              })()}
+
+              {modePickerOpen && <div onClick={() => setModePickerOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 199 }} />}
+              {modePickerOpen && (
+                <div style={{
+                  position: 'fixed', top: '50%', left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  background: T.white, border: `1px solid ${T.line}`,
+                  borderRadius: 16, boxShadow: '0 12px 48px rgba(44,24,16,0.18)',
+                  padding: 10, zIndex: 200,
+                  width: 'min(calc(100vw - 32px), 420px)',
+                  maxHeight: '85vh', overflowY: 'auto',
+                }}>
+                  <div style={{ padding: '2px 4px 8px', fontSize: 10, letterSpacing: '0.07em', textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700 }}>
+                    Switch mode
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                    {PERSON_TYPES.map((pt) => {
+                      const active = pt.id === personType;
+                      return (
+                        <button
+                          key={pt.id}
+                          onClick={() => setMode(pt.id)}
+                          onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'rgba(184,115,58,0.06)'; }}
+                          onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = T.parchment; }}
+                          style={{
+                            textAlign: 'left', cursor: 'pointer',
+                            background: active ? 'rgba(184,115,58,0.10)' : T.parchment,
+                            border: `1.5px solid ${active ? T.gold : 'transparent'}`,
+                            borderRadius: 12, padding: '10px 10px',
+                            transition: 'background 0.12s', position: 'relative',
+                          }}
+                        >
+                          {active && <span style={{ position: 'absolute', top: 7, right: 9, fontSize: 10, color: T.goldDark, fontWeight: 700 }}>✓</span>}
+                          <div style={{ fontSize: 20, marginBottom: 5, lineHeight: 1 }}>{pt.emoji}</div>
+                          <div style={{ fontSize: 12.5, fontWeight: 700, color: active ? T.goldDark : T.ink, marginBottom: 3 }}>{pt.label}</div>
+                          <div style={{ fontSize: 10.5, color: T.inkMuted, lineHeight: 1.45 }}>{pt.description}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
           <div style={{ position: 'relative' }}>
             <button onClick={() => setMenuOpen((v) => !v)} style={{ background: menuOpen ? 'rgba(184,115,58,0.18)' : 'transparent', border: `1px solid ${menuOpen ? T.gold : C.border}`, color: C.soft, borderRadius: 999, padding: '5px 11px', fontSize: 16, cursor: 'pointer', lineHeight: 1 }}>⋮</button>
             {menuOpen && <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 199 }} />}
@@ -434,6 +514,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
               </div>
             )}
           </div>
+          </div>{/* end right-side flex group */}
         </div>
 
         {/* ── Messages ── */}

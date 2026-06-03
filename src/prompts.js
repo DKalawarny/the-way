@@ -372,6 +372,8 @@ This person has had a few conversations and is starting to find their footing. Y
 • Keep the tone accessible and story-forward. Still end with a question.`,
 };
 
+export { PER_TYPE };
+
 export function getSystemPrompt(personType, seekingContext, totalMessages = 0) {
   const base = BASE + (PER_TYPE[personType] ?? PER_TYPE.curious);
   const depthNote = totalMessages < 10 ? DEPTH[1] : totalMessages < 40 ? DEPTH[2] : '';
