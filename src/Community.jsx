@@ -383,10 +383,50 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
             );
           })()}
 
+          {/* ── Repost card (FB-style embedded original) ─────────────────── */}
+          {post.body_data?.repost_of && (
+            <div style={{ marginBottom: 14 }}>
+              {/* Reposter's caption — shown above the card if they added one */}
+              {post.body ? (
+                <div style={{
+                  fontFamily: T.display, fontSize: 16, color: T.ink,
+                  lineHeight: 1.5, marginBottom: 10,
+                  whiteSpace: 'pre-wrap', overflowWrap: 'break-word',
+                }}>
+                  {post.body}
+                </div>
+              ) : null}
+              {/* Embedded original post */}
+              <div style={{
+                border: `1px solid ${T.line}`,
+                borderRadius: 10,
+                padding: '12px 14px',
+                background: T.parchment,
+              }}>
+                <div style={{
+                  fontSize: 12.5, fontWeight: 600, color: T.inkSoft,
+                  fontFamily: T.sans, marginBottom: 6,
+                }}>
+                  {post.body_data.repost_author_name}
+                </div>
+                <div style={{
+                  fontFamily: T.display, fontSize: 15, color: T.ink,
+                  lineHeight: 1.5, whiteSpace: 'pre-wrap',
+                  overflowWrap: 'break-word', wordBreak: 'break-word',
+                }}>
+                  {post.body_data.repost_body}
+                </div>
+                {post.body_data.repost_body && (
+                  <LinkPreview text={post.body_data.repost_body} />
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Body — verse posts get pulled-quote treatment so scripture
               feels like scripture; everything else gets the journal-body
               presence we set in step 2. */}
-          {post.kind === 'verse' ? (
+          {!post.body_data?.repost_of && post.kind === 'verse' ? (
             <div style={{
               position: 'relative', marginBottom: 14,
               padding: '4px 0 4px 18px',
@@ -416,13 +456,13 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
             </div>
           )}
 
-          {stripFirstUrl(post.body).length > 280 && (
+          {!post.body_data?.repost_of && stripFirstUrl(post.body).length > 280 && (
             <button onClick={() => setBodyExpanded(v => !v)}
               style={{ background: 'none', border: 'none', color: tabText, fontSize: 13, cursor: 'pointer', padding: 0, marginBottom: 10 }}>
               {bodyExpanded ? 'Show less' : 'Read more'}
             </button>
           )}
-          <LinkPreview text={post.body} />
+          {!post.body_data?.repost_of && <LinkPreview text={post.body} />}
           <PostImageGrid urls={post.body_data?.image_urls} />
         </div>
 
@@ -768,7 +808,12 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
           previewBody={stripFirstUrl(post.body ?? '').trim() || undefined}
           title="Share this post"
           customActions={[
-            session && post.author_id !== session.user.id && {
+            session
+              && post.author_id !== session.user.id
+              && post.visibility === 'public'
+              && post.scope === 'me'
+              && !post.body_data?.repost_of
+              && {
               id: 'repost', icon: '↩', label: 'Repost to feed',
               sub: 'Share with attribution to your followers',
               doneLabel: 'Reposted',
@@ -1369,23 +1414,37 @@ useEffect(() => {
 
   async function handleRepost(post, target) {
     if (!session) return;
+    // Privacy guards — don't repost private, church/group, or already-reposted posts
+    if (post.visibility !== 'public') return;
+    if (post.scope !== 'me') return;
+    if (post.body_data?.repost_of) return; // no repost-of-reposts
+
     const authorName = post.profiles?.display_name ?? 'Someone';
-    const body = `"${post.body}"\n\n— ${authorName}`;
+
     if (target === 'feed') {
       const { error } = await supabase.from('posts').insert({
         author_id: session.user.id,
         scope: 'me',
         scope_id: null,
         kind: 'text',
-        body,
-        person_type: post.person_type ?? profile?.person_type ?? null,
+        body: '',   // caption — empty for now; shown above the embedded card
+        body_data: {
+          repost_of: post.id,
+          repost_author_name: authorName,
+          repost_author_id: post.author_id,
+          repost_body: post.body,
+          repost_created_at: post.created_at,
+          repost_kind: post.kind,
+        },
+        person_type: profile?.person_type ?? null,
       });
       if (!error) loadPosts();
     } else if (target === 'group' && userGroup) {
+      // Group reposts still use plain text (group_posts has no body_data)
       await supabase.from('group_posts').insert({
         group_id: userGroup.group.id,
         author_id: session.user.id,
-        body,
+        body: `"${post.body}"\n\n— ${authorName}`,
       });
     }
   }
