@@ -13,6 +13,7 @@ import { getDailyVerse } from './dailyVerse.js';
 import { codeToFlag } from './countries.js';
 import EmptyState from './EmptyState.jsx';
 import SponsoredCard from './SponsoredCard.jsx';
+import LinkPreview from './LinkPreview.jsx';
 import { track } from './analytics.js';
 const PostComposer = lazy(() => import('./PostComposer.jsx'));
 
@@ -421,6 +422,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
               {bodyExpanded ? 'Show less' : 'Read more'}
             </button>
           )}
+          <LinkPreview text={post.body} />
           <PostImageGrid urls={post.body_data?.image_urls} />
         </div>
 

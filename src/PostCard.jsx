@@ -8,6 +8,7 @@ import { Avatar } from './ProfilePage.jsx';
 import { relativeTime } from './time.js';
 import Comments from './Comments.jsx';
 import SermonDiscussion from './SermonDiscussion.jsx';
+import LinkPreview from './LinkPreview.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
 import { codeToFlag } from './countries.js';
 import { useUiKit } from './uikit.jsx';
@@ -406,6 +407,7 @@ function bodyForKind(item, onViewProfile, onViewChurch, sessionUserId, onOpenSer
           }}>
             {renderWithMentions(b.text, mentions, onViewProfile, onViewChurch)}
           </div>
+          <LinkPreview text={b.text} />
         </>
       );
   }
