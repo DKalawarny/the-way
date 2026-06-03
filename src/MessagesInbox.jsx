@@ -174,11 +174,18 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
     const uid = session.user.id;
 
     (async () => {
-      const [{ data: care }, { data: dms }] = await Promise.all([
+      const [{ data: careOut }, { data: careIn }, { data: dms }] = await Promise.all([
+        // Conversations the user initiated (member side)
         supabase
           .from('care_conversations')
           .select('*, care_member:profiles!care_member_id(id, display_name, avatar_config, avatar_url)')
           .eq('requester_id', uid)
+          .order('last_message_at', { ascending: false, nullsFirst: false }),
+        // Conversations directed at the user (pastor / care team side)
+        supabase
+          .from('care_conversations')
+          .select('*, requester:profiles!requester_id(id, display_name, avatar_config, avatar_url)')
+          .eq('care_member_id', uid)
           .order('last_message_at', { ascending: false, nullsFirst: false }),
         supabase
           .from('dm_conversations')
@@ -187,7 +194,14 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
           .order('last_message_at', { ascending: false, nullsFirst: false }),
       ]);
 
-      setCareConvs(care ?? []);
+      // Merge both directions, deduplicate by id, tag incoming vs outgoing
+      const outIds = new Set((careOut ?? []).map((c) => c.id));
+      const merged = [
+        ...(careOut ?? []).map((c) => ({ ...c, _side: 'out' })),
+        ...(careIn ?? []).filter((c) => !outIds.has(c.id)).map((c) => ({ ...c, _side: 'in' })),
+      ].sort((a, b) => new Date(b.last_message_at ?? b.created_at) - new Date(a.last_message_at ?? a.created_at));
+
+      setCareConvs(merged);
 
       const dmList = dms ?? [];
       const otherIds = dmList.map((c) => c.participant_ids.find((id) => id !== uid)).filter(Boolean);
@@ -204,7 +218,7 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
         otherProfile: profileMap[c.participant_ids.find((id) => id !== uid)] ?? null,
       })));
 
-      const careIds = (care ?? []).map((c) => c.id);
+      const careIds = merged.map((c) => c.id);
       if (careIds.length) {
         const { data: msgs } = await supabase
           .from('care_messages').select('*')
@@ -239,7 +253,7 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
       setDmConvs((prev) => prev.filter((c) => c.id !== id));
       await supabase.from('dm_conversations').delete().eq('id', id);
     } else {
-      if (openCare === id) setOpenCare(null);
+      if (openCare?.id === id) setOpenCare(null);
       setCareConvs((prev) => prev.filter((c) => c.id !== id));
       await supabase.from('care_conversations').delete().eq('id', id);
     }
@@ -251,8 +265,8 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
       <CareConversation
         session={session}
         profile={profile}
-        conversationId={openCare}
-        viewerRole="requester"
+        conversationId={openCare.id}
+        viewerRole={openCare.side === 'in' ? 'care_member' : 'requester'}
         onBack={() => setOpenCare(null)}
       />
     );
@@ -332,21 +346,30 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
               />
             );
           })}
-          {filteredCare.map((c) => (
-            <ThreadRow
-              key={c.id}
-              name={c.care_member?.display_name}
-              avatarConfig={c.care_member?.avatar_config}
-              photoUrl={c.care_member?.avatar_url}
-              subtitle={CARE_STATUS_LABEL[c.status] ?? c.status}
-              subtitleColor={CARE_STATUS_COLOR[c.status]}
-              ts={c.last_message_at ?? c.created_at}
-              lastBody={careLastMsgs[c.id]?.body}
-              onOpen={() => { setOpenDm(null); setOpenCare(c.id); }}
-              active={!isMobile && openCare === c.id}
-              onDelete={() => setDeleteConfirm({ type: 'care', id: c.id, name: c.care_member?.display_name ?? 'this conversation' })}
-            />
-          ))}
+          {filteredCare.map((c) => {
+            // Incoming (pastor/care team receiving): show requester or "Someone"
+            const isIncoming = c._side === 'in';
+            const displayName = isIncoming
+              ? (c.is_anonymous ? 'Someone from your church' : (c.requester?.display_name ?? 'Someone'))
+              : (c.care_member?.display_name ?? 'Your care contact');
+            const avatarConfig = isIncoming ? (c.is_anonymous ? null : c.requester?.avatar_config) : c.care_member?.avatar_config;
+            const photoUrl = isIncoming ? (c.is_anonymous ? null : c.requester?.avatar_url) : c.care_member?.avatar_url;
+            return (
+              <ThreadRow
+                key={c.id}
+                name={displayName}
+                avatarConfig={avatarConfig}
+                photoUrl={photoUrl}
+                subtitle={isIncoming ? 'From a member' : (CARE_STATUS_LABEL[c.status] ?? c.status)}
+                subtitleColor={isIncoming ? T.goldDark : CARE_STATUS_COLOR[c.status]}
+                ts={c.last_message_at ?? c.created_at}
+                lastBody={careLastMsgs[c.id]?.body}
+                onOpen={() => { setOpenDm(null); setOpenCare({ id: c.id, side: c._side }); }}
+                active={!isMobile && openCare?.id === c.id}
+                onDelete={() => setDeleteConfirm({ type: 'care', id: c.id, name: displayName })}
+              />
+            );
+          })}
         </>
       )}
     </>
@@ -509,8 +532,8 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
           <CareConversation
             session={session}
             profile={profile}
-            conversationId={openCare}
-            viewerRole="requester"
+            conversationId={openCare.id}
+            viewerRole={openCare.side === 'in' ? 'care_member' : 'requester'}
             onBack={() => setOpenCare(null)}
           />
         ) : (
