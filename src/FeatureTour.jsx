@@ -266,18 +266,24 @@ export default function FeatureTour({ onClose }) {
       )}
 
       {/* ── Welcome card (step 0) ── */}
+      {/* Flex-centred wrapper avoids the top/left+transform trick which breaks
+          when any ancestor has opacity < 1 or a CSS transform applied.         */}
       {!targetRect && (
+        <div
+          style={{
+            position: 'fixed', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 9002, padding: '16px',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
         <div
           key={step}
           style={{
-            position: 'fixed',
-            top: '50%', left: '50%',
-            transform: 'translate(-50%, -50%)',
             width: 'min(420px, calc(100vw - 32px))',
             background: T.cream,
             borderRadius: 24, overflow: 'hidden',
             boxShadow: '0 32px 80px rgba(0,0,0,0.45)',
-            zIndex: 9002,
             animation: 'tourFadeUp 0.3s ease both',
           }}
           onClick={(e) => e.stopPropagation()}
@@ -322,6 +328,7 @@ export default function FeatureTour({ onClose }) {
               Show me around →
             </button>
           </div>
+        </div>
         </div>
       )}
 
