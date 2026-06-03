@@ -62,6 +62,10 @@ export default function ShareSheet({
   const shareUrl = url ?? window.location.origin;
   const shareText = body ? `${body}\n\n${intro}` : intro;
   const fullText = `${shareText}\n${shareUrl}`;
+  // SMS-specific text: omit the kinwove URL so iMessage shows the content's
+  // own link preview (e.g. YouTube card) instead of the kinwove OG card.
+  // If there's no body URL to show, fall back to the kinwove URL.
+  const smsText = body ? shareText : fullText;
   const preview = previewBody ?? body ?? '';
 
   function handleFacebook() {
@@ -103,12 +107,13 @@ export default function ShareSheet({
     dismiss();
   }
 
-  function handleSMS() {
-    // Use anchor click — more reliable than window.location.href for custom
-    // URL schemes on iOS Safari. Keep ?&body= format (the & is harmless on
-    // iOS and ?body= alone can silently drop the body on some iOS versions).
+  async function handleSMS() {
+    // Copy to clipboard first — reliable fallback if sms: body gets stripped.
+    // Then open Messages with smsText (no kinwove URL appended) so iMessage
+    // shows the content's own link preview (YouTube etc.) not the kinwove card.
+    try { await navigator.clipboard.writeText(smsText); } catch {}
     const a = document.createElement('a');
-    a.href = `sms:?&body=${encodeURIComponent(fullText)}`;
+    a.href = `sms:?&body=${encodeURIComponent(smsText)}`;
     a.style.display = 'none';
     document.body.appendChild(a);
     a.click();
