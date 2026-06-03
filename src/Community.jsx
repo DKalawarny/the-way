@@ -579,10 +579,38 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                     </div>
                   </div>
                 </div>
-                {/* Full post body — no truncation in modal */}
-                <div style={{ fontFamily: T.serif, fontSize: 16, color: T.ink, lineHeight: 1.75, marginBottom: 14, whiteSpace: 'pre-wrap' }}>
-                  {post.body}
-                </div>
+                {/* Full post body — repost card or plain text + link preview */}
+                {post.body_data?.repost_of ? (
+                  <div style={{ marginBottom: 14 }}>
+                    {post.body ? (
+                      <div style={{ fontFamily: T.serif, fontSize: 16, color: T.ink, lineHeight: 1.75, whiteSpace: 'pre-wrap', marginBottom: 10 }}>
+                        {post.body}
+                      </div>
+                    ) : null}
+                    <div style={{ border: `1px solid ${T.line}`, borderRadius: 10, padding: '12px 14px', background: T.parchment }}>
+                      <button
+                        onClick={() => post.body_data.repost_author_id && onViewProfile?.(post.body_data.repost_author_id)}
+                        style={{ background: 'none', border: 'none', padding: 0, marginBottom: 8, cursor: post.body_data.repost_author_id ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: 8 }}
+                      >
+                        <Avatar size={26} profile={{ display_name: post.body_data.repost_author_name }} />
+                        <span style={{ fontSize: 13, fontWeight: 600, color: T.inkSoft }}>{post.body_data.repost_author_name ?? 'Someone'}</span>
+                      </button>
+                      {post.body_data.repost_body ? (
+                        <div style={{ fontFamily: T.display, fontSize: 15, color: T.ink, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                          {post.body_data.repost_body}
+                        </div>
+                      ) : null}
+                      {post.body_data.repost_body && <LinkPreview text={post.body_data.repost_body} />}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontFamily: T.serif, fontSize: 16, color: T.ink, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
+                      {stripFirstUrl(post.body)}
+                    </div>
+                    <LinkPreview text={post.body} />
+                  </div>
+                )}
               </div>
 
               {/* Reaction counts row */}
