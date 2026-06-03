@@ -13,6 +13,7 @@ const TABS = [
 function TabButton({ tab, active, onClick }) {
   return (
     <button
+      data-tour-id={`pastor-${tab.id}-tab`}
       onClick={onClick}
       style={{
         background: active ? T.cream : 'transparent',

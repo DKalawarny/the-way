@@ -3,6 +3,7 @@ import { ArrowLeft, Share2, Check, ExternalLink, MapPin, Clock, Users, Globe, Bo
 import { supabase } from './supabase.js';
 import { T, SHADOW, RADIUS, SEMANTIC, SPACE } from './theme.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
+import PageTour, { isPageTourDone } from './PageTour.jsx';
 import { presetForRole } from './Badge.jsx';
 import { useUiKit } from './uikit.jsx';
 import JoinByCode from './JoinByCode.jsx';
@@ -22,6 +23,29 @@ export default function ChurchPage({
   chromeless = false,
   initialTab = null,
 }) {
+  const CHURCH_TOUR_KEY   = `kinwove:church_tour_${churchId}`;
+  const CHURCH_TOUR_STEPS = [
+    {
+      tourId: 'church-feed-tab',
+      title:  'Your congregation feed',
+      body:   'Posts from your church community — announcements, reflections, and conversations shared with the congregation.',
+      color:  T.gold,
+    },
+    {
+      tourId: 'church-sermons-tab',
+      title:  'Sermons',
+      body:   'Your pastor\'s sermon series, daily reading questions, and faith walk announcements.',
+      color:  '#6b2438',
+    },
+    {
+      tourId: 'church-pray-tab',
+      title:  'Pray together',
+      body:   'Lift up prayer requests and see what your congregation is carrying. Tap 🙏 to pray for someone.',
+      color:  '#2e5970',
+    },
+  ];
+  const [showChurchTour, setShowChurchTour] = useState(false);
+
   const [church, setChurch] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -69,6 +93,14 @@ export default function ChurchPage({
   useEffect(() => {
     if (!loading && isPastor && tab === 'info') setTab('feed');
   }, [loading, isPastor]);
+
+  // Show church member tour once — only for actual members (not pastors, who get
+  // their own tour in ChurchAdmin), and only on their first visit to this church.
+  useEffect(() => {
+    if (!loading && isMember && !isPastor && !isPageTourDone(CHURCH_TOUR_KEY)) {
+      setShowChurchTour(true);
+    }
+  }, [loading, isMember, isPastor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!churchId) return;
@@ -691,6 +723,7 @@ export default function ChurchPage({
         ].map((t) => (
           <button
             key={t.id}
+            data-tour-id={`church-${t.id}-tab`}
             onClick={() => setTab(t.id)}
             style={{
               flex: 1, padding: '14px 0',
@@ -1750,6 +1783,13 @@ export default function ChurchPage({
             )}
           </div>
         </div>
+      )}
+      {showChurchTour && (
+        <PageTour
+          steps={CHURCH_TOUR_STEPS}
+          storageKey={CHURCH_TOUR_KEY}
+          onClose={() => setShowChurchTour(false)}
+        />
       )}
     </div>
   );

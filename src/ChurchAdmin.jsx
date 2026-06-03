@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { Download, Copy, Check, QrCode } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
+import PageTour, { isPageTourDone } from './PageTour.jsx';
 import Badge, { INVITABLE_ROLES, presetForRole } from './Badge.jsx';
 import { useUiKit, EmptyState, TextButton } from './uikit.jsx';
 import ChurchModeShell from './ChurchModeShell.jsx';
@@ -1969,12 +1970,35 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
   );
 }
 
+const PASTOR_TOUR_KEY   = 'kinwove:pastor_tour_done';
+const PASTOR_TOUR_STEPS = [
+  {
+    tourId: 'pastor-people-tab',
+    title:  'Invite your congregation',
+    body:   'Share a QR code or invite link to bring members in. Assign roles like Care Team to give people responsibility.',
+    color:  T.gold,
+  },
+  {
+    tourId: 'pastor-sermons-tab',
+    title:  'Sermon prep',
+    body:   'Create AI-guided daily reading plans and discussion questions your congregation can follow together.',
+    color:  '#6b2438',
+  },
+  {
+    tourId: 'pastor-ask-tab',
+    title:  'Your AI companion',
+    body:   'A private space for theology questions, sermon research, and pastoral guidance — powered by Claude.',
+    color:  '#2e5970',
+  },
+];
+
 export default function ChurchAdmin({ session, profile, churchId, onBack, onOpenChurchPage, onOpenChurchHub, onOpenSermon, initialTab }) {
   // Allow deep-links into a specific tab (e.g. ChurchPage's "Edit in Pastor
   // settings" lands on Settings, not Overview). Falls back to overview.
   const VALID_TABS = ['overview', 'people', 'ask', 'bible', 'sermons', 'settings'];
   const [tab, setTab] = useState(initialTab && VALID_TABS.includes(initialTab) ? initialTab : 'overview');
   const [church, setChurch] = useState(null);
+  const [showPastorTour, setShowPastorTour] = useState(() => !isPageTourDone(PASTOR_TOUR_KEY));
   const [composerSermonId, setComposerSermonId] = useState(null);
   const { plan, hasAccess, daysLeft, trialExpired } = usePlan(churchId);
   // One-shot action that the next mounted panel should execute (e.g. when the
@@ -2089,6 +2113,13 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
         )}
       </Suspense>
     </ChurchModeShell>
+    {showPastorTour && (
+      <PageTour
+        steps={PASTOR_TOUR_STEPS}
+        storageKey={PASTOR_TOUR_KEY}
+        onClose={() => setShowPastorTour(false)}
+      />
+    )}
     </>
   );
 }

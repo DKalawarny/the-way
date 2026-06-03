@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { T } from './theme.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
+import PageTour, { isPageTourDone } from './PageTour.jsx';
 import { useSpeechRecognition } from './useSpeechRecognition.js';
 import { useTextToSpeech } from './useTextToSpeech.js';
 import { authedFetch } from './supabase.js';
@@ -673,6 +674,32 @@ function parseRef(refStr) {
   return book ? { bookId: book.id, chapter, verse } : null;
 }
 
+const BIBLE_TOUR_KEY   = 'kinwove:bible_tour_done';
+const BIBLE_TOUR_STEPS = [
+  {
+    tourId: 'bible-reading-card',
+    title:  'Pick up where you left off',
+    body:   'Jump into any book and chapter. Your progress is saved automatically.',
+    color:  T.gold,
+  },
+  {
+    tourId: 'bible-books-section',
+    title:  'All 66 books',
+    body:   'Browse Old and New Testament anytime. Each book tracks how many chapters you\'ve read.',
+    color:  T.goldDark,
+  },
+];
+
+const BIBLE_READ_TOUR_KEY   = 'kinwove:bible_read_tour_done';
+const BIBLE_READ_TOUR_STEPS = [
+  {
+    tourId: 'bible-ai-chat',
+    title:  'Ask while you read',
+    body:   'Tap any verse for plain-English explanations, historical context, and original-language insights. Or tap the star to ask anything.',
+    color:  '#6b2438',
+  },
+];
+
 export default function BibleReader({ session, profile, homeKey = 0, onClose, onOpenChat, jumpRef, topOffset = 0 }) {
   // ── Navigation state ────────────────────────────────────────────────────────
   const [view, setView]         = useState('home');      // 'home' | 'chapters' | 'reading'
@@ -704,6 +731,8 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     catch { return new Set(); }
   });
   const [newBadge, setNewBadge] = useState(null); // badge just earned → show toast
+  const [showBibleTour,     setShowBibleTour]     = useState(() => !isPageTourDone(BIBLE_TOUR_KEY));
+  const [showBibleReadTour, setShowBibleReadTour] = useState(() => !isPageTourDone(BIBLE_READ_TOUR_KEY));
 
   // ── AI usage gate ───────────────────────────────────────────────────────────
   const aiUsage = useAiUsage(session?.user?.id, profile?.plan ?? 'free');
@@ -1236,6 +1265,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
 
         {/* Continue reading card */}
         <div
+          data-tour-id="bible-reading-card"
           onClick={() => setView('reading')}
           style={{
             background: `linear-gradient(135deg, rgba(184,115,58,0.12) 0%, rgba(184,115,58,0.06) 100%)`,
@@ -1431,6 +1461,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
         })()}
 
         {/* Book grids — organised by canonical section with illustrated headers */}
+        <div data-tour-id="bible-books-section" style={{ marginBottom: 0 }} />
         {['Old Testament', 'New Testament'].map((testament) => {
           const isOT = testament === 'Old Testament';
           const sections = BIBLE_SECTIONS.filter((s) =>
@@ -1531,6 +1562,13 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
       {BadgeToast}
       {BookDoneToast}
       {ConfirmResetSheet}
+      {showBibleTour && (
+        <PageTour
+          steps={BIBLE_TOUR_STEPS}
+          storageKey={BIBLE_TOUR_KEY}
+          onClose={() => setShowBibleTour(false)}
+        />
+      )}
     </div>
   );
 
@@ -1923,6 +1961,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
           )}
           {DarkToggle}
           <button
+            data-tour-id="bible-ai-chat"
             onClick={() => { setChatOpen((o) => !o); if (!chatOpen) setTimeout(() => chatInputRef.current?.focus(), 300); }}
             style={{
               width: 34, height: 34, borderRadius: '50%', cursor: 'pointer',
@@ -2148,6 +2187,13 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
       {BadgeToast}
       {BookDoneToast}
       {ConfirmResetSheet}
+      {showBibleReadTour && (
+        <PageTour
+          steps={BIBLE_READ_TOUR_STEPS}
+          storageKey={BIBLE_READ_TOUR_KEY}
+          onClose={() => setShowBibleReadTour(false)}
+        />
+      )}
     </div>
   );
 }
