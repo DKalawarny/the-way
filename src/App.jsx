@@ -1917,7 +1917,7 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => {
       _setSession(data.session ?? null);
       if (data.session) {
-        if (deepLinkPostId) { setStage('community'); loadProfile(data.session.user.id); }
+        if (deepLinkPostId) { setStage('feed'); loadProfile(data.session.user.id); }
         else if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); loadProfile(data.session.user.id); }
         else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); loadProfile(data.session.user.id); }
         else {

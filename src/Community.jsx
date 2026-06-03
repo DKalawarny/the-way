@@ -1393,6 +1393,50 @@ useEffect(() => {
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 
+  // Deep-link: when ?post=id navigates here, ensure that post is in the
+  // feed (fetch it if not) and scroll it into view so comments auto-open.
+  useEffect(() => {
+    if (!openCommentPostId || loading) return;
+    // If the post is already in the feed, just scroll to it
+    const found = posts.find((p) => p.id === openCommentPostId);
+    if (found) {
+      // Give React one frame to render, then scroll
+      requestAnimationFrame(() => {
+        const el = document.querySelector(`[data-post-id="${openCommentPostId}"]`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      return;
+    }
+    // Post isn't in the current feed (older / filtered out) — fetch it and prepend
+    supabase
+      .from('posts')
+      .select(`*, profiles!author_id(display_name, city, country, tradition, person_type, avatar_config, avatar_url, show_flag, flags), post_comments(id, body, created_at, profiles!author_id(display_name, avatar_config, avatar_url))`)
+      .eq('id', openCommentPostId)
+      .eq('visibility', 'public')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        const myId = session?.user?.id;
+        supabase.from('reactions').select('post_id, kind, author_id').eq('post_id', data.id)
+          .then(({ data: reactions }) => {
+            const postReactions = reactions ?? [];
+            const counts = {};
+            postReactions.forEach((r) => { counts[r.kind] = (counts[r.kind] ?? 0) + 1; });
+            const myReaction = postReactions.find((r) => r.author_id === myId)?.kind ?? null;
+            const enriched = { ...data, reaction_counts: counts, my_reaction: myReaction, reply_count: data.post_comments?.length ?? 0 };
+            setPosts((prev) => {
+              if (prev.find((p) => p.id === enriched.id)) return prev;
+              return [enriched, ...prev];
+            });
+            requestAnimationFrame(() => {
+              const el = document.querySelector(`[data-post-id="${openCommentPostId}"]`);
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+          });
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openCommentPostId, loading]);
+
   async function handleReact(postId, kind, isActive) {
     if (!session) return;
     if (isActive) {
@@ -1893,6 +1937,7 @@ useEffect(() => {
                             onOpenChurch={onOpenChurch}
                           />
                         ) : (
+                        <div data-post-id={p.id}>
                         <PostCard
                           post={p}
                           index={Math.min(i, 6)}
@@ -1915,6 +1960,7 @@ useEffect(() => {
                           defaultCommentsOpen={openCommentPostId === p.id}
                           churchName={p.scope === 'church' ? (churchMap[p.scope_id]?.name ?? null) : null}
                         />
+                        </div>
                         )}
                         {showAds && (i + 1) % 10 === 0 && (
                           <SponsoredCard
