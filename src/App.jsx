@@ -2932,11 +2932,11 @@ export default function App() {
           onClaimed={() => setActiveCareConv((c) => c ? { ...c, viewerRole: 'care_member' } : c)}
         />
       )}
-      {stage === 'care-inbox' && session && (careTeamRecord || profile?.church_id) && (
+      {stage === 'care-inbox' && session && (careTeamRecord || pastorChurchId || profile?.church_id) && (
         <CareTeamInbox
           session={session}
           profile={profile}
-          churchId={careTeamRecord?.church_id ?? profile?.church_id}
+          churchId={careTeamRecord?.church_id ?? pastorChurchId ?? profile?.church_id}
           onBack={() => goBack('me')}
         />
       )}

@@ -146,10 +146,12 @@ export default function CareTeamInbox({ session, profile, churchId, onBack }) {
       if (!accepted) setShowCovenant(true);
 
       const [{ data: claimed }, { data: open }] = await Promise.all([
+        // No church_id filter — RLS (auth.uid() = care_member_id) already scopes
+        // results to this user only. Removing the filter avoids a church_id
+        // mismatch when profile.church_id differs from the conversation's church_id.
         supabase
           .from('care_conversations')
           .select('*')
-          .eq('church_id', churchId)
           .eq('care_member_id', session.user.id)
           .order('last_message_at', { ascending: false }),
         supabase
