@@ -1,12 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="65%">
+      <stop offset="0%"   stop-color="#3D2010"/>
+      <stop offset="100%" stop-color="#1A0C06"/>
+    </radialGradient>
     <radialGradient id="glow" cx="50%" cy="50%" r="55%">
-      <stop offset="0%" stop-color="#B8733A" stop-opacity="0.18"/>
-      <stop offset="60%" stop-color="#B8733A" stop-opacity="0.05"/>
+      <stop offset="0%"   stop-color="#B8733A" stop-opacity="0.22"/>
+      <stop offset="70%"  stop-color="#B8733A" stop-opacity="0.05"/>
       <stop offset="100%" stop-color="#B8733A" stop-opacity="0"/>
     </radialGradient>
     <filter id="starGlow" x="-80%" y="-80%" width="260%" height="260%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur"/>
       <feMerge>
         <feMergeNode in="blur"/>
         <feMergeNode in="SourceGraphic"/>
@@ -15,43 +19,43 @@
   </defs>
 
   <!-- Background -->
-  <rect width="1200" height="630" fill="#2C1810"/>
-  <ellipse cx="600" cy="315" rx="520" ry="240" fill="url(#glow)"/>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <ellipse cx="600" cy="300" rx="560" ry="280" fill="url(#glow)"/>
 
   <!--
-    KinwoveStar above the "i" in "kinwove"
-    Font: Georgia 132px, text-anchor=middle at x=600
-    Estimated "i" center x ≈ 412
-    Star: 78px × 78px → scale = 78/24 = 3.25
-    Star center target: (412, 278)
-    Path from KinwoveStar.jsx: M12 1 L13.4 9.6 L22 11 L13.4 12.4 L12 23 L10.6 12.4 L2 11 L10.6 9.6 Z
+    KinwoveStar above the "i"
+    Font: Georgia 158px, text-anchor=middle at x=600
+    "i" center estimated at x≈395 for this font size
+    Star: 96px × 96px → scale = 96/24 = 4.0
+    Star center target: (395, 248)
+    Path: M12 1 L13.4 9.6 L22 11 L13.4 12.4 L12 23 L10.6 12.4 L2 11 L10.6 9.6 Z
   -->
-  <g transform="translate(412, 278) scale(3.25) translate(-12, -12)" filter="url(#starGlow)">
-    <path fill="#B8733A"
+  <g transform="translate(395, 248) scale(4) translate(-12, -12)" filter="url(#starGlow)">
+    <path fill="#C07838"
           d="M12 1 L13.4 9.6 L22 11 L13.4 12.4 L12 23 L10.6 12.4 L2 11 L10.6 9.6 Z"/>
   </g>
 
-  <!-- Wordmark -->
-  <text x="600" y="430"
+  <!-- Wordmark — bigger, bolder -->
+  <text x="600" y="460"
         font-family="Georgia, 'Times New Roman', serif"
-        font-size="132" font-weight="500"
-        text-anchor="middle" fill="#FDF8F0" letter-spacing="-4">
+        font-size="158" font-weight="500"
+        text-anchor="middle" fill="#FDF8F0" letter-spacing="-5">
     kinwove
   </text>
 
   <!-- Tagline -->
-  <text x="600" y="500"
+  <text x="600" y="530"
         font-family="Georgia, 'Times New Roman', serif"
-        font-style="italic" font-size="26"
-        text-anchor="middle" fill="#D9C9A8" letter-spacing="3">
+        font-style="italic" font-size="28"
+        text-anchor="middle" fill="#C8AD80" letter-spacing="2">
     Big questions, ancient text, modern conversation.
   </text>
 
   <!-- Domain -->
-  <text x="600" y="585"
+  <text x="600" y="598"
         font-family="Georgia, 'Times New Roman', serif"
-        font-size="18" letter-spacing="6"
-        text-anchor="middle" fill="#8E5528">
+        font-size="17" letter-spacing="7"
+        text-anchor="middle" fill="#7A4A20">
     KINWOVE.COM
   </text>
 </svg>
