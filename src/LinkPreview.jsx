@@ -37,18 +37,16 @@ function YouTubePreview({ url, videoId }) {
         boxShadow: '0 1px 4px rgba(26,17,8,0.07)',
       }}
     >
-      {/* Thumbnail */}
-      <div style={{ position: 'relative', width: '100%', paddingBottom: '56.25%', background: '#000' }}>
+      {/* Thumbnail — capped height so it doesn't eat the feed */}
+      <div style={{ position: 'relative', width: '100%', height: 160, background: '#000', overflow: 'hidden' }}>
         <img
           src={thumb}
           alt="Video thumbnail"
           style={{
-            position: 'absolute', inset: 0,
             width: '100%', height: '100%',
             objectFit: 'cover',
           }}
           onError={(e) => {
-            // fallback to medium quality if hq 404s
             e.currentTarget.src = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
           }}
         />
@@ -56,16 +54,15 @@ function YouTubePreview({ url, videoId }) {
         <div style={{
           position: 'absolute', inset: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.18)',
+          background: 'rgba(0,0,0,0.15)',
         }}>
           <div style={{
-            width: 48, height: 48, borderRadius: '50%',
+            width: 40, height: 40, borderRadius: '50%',
             background: 'rgba(255,0,0,0.88)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.4)',
           }}>
-            {/* Triangle play icon */}
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="white">
               <polygon points="5,3 19,12 5,21" />
             </svg>
           </div>
