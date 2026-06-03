@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { T } from './theme.js';
+import { stripFirstUrl } from './LinkPreview.jsx';
 
 export default function ShareSheet({
   body,
   url,
   title,
-  intro = '— shared from kinwove',
+  intro = '✦ kinwove · Your church, between Sundays',
   previewBody,
   customActions = [],
   onClose,
@@ -60,9 +61,12 @@ export default function ShareSheet({
   }
 
   const shareUrl = url ?? window.location.origin;
-  const shareText = body ? `"${body}"\n\n${intro}` : intro;
-  const fullText = `${shareText}\n\n${shareUrl}`;
-  const preview = previewBody ?? body ?? '';
+  // Strip embedded URLs from the body so links don't duplicate in the share text —
+  // the shareUrl at the end will generate the kinwove OG card preview instead.
+  const cleanBody = body ? stripFirstUrl(body).trim() : '';
+  const shareText = cleanBody ? `"${cleanBody}"\n\n${intro}` : intro;
+  const fullText = `${shareText}\n${shareUrl}`;
+  const preview = previewBody ?? cleanBody ?? body ?? '';
 
   function handleFacebook() {
     const u = encodeURIComponent(shareUrl);
@@ -72,12 +76,30 @@ export default function ShareSheet({
   }
 
   async function handleMessenger() {
-    try { await navigator.clipboard.writeText(fullText); } catch {}
-    setMessengerNote(true);
-    setTimeout(() => {
-      window.open('https://www.messenger.com/', '_blank');
-      dismiss();
-    }, 900);
+    if (isMobile) {
+      // Try Messenger app deep link — works on iOS & Android if Messenger is installed.
+      // Copy text first so they can paste context if needed.
+      try { await navigator.clipboard.writeText(fullText); } catch {}
+      // iOS: fb-messenger://share/?link=URL
+      // Android: intent scheme (falls through to browser if not installed)
+      const deepLink = /android/i.test(navigator.userAgent)
+        ? `intent://share/#Intent;scheme=fb-messenger;package=com.facebook.orca;S.android.intent.extra.TEXT=${encodeURIComponent(fullText)};end`
+        : `fb-messenger://share/?link=${encodeURIComponent(shareUrl)}`;
+      window.location.href = deepLink;
+      // If the app isn't installed the page stays — fall back gracefully after delay
+      setTimeout(() => {
+        setMessengerNote(true);
+        setTimeout(dismiss, 900);
+      }, 1200);
+    } else {
+      // Desktop: copy then open Messenger.com
+      try { await navigator.clipboard.writeText(fullText); } catch {}
+      setMessengerNote(true);
+      setTimeout(() => {
+        window.open('https://www.messenger.com/', '_blank');
+        dismiss();
+      }, 900);
+    }
   }
 
   function handleWhatsApp() {
@@ -153,7 +175,7 @@ export default function ShareSheet({
 
   const externalApps = [
     { id: 'facebook', icon: '📘', label: 'Facebook', bg: '#1877F2', onClick: handleFacebook },
-    { id: 'messenger', icon: '💬', label: messengerNote ? 'Copied' : 'Messenger', bg: '#0099FF', onClick: handleMessenger, done: messengerNote },
+    { id: 'messenger', icon: '💬', label: messengerNote ? (isMobile ? 'Opening…' : 'Copied') : 'Messenger', bg: '#0099FF', onClick: handleMessenger, done: messengerNote },
     { id: 'whatsapp', icon: '🟢', label: 'WhatsApp', bg: '#25D366', onClick: handleWhatsApp },
     isMobile && { id: 'sms', icon: '💌', label: 'Text', bg: '#34C759', onClick: handleSMS },
     canNativeShare && { id: 'more', icon: '📱', label: 'More', bg: T.gold, onClick: handleNativeShare },
