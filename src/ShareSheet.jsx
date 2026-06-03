@@ -103,9 +103,24 @@ export default function ShareSheet({
     dismiss();
   }
 
-  function handleSMS() {
-    window.location.href = `sms:?&body=${encodeURIComponent(fullText)}`;
-    dismiss();
+  async function handleSMS() {
+    if (canNativeShare) {
+      // iOS/Android native share → Messages appears as an option,
+      // pre-populates the full text correctly every time.
+      try {
+        await navigator.share({ title: title ?? 'kinwove', text: fullText });
+        dismiss();
+      } catch (e) {
+        if (e.name !== 'AbortError') {
+          window.location.href = `sms:?body=${encodeURIComponent(fullText)}`;
+          dismiss();
+        }
+      }
+    } else {
+      // Fallback for browsers without Web Share API — note: no `&` before body
+      window.location.href = `sms:?body=${encodeURIComponent(fullText)}`;
+      dismiss();
+    }
   }
 
   async function handleNativeShare() {
