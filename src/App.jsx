@@ -803,8 +803,8 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
 
   // Map stages onto top-level tabs
   const tabFor = (s) => {
-    if (s === 'home') return 'home';
-    if (s === 'church' || s === 'churches' || s === 'church-entry' || s === 'feed' || s === 'groups' || s === 'prayer' || s === 'talk-to-someone' || s === 'care-conversation' || s === 'church-admin' || s === 'pastor-dashboard' || s === 'sermon-composer' || s === 'care-admin' || s === 'sermon-view' || s === 'connect') return 'church';
+    if (s === 'home' || s === 'feed') return 'home';
+    if (s === 'church' || s === 'churches' || s === 'church-entry' || s === 'groups' || s === 'prayer' || s === 'talk-to-someone' || s === 'care-conversation' || s === 'church-admin' || s === 'pastor-dashboard' || s === 'sermon-composer' || s === 'care-admin' || s === 'sermon-view' || s === 'connect') return 'church';
     if (s === 'read') return 'read';
     if (s === 'me' || s === 'walks' || s === 'care-inbox' || s === 'messages' || s === 'dm-conversation' || s === 'app-admin') return 'me';
     return null;
@@ -1453,8 +1453,8 @@ function SidebarNav({ stage, session, profile, chatOpen,
   if (stage === 'landing' || stage === 'onboarding' || stage === 'intake') return null;
 
   const tabFor = (s) => {
-    if (s === 'home') return 'home';
-    if (['church', 'churches', 'church-entry', 'feed', 'groups', 'prayer',
+    if (s === 'home' || s === 'feed') return 'home';
+    if (['church', 'churches', 'church-entry', 'groups', 'prayer',
          'talk-to-someone', 'care-conversation', 'church-admin', 'pastor-dashboard',
          'sermon-composer', 'care-admin', 'sermon-view', 'connect'].includes(s)) return 'church';
     if (s === 'read') return 'read';
@@ -1917,7 +1917,7 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => {
       _setSession(data.session ?? null);
       if (data.session) {
-        if (deepLinkPostId) { localStorage.removeItem('kw:stage'); setStage('feed'); loadProfile(data.session.user.id); }
+        if (deepLinkPostId) { localStorage.removeItem('kw:stage'); setStage('feed'); loadProfile(data.session.user.id); window.history.replaceState({}, '', window.location.pathname); }
         else if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); loadProfile(data.session.user.id); }
         else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); loadProfile(data.session.user.id); }
         else {
@@ -1950,7 +1950,7 @@ export default function App() {
         const isInitialLoad = event === 'SIGNED_IN' || event === 'INITIAL_SESSION';
         if (isInitialLoad) {
           // Deep link always wins — never let localStorage override it
-          if (deepLinkPostId) { setStage('feed'); loadProfile(s.user.id); }
+          if (deepLinkPostId) { setStage('feed'); loadProfile(s.user.id); window.history.replaceState({}, '', window.location.pathname); }
           else if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); }
           else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); }
           else {
