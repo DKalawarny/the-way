@@ -5,26 +5,33 @@
       <stop offset="60%" stop-color="#B8733A" stop-opacity="0.05"/>
       <stop offset="100%" stop-color="#B8733A" stop-opacity="0"/>
     </radialGradient>
+    <filter id="starGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
 
+  <!-- Background -->
   <rect width="1200" height="630" fill="#2C1810"/>
   <ellipse cx="600" cy="315" rx="520" ry="240" fill="url(#glow)"/>
 
-  <g transform="translate(600 220)">
-    <path d="M 0,-95
-             C 8,-32 32,-8 95,0
-             C 32,8 8,32 0,95
-             C -8,32 -32,8 -95,0
-             C -32,-8 -8,-32 0,-95 Z"
-          fill="#B8733A"/>
-    <path d="M 0,-50
-             C 5,-18 18,-5 50,0
-             C 18,5 5,18 0,50
-             C -5,18 -18,5 -50,0
-             C -18,-5 -5,-18 0,-50 Z"
-          fill="#FDF8F0" opacity="0.92"/>
+  <!--
+    KinwoveStar above the "i" in "kinwove"
+    Font: Georgia 132px, text-anchor=middle at x=600
+    Estimated "i" center x ≈ 412
+    Star: 78px × 78px → scale = 78/24 = 3.25
+    Star center target: (412, 278)
+    Path from KinwoveStar.jsx: M12 1 L13.4 9.6 L22 11 L13.4 12.4 L12 23 L10.6 12.4 L2 11 L10.6 9.6 Z
+  -->
+  <g transform="translate(412, 278) scale(3.25) translate(-12, -12)" filter="url(#starGlow)">
+    <path fill="#B8733A"
+          d="M12 1 L13.4 9.6 L22 11 L13.4 12.4 L12 23 L10.6 12.4 L2 11 L10.6 9.6 Z"/>
   </g>
 
+  <!-- Wordmark -->
   <text x="600" y="430"
         font-family="Georgia, 'Times New Roman', serif"
         font-size="132" font-weight="500"
@@ -32,6 +39,7 @@
     kinwove
   </text>
 
+  <!-- Tagline -->
   <text x="600" y="500"
         font-family="Georgia, 'Times New Roman', serif"
         font-style="italic" font-size="26"
@@ -39,10 +47,10 @@
     Big questions, ancient text, modern conversation.
   </text>
 
+  <!-- Domain -->
   <text x="600" y="585"
         font-family="Georgia, 'Times New Roman', serif"
         font-size="18" letter-spacing="6"
-        text-transform="uppercase"
         text-anchor="middle" fill="#8E5528">
     KINWOVE.COM
   </text>
