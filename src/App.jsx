@@ -1691,6 +1691,7 @@ export default function App() {
   const [activeCareConv, setActiveCareConv] = useState(null);
   const [activeDmConv, setActiveDmConv] = useState(null); // { id, otherProfile }
   const [openCommentPostId, setOpenCommentPostId] = useState(() => deepLinkPostId ?? null);
+  const [pendingShareUrl, setPendingShareUrl] = useState(null);
   const [shareCopied, setShareCopied] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [currentConvId, setCurrentConvId] = useState(null);
@@ -2629,6 +2630,7 @@ export default function App() {
             else setStage('churches');
           }}
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
+          onSendDM={(url) => { setPendingShareUrl(url); setStage('messages'); }}
         />
       )}
       {stage === 'sermon-view' && session && viewingSermonId && (() => {
@@ -2682,6 +2684,7 @@ export default function App() {
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
           onOpenConnect={() => setStage('connect')}
           onOpenGroups={() => setStage('groups')}
+          onSendDM={(url) => { setPendingShareUrl(url); setStage('messages'); }}
         />
       )}
       {stage === 'prayer' && session && (
@@ -2932,6 +2935,8 @@ export default function App() {
           session={session}
           profile={profile}
           onBack={() => goBack('me')}
+          pendingShareUrl={pendingShareUrl}
+          onShareSent={() => setPendingShareUrl(null)}
         />
       )}
       {stage === 'dm-conversation' && session && activeDmConv && (

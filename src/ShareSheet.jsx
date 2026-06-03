@@ -183,8 +183,8 @@ export default function ShareSheet({
   }
 
   const externalApps = [
-    // Text first — most common share on mobile
-    isMobile && { id: 'sms', icon: '💬', label: 'Text', bg: '#34C759', onClick: handleSMS },
+    // Text — always visible (sms: works on Mac via Messages + all mobile)
+    { id: 'sms', icon: '💬', label: 'Text', bg: '#34C759', onClick: handleSMS },
     { id: 'whatsapp', icon: '📲', label: 'WhatsApp', bg: '#25D366', onClick: handleWhatsApp },
     { id: 'messenger', icon: '💬', label: messengerNote ? (isMobile ? 'Opening…' : 'Copied') : 'Messenger', bg: '#0099FF', onClick: handleMessenger, done: messengerNote },
     { id: 'facebook', icon: '📘', label: 'Facebook', bg: '#1877F2', onClick: handleFacebook },

@@ -175,7 +175,7 @@ function SermonTeaserCard({ sermon, isMember, onOpenChurch }) {
   );
 }
 
-function PostCard({ post, index = 0, session, currentUserId, userProfile, userGroup, onReact, onReplySubmit, onRepost, isFollowing, onFollow, onViewProfile, tabColor = '#B8733A', tabText = '#8E5528', isSaved = false, onSaveToggle, isAuthorBlocked = false, onBlockAuthor, defaultCommentsOpen = false, churchName = null }) {
+function PostCard({ post, index = 0, session, currentUserId, userProfile, userGroup, onReact, onReplySubmit, onRepost, onSendDM, isFollowing, onFollow, onViewProfile, tabColor = '#B8733A', tabText = '#8E5528', isSaved = false, onSaveToggle, isAuthorBlocked = false, onBlockAuthor, defaultCommentsOpen = false, churchName = null }) {
   const [bodyExpanded,   setBodyExpanded]   = useState(false);
   const [commentsOpen,   setCommentsOpen]   = useState(defaultCommentsOpen);
   // post.post_comments is the embedded select from loadPosts; it's a thin
@@ -845,6 +845,14 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
           previewBody={stripFirstUrl(post.body ?? '').trim() || undefined}
           title="Share this post"
           customActions={[
+            session && onSendDM && post.visibility === 'public' && {
+              id: 'kinwove-dm',
+              icon: <KinwoveStar size={20} color={T.gold} />,
+              label: 'Send on kinwove',
+              sub: 'Send directly to a kinwove member',
+              doneLabel: 'Sent',
+              onClick: () => { onSendDM(`https://www.kinwove.com/?post=${post.id}`); },
+            },
             session
               && post.visibility === 'public'
               && post.scope === 'me'
@@ -1203,7 +1211,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tab
   );
 }
 
-export default function Community({ session, profile, onClose, onOpenChat, hideHeader, userGroup, onViewProfile, onFindPeople, onInviteFriends, onOpenPrayer, onOpenRead, onOpenBible, onVerseClick, onOpenChurch, onOpenSermon, onOpenConnect, onOpenGroups, accentColor, openCommentPostId }) {
+export default function Community({ session, profile, onClose, onOpenChat, hideHeader, userGroup, onViewProfile, onFindPeople, onInviteFriends, onOpenPrayer, onOpenRead, onOpenBible, onVerseClick, onOpenChurch, onOpenSermon, onOpenConnect, onOpenGroups, accentColor, openCommentPostId, onSendDM }) {
   // Section colour: gold for main Feed, forest green for church community feed
   const TAB_COLOR = accentColor ?? '#B8733A';
   const TAB_TEXT  = accentColor ?? '#8E5528'; // slightly darker for text legibility
@@ -1984,6 +1992,7 @@ useEffect(() => {
                           onReact={handleReact}
                           onReplySubmit={handleReply}
                           onRepost={handleRepost}
+                          onSendDM={onSendDM}
                           isFollowing={following.has(p.author_id)}
                           onFollow={handleFollow}
                           onViewProfile={onViewProfile}
@@ -2117,6 +2126,7 @@ useEffect(() => {
                         onReact={handleReact}
                         onReplySubmit={handleReply}
                         onRepost={handleRepost}
+                        onSendDM={onSendDM}
                         isFollowing={true}
                         onFollow={handleFollow}
                         onViewProfile={onViewProfile}
@@ -2173,6 +2183,7 @@ useEffect(() => {
                         onReact={handleReact}
                         onReplySubmit={handleReply}
                         onRepost={handleRepost}
+                        onSendDM={onSendDM}
                         isFollowing={following.has(p.author_id)}
                         onFollow={handleFollow}
                         onViewProfile={onViewProfile}

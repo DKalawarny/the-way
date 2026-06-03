@@ -148,7 +148,7 @@ function EmptyPane() {
   );
 }
 
-export default function MessagesInbox({ session, profile, onBack }) {
+export default function MessagesInbox({ session, profile, onBack, pendingShareUrl, onShareSent }) {
   const [careConvs, setCareConvs] = useState([]);
   const [dmConvs, setDmConvs] = useState([]);
   const [careLastMsgs, setCareLastMsgs] = useState({});
@@ -265,6 +265,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
           profile={profile}
           conversationId={openDm.id}
           otherProfile={openDm.otherProfile}
+          initialMessage={openDm.initialMessage}
           onBack={() => { setOpenDm(null); setRefreshKey((k) => k + 1); }}
         />
       </Suspense>
@@ -323,7 +324,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
                 ts={c.last_message_at ?? c.created_at}
                 lastBody={dmLastMsgs[c.id]?.body}
                 unread={!!dmLastMsgs[c.id] && dmLastMsgs[c.id].sender_id !== session?.user?.id}
-                onOpen={() => { setOpenCare(null); setOpenDm({ id: c.id, otherProfile: c.otherProfile }); }}
+                onOpen={() => { setOpenCare(null); setOpenDm({ id: c.id, otherProfile: c.otherProfile, initialMessage: pendingShareUrl ?? undefined }); if (pendingShareUrl) onShareSent?.(); }}
                 accent={isSystem}
                 active={!isMobile && openDm?.id === c.id}
                 onDelete={() => setDeleteConfirm({ type: 'dm', id: c.id, name: c.otherProfile?.display_name ?? 'this person' })}
@@ -401,6 +402,19 @@ export default function MessagesInbox({ session, profile, onBack }) {
                 }}>{label}</button>
               ))}
             </div>
+            {pendingShareUrl && (
+              <div style={{
+                background: 'linear-gradient(135deg, #fdf3dc, #fae8c2)',
+                border: `1px solid ${T.goldLight}`,
+                borderRadius: 12, padding: '10px 14px', marginBottom: 14,
+                display: 'flex', alignItems: 'center', gap: 10,
+              }}>
+                <KinwoveStar size={14} color={T.gold} />
+                <div style={{ fontFamily: T.sans, fontSize: 13, color: T.goldDark, fontWeight: 600 }}>
+                  Tap a conversation to send this post
+                </div>
+              </div>
+            )}
             {convList}
           </div>
         </div>
@@ -459,6 +473,19 @@ export default function MessagesInbox({ session, profile, onBack }) {
         {filterTabs}
         {/* Conversation list */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px' }}>
+          {pendingShareUrl && (
+            <div style={{
+              background: 'linear-gradient(135deg, #fdf3dc, #fae8c2)',
+              border: `1px solid ${T.goldLight}`,
+              borderRadius: 10, padding: '8px 12px', marginBottom: 10,
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              <KinwoveStar size={12} color={T.gold} />
+              <div style={{ fontFamily: T.sans, fontSize: 12, color: T.goldDark, fontWeight: 600 }}>
+                Tap a conversation to send this post
+              </div>
+            </div>
+          )}
           {convList}
         </div>
       </div>
@@ -472,6 +499,7 @@ export default function MessagesInbox({ session, profile, onBack }) {
               profile={profile}
               conversationId={openDm.id}
               otherProfile={openDm.otherProfile}
+              initialMessage={openDm.initialMessage}
               onBack={() => { setOpenDm(null); setRefreshKey((k) => k + 1); }}
             />
           </Suspense>

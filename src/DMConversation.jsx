@@ -17,10 +17,11 @@ function timeAgo(ts) {
 // The system "kinwove" account is identified by display_name — read-only thread
 const isSystemAccount = (p) => p?.display_name === 'kinwove';
 
-export default function DMConversation({ session, profile, conversationId, otherProfile, onBack }) {
+export default function DMConversation({ session, profile, conversationId, otherProfile, onBack, initialMessage }) {
   const [messages, setMessages] = useState([]);
   const DRAFT_KEY = `kw:dm-draft:${conversationId}`;
-  const [input, setInput] = useState(() => sessionStorage.getItem(DRAFT_KEY) ?? '');
+  // initialMessage (e.g. a share URL) takes priority over the saved draft
+  const [input, setInput] = useState(() => initialMessage ?? sessionStorage.getItem(DRAFT_KEY) ?? '');
   const [sending, setSending] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [editingId, setEditingId] = useState(null);
