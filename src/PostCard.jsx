@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Heart, Bookmark, Smile } from 'lucide-react';
+import { Bookmark, Smile } from 'lucide-react';
 import { track } from './analytics.js';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
@@ -46,35 +46,28 @@ function renderWithMentions(text, mentions, onViewProfile, onViewChurch) {
   );
 }
 
+// Matches Community.jsx REACTIONS exactly so all post cards look the same
 const REACTIONS = [
-  { id: 'amen',       emoji: '🙏', label: 'Amen' },
-  { id: 'praying',    emoji: '🤲', label: 'Praying' },
-  { id: 'heart',      emoji: null, Icon: Heart, label: 'Love' },
-  { id: 'resonates',  emoji: '❤️', label: 'Resonates' },
-  { id: 'same',       emoji: '💭', label: 'Same question' },
+  {
+    id: 'resonates', label: 'Love', emoji: '❤️',
+    activeBg: 'linear-gradient(180deg, #F5D0D6 0%, #E9B5BD 100%)',
+    activeBorder: '#c47a86', activeText: '#7a3c46',
+    activeShadow: '0 2px 6px rgba(196,122,134,0.30)',
+  },
+  {
+    id: 'amen', label: 'Amen', emoji: '🙏',
+    activeBg: 'linear-gradient(180deg, #F4D89A 0%, #E8B563 100%)',
+    activeBorder: '#9a6328', activeText: '#4d2c0d',
+    activeShadow: '0 2px 8px rgba(154,99,40,0.40)',
+    serifLabel: true,
+  },
+  {
+    id: 'thinking', label: 'Insightful', emoji: '💡',
+    activeBg: 'linear-gradient(180deg, #FBE5C4 0%, #F4D5A6 100%)',
+    activeBorder: '#c4813a', activeText: '#6b3d12',
+    activeShadow: '0 2px 6px rgba(184,115,58,0.28)',
+  },
 ];
-
-function ReactionButton({ kind, count, mine, onToggle }) {
-  return (
-    <button
-      onClick={onToggle}
-      title={kind.label}
-      style={{
-        background: 'none', border: 'none',
-        color: mine ? T.goldDark : T.inkSoft,
-        fontSize: 13, cursor: 'pointer',
-        display: 'inline-flex', alignItems: 'center', gap: 5,
-        padding: '6px 8px', transition: 'color 0.15s',
-        fontFamily: T.sans,
-      }}
-      onMouseEnter={(e) => { if (!mine) e.currentTarget.style.color = T.ink; }}
-      onMouseLeave={(e) => { if (!mine) e.currentTarget.style.color = T.inkSoft; }}
-    >
-      {kind.Icon ? <kind.Icon size={13} strokeWidth={mine ? 0 : 1.75} fill={mine ? T.goldDark : 'none'} /> : <span style={{ fontSize: 13 }}>{kind.emoji}</span>}
-      <span>{kind.label}{count > 0 ? <span style={{ marginLeft: 3, opacity: 0.75 }}>{count}</span> : null}</span>
-    </button>
-  );
-}
 
 function formatEventTime(timeStr) {
   if (!timeStr) return null;
@@ -1103,10 +1096,7 @@ export default function PostCard({
               .filter(r => (reactions[r.id] ?? 0) > 0)
               .sort((a, b) => (reactions[b.id] ?? 0) - (reactions[a.id] ?? 0))
               .slice(0, 3)
-              .map(r => r.emoji
-                ? <span key={r.id} style={{ fontSize: 14 }}>{r.emoji}</span>
-                : <r.Icon key={r.id} size={13} fill={T.inkMuted} stroke="none" color={T.inkMuted} />
-              )}
+              .map(r => <span key={r.id} style={{ fontSize: 14 }}>{r.emoji}</span>)}
             {(() => { const tot = Object.values(reactions).reduce((a, b) => a + b, 0); return tot > 0 ? <span style={{ marginLeft: 2 }}>{tot}</span> : null; })()}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1120,34 +1110,36 @@ export default function PostCard({
         </div>
       )}
 
-      {/* Action bar — FB-style: icon + label stacked, equal-width columns */}
-      <div style={{ display: 'flex', alignItems: 'stretch', borderTop: `1px solid ${T.line}`, paddingTop: 2 }}>
+      {/* Action bar — pill buttons matching Community.jsx style */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, borderTop: `1px solid ${T.line}`, paddingTop: 10, flexWrap: 'nowrap' }}>
         {isPostLike && REACTIONS.map((r) => {
           const count = reactions[r.id] ?? 0;
-          const isMine = !!mine[r.id];
-          // Short display labels so they fit on one row
-          const shortLabel = r.id === 'same' ? 'Same' : r.label;
+          const active = !!mine[r.id];
           return (
             <button
               key={r.id}
               onClick={() => toggleReaction(r.id)}
+              title={r.label}
               style={{
-                flex: 1, background: 'none', border: 'none',
-                color: isMine ? T.goldDark : T.inkSoft,
+                display: 'flex', alignItems: 'center', gap: 5,
+                background: active ? r.activeBg : 'transparent',
+                border: `1px solid ${active ? r.activeBorder : 'rgba(26,17,8,0.13)'}`,
+                borderRadius: 999,
+                padding: '5px 12px',
+                fontSize: 12.5, fontWeight: active ? 600 : 400,
+                color: active ? r.activeText : '#6B5544',
                 cursor: 'pointer',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                padding: '8px 2px', borderRadius: 8, fontFamily: T.sans,
-                transition: 'color 0.15s', minWidth: 0,
+                boxShadow: active ? r.activeShadow : 'none',
+                fontFamily: r.serifLabel && active ? T.serif : T.sans,
+                transition: 'all 0.14s ease',
+                flexShrink: 0,
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
               }}
-              onMouseEnter={(e) => { if (!isMine) e.currentTarget.style.color = T.ink; }}
-              onMouseLeave={(e) => { if (!isMine) e.currentTarget.style.color = T.inkSoft; }}
             >
-              {r.Icon
-                ? <r.Icon size={16} strokeWidth={isMine ? 0 : 1.75} fill={isMine ? T.goldDark : 'none'} />
-                : <span style={{ fontSize: 16, lineHeight: 1 }}>{r.emoji}</span>}
-              <span style={{ fontSize: 9.5, lineHeight: 1.2, fontWeight: isMine ? 700 : 400, whiteSpace: 'nowrap' }}>
-                {shortLabel}{count > 0 ? ` ${count}` : ''}
-              </span>
+              <span style={{ fontSize: 13, lineHeight: 1 }}>{r.emoji}</span>
+              <span>{r.label}</span>
+              {count > 0 && <span style={{ fontWeight: 700, marginLeft: 1 }}>{count}</span>}
             </button>
           );
         })}
@@ -1161,28 +1153,24 @@ export default function PostCard({
           </span>
         )}
 
-        {/* Divider */}
-        {isPostLike && <div style={{ width: 1, background: T.line, margin: '6px 0', flexShrink: 0 }} />}
-
-        {/* Comment */}
+        {/* Comment — pill matching reaction buttons, pushed to end */}
         {isPostLike && (
           <button
             onClick={() => setCommentsOpen((v) => !v)}
             style={{
-              flex: 1, background: 'none', border: 'none',
+              marginLeft: 'auto',
+              display: 'flex', alignItems: 'center', gap: 5,
+              background: 'none', border: 'none',
               color: commentsOpen ? T.goldDark : T.inkSoft,
-              cursor: 'pointer',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-              padding: '8px 2px', borderRadius: 8, fontFamily: T.sans,
-              transition: 'color 0.15s', minWidth: 0,
+              cursor: 'pointer', padding: '5px 6px', borderRadius: 8,
+              fontSize: 12.5, fontFamily: T.sans,
+              transition: 'color 0.15s',
+              WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
+              flexShrink: 0,
             }}
-            onMouseEnter={(e) => { if (!commentsOpen) e.currentTarget.style.color = T.ink; }}
-            onMouseLeave={(e) => { if (!commentsOpen) e.currentTarget.style.color = T.inkSoft; }}
           >
-            <span style={{ fontSize: 16, lineHeight: 1 }}>💬</span>
-            <span style={{ fontSize: 9.5, lineHeight: 1.2, fontWeight: commentsOpen ? 700 : 400, whiteSpace: 'nowrap' }}>
-              Comment{localCommentCount > 0 ? ` ${localCommentCount}` : ''}
-            </span>
+            <span style={{ fontSize: 14, lineHeight: 1 }}>💬</span>
+            <span>{localCommentCount > 0 ? localCommentCount : 'Comment'}</span>
           </button>
         )}
 
@@ -1191,18 +1179,16 @@ export default function PostCard({
           <button
             onClick={() => onSaveToggle(item.id, isSaved)}
             style={{
-              flex: 1, background: 'none', border: 'none',
+              display: 'flex', alignItems: 'center', gap: 4,
+              background: 'none', border: 'none',
               color: isSaved ? T.goldDark : T.inkMuted,
-              cursor: 'pointer',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-              padding: '8px 2px', borderRadius: 8,
-              transition: 'color 0.15s', minWidth: 0,
+              cursor: 'pointer', padding: '5px 6px', borderRadius: 8,
+              transition: 'color 0.15s',
+              WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation',
+              flexShrink: 0,
             }}
-            onMouseEnter={(e) => { if (!isSaved) e.currentTarget.style.color = T.ink; }}
-            onMouseLeave={(e) => { if (!isSaved) e.currentTarget.style.color = T.inkMuted; }}
           >
-            <Bookmark size={16} strokeWidth={2} fill={isSaved ? T.goldDark : 'none'} />
-            <span style={{ fontSize: 9.5, lineHeight: 1.2, fontFamily: T.sans, fontWeight: isSaved ? 700 : 400 }}>Save</span>
+            <Bookmark size={15} strokeWidth={2} fill={isSaved ? T.goldDark : 'none'} />
           </button>
         )}
       </div>
