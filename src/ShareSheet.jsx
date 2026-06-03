@@ -103,24 +103,12 @@ export default function ShareSheet({
     dismiss();
   }
 
-  async function handleSMS() {
-    if (canNativeShare) {
-      // iOS/Android native share → Messages appears as an option,
-      // pre-populates the full text correctly every time.
-      try {
-        await navigator.share({ title: title ?? 'kinwove', text: fullText });
-        dismiss();
-      } catch (e) {
-        if (e.name !== 'AbortError') {
-          window.location.href = `sms:?body=${encodeURIComponent(fullText)}`;
-          dismiss();
-        }
-      }
-    } else {
-      // Fallback for browsers without Web Share API — note: no `&` before body
-      window.location.href = `sms:?body=${encodeURIComponent(fullText)}`;
-      dismiss();
-    }
+  function handleSMS() {
+    // Always use sms: scheme directly — navigator.share() strips body text
+    // down to just a URL when shared to Messages on iOS.
+    // sms:?body= (no & before body) is the correct iOS/Android format.
+    window.location.href = `sms:?body=${encodeURIComponent(fullText)}`;
+    dismiss();
   }
 
   async function handleNativeShare() {
