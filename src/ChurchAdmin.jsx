@@ -1987,7 +1987,7 @@ const PASTOR_TOUR_STEPS = [
   {
     tourId: 'pastor-ask-tab',
     title:  'Your AI companion',
-    body:   'A private space for theology questions, sermon research, and pastoral guidance — powered by Claude.',
+    body:   'A private space for theology questions, sermon research, and pastoral guidance — just for you.',
     color:  '#2e5970',
   },
 ];

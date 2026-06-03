@@ -15,6 +15,7 @@
  */
 
 import { useState, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { T } from './theme.js';
 
 export function isPageTourDone(storageKey) {
@@ -164,8 +165,8 @@ export default function PageTour({ steps = [], storageKey, onClose }) {
     </div>
   );
 
-  return (
-    <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity 0.28s ease' }}>
+  const overlay = (
+    <div style={{ opacity: exiting ? 0 : 1, transition: 'opacity 0.28s ease', pointerEvents: exiting ? 'none' : undefined }}>
 
       {/* Dark surround — transparent backdrop if no target yet */}
       {targetRect ? (
@@ -275,4 +276,8 @@ export default function PageTour({ steps = [], storageKey, onClose }) {
       `}</style>
     </div>
   );
+
+  // Portal to document.body so position:fixed is always relative to the
+  // true viewport, regardless of ancestor overflow or transform contexts.
+  return createPortal(overlay, document.body);
 }
