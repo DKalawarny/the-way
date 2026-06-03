@@ -2263,7 +2263,7 @@ export default function App() {
       .select('role, church_groups(*)')
       .eq('member_id', userId)
       .limit(1)
-      .single();
+      .maybeSingle();
     if (data?.church_groups) setUserGroup({ group: data.church_groups, role: data.role });
   }
 
