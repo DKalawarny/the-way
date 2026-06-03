@@ -7,6 +7,7 @@ import { PERSON_TYPES } from './constants.js';
 import { Avatar, BANNER_PRESETS, bannerBackground } from './ProfilePage.jsx';
 import AvatarPicker from './AvatarPicker.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
+import LinkPreview, { stripFirstUrl } from './LinkPreview.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 const PostComposer = lazy(() => import('./PostComposer.jsx'));
@@ -214,14 +215,15 @@ function ProfilePost({ post, session, profile, onReact, churchCtx, onDelete }) {
             <>
               {displayBody && (
                 <div style={{ fontFamily: T.serif, fontSize: 16, color: T.ink, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
-                  {expanded ? displayBody : (displayBody?.slice(0, 300) + ((displayBody?.length ?? 0) > 300 ? '…' : ''))}
+                  {(() => { const t = stripFirstUrl(displayBody); return expanded ? t : (t.slice(0, 300) + (t.length > 300 ? '…' : '')); })()}
                 </div>
               )}
-              {(displayBody?.length ?? 0) > 300 && (
+              {(stripFirstUrl(displayBody ?? '').length ?? 0) > 300 && (
                 <button onClick={() => setExpanded((v) => !v)} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 13, cursor: 'pointer', padding: '6px 0 0', display: 'block' }}>
                   {expanded ? 'Show less' : 'Read more'}
                 </button>
               )}
+              <LinkPreview text={displayBody} />
               <PostImageGrid urls={post.body_data?.image_urls} />
             </>
           )}
@@ -341,8 +343,9 @@ function ProfilePost({ post, session, profile, onReact, churchCtx, onDelete }) {
                   </div>
                 </div>
                 <div style={{ fontFamily: T.serif, fontSize: 16, color: T.ink, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>
-                  {post.body}
+                  {stripFirstUrl(post.body)}
                 </div>
+                <LinkPreview text={post.body} />
               </div>
 
               {/* Reaction counts */}
