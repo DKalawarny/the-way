@@ -1817,6 +1817,81 @@ ${entries.join('\n')}
     res.send(xml);
   });
 
+  // /?post=<uuid> — dynamic OG tags so iMessage / WhatsApp / etc show a rich
+  // card for the specific post instead of the generic kinwove splash image.
+  // The same HTML is returned for all visitors — React picks up the ?post param
+  // on load and deep-links to the post normally.
+  app.get('/', async (req, res, next) => {
+    const postId = req.query.post;
+    if (!postId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(postId)) {
+      return next();
+    }
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return next();
+    try {
+      const r = await fetch(
+        `${SUPABASE_URL}/rest/v1/posts?id=eq.${encodeURIComponent(postId)}&visibility=eq.public&select=id,body,body_data,kind,created_at,profiles!author_id(display_name)`,
+        { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
+      );
+      if (!r.ok) return next();
+      const rows = await r.json();
+      const post = rows[0];
+      if (!post) return next(); // not found or private → serve normal SPA
+
+      const bodyData = post.body_data ?? {};
+      const rawText = post.body ?? '';
+      const authorName = post.profiles?.display_name ?? 'kinwove member';
+
+      // Extract YouTube video ID (youtube.com/watch?v= or youtu.be/)
+      const ytMatch = rawText.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/i)
+                   ?? (bodyData.repost_body ?? '').match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/i);
+      const ytId = ytMatch?.[1] ?? null;
+
+      // Build title text — strip YouTube URLs, use post text or repost text
+      const postText = bodyData.repost_of
+        ? (bodyData.repost_body ?? rawText ?? '')
+        : rawText;
+      const cleanText = postText.replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim();
+      const rawTitle = cleanText.length > 6
+        ? cleanText
+        : (bodyData.repost_of ? `${authorName} reposted on kinwove` : `${authorName} on kinwove`);
+      const title = rawTitle.length > 80 ? rawTitle.slice(0, 77) + '…' : rawTitle;
+      const titleWithBrand = `${title} — kinwove`;
+
+      const description = 'Join kinwove to react, comment, and share what moves you.';
+      const url = `https://www.kinwove.com/?post=${postId}`;
+
+      // Image: YouTube thumbnail > default OG image
+      const ogImage = ytId
+        ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`
+        : 'https://www.kinwove.com/og-image.png';
+
+      const tEsc = escapeHtml(titleWithBrand);
+      const dEsc = escapeHtml(description);
+      const uEsc = escapeHtml(url);
+      const iEsc = escapeHtml(ogImage);
+
+      const template = await getIndexTemplate();
+      const html = template
+        .replace(/<title>[^<]*<\/title>/, `<title>${tEsc}</title>`)
+        .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${dEsc}" />`)
+        .replace(/<link rel="canonical"[^>]*>/, `<link rel="canonical" href="${uEsc}" />`)
+        .replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${uEsc}" />`)
+        .replace(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${tEsc}" />`)
+        .replace(/<meta property="og:description"[^>]*>/, `<meta property="og:description" content="${dEsc}" />`)
+        .replace(/<meta property="og:image"[^>]*>/, `<meta property="og:image" content="${iEsc}" />`)
+        .replace(/<meta name="twitter:title"[^>]*>/, `<meta name="twitter:title" content="${tEsc}" />`)
+        .replace(/<meta name="twitter:description"[^>]*>/, `<meta name="twitter:description" content="${dEsc}" />`)
+        .replace(/<meta name="twitter:image"[^>]*>/, `<meta name="twitter:image" content="${iEsc}" />`);
+
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300');
+      res.send(html);
+    } catch (e) {
+      console.error('[kinwove] /?post= OG error:', e?.message);
+      next();
+    }
+  });
+
   // /robots.txt — points crawlers at the sitemap
   app.get('/robots.txt', (req, res) => {
     const host = `${req.protocol}://${req.get('host')}`;
