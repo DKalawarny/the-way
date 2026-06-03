@@ -1841,12 +1841,14 @@ ${entries.join('\n')}
       const rawText = post.body ?? '';
       const authorName = post.profiles?.display_name ?? 'kinwove member';
 
-      // Extract YouTube video ID (youtube.com/watch?v= or youtu.be/)
-      const ytMatch = rawText.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/i)
-                   ?? (bodyData.repost_body ?? '').match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/i);
+      // Extract YouTube video ID — handles watch, shorts, embed, youtu.be
+      // i.ytimg.com is YouTube's actual CDN; more reliable than img.youtube.com
+      const YT_RE = /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
+      const allText = [rawText, bodyData.repost_body ?? ''].join(' ');
+      const ytMatch = allText.match(YT_RE);
       const ytId = ytMatch?.[1] ?? null;
 
-      // Build title text — strip YouTube URLs, use post text or repost text
+      // Build title text — strip all URLs, use what's left
       const postText = bodyData.repost_of
         ? (bodyData.repost_body ?? rawText ?? '')
         : rawText;
@@ -1860,10 +1862,12 @@ ${entries.join('\n')}
       const description = 'Join kinwove to react, comment, and share what moves you.';
       const url = `https://www.kinwove.com/?post=${postId}`;
 
-      // Image: YouTube thumbnail > default OG image
+      // Image: YouTube thumbnail (i.ytimg.com CDN, always exists) > default OG
       const ogImage = ytId
-        ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`
+        ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`
         : 'https://www.kinwove.com/og-image.png';
+      const ogImageW = ytId ? '480' : '1200';
+      const ogImageH = ytId ? '360' : '630';
 
       const tEsc = escapeHtml(titleWithBrand);
       const dEsc = escapeHtml(description);
@@ -1879,6 +1883,9 @@ ${entries.join('\n')}
         .replace(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${tEsc}" />`)
         .replace(/<meta property="og:description"[^>]*>/, `<meta property="og:description" content="${dEsc}" />`)
         .replace(/<meta property="og:image"[^>]*>/, `<meta property="og:image" content="${iEsc}" />`)
+        .replace(/<meta property="og:image:width"[^>]*>/, `<meta property="og:image:width" content="${ogImageW}" />`)
+        .replace(/<meta property="og:image:height"[^>]*>/, `<meta property="og:image:height" content="${ogImageH}" />`)
+        .replace(/<meta name="twitter:card"[^>]*>/, `<meta name="twitter:card" content="summary_large_image" />`)
         .replace(/<meta name="twitter:title"[^>]*>/, `<meta name="twitter:title" content="${tEsc}" />`)
         .replace(/<meta name="twitter:description"[^>]*>/, `<meta name="twitter:description" content="${dEsc}" />`)
         .replace(/<meta name="twitter:image"[^>]*>/, `<meta name="twitter:image" content="${iEsc}" />`);
