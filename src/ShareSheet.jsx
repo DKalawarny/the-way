@@ -104,10 +104,15 @@ export default function ShareSheet({
   }
 
   function handleSMS() {
-    // Always use sms: scheme directly — navigator.share() strips body text
-    // down to just a URL when shared to Messages on iOS.
-    // sms:?body= (no & before body) is the correct iOS/Android format.
-    window.location.href = `sms:?body=${encodeURIComponent(fullText)}`;
+    // Use anchor click — more reliable than window.location.href for custom
+    // URL schemes on iOS Safari. Keep ?&body= format (the & is harmless on
+    // iOS and ?body= alone can silently drop the body on some iOS versions).
+    const a = document.createElement('a');
+    a.href = `sms:?&body=${encodeURIComponent(fullText)}`;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { try { document.body.removeChild(a); } catch {} }, 200);
     dismiss();
   }
 
