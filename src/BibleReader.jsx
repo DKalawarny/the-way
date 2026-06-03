@@ -2050,7 +2050,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
               <Tip
                 tipId="bible_verse_tap"
                 icon="👆"
-                dark
+                dark={dark}
                 text="Tap any verse to get AI explanations, historical context, cross-references, and original language insights."
                 style={{ marginBottom: 20 }}
               />

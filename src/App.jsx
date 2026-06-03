@@ -3350,14 +3350,14 @@ export default function App() {
       )}
 
       {/* ── Feature tour — shown once to new users, re-openable from Help ── */}
-      {/* Only show tour when verse card is not active — verse greets first,
-          tour follows after dismissal so they don't stack/fog each other. */}
-      {showTour && !showVerseCard && session && (
+      {/* Tour takes priority — verse is hidden until tour is dismissed so
+          new users see the walkthrough first, daily verse second.           */}
+      {showTour && session && (
         <FeatureTour onClose={() => setShowTour(false)} />
       )}
 
       {/* ── Daily verse card — shown once per day on app open ── */}
-      {showVerseCard && session && (
+      {showVerseCard && !showTour && session && (
         <DailyVerseCard
           onReflect={(verse) => {
             if (!currentConvId) startChatFromProfile();
