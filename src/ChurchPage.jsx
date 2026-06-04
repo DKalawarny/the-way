@@ -242,7 +242,7 @@ export default function ChurchPage({
           : Promise.resolve({ data: null }),
         supabase
           .from('personal_prayers')
-          .select('id, body, created_at, user_id, is_anonymous, profiles!user_id(church_id, display_name)')
+          .select('id, body, created_at, user_id, is_anonymous, profiles(church_id, display_name)')
           .eq('is_public', true)
           .gte('created_at', sevenDaysAgo)
           .order('created_at', { ascending: false })
@@ -260,15 +260,20 @@ export default function ChurchPage({
       let countMap = {};
       let prayedSet = new Set();
       if (prayerIdList.length > 0) {
-        const [{ data: supportRows }, { data: ownRows }] = await Promise.all([
-          supabase.from('personal_prayer_support').select('prayer_id').in('prayer_id', prayerIdList),
-          session?.user?.id
-            ? supabase.from('personal_prayer_support').select('prayer_id').in('prayer_id', prayerIdList).eq('user_id', session.user.id)
-            : Promise.resolve({ data: [] }),
-        ]);
-        (supportRows ?? []).forEach((r) => { countMap[r.prayer_id] = (countMap[r.prayer_id] ?? 0) + 1; });
-        prayedSet = new Set((ownRows ?? []).map((r) => r.prayer_id));
+        try {
+          const [{ data: supportRows }, { data: ownRows }] = await Promise.all([
+            supabase.from('personal_prayer_support').select('prayer_id').in('prayer_id', prayerIdList),
+            session?.user?.id
+              ? supabase.from('personal_prayer_support').select('prayer_id').in('prayer_id', prayerIdList).eq('user_id', session.user.id)
+              : Promise.resolve({ data: [] }),
+          ]);
+          (supportRows ?? []).forEach((r) => { countMap[r.prayer_id] = (countMap[r.prayer_id] ?? 0) + 1; });
+          prayedSet = new Set((ownRows ?? []).map((r) => r.prayer_id));
+        } catch {
+          // prayer_support query failed — prayers still render, just without counts
+        }
       }
+      if (cancelled) return;
       const prayers = rawPrayers.map((p) => ({
         id: p.id, body: p.body,
         name: p.is_anonymous ? 'Anonymous' : (p.profiles?.display_name ?? 'Someone'),
@@ -1281,13 +1286,17 @@ export default function ChurchPage({
                       onClick={async () => {
                         if (!prayText.trim() || !session?.user?.id) return;
                         setPraySubmitting(true);
-                        const { data } = await supabase.from('personal_prayers').insert({
+                        const { data, error: prayErr } = await supabase.from('personal_prayers').insert({
                           user_id: session.user.id,
                           body: prayText.trim(),
                           is_public: true,
                           is_anonymous: prayAnonymous,
                         }).select('id, body, is_anonymous').single();
                         setPraySubmitting(false);
+                        if (prayErr) {
+                          showToast('Couldn\'t share prayer — please try again.', 'error');
+                          return;
+                        }
                         if (data) {
                           const displayName = prayAnonymous ? 'Anonymous' : (profile?.display_name ?? 'You');
                           setChurchPrayers((prev) => [{ id: data.id, body: data.body, name: displayName, count: 0 }, ...prev]);
