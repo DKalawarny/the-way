@@ -3177,6 +3177,7 @@ export default function App() {
             if (session && profile) setStage('pastor-apply');
             else { setPendingPastorApply(true); setAuthStage('auth'); }
           }}
+          onStartDM={(uid) => { setPeopleSearchOpen(false); startDM(uid); }}
         />
       )}
       </Suspense>

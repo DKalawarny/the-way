@@ -230,10 +230,64 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
       .is('read_at', null)
       .then(() => {}); // intentionally not awaited
   }
+  async function runComposeSearch(q) {
+    if (!q.trim()) { setComposeResults([]); setComposeLoading(false); return; }
+    setComposeLoading(true);
+    const uid = session?.user?.id;
+    let req = supabase
+      .from('profiles')
+      .select('id, display_name, avatar_config, avatar_url')
+      .ilike('display_name', `%${q.trim().replace(/[%,()]/g, '')}%`)
+      .limit(10);
+    if (uid) req = req.neq('id', uid);
+    const { data } = await req;
+    setComposeResults(data ?? []);
+    setComposeLoading(false);
+  }
+
+  async function startNewDM(otherId, otherProf) {
+    if (!session?.user?.id) return;
+    const uid = session.user.id;
+    const sorted = [uid, otherId].sort();
+    const { data: existing } = await supabase
+      .from('dm_conversations')
+      .select('id')
+      .contains('participant_ids', sorted)
+      .maybeSingle();
+    let convId = existing?.id;
+    if (!convId) {
+      const { data: created } = await supabase
+        .from('dm_conversations')
+        .insert({ participant_ids: sorted })
+        .select('id')
+        .single();
+      convId = created?.id;
+    }
+    if (!convId) return;
+    // Add to list if not already present
+    setDmConvs((prev) => {
+      if (prev.find((c) => c.id === convId)) return prev;
+      return [{ id: convId, participant_ids: sorted, otherProfile: otherProf, last_message_at: null, created_at: new Date().toISOString() }, ...prev];
+    });
+    setComposing(false);
+    setComposeQuery('');
+    setComposeResults([]);
+    setOpenCare(null);
+    setOpenDm({ id: convId, otherProfile: otherProf });
+    openConversation(convId);
+  }
+
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+
+  // Compose new DM
+  const [composing, setComposing] = useState(false);
+  const [composeQuery, setComposeQuery] = useState('');
+  const [composeResults, setComposeResults] = useState([]);
+  const [composeLoading, setComposeLoading] = useState(false);
+  const composeDebounceRef = useRef(null);
 
   useEffect(() => {
     const handle = () => setIsMobile(window.innerWidth < 768);
@@ -639,10 +693,79 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
                 <path d="M6 1L1 6l5 5" stroke={T.ink} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
-            <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, letterSpacing: '-0.01em' }}>
+            <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, letterSpacing: '-0.01em', flex: 1 }}>
               Messages
             </div>
+            {/* Compose new DM */}
+            <button
+              onClick={() => { setComposing((v) => !v); setComposeQuery(''); setComposeResults([]); }}
+              title="New message"
+              style={{
+                width: 30, height: 30, borderRadius: '50%',
+                background: composing ? T.ink : T.cream,
+                border: `1px solid ${composing ? T.ink : T.line}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', flexShrink: 0, padding: 0,
+                color: composing ? T.cream : T.inkSoft,
+                transition: 'all 0.15s',
+              }}
+            >
+              {/* Compose / pencil icon */}
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
           </div>
+
+          {/* Compose overlay — inline search */}
+          {composing && (
+            <div style={{
+              background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 10,
+              padding: '10px', marginBottom: 8, animation: 'fadeIn 0.12s ease',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: composeResults.length || composeLoading ? 8 : 0 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: T.inkMuted, flexShrink: 0 }}>To:</span>
+                <input
+                  autoFocus
+                  value={composeQuery}
+                  onChange={(e) => {
+                    setComposeQuery(e.target.value);
+                    clearTimeout(composeDebounceRef.current);
+                    setComposeLoading(true);
+                    composeDebounceRef.current = setTimeout(() => runComposeSearch(e.target.value), 250);
+                  }}
+                  placeholder="Search by name…"
+                  style={{
+                    flex: 1, background: T.white, border: `1px solid ${T.line}`,
+                    borderRadius: 8, padding: '6px 10px', fontSize: 13,
+                    color: T.ink, outline: 'none', fontFamily: T.sans,
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = T.gold)}
+                  onBlur={(e) => (e.target.style.borderColor = T.line)}
+                />
+              </div>
+              {composeLoading && composeQuery && (
+                <div style={{ fontSize: 12, color: T.inkMuted, padding: '2px 4px' }}>Searching…</div>
+              )}
+              {composeResults.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => startNewDM(p.id, p)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    width: '100%', background: 'transparent', border: 'none',
+                    borderRadius: 8, padding: '7px 8px', cursor: 'pointer', textAlign: 'left',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(44,24,16,0.05)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <Avatar name={p.display_name} avatarConfig={p.avatar_config} photoUrl={p.avatar_url} size={30} />
+                  <span style={{ fontSize: 13.5, fontWeight: 600, color: T.ink }}>{p.display_name}</span>
+                </button>
+              ))}
+            </div>
+          )}
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}

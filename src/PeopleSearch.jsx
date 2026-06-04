@@ -114,7 +114,50 @@ function ChurchCard({ church, memberCount, isMine, onOpen }) {
   );
 }
 
-export default function PeopleSearch({ session, profile, onClose, onViewProfile, onOpenChurch, onApplyAsPastor }) {
+function PastorCard({ pastor, onViewProfile, onStartDM }) {
+  return (
+    <div style={{
+      background: T.white, border: `1px solid ${T.line}`, borderRadius: 12,
+      padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 12,
+      transition: 'border-color 0.15s',
+    }}>
+      <button
+        onClick={() => onViewProfile(pastor.id)}
+        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, flex: 1, textAlign: 'left', minWidth: 0 }}
+      >
+        <Avatar name={pastor.display_name} avatarConfig={pastor.avatar_config} photoUrl={pastor.avatar_url} size={40} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {pastor.display_name}
+          </div>
+          <div style={{ fontSize: 12, color: T.inkMuted, display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+            <KinwoveStar size={9} color={T.goldDark} style={{ flexShrink: 0 }} />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {pastor.church.name}{pastor.church.city ? ` · ${pastor.church.city}` : ''}
+            </span>
+          </div>
+        </div>
+      </button>
+      {onStartDM && (
+        <button
+          onClick={() => onStartDM(pastor.id)}
+          style={{
+            background: 'transparent', color: T.ink,
+            border: `1.5px solid ${T.ink}`,
+            borderRadius: 999, padding: '6px 12px',
+            fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            flexShrink: 0, whiteSpace: 'nowrap',
+            transition: 'all 0.15s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = T.ink; e.currentTarget.style.color = T.cream; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = T.ink; }}
+        >✉ Message</button>
+      )}
+    </div>
+  );
+}
+
+export default function PeopleSearch({ session, profile, onClose, onViewProfile, onOpenChurch, onApplyAsPastor, onStartDM }) {
   const [tab, setTab] = useState('people');
 
   // People state
@@ -132,6 +175,10 @@ export default function PeopleSearch({ session, profile, onClose, onViewProfile,
   const [memberCounts, setMemberCounts] = useState({});
   const [churchesLoading, setChurchesLoading] = useState(false);
   const churchDebounceRef = useRef(null);
+
+  // Pastors state
+  const [pastorResults, setPastorResults] = useState([]);
+  const [pastorsLoading, setPastorsLoading] = useState(false);
 
   const hasFilters = !!cityFilter.trim();
 
@@ -249,6 +296,39 @@ export default function PeopleSearch({ session, profile, onClose, onViewProfile,
     }
   }
 
+  const loadPastors = useCallback(async () => {
+    setPastorsLoading(true);
+    // Get verified public churches that have a pastor assigned
+    const { data: churches } = await supabase
+      .from('churches')
+      .select('id, name, city, country, denomination, pastor_id')
+      .eq('verification_status', 'verified')
+      .eq('is_public', true)
+      .not('pastor_id', 'is', null)
+      .limit(60);
+    const list = churches ?? [];
+    const pastorIds = [...new Set(list.map((c) => c.pastor_id).filter(Boolean))];
+    if (!pastorIds.length) { setPastorResults([]); setPastorsLoading(false); return; }
+    const uid = session?.user?.id;
+    let req = supabase
+      .from('profiles')
+      .select('id, display_name, avatar_config, avatar_url')
+      .in('id', pastorIds);
+    if (uid) req = req.neq('id', uid);
+    const { data: profs } = await req;
+    const profileMap = {};
+    (profs ?? []).forEach((p) => { profileMap[p.id] = p; });
+    const combined = list
+      .filter((c) => profileMap[c.pastor_id])
+      .map((c) => ({ ...profileMap[c.pastor_id], church: c }));
+    setPastorResults(combined);
+    setPastorsLoading(false);
+  }, [session]);
+
+  useEffect(() => {
+    if (tab === 'pastors') loadPastors();
+  }, [tab, loadPastors]);
+
   const isSearching = !!(query.trim() || hasFilters);
   const showPeopleEmpty = isSearching && !loading && results.length === 0;
   const showChurchEmpty = !!churchQuery.trim() && !churchesLoading && churchResults.length === 0;
@@ -292,6 +372,7 @@ export default function PeopleSearch({ session, profile, onClose, onViewProfile,
               {[
                 { id: 'people', label: 'People' },
                 { id: 'churches', label: 'Churches' },
+                { id: 'pastors', label: 'Pastors' },
               ].map((t) => {
                 const active = tab === t.id;
                 return (
@@ -472,6 +553,42 @@ export default function PeopleSearch({ session, profile, onClose, onViewProfile,
                     />
                   ))}
                 </div>
+              )}
+            </>
+          )}
+
+          {tab === 'pastors' && (
+            <>
+              {pastorsLoading && (
+                <div style={{ textAlign: 'center', padding: '32px 0', color: T.inkMuted, fontSize: 14 }}>Loading…</div>
+              )}
+              {!pastorsLoading && pastorResults.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                  <div style={{ fontSize: 32, marginBottom: 10 }}>🙏</div>
+                  <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 600, color: T.ink, marginBottom: 6 }}>
+                    No pastors yet
+                  </div>
+                  <div style={{ fontSize: 13.5, color: T.inkMuted, lineHeight: 1.6 }}>
+                    Pastors from verified churches will appear here.
+                  </div>
+                </div>
+              )}
+              {!pastorsLoading && pastorResults.length > 0 && (
+                <>
+                  <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 10, letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 600 }}>
+                    {pastorResults.length} verified pastor{pastorResults.length !== 1 ? 's' : ''}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {pastorResults.map((p) => (
+                      <PastorCard
+                        key={p.id}
+                        pastor={p}
+                        onViewProfile={(uid) => { onClose(); onViewProfile(uid); }}
+                        onStartDM={onStartDM ? (uid) => { onClose(); onStartDM(uid); } : null}
+                      />
+                    ))}
+                  </div>
+                </>
               )}
             </>
           )}
