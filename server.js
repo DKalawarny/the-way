@@ -7,6 +7,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
+import cron from 'node-cron';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -2151,3 +2152,26 @@ ${entries.join('\n')}
 app.listen(PORT, () => {
   console.log(`[kinwove] api listening on http://localhost:${PORT}`);
 });
+
+// ── Weekly digest cron — runs inside the Render process, no external scheduler ─
+// Every Monday at 8:00 AM UTC. Only fires when DIGEST_SECRET is configured.
+if (process.env.DIGEST_SECRET) {
+  cron.schedule('0 8 * * 1', async () => {
+    console.log('[kinwove] sending weekly digest…');
+    try {
+      const r = await fetch(`http://localhost:${PORT}/api/send-digest`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-digest-secret': process.env.DIGEST_SECRET,
+        },
+        body: '{}',
+      });
+      const result = await r.json();
+      console.log(`[kinwove] digest done — sent ${result.sent ?? 0} emails`);
+    } catch (e) {
+      console.error('[kinwove] digest cron error:', e?.message);
+    }
+  }, { timezone: 'UTC' });
+  console.log('[kinwove] weekly digest scheduled (Mondays 8AM UTC)');
+}
