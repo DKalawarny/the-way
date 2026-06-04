@@ -107,7 +107,7 @@ function MyPrayers({ session, profile }) {
     if (!text.trim()) return;
     setSubmitting(true);
     const { data, error } = await supabase.from('personal_prayers').insert({
-      user_id: session.user.id, body: text.trim(), is_public: true, is_anonymous: newIsAnonymous,
+      user_id: session.user.id, body: text.trim(), is_public: false,
     }).select().single();
     setSubmitting(false);
     if (error) {
@@ -171,6 +171,18 @@ function MyPrayers({ session, profile }) {
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 80px', background: T.cream }}>
       <div style={{ maxWidth: 560, margin: '0 auto' }}>
+        {/* Private journal notice */}
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 5,
+          fontSize: 11.5, color: '#5a6b58', fontWeight: 600,
+          letterSpacing: '0.04em', textTransform: 'uppercase',
+          marginBottom: 16,
+          background: 'rgba(90,128,100,0.10)',
+          border: '1px solid rgba(90,128,100,0.20)',
+          borderRadius: 999, padding: '4px 10px',
+        }}>
+          <Lock size={10} strokeWidth={2.5} /> Just between you and God
+        </div>
         {/* Prayer compose — sage pill, expands inline */}
         <div style={{ marginBottom: 20 }}>
           {!composeOpen ? (
@@ -237,28 +249,9 @@ function MyPrayers({ session, profile }) {
                   }}
                 />
                 <div style={{ marginTop: 10, borderTop: `1px solid rgba(90,128,100,0.2)`, paddingTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                  {/* Privacy toggle */}
-                  <div style={{ display: 'flex', background: 'rgba(90,128,100,0.12)', borderRadius: 999, padding: 3, gap: 2 }}>
-                    <button type="button" onClick={() => setNewIsAnonymous(false)} style={{
-                      background: !newIsAnonymous ? 'rgba(90,128,100,0.25)' : 'transparent',
-                      border: 'none', borderRadius: 999, padding: '8px 14px', fontSize: 12,
-                      color: !newIsAnonymous ? SEMANTIC.prayer.text : '#9A6A38',
-                      cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
-                      fontWeight: !newIsAnonymous ? 600 : 400, transition: 'all 0.15s',
-                    }}>
-                      <Globe size={12} strokeWidth={2} /> Public
-                    </button>
-                    <button type="button" onClick={() => setNewIsAnonymous(true)} style={{
-                      background: newIsAnonymous ? T.white : 'transparent',
-                      border: 'none', borderRadius: 999, padding: '8px 14px', fontSize: 12,
-                      color: newIsAnonymous ? T.ink : '#9A6A38',
-                      cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
-                      fontWeight: newIsAnonymous ? 600 : 400, transition: 'all 0.15s',
-                      boxShadow: newIsAnonymous ? '0 1px 2px rgba(44,24,16,0.06)' : 'none',
-                    }}>
-                      <Lock size={12} strokeWidth={2} /> Anonymous
-                    </button>
-                  </div>
+                  <span style={{ fontSize: 11.5, color: '#5a6b58', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Lock size={10} strokeWidth={2.5} /> Private
+                  </span>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button type="button" onClick={() => { setComposeOpen(false); setText(''); }}
                       style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 13, cursor: 'pointer', padding: '6px 10px' }}>
