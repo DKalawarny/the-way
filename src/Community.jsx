@@ -1544,6 +1544,7 @@ useEffect(() => {
       .from('personal_prayers')
       .select('*, profiles(display_name, city, country, tradition, person_type, avatar_config, avatar_url, show_flag, flags)')
       .eq('is_public', true)
+      .is('church_id', null)
       .order('created_at', { ascending: false })
       .limit(60);
     if (!data) { setPrayersLoading(false); return; }

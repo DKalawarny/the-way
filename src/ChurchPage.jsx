@@ -242,8 +242,9 @@ export default function ChurchPage({
           : Promise.resolve({ data: null }),
         supabase
           .from('personal_prayers')
-          .select('id, body, created_at, user_id, is_anonymous, profiles(church_id, display_name)')
+          .select('id, body, created_at, user_id, is_anonymous, profiles(display_name)')
           .eq('is_public', true)
+          .eq('church_id', churchId)
           .gte('created_at', sevenDaysAgo)
           .order('created_at', { ascending: false })
           .limit(50),
@@ -252,9 +253,8 @@ export default function ChurchPage({
       setPendingInvites(invitesRes.data ?? []);
       setIsCareTeam(!!careRes.data);
       setFeaturedWalk(walkRes.data ?? null);
-      // Filter prayers to this church's members only
-      const rawPrayers = (prayersRes.data ?? [])
-        .filter((p) => p.profiles?.church_id === churchId);
+      // Prayers are already scoped to this church by the server-side eq filter
+      const rawPrayers = prayersRes.data ?? [];
       const prayerIdList = rawPrayers.map((p) => p.id);
       // Load pray counts + user's own prayed IDs
       let countMap = {};
@@ -1291,6 +1291,7 @@ export default function ChurchPage({
                           body: prayText.trim(),
                           is_public: true,
                           is_anonymous: prayAnonymous,
+                          church_id: churchId,
                         }).select('id, body, is_anonymous').single();
                         setPraySubmitting(false);
                         if (prayErr) {

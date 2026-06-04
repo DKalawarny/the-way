@@ -74,6 +74,7 @@ function MyPrayers({ session, profile }) {
       .from('personal_prayers')
       .select('*')
       .eq('user_id', session.user.id)
+      .is('church_id', null)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
         setPrayers(data ?? []);
