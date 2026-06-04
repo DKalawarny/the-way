@@ -80,46 +80,44 @@ function NotificationRow({ n, onClick, onFriendAction }) {
       onClick={() => onClick(n)}
       onKeyDown={(e) => e.key === 'Enter' && onClick(n)}
       style={{
-        width: '100%', display: 'flex', gap: 11, alignItems: 'flex-start',
-        background: unread ? 'rgba(184,115,58,0.08)' : 'transparent',
-        borderBottom: `1px solid ${T.line}`,
-        padding: '12px 14px', cursor: 'pointer', textAlign: 'left',
-        transition: 'background 0.15s',
+        width: '100%', display: 'flex', gap: 13, alignItems: 'flex-start',
+        background: 'transparent',
+        borderRadius: 10,
+        padding: '10px 12px', cursor: 'pointer', textAlign: 'left',
+        transition: 'background 0.12s',
       }}
-      onMouseEnter={(e) => e.currentTarget.style.background = unread ? 'rgba(184,115,58,0.14)' : 'rgba(44,24,16,0.04)'}
-      onMouseLeave={(e) => e.currentTarget.style.background = unread ? 'rgba(184,115,58,0.08)' : 'transparent'}
+      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(44,24,16,0.05)'}
+      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
     >
+      {/* Avatar + icon badge */}
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <Avatar
           name={actorName}
           avatarConfig={isCareAnonymous ? null : actor?.avatar_config}
           photoUrl={isCareAnonymous ? null : actor?.avatar_url}
-          size={36}
+          size={44}
         />
         <div style={{
-          position: 'absolute', right: -2, bottom: -2,
-          width: 18, height: 18, borderRadius: '50%',
-          background: T.cream, border: `1px solid ${T.line}`,
+          position: 'absolute', right: -3, bottom: -3,
+          width: 22, height: 22, borderRadius: '50%',
+          background: T.ink, border: `2px solid ${T.white}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 10, color: T.goldDark,
+          fontSize: 10, color: T.cream,
         }}>
-          {copy.Icon ? <copy.Icon size={10} strokeWidth={2} /> : copy.emoji}
+          {copy.Icon ? <copy.Icon size={11} strokeWidth={2} /> : copy.emoji}
         </div>
       </div>
+
+      {/* Text block */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, lineHeight: 1.45, color: T.ink }}>
-          <span style={{ fontWeight: 600 }}>{actorName}</span>{' '}
-          <span style={{ color: T.inkSoft }}>{copy.verb}</span>
+        <div style={{ fontSize: 14, lineHeight: 1.5, color: T.ink, marginBottom: 2 }}>
+          <span style={{ fontWeight: 700 }}>{actorName}</span>{' '}
+          <span style={{ fontWeight: 400, color: T.inkSoft }}>{copy.verb}</span>
+          {snippet && (
+            <span style={{ fontWeight: 600, color: T.ink }}>: "{snippet}"</span>
+          )}
         </div>
-        {snippet && (
-          <div style={{
-            fontSize: 12.5, color: T.inkMuted, fontStyle: 'italic',
-            marginTop: 2, lineHeight: 1.4,
-            overflow: 'hidden', textOverflow: 'ellipsis',
-            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-          }}>"{snippet}"</div>
-        )}
-        <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 4 }}>
+        <div style={{ fontSize: 12.5, color: T.goldDark, fontWeight: 600, letterSpacing: '0.01em' }}>
           {timeAgo(n.created_at)}
         </div>
 
@@ -137,38 +135,26 @@ function NotificationRow({ n, onClick, onFriendAction }) {
             )}
             {!friendState && (
               <>
-                <button
-                  onClick={(e) => handleFriend(e, 'accept')}
-                  disabled={friendState === 'busy'}
-                  style={{
-                    background: T.ink, color: T.cream,
-                    border: 'none', borderRadius: 8,
-                    padding: '5px 14px', fontSize: 12, fontWeight: 600,
-                    cursor: 'pointer', opacity: friendState === 'busy' ? 0.5 : 1,
-                  }}
-                >Accept</button>
-                <button
-                  onClick={(e) => handleFriend(e, 'decline')}
-                  disabled={friendState === 'busy'}
-                  style={{
-                    background: 'transparent', color: T.inkSoft,
-                    border: `1px solid ${T.line}`, borderRadius: 8,
-                    padding: '5px 14px', fontSize: 12, fontWeight: 600,
-                    cursor: 'pointer', opacity: friendState === 'busy' ? 0.5 : 1,
-                  }}
-                >Decline</button>
+                <button onClick={(e) => handleFriend(e, 'accept')} disabled={friendState === 'busy'} style={{
+                  background: T.ink, color: T.cream, border: 'none', borderRadius: 8,
+                  padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}>Accept</button>
+                <button onClick={(e) => handleFriend(e, 'decline')} disabled={friendState === 'busy'} style={{
+                  background: 'transparent', color: T.inkSoft, border: `1px solid ${T.line}`,
+                  borderRadius: 8, padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}>Decline</button>
               </>
             )}
           </div>
         )}
       </div>
-      {unread && (
-        <div style={{
-          width: 8, height: 8, borderRadius: '50%',
-          background: T.gold, flexShrink: 0, marginTop: 14,
-          boxShadow: '0 0 6px rgba(184,115,58,0.6)',
-        }} />
-      )}
+
+      {/* Unread dot — far right, gold */}
+      <div style={{ width: 12, flexShrink: 0, display: 'flex', justifyContent: 'center', paddingTop: 4 }}>
+        {unread && (
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: T.goldDark }} />
+        )}
+      </div>
     </div>
   );
 }
@@ -178,6 +164,7 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
   const [notifs, setNotifs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [bellFilter, setBellFilter] = useState('all'); // 'all' | 'unread'
 
   const userId = session?.user?.id;
 
@@ -331,31 +318,45 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
             position: 'absolute',
             top: isDesktop ? 56 : 'calc(env(safe-area-inset-top, 0px) + 56px)',
             right: bellRight,
-            background: T.white, borderRadius: 14, border: `1px solid ${T.line}`,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.14)', overflow: 'hidden',
-            width: 360, maxWidth: 'calc(100vw - 24px)',
-            maxHeight: 'min(70vh, 560px)',
+            background: T.white, borderRadius: 16, border: `1px solid ${T.line}`,
+            boxShadow: '0 8px 40px rgba(0,0,0,0.16)',
+            width: 380, maxWidth: 'calc(100vw - 24px)',
+            maxHeight: 'min(72vh, 600px)',
             display: 'flex', flexDirection: 'column',
             zIndex: 300,
           }}>
-            <div style={{
-              padding: '14px 18px', borderBottom: `1px solid ${T.line}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.ink,
-            }}>
-              Notifications
-              {notifs.some(n => !n.read_at) && (
-                <button
-                  onClick={markAllRead}
-                  style={{
+            {/* Header */}
+            <div style={{ padding: '18px 16px 10px', flexShrink: 0 }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                marginBottom: 12,
+              }}>
+                <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 700, color: T.ink, letterSpacing: '-0.02em' }}>
+                  Notifications
+                </div>
+                {notifs.some(n => !n.read_at) && (
+                  <button onClick={markAllRead} style={{
                     background: 'none', border: 'none', color: T.goldDark,
-                    fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                    fontFamily: T.serif,
-                  }}
-                >Mark all read</button>
-              )}
+                    fontSize: 12.5, fontWeight: 600, cursor: 'pointer', padding: 0,
+                  }}>Mark all read</button>
+                )}
+              </div>
+              {/* Filter tabs */}
+              <div style={{ display: 'flex', gap: 6 }}>
+                {[['all', 'All'], ['unread', 'Unread']].map(([f, label]) => (
+                  <button key={f} onClick={() => setBellFilter?.(f)} style={{
+                    borderRadius: 999, padding: '5px 14px',
+                    fontSize: 13, fontWeight: 600,
+                    background: (bellFilter ?? 'all') === f ? `rgba(184,115,58,0.12)` : 'transparent',
+                    color: (bellFilter ?? 'all') === f ? T.goldDark : T.inkMuted,
+                    border: 'none', cursor: 'pointer',
+                  }}>{label}</button>
+                ))}
+              </div>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto' }}>
+
+            {/* Notification list with New / Earlier grouping */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '4px 8px 12px' }}>
               {loading && (
                 <div style={{ padding: 30, textAlign: 'center', color: T.inkMuted, fontFamily: T.serif, fontSize: 14 }}>
                   Loading…
@@ -363,14 +364,32 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
               )}
               {!loading && notifs.length === 0 && (
                 <div style={{ padding: '40px 24px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 32, marginBottom: 10 }}>🔔</div>
-                  <div style={{ fontFamily: T.display, fontSize: 16, color: T.ink, marginBottom: 6 }}>You're all caught up.</div>
-                  <div style={{ fontSize: 13, color: T.inkMuted }}>New activity will land here.</div>
+                  <div style={{ fontSize: 32, marginBottom: 10 }}>🕊</div>
+                  <div style={{ fontFamily: T.display, fontSize: 16, color: T.ink, marginBottom: 6 }}>All caught up</div>
+                  <div style={{ fontSize: 13, color: T.inkMuted }}>New activity from your church will appear here.</div>
                 </div>
               )}
-              {!loading && notifs.map(n => (
-                <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} />
-              ))}
+              {!loading && (() => {
+                const filtered = notifs.filter(n => (bellFilter ?? 'all') === 'unread' ? !n.read_at : true);
+                const newItems  = filtered.filter(n => !n.read_at);
+                const oldItems  = filtered.filter(n =>  n.read_at);
+                return (
+                  <>
+                    {newItems.length > 0 && (
+                      <>
+                        <div style={{ padding: '6px 4px 4px', fontSize: 13, fontWeight: 700, color: T.ink }}>New</div>
+                        {newItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} />)}
+                      </>
+                    )}
+                    {oldItems.length > 0 && (
+                      <>
+                        <div style={{ padding: newItems.length ? '14px 4px 4px' : '6px 4px 4px', fontSize: 13, fontWeight: 700, color: T.ink }}>Earlier</div>
+                        {oldItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} />)}
+                      </>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
