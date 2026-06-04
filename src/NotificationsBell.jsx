@@ -187,6 +187,7 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
       .from('notifications')
       .select('id', { count: 'exact', head: true })
       .eq('recipient_id', userId)
+      .not('kind', 'in', '(care_message,dm_message)')
       .is('read_at', null);
     setUnreadCount(count ?? 0);
   }, [userId]);
@@ -201,7 +202,8 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
         event: 'INSERT', schema: 'public', table: 'notifications',
         filter: `recipient_id=eq.${userId}`,
       }, () => {
-        setUnreadCount(c => c + 1);
+        // Recount properly so message kinds don't inflate the bell badge
+        loadUnreadCount();
         if (open) loadRecent();
       })
       .subscribe();
@@ -215,6 +217,7 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
       .from('notifications')
       .select('*')
       .eq('recipient_id', userId)
+      .not('kind', 'in', '(care_message,dm_message)')
       .order('created_at', { ascending: false })
       .limit(30);
     if (!data) { setLoading(false); return; }
@@ -237,6 +240,7 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
       .from('notifications')
       .update({ read_at: new Date().toISOString() })
       .eq('recipient_id', userId)
+      .not('kind', 'in', '(care_message,dm_message)')
       .is('read_at', null);
     setUnreadCount(0);
     setNotifs(prev => prev.map(n => n.read_at ? n : { ...n, read_at: new Date().toISOString() }));
