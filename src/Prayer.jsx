@@ -58,7 +58,7 @@ function StarburstCheck({ size = 34, animate = false }) {
 function MyPrayers({ session, profile }) {
   const [prayers,      setPrayers]      = useState([]);
   const [text,         setText]         = useState('');
-  const [newIsPublic,  setNewIsPublic]  = useState(true);
+  const [newIsAnonymous, setNewIsAnonymous] = useState(false); // false = named, true = anonymous
   const [submitting,   setSubmitting]   = useState(false);
   const [submitError,  setSubmitError]  = useState(null);
   const [composeOpen,  setComposeOpen]  = useState(false);
@@ -106,7 +106,7 @@ function MyPrayers({ session, profile }) {
     if (!text.trim()) return;
     setSubmitting(true);
     const { data, error } = await supabase.from('personal_prayers').insert({
-      user_id: session.user.id, body: text.trim(), is_public: newIsPublic,
+      user_id: session.user.id, body: text.trim(), is_public: true, is_anonymous: newIsAnonymous,
     }).select().single();
     setSubmitting(false);
     if (error) {
@@ -115,14 +115,15 @@ function MyPrayers({ session, profile }) {
       return;
     }
     setSubmitError(null);
-    setText(''); setNewIsPublic(true); setComposeOpen(false);
+    setText(''); setNewIsAnonymous(false); setComposeOpen(false);
     if (data) setPrayers(prev => [data, ...prev]);
   }
 
-  async function togglePublic(p) {
-    const is_public = !p.is_public;
-    await supabase.from('personal_prayers').update({ is_public }).eq('id', p.id);
-    setPrayers(prev => prev.map(x => x.id === p.id ? { ...x, is_public } : x));
+  async function toggleAnonymous(p) {
+    // Always keep is_public: true — just flip is_anonymous
+    const is_anonymous = !(p.is_anonymous || !p.is_public); // treat old private as anonymous
+    await supabase.from('personal_prayers').update({ is_public: true, is_anonymous }).eq('id', p.id);
+    setPrayers(prev => prev.map(x => x.id === p.id ? { ...x, is_public: true, is_anonymous } : x));
   }
 
   // Unanswering is instant; answering opens the praise-report sheet
@@ -237,24 +238,24 @@ function MyPrayers({ session, profile }) {
                 <div style={{ marginTop: 10, borderTop: `1px solid rgba(90,128,100,0.2)`, paddingTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                   {/* Privacy toggle */}
                   <div style={{ display: 'flex', background: 'rgba(90,128,100,0.12)', borderRadius: 999, padding: 3, gap: 2 }}>
-                    <button type="button" onClick={() => setNewIsPublic(false)} style={{
-                      background: !newIsPublic ? T.white : 'transparent',
+                    <button type="button" onClick={() => setNewIsAnonymous(false)} style={{
+                      background: !newIsAnonymous ? 'rgba(90,128,100,0.25)' : 'transparent',
                       border: 'none', borderRadius: 999, padding: '8px 14px', fontSize: 12,
-                      color: !newIsPublic ? T.ink : '#9A6A38',
+                      color: !newIsAnonymous ? SEMANTIC.prayer.text : '#9A6A38',
                       cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
-                      fontWeight: !newIsPublic ? 600 : 400, transition: 'all 0.15s',
-                      boxShadow: !newIsPublic ? '0 1px 2px rgba(44,24,16,0.06)' : 'none',
-                    }}>
-                      <Lock size={12} strokeWidth={2} /> Private
-                    </button>
-                    <button type="button" onClick={() => setNewIsPublic(true)} style={{
-                      background: newIsPublic ? 'rgba(90,128,100,0.25)' : 'transparent',
-                      border: 'none', borderRadius: 999, padding: '8px 14px', fontSize: 12,
-                      color: newIsPublic ? SEMANTIC.prayer.text : '#9A6A38',
-                      cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
-                      fontWeight: newIsPublic ? 600 : 400, transition: 'all 0.15s',
+                      fontWeight: !newIsAnonymous ? 600 : 400, transition: 'all 0.15s',
                     }}>
                       <Globe size={12} strokeWidth={2} /> Public
+                    </button>
+                    <button type="button" onClick={() => setNewIsAnonymous(true)} style={{
+                      background: newIsAnonymous ? T.white : 'transparent',
+                      border: 'none', borderRadius: 999, padding: '8px 14px', fontSize: 12,
+                      color: newIsAnonymous ? T.ink : '#9A6A38',
+                      cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
+                      fontWeight: newIsAnonymous ? 600 : 400, transition: 'all 0.15s',
+                      boxShadow: newIsAnonymous ? '0 1px 2px rgba(44,24,16,0.06)' : 'none',
+                    }}>
+                      <Lock size={12} strokeWidth={2} /> Anonymous
                     </button>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
@@ -290,12 +291,12 @@ function MyPrayers({ session, profile }) {
           <div key={p.id} style={{
             background: p.is_answered
               ? 'rgba(184,115,58,0.10)'
-              : !p.is_public
+              : (p.is_anonymous || !p.is_public)
                 ? 'rgba(44,24,16,0.03)'
                 : '#FFFFFF',
             border: p.is_answered
               ? `1px solid rgba(184,115,58,0.45)`
-              : !p.is_public
+              : (p.is_anonymous || !p.is_public)
                 ? `1px dashed rgba(44,24,16,0.18)`
                 : `1px solid #D9C9A8`,
             borderRadius: 14, padding: '16px 18px', marginBottom: 12,
@@ -340,16 +341,18 @@ function MyPrayers({ session, profile }) {
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
 
               {/* Privacy toggle */}
-              <button onClick={() => togglePublic(p)}
-                title={p.is_public ? 'Public — tap to make private' : 'Private — tap to share publicly'}
+              <button onClick={() => toggleAnonymous(p)}
+                title={(p.is_anonymous || !p.is_public) ? 'Anonymous — tap to show your name' : 'Public — tap to post anonymously'}
                 style={{
-                  background: p.is_public ? 'rgba(184,115,58,0.12)' : 'rgba(44,24,16,0.08)',
-                  border: `1px solid ${p.is_public ? 'rgba(184,115,58,0.4)' : 'rgba(44,24,16,0.22)'}`,
+                  background: (p.is_anonymous || !p.is_public) ? 'rgba(44,24,16,0.08)' : 'rgba(184,115,58,0.12)',
+                  border: `1px solid ${(p.is_anonymous || !p.is_public) ? 'rgba(44,24,16,0.22)' : 'rgba(184,115,58,0.4)'}`,
                   borderRadius: 999, padding: '5px 12px', fontSize: 11, fontWeight: 600,
-                  color: p.is_public ? T.goldDark : T.ink,
+                  color: (p.is_anonymous || !p.is_public) ? T.ink : T.goldDark,
                   cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
                 }}>
-                {p.is_public ? <><Globe size={11} strokeWidth={2} /> Public</> : <><Lock size={11} strokeWidth={2} /> Private</>}
+                {(p.is_anonymous || !p.is_public)
+                  ? <><Lock size={11} strokeWidth={2} /> Anonymous</>
+                  : <><Globe size={11} strokeWidth={2} /> Public</>}
               </button>
 
               {/* Mark answered / unanswered */}
@@ -363,7 +366,7 @@ function MyPrayers({ session, profile }) {
               </button>
 
               {/* Praying count */}
-              {p.is_public && (supportMap[p.id] ?? 0) > 0 && (
+              {(supportMap[p.id] ?? 0) > 0 && (
                 <span style={{ fontSize: 11, color: T.inkMuted }}>
                   🙏 {supportMap[p.id]} praying
                 </span>
@@ -378,7 +381,7 @@ function MyPrayers({ session, profile }) {
               </button>
             </div>
 
-            {/* Encouragements section (public prayers only) */}
+            {/* Encouragements section */}
             {p.is_public && (
               <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.line}` }}>
                 <button onClick={() => toggleEnc(p.id)} style={{

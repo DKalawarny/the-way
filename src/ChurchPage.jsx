@@ -237,7 +237,7 @@ export default function ChurchPage({
           : Promise.resolve({ data: null }),
         supabase
           .from('personal_prayers')
-          .select('id, body, created_at, user_id, profiles!user_id(church_id, display_name)')
+          .select('id, body, created_at, user_id, is_anonymous, profiles!user_id(church_id, display_name)')
           .eq('is_public', true)
           .gte('created_at', sevenDaysAgo)
           .order('created_at', { ascending: false })
@@ -250,7 +250,7 @@ export default function ChurchPage({
       // Filter prayers to this church's members only (no slice — show all on dedicated tab)
       const prayers = (prayersRes.data ?? [])
         .filter((p) => p.profiles?.church_id === churchId)
-        .map((p) => ({ id: p.id, body: p.body, name: p.profiles?.display_name ?? 'Someone' }));
+        .map((p) => ({ id: p.id, body: p.body, name: p.is_anonymous ? 'Anonymous' : (p.profiles?.display_name ?? 'Someone') }));
       setChurchPrayers(prayers);
     })();
     return () => { cancelled = true; };
