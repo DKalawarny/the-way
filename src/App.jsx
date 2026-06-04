@@ -3298,7 +3298,24 @@ export default function App() {
           session={session}
           isDesktop={isDesktop}
           rightOffset={isDocked ? chatPanelWidth : 0}
-          onClick={() => setStage('messages')}
+          onClick={async () => {
+            // Find the most recent unread message notification and jump to it
+            const { data: latest } = await supabase
+              .from('notifications')
+              .select('kind, target_id, data')
+              .eq('recipient_id', session.user.id)
+              .in('kind', ['care_message', 'dm_message'])
+              .is('read_at', null)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            if (latest?.kind === 'care_message') {
+              const convId = latest.data?.conversation_id ?? latest.target_id;
+              if (convId) setPendingCareId(convId);
+            }
+            setStage('messages');
+          }}
         />
       )}
       {showTopRight && session && (
