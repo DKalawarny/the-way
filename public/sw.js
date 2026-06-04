@@ -2,6 +2,39 @@
 // so all clients immediately drop the old cache and fetch fresh assets.
 const CACHE = 'kinwove-v2';
 
+// ── Web Push (VAPID) ──────────────────────────────────────────────────────────
+// Handles push events when the app is closed (requires VAPID keys on server +
+// a push subscription stored in the DB). The usePushNotifications hook covers
+// the background-tab case without VAPID — this is for full "app closed" push.
+self.addEventListener('push', (e) => {
+  let data = {};
+  try { data = e.data?.json() ?? {}; } catch { data = { title: 'kinwove', body: e.data?.text() ?? '' }; }
+
+  const title = data.title ?? 'kinwove';
+  const options = {
+    body:   data.body   ?? '',
+    icon:   data.icon   ?? '/icon-192.png',
+    badge:  data.badge  ?? '/icon-192.png',
+    tag:    data.tag    ?? 'kinwove-notif',
+    data:   data.url    ? { url: data.url } : {},
+    silent: false,
+  };
+  e.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Open / focus the app when the user taps a push notification
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = e.notification.data?.url ?? '/';
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const existing = clients.find((c) => c.url.startsWith(self.location.origin) && 'focus' in c);
+      if (existing) return existing.focus();
+      return self.clients.openWindow(url);
+    })
+  );
+});
+
 // RECOVERY BUILD: this SW wipes all old caches and then becomes a no-op
 // while in development mode. The fetch handler only runs on production
 // (hashed /assets/ paths). Vite source files are never cached.

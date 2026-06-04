@@ -159,7 +159,7 @@ function NotificationRow({ n, onClick, onFriendAction }) {
   );
 }
 
-export default function NotificationsBell({ session, rightOffset = 0, isDesktop = false, onNavigate }) {
+export default function NotificationsBell({ session, rightOffset = 0, isDesktop = false, onNavigate, onOpen }) {
   const [open, setOpen] = useState(false);
   const [notifs, setNotifs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -237,6 +237,7 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
     if (!open) {
       setOpen(true);
       loadRecent();
+      onOpen?.();
     } else {
       setOpen(false);
     }

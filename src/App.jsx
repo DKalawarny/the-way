@@ -109,6 +109,7 @@ import FindButton from './FindButton.jsx';
 import ChurchModeShell from './ChurchModeShell.jsx';
 import { useChurchPlanReadOnly } from './usePlan.js';
 import InstallPrompt from './InstallPrompt.jsx';
+import { usePushNotifications, requestNotificationPermission } from './usePushNotifications.js';
 
 const Community         = lazy(() => import('./Community.jsx'));
 const ConnectScreen     = lazy(() => import('./ConnectScreen.jsx'));
@@ -1732,6 +1733,10 @@ export default function App() {
   const effectiveChurchId = pastorChurchId || (profile?.church_id ?? null);
   const churchPlan = useChurchPlanReadOnly(effectiveChurchId);
 
+  // Browser push notifications — fires OS-level alerts for prayers, DMs, etc.
+  // even when the tab is in the background. No VAPID keys needed.
+  usePushNotifications(session?.user?.id);
+
   // UI is in English — always keep <html lang="en"> so browsers correctly
   // detect the page language and offer their native auto-translate to users
   // whose browser is in another language. The AI preferred_language is separate.
@@ -3311,6 +3316,7 @@ export default function App() {
           session={session}
           isDesktop={isDesktop}
           rightOffset={isDocked ? chatPanelWidth : 0}
+          onOpen={() => requestNotificationPermission()}
           onNavigate={async (n) => {
             if (n.target_type === 'post' || n.type === 'post_comment' || n.type === 'post_comment_reply') {
               setOpenCommentPostId(n.target_id);

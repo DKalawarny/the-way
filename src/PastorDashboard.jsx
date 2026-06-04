@@ -293,6 +293,9 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
   const [sermonBusy, setSermonBusy] = useState(null); // id currently toggling
   const [publishError, setPublishError] = useState(null);
   const [recentAnonCount, setRecentAnonCount] = useState(0);
+  const [postCount, setPostCount] = useState(0);
+  const [prayerCount, setPrayerCount] = useState(0);
+  const [topPost, setTopPost] = useState(null); // { body, author, reactions, comments }
 
   const [walks, setWalks] = useState([]);
   const [walkModalOpen, setWalkModalOpen] = useState(false);
@@ -463,6 +466,8 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
         { count: careTeam },
         { data: sermonRows },
         { data: staffRows },
+        { data: recentPosts, count: churchPostCount },
+        { data: recentPrayers, count: churchPrayerCount },
       ] = await Promise.all([
         supabase.from('churches').select('*').eq('id', churchId).maybeSingle(),
         supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('church_id', churchId),
@@ -498,6 +503,21 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
           .eq('church_id', churchId)
           .eq('is_owner', false)
           .neq('user_id', session?.user?.id ?? ''),
+        // Church feed posts this week
+        supabase
+          .from('posts')
+          .select('id, body, reaction_counts, author_id, profiles!author_id(display_name)', { count: 'exact' })
+          .eq('scope', 'church')
+          .eq('scope_id', churchId)
+          .gte('created_at', sevenDaysAgo)
+          .order('created_at', { ascending: false })
+          .limit(20),
+        // Church member prayer count this week
+        supabase
+          .from('personal_prayers')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_public', true)
+          .gte('created_at', sevenDaysAgo),
       ]);
       if (!active) return;
 
@@ -528,6 +548,26 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
       setCareCount(careConvCount ?? 0);
       setCareTeamSize(careTeam ?? 0);
       setSermons(sermonRows ?? []);
+
+      // Analytics: posts + prayers this week
+      setPostCount(churchPostCount ?? 0);
+      // Filter prayer count to church members only
+      const memberPrayerCount = (prayers ?? []).filter((p) => p.profiles?.church_id === churchId).length;
+      setPrayerCount(memberPrayerCount);
+
+      // Find top post: most reactions this week
+      const postsWithTotals = (recentPosts ?? []).map((p) => {
+        const rc = p.reaction_counts ?? {};
+        const total = Object.values(rc).reduce((s, v) => s + (typeof v === 'number' ? v : 0), 0);
+        return { ...p, totalReactions: total };
+      }).sort((a, b) => b.totalReactions - a.totalReactions);
+      const best = postsWithTotals[0] ?? null;
+      setTopPost(best ? {
+        body: String(best.body ?? ''),
+        author: best.profiles?.display_name ?? 'A member',
+        reactions: best.totalReactions,
+      } : null);
+
       setLoading(false);
     })();
     return () => { active = false; };
@@ -677,13 +717,39 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
           </div>
         )}
 
-        {/* Top row stats */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+        {/* Stat tiles — two rows of 3 */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
           <StatTile label="Members" value={memberCount} sublabel="on kinwove" onClick={onOpenPeople} />
+          <StatTile label="Posts this week" value={postCount} sublabel="to the feed" accent={T.goldDark} />
+          <StatTile label="Prayers shared" value={prayerCount} sublabel="this week" accent="#8B5E2A" />
+        </div>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
           <StatTile label="Questions asked" value={recentAnonCount} sublabel="last 7 days" accent={T.goldDark} />
           <StatTile label="Care convos" value={careCount} sublabel="last 7 days" onClick={onOpenCareAdmin} />
           <StatTile label="Care team" value={careTeamSize} sublabel="active" onClick={onOpenCareAdmin} />
         </div>
+
+        {/* Top post this week */}
+        {topPost && topPost.body.trim().length > 0 && (
+          <div style={{
+            background: T.parchment,
+            border: `1px solid rgba(184,115,58,0.22)`,
+            borderRadius: 14, padding: '14px 18px', marginBottom: 14,
+          }}>
+            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
+              ✦ Top post this week
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: T.goldDark, marginBottom: 4 }}>{topPost.author}</div>
+            <div style={{ fontFamily: T.serif, fontSize: 14.5, color: T.ink, lineHeight: 1.6, marginBottom: topPost.reactions > 0 ? 8 : 0 }}>
+              {topPost.body.length > 200 ? topPost.body.slice(0, 200) + '…' : topPost.body}
+            </div>
+            {topPost.reactions > 0 && (
+              <div style={{ fontSize: 12, color: T.inkMuted }}>
+                ❤️ {topPost.reactions} reaction{topPost.reactions !== 1 ? 's' : ''}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Question heatmap */}
         <Section
