@@ -7,7 +7,6 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
-import cron from 'node-cron';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -1689,18 +1688,16 @@ app.post('/api/welcome-dm', requireAuth, async (req, res) => {
   }
 });
 
-// ── Weekly email digest ───────────────────────────────────────────────────────
-// POST /api/send-digest
-// Protected by DIGEST_SECRET env var — set the same value on Render and in
-// whatever cron service calls this (e.g. cron-job.org, Render cron, pg_net).
+// ── Sermon publish digest ─────────────────────────────────────────────────────
+// POST /api/send-sermon-digest
+// Called by the frontend the moment a pastor publishes a sermon.
+// Body: { churchId, sermonId }
+// Auth: requireAuth — verifies caller is owner/pastor of that church.
 //
-// Sends one email per church member who has an email address with a recap of:
-//   • Top 3 posts this week (by total reactions)
+// Sends one email per church member:
+//   • Sermon as the hero (title, scripture, summary, CTA)
+//   • Top 3 posts from the feed this week
 //   • Up to 3 recent prayer requests from the congregation
-//   • Latest published sermon (if any)
-//
-// Safe to call multiple times: if DIGEST_SECRET is not set the endpoint is
-// disabled. Errors per-church are logged and skipped — the rest still send.
 
 function digestEmailHtml({ churchName, topPosts, prayers, sermon, unsubUrl }) {
   const gold = '#B8733A';
@@ -1726,62 +1723,47 @@ function digestEmailHtml({ churchName, topPosts, prayers, sermon, unsubUrl }) {
       </td>
     </tr>`).join('');
 
-  const sermonBlock = sermon ? `
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px">
-      <tr>
-        <td style="background:${pale};border:1px solid ${line};border-radius:12px;padding:18px 20px">
-          <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${gold};font-weight:700;margin-bottom:8px">This week's sermon</div>
-          <div style="font-family:Georgia,serif;font-size:20px;font-weight:600;color:${ink};margin-bottom:6px;letter-spacing:-0.015em">${escHtml(sermon.title)}</div>
-          ${sermon.scripture_ref ? `<div style="font-size:13px;color:${gold};font-style:italic;margin-bottom:10px">${escHtml(sermon.scripture_ref)}</div>` : ''}
-          ${sermon.summary ? `<div style="font-size:14px;color:${soft};line-height:1.6">${escHtml(sermon.summary.slice(0, 180))}${sermon.summary.length > 180 ? '…' : ''}</div>` : ''}
-          <a href="https://www.kinwove.com" style="display:inline-block;margin-top:14px;background:${ink};color:#FDF8F0;text-decoration:none;border-radius:999px;padding:9px 18px;font-size:13px;font-weight:600">Read this week's devotional →</a>
-        </td>
-      </tr>
-    </table>` : '';
-
   return `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>This week at ${escHtml(churchName)} — kinwove</title></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escHtml(sermon.title)} — ${escHtml(churchName)}</title></head>
 <body style="margin:0;padding:0;background:#F5EDD8;font-family:Arial,sans-serif">
   <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px">
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
 
       <!-- Header -->
-      <tr><td style="padding-bottom:24px;text-align:left">
-        <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:${gold};font-weight:700;margin-bottom:16px">kinwove</div>
-        <h1 style="font-family:Georgia,serif;font-size:28px;font-weight:600;color:${ink};margin:0 0 8px;letter-spacing:-0.02em">This week at ${escHtml(churchName)}</h1>
-        <p style="font-size:14px;color:${soft};line-height:1.65;margin:0">Here's what your community has been sharing.</p>
+      <tr><td style="padding-bottom:28px;text-align:left">
+        <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:${gold};font-weight:700;margin-bottom:20px">kinwove · ${escHtml(churchName)}</div>
+        <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:${gold};font-weight:700;margin-bottom:10px">This week's sermon</div>
+        <h1 style="font-family:Georgia,serif;font-size:32px;font-weight:600;color:${ink};margin:0 0 10px;letter-spacing:-0.025em;line-height:1.15">${escHtml(sermon.title)}</h1>
+        ${sermon.scripture_ref ? `<div style="font-size:14px;color:${gold};font-style:italic;margin-bottom:14px">${escHtml(sermon.scripture_ref)}</div>` : ''}
+        ${sermon.summary ? `<p style="font-size:15px;color:${soft};line-height:1.7;margin:0 0 22px;font-family:Georgia,serif">${escHtml(sermon.summary.slice(0, 280))}${sermon.summary.length > 280 ? '…' : ''}</p>` : ''}
+        <a href="https://www.kinwove.com" style="display:inline-block;background:${ink};color:#FDF8F0;text-decoration:none;border-radius:999px;padding:12px 26px;font-size:14px;font-weight:600">Read this week's devotional →</a>
       </td></tr>
 
-      ${sermonBlock ? `<tr><td>${sermonBlock}</td></tr>` : ''}
+      <!-- Divider -->
+      <tr><td style="border-top:1px solid ${line};padding-bottom:24px"></td></tr>
 
       ${topPosts.length > 0 ? `
-      <!-- Top posts -->
-      <tr><td style="margin-bottom:8px">
-        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${gold};font-weight:700;margin-bottom:12px">From the feed</div>
+      <!-- Feed highlights -->
+      <tr><td style="padding-bottom:8px">
+        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${gold};font-weight:700;margin-bottom:12px">From the community</div>
         <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid ${line}">${postRows}</table>
       </td></tr>
       <tr><td style="height:24px"></td></tr>` : ''}
 
       ${prayers.length > 0 ? `
-      <!-- Prayer requests -->
-      <tr><td>
+      <!-- Prayer wall -->
+      <tr><td style="padding-bottom:8px">
         <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${gold};font-weight:700;margin-bottom:12px">🙏 Prayer wall</div>
         <table width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid ${line}">${prayerRows}</table>
       </td></tr>
       <tr><td style="height:24px"></td></tr>` : ''}
 
-      <!-- CTA -->
-      <tr><td style="background:${pale};border:1px solid ${line};border-radius:12px;padding:22px 20px;text-align:center;margin-bottom:28px">
-        <div style="font-family:Georgia,serif;font-size:17px;color:${ink};margin-bottom:14px;font-weight:600">Your church is waiting for you.</div>
-        <a href="https://www.kinwove.com" style="display:inline-block;background:${ink};color:#FDF8F0;text-decoration:none;border-radius:999px;padding:11px 26px;font-size:14px;font-weight:600">Open kinwove →</a>
-      </td></tr>
-
       <!-- Footer -->
-      <tr><td style="padding-top:20px;text-align:center">
+      <tr><td style="padding-top:8px;text-align:center">
         <p style="font-size:11px;color:#9C7B5E;line-height:1.6;margin:0">
           You're receiving this because you're a member of ${escHtml(churchName)} on kinwove.<br>
-          <a href="${escHtml(unsubUrl)}" style="color:#9C7B5E">Unsubscribe</a>
+          <a href="https://www.kinwove.com" style="color:#9C7B5E">Open kinwove</a>
         </p>
       </td></tr>
 
@@ -1794,137 +1776,115 @@ function escHtml(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-app.post('/api/send-digest', async (req, res) => {
-  const secret = process.env.DIGEST_SECRET;
-  if (!secret) return res.status(503).json({ error: 'Digest not configured (DIGEST_SECRET missing)' });
-  const provided = req.headers['x-digest-secret'] ?? req.body?.secret;
-  if (!provided || provided !== secret) return res.status(401).json({ error: 'Unauthorized' });
+app.post('/api/send-sermon-digest', requireAuth, async (req, res) => {
+  const { churchId, sermonId } = req.body ?? {};
+  if (!churchId || !sermonId) return res.status(400).json({ error: 'churchId and sermonId required' });
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
 
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'Supabase not configured' });
   const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
+  const resendKey = process.env.RESEND_API_KEY;
+  if (!resendKey) return res.status(503).json({ error: 'RESEND_API_KEY not set' });
 
   try {
-    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+    // 1. Verify caller is owner/pastor of this church
+    const [rolesRes, churchRes] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/church_roles?church_id=eq.${churchId}&user_id=eq.${req.userId}&is_owner=eq.true&select=id&limit=1`, { headers: h }),
+      fetch(`${SUPABASE_URL}/rest/v1/churches?id=eq.${churchId}&select=id,name,pastor_id&limit=1`, { headers: h }),
+    ]);
+    const roles   = await rolesRes.json();
+    const churches = await churchRes.json();
+    const church  = Array.isArray(churches) ? churches[0] : null;
+    if (!church) return res.status(404).json({ error: 'Church not found' });
+    const isOwner  = Array.isArray(roles) && roles.length > 0;
+    const isPastor = church.pastor_id === req.userId;
+    if (!isOwner && !isPastor) return res.status(403).json({ error: 'Not authorized for this church' });
 
-    // 1. Get all churches with at least one member
-    const churchesRes = await fetch(`${SUPABASE_URL}/rest/v1/churches?is_public=eq.true&select=id,name`, { headers: h });
-    const churches = await churchesRes.json();
-    if (!Array.isArray(churches) || churches.length === 0) return res.json({ sent: 0, message: 'No churches' });
+    // 2. Fetch the specific sermon
+    const sermonRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/sermons?id=eq.${sermonId}&church_id=eq.${churchId}&select=title,scripture_ref,summary&limit=1`,
+      { headers: h }
+    );
+    const sermons = await sermonRes.json();
+    const sermon = Array.isArray(sermons) ? sermons[0] : null;
+    if (!sermon) return res.status(404).json({ error: 'Sermon not found' });
 
-    let totalSent = 0;
-    let errors = [];
-
-    for (const church of churches) {
-      try {
-        // 2. Get members with email
-        const membersRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/profiles?church_id=eq.${church.id}&select=id,display_name,auth_user_id&limit=500`,
-          { headers: h }
-        );
-        const members = await membersRes.json();
-        if (!Array.isArray(members) || members.length === 0) continue;
-
-        // Get email addresses for members via auth.users (service role)
-        // Supabase REST doesn't expose auth.users directly — use the admin API
-        const emailMap = {};
-        for (const m of members) {
-          if (!m.auth_user_id) continue;
-          try {
-            const uRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${m.auth_user_id}`, { headers: h });
-            const u = await uRes.json();
-            if (u?.email) emailMap[m.id] = u.email;
-          } catch {}
-        }
-
-        if (Object.keys(emailMap).length === 0) continue;
-
-        // 3. Fetch top posts this week (by sum of reaction counts)
-        const postsRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/posts?scope=eq.church&scope_id=eq.${church.id}&created_at=gte.${sevenDaysAgo}&select=id,body,author_id,reaction_counts&order=created_at.desc&limit=20`,
-          { headers: h }
-        );
-        const posts = await postsRes.json();
-        // Get author profiles
-        const authorIds = [...new Set((Array.isArray(posts) ? posts : []).map(p => p.author_id).filter(Boolean))];
-        const authorsMap = {};
-        if (authorIds.length) {
-          const ares = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=in.(${authorIds.join(',')})&select=id,display_name`, { headers: h });
-          const authors = await ares.json();
-          if (Array.isArray(authors)) authors.forEach(a => { authorsMap[a.id] = a.display_name; });
-        }
-        const topPosts = (Array.isArray(posts) ? posts : [])
-          .map(p => {
-            const rc = p.reaction_counts ?? {};
-            const reactions = Object.values(rc).reduce((s, v) => s + (typeof v === 'number' ? v : 0), 0);
-            return { body: String(p.body ?? ''), author: authorsMap[p.author_id] ?? 'A member', reactions };
-          })
-          .sort((a, b) => b.reactions - a.reactions)
-          .slice(0, 3)
-          .filter(p => p.body.trim().length > 0);
-
-        // 4. Fetch recent prayer requests from church members
-        const prayersRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/personal_prayers?is_public=eq.true&created_at=gte.${sevenDaysAgo}&select=id,body,is_anonymous,user_id,profiles!user_id(church_id,display_name)&order=created_at.desc&limit=20`,
-          { headers: h }
-        );
-        const allPrayers = await prayersRes.json();
-        const prayers = (Array.isArray(allPrayers) ? allPrayers : [])
-          .filter(p => p.profiles?.church_id === church.id)
-          .slice(0, 3)
-          .map(p => ({
-            body: String(p.body ?? ''),
-            name: p.is_anonymous ? 'A member (anonymous)' : (p.profiles?.display_name ?? 'A member'),
-          }));
-
-        // 5. Latest published sermon
-        const sermonRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/sermons?church_id=eq.${church.id}&is_published=eq.true&select=title,scripture_ref,summary&order=week_starts_on.desc&limit=1`,
-          { headers: h }
-        );
-        const sermons = await sermonRes.json();
-        const sermon = Array.isArray(sermons) && sermons.length > 0 ? sermons[0] : null;
-
-        // Skip church if nothing to send
-        if (topPosts.length === 0 && prayers.length === 0 && !sermon) continue;
-
-        // 6. Send one email per member
-        for (const member of members) {
-          const email = emailMap[member.id];
-          if (!email) continue;
-          try {
-            const html = digestEmailHtml({
-              churchName: church.name,
-              topPosts,
-              prayers,
-              sermon,
-              unsubUrl: `https://www.kinwove.com`,
-            });
-            const resendKey = process.env.RESEND_API_KEY;
-            const from = process.env.RESEND_FROM || 'kinwove <hello@kinwove.com>';
-            if (!resendKey) continue;
-            const r = await fetch('https://api.resend.com/emails', {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                from,
-                to: [email],
-                subject: `This week at ${church.name} — kinwove`,
-                html,
-              }),
-            });
-            if (r.ok) totalSent++;
-          } catch (emailErr) {
-            errors.push(`${email}: ${emailErr.message}`);
-          }
-        }
-      } catch (churchErr) {
-        errors.push(`church ${church.id}: ${churchErr.message}`);
-      }
+    // 3. Fetch church members
+    const membersRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?church_id=eq.${churchId}&select=id,display_name&limit=500`,
+      { headers: h }
+    );
+    const members = await membersRes.json();
+    if (!Array.isArray(members) || members.length === 0) {
+      return res.json({ sent: 0, message: 'No members' });
     }
 
-    res.json({ sent: totalSent, churches: churches.length, errors: errors.slice(0, 10) });
+    // 4. Resolve email addresses — profiles.id == auth.users.id
+    const emailMap = {};
+    await Promise.all(members.map(async (m) => {
+      try {
+        const uRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${m.id}`, { headers: h });
+        const u = await uRes.json();
+        if (u?.email) emailMap[m.id] = u.email;
+      } catch {}
+    }));
+    if (Object.keys(emailMap).length === 0) return res.json({ sent: 0, message: 'No email addresses found' });
+
+    // 5. Recent feed posts this week (top 3 by reactions)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+    const postsRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/posts?scope=eq.church&scope_id=eq.${churchId}&created_at=gte.${sevenDaysAgo}&select=body,author_id,reaction_counts,profiles!author_id(display_name)&order=created_at.desc&limit=20`,
+      { headers: h }
+    );
+    const posts = await postsRes.json();
+    const topPosts = (Array.isArray(posts) ? posts : [])
+      .map((p) => {
+        const rc = p.reaction_counts ?? {};
+        const reactions = Object.values(rc).reduce((s, v) => s + (typeof v === 'number' ? v : 0), 0);
+        return { body: String(p.body ?? ''), author: p.profiles?.display_name ?? 'A member', reactions };
+      })
+      .sort((a, b) => b.reactions - a.reactions)
+      .slice(0, 3)
+      .filter((p) => p.body.trim().length > 0);
+
+    // 6. Recent prayer requests from church members
+    const prayersRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/personal_prayers?is_public=eq.true&created_at=gte.${sevenDaysAgo}&select=body,is_anonymous,profiles!user_id(church_id,display_name)&order=created_at.desc&limit=20`,
+      { headers: h }
+    );
+    const allPrayers = await prayersRes.json();
+    const prayers = (Array.isArray(allPrayers) ? allPrayers : [])
+      .filter((p) => p.profiles?.church_id === churchId)
+      .slice(0, 3)
+      .map((p) => ({
+        body: String(p.body ?? ''),
+        name: p.is_anonymous ? 'A member (anonymous)' : (p.profiles?.display_name ?? 'A member'),
+      }));
+
+    // 7. Send one email per member (fire in parallel, cap concurrency)
+    const from = process.env.RESEND_FROM || 'kinwove <hello@kinwove.com>';
+    const subject = `New sermon: "${sermon.title}" — ${church.name}`;
+    const html = digestEmailHtml({ churchName: church.name, topPosts, prayers, sermon });
+
+    let sent = 0;
+    const queue = members.filter((m) => emailMap[m.id]);
+    // Send in batches of 10 to avoid rate limits
+    for (let i = 0; i < queue.length; i += 10) {
+      await Promise.all(queue.slice(i, i + 10).map(async (m) => {
+        try {
+          const r = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ from, to: [emailMap[m.id]], subject, html }),
+          });
+          if (r.ok) sent++;
+        } catch {}
+      }));
+    }
+
+    console.log(`[kinwove] sermon digest sent — ${sent} emails for "${sermon.title}" at ${church.name}`);
+    res.json({ sent, members: queue.length });
   } catch (err) {
-    safeError(res, err, 'send-digest');
+    safeError(res, err, 'send-sermon-digest');
   }
 });
 
@@ -2153,25 +2113,3 @@ app.listen(PORT, () => {
   console.log(`[kinwove] api listening on http://localhost:${PORT}`);
 });
 
-// ── Weekly digest cron — runs inside the Render process, no external scheduler ─
-// Every Monday at 8:00 AM UTC. Only fires when DIGEST_SECRET is configured.
-if (process.env.DIGEST_SECRET) {
-  cron.schedule('0 8 * * 1', async () => {
-    console.log('[kinwove] sending weekly digest…');
-    try {
-      const r = await fetch(`http://localhost:${PORT}/api/send-digest`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-digest-secret': process.env.DIGEST_SECRET,
-        },
-        body: '{}',
-      });
-      const result = await r.json();
-      console.log(`[kinwove] digest done — sent ${result.sent ?? 0} emails`);
-    } catch (e) {
-      console.error('[kinwove] digest cron error:', e?.message);
-    }
-  }, { timezone: 'UTC' });
-  console.log('[kinwove] weekly digest scheduled (Mondays 8AM UTC)');
-}

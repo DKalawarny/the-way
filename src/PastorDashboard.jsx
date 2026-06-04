@@ -657,6 +657,17 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
     }
     setPublishError(null);
     setSermons((rows) => rows.map((s) => s.id === sermon.id ? { ...s, is_published: next } : s));
+
+    // When publishing (not unpublishing), email all church members
+    if (next && churchId) {
+      import('./supabase.js').then(({ authedFetch }) => {
+        authedFetch('/api/send-sermon-digest', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ churchId, sermonId: sermon.id }),
+        }).catch(() => {}); // fire-and-forget — don't block or surface errors to UI
+      });
+    }
   }
 
   if (loading) {
