@@ -265,6 +265,24 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
     if (openDm?.id) markConvRead(openDm.id);
   }, [openDm?.id, dmLastMsgs]);
 
+  // Handle notification tap while Messages is already open (prop changes but component doesn't remount)
+  useEffect(() => {
+    if (!initialCareId) return;
+    initialCareIdRef.current = initialCareId;
+    // If careConvs already loaded, open immediately
+    if (!loading && careConvs.length > 0) {
+      const target = careConvs.find((c) => c.id === initialCareId);
+      if (target) {
+        openConversation(target.id);
+        setOpenDm(null);
+        setOpenCare({ id: target.id, side: target._side });
+        initialCareIdRef.current = null;
+        onInitialCareConsumed?.();
+      }
+    }
+    // If data not loaded yet, the load effect will pick it up via initialCareIdRef
+  }, [initialCareId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!session?.user?.id) return;
     setLoading(true);
