@@ -2,98 +2,44 @@ import { useEffect, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 
-// Per-conversation read timestamps (written by MessagesInbox when a conv is opened)
-const convReadTime = (id) => localStorage.getItem(`kinwove:conv-read:${id}`) ?? '1970-01-01T00:00:00Z';
-
+// Same source of truth as NotificationsBell — unread notifications of
+// kind care_message or dm_message that haven't been read yet.
 export default function MessagesButton({ session, rightOffset = 0, isDesktop = false, onClick }) {
   const [unread, setUnread] = useState(0);
+  const uid = session?.user?.id;
 
-  async function computeUnread(uid) {
-    const [{ data: dms }, { data: careOut }, { data: careIn }] = await Promise.all([
-      supabase
-        .from('dm_conversations')
-        .select('id, last_message_at, participant_ids')
-        .contains('participant_ids', [uid]),
-      supabase
-        .from('care_conversations')
-        .select('id, last_message_at')
-        .eq('requester_id', uid),
-      supabase
-        .from('care_conversations')
-        .select('id, last_message_at')
-        .eq('care_member_id', uid),
-    ]);
-
-    // Merge care both directions, deduplicate
-    const careMap = new Map();
-    [...(careOut ?? []), ...(careIn ?? [])].forEach((c) => careMap.set(c.id, c));
-    const allCare = [...careMap.values()];
-
-    // DM unread: last_message_at > convReadTime AND latest message not from me
-    let dmUnread = 0;
-    const staleConvDms = (dms ?? []).filter((c) => c.last_message_at && c.last_message_at > convReadTime(c.id));
-    if (staleConvDms.length) {
-      const { data: latestMsgs } = await supabase
-        .from('dm_messages')
-        .select('conversation_id, sender_id')
-        .in('conversation_id', staleConvDms.map((c) => c.id))
-        .order('created_at', { ascending: false });
-      const seen = new Set();
-      (latestMsgs ?? []).forEach((m) => {
-        if (!seen.has(m.conversation_id)) {
-          seen.add(m.conversation_id);
-          if (m.sender_id !== uid) dmUnread++;
-        }
-      });
-    }
-
-    // Care unread: last_message_at > convReadTime AND latest message not from me
-    let careUnread = 0;
-    const staleCare = allCare.filter((c) => c.last_message_at && c.last_message_at > convReadTime(c.id));
-    if (staleCare.length) {
-      const { data: latestMsgs } = await supabase
-        .from('care_messages')
-        .select('conversation_id, sender_id')
-        .in('conversation_id', staleCare.map((c) => c.id))
-        .order('created_at', { ascending: false });
-      const seen = new Set();
-      (latestMsgs ?? []).forEach((m) => {
-        if (!seen.has(m.conversation_id)) {
-          seen.add(m.conversation_id);
-          if (m.sender_id !== uid) careUnread++;
-        }
-      });
-    }
-
-    setUnread(dmUnread + careUnread);
+  async function computeUnread() {
+    if (!uid) return;
+    const { count } = await supabase
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('recipient_id', uid)
+      .in('kind', ['care_message', 'dm_message'])
+      .is('read_at', null);
+    setUnread(count ?? 0);
   }
 
   useEffect(() => {
-    if (!session?.user?.id) return;
-    const uid = session.user.id;
-    computeUnread(uid);
+    if (!uid) return;
+    computeUnread();
 
-    // Realtime: recompute when any message arrives
+    // Recompute whenever notifications change for this user
     const channel = supabase
-      .channel(`msg-btn-rt-${uid}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'care_messages' },
-        () => computeUnread(uid))
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'dm_messages' },
-        () => computeUnread(uid))
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'care_conversations' },
-        () => computeUnread(uid))
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'dm_conversations' },
-        () => computeUnread(uid))
+      .channel(`msg-btn-notifs-${uid}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'notifications',
+        filter: `recipient_id=eq.${uid}`,
+      }, () => computeUnread())
       .subscribe();
+
     return () => { supabase.removeChannel(channel); };
-  }, [session?.user?.id]);
+  }, [uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleClick() {
     setUnread(0);
     onClick?.();
   }
 
-  // Desktop: slot 0 (rightmost, no ⋮ FAB)   Mobile: slot 1 (right of ⋮)
   const right = isDesktop ? rightOffset + 12 : rightOffset + 12 + 44 + 8;
 
   return (

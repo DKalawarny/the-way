@@ -213,6 +213,23 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
     localStorage.removeItem(`kinwove:conv-read:${id}`);
     setReadVersion((v) => v + 1);
   }
+
+  // Mark conversation read in localStorage AND clear related notifications in Supabase
+  // so the Messages badge (which uses the notifications table) also clears.
+  function openConversation(id) {
+    markConvRead(id);
+    const uid = session?.user?.id;
+    if (!uid || !id) return;
+    // Fire-and-forget: clear unread notifications for this conversation
+    supabase
+      .from('notifications')
+      .update({ read_at: new Date().toISOString() })
+      .eq('recipient_id', uid)
+      .in('kind', ['care_message', 'dm_message'])
+      .eq('target_id', id)
+      .is('read_at', null)
+      .then(() => {}); // intentionally not awaited
+  }
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
@@ -345,7 +362,7 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
       if (initialCareIdRef.current) {
         const target = merged.find((c) => c.id === initialCareIdRef.current);
         if (target) {
-          markConvRead(target.id);
+          openConversation(target.id);
           setOpenCare({ id: target.id, side: target._side });
           initialCareIdRef.current = null; // only auto-open once
           onInitialCareConsumed?.();       // clear pendingCareId in App
@@ -453,7 +470,7 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
                   dmLastMsgs[c.id].sender_id !== session?.user?.id &&
                   (c.last_message_at ?? c.created_at) > convReadTime(c.id)
                 }
-                onOpen={() => { markConvRead(c.id); setOpenCare(null); setOpenDm({ id: c.id, otherProfile: c.otherProfile, initialMessage: pendingShareUrl ?? undefined }); if (pendingShareUrl) onShareSent?.(); }}
+                onOpen={() => { openConversation(c.id); setOpenCare(null); setOpenDm({ id: c.id, otherProfile: c.otherProfile, initialMessage: pendingShareUrl ?? undefined }); if (pendingShareUrl) onShareSent?.(); }}
                 accent={isSystem}
                 active={!isMobile && openDm?.id === c.id}
                 onDelete={() => setDeleteConfirm({ type: 'dm', id: c.id, name: c.otherProfile?.display_name ?? 'this person' })}
@@ -484,7 +501,7 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
                   careLastMsgs[c.id].sender_id !== session?.user?.id &&
                   (c.last_message_at ?? c.created_at) > convReadTime(c.id)
                 }
-                onOpen={() => { markConvRead(c.id); setOpenDm(null); setOpenCare({ id: c.id, side: c._side }); }}
+                onOpen={() => { openConversation(c.id); setOpenDm(null); setOpenCare({ id: c.id, side: c._side }); }}
                 active={!isMobile && openCare?.id === c.id}
                 onDelete={() => setDeleteConfirm({ type: 'care', id: c.id, name: displayName })}
                 onMarkUnread={() => markUnread(c.id)}
