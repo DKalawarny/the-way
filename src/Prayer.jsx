@@ -288,8 +288,16 @@ function MyPrayers({ session, profile }) {
 
         {prayers.map(p => (
           <div key={p.id} style={{
-            background: p.is_answered ? 'rgba(184,115,58,0.10)' : '#FFFFFF',
-            border: `1px solid ${p.is_answered ? 'rgba(184,115,58,0.45)' : '#D9C9A8'}`,
+            background: p.is_answered
+              ? 'rgba(184,115,58,0.10)'
+              : !p.is_public
+                ? 'rgba(44,24,16,0.03)'
+                : '#FFFFFF',
+            border: p.is_answered
+              ? `1px solid rgba(184,115,58,0.45)`
+              : !p.is_public
+                ? `1px dashed rgba(44,24,16,0.18)`
+                : `1px solid #D9C9A8`,
             borderRadius: 14, padding: '16px 18px', marginBottom: 12,
           }}>
 
@@ -335,10 +343,10 @@ function MyPrayers({ session, profile }) {
               <button onClick={() => togglePublic(p)}
                 title={p.is_public ? 'Public — tap to make private' : 'Private — tap to share publicly'}
                 style={{
-                  background: p.is_public ? 'rgba(184,115,58,0.12)' : '#F5ECD9',
-                  border: `1px solid ${p.is_public ? 'rgba(184,115,58,0.4)' : '#D9C9A8'}`,
-                  borderRadius: 999, padding: '9px 12px', fontSize: 11,
-                  color: p.is_public ? T.gold : T.inkMuted,
+                  background: p.is_public ? 'rgba(184,115,58,0.12)' : 'rgba(44,24,16,0.08)',
+                  border: `1px solid ${p.is_public ? 'rgba(184,115,58,0.4)' : 'rgba(44,24,16,0.22)'}`,
+                  borderRadius: 999, padding: '5px 12px', fontSize: 11, fontWeight: 600,
+                  color: p.is_public ? T.goldDark : T.ink,
                   cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
                 }}>
                 {p.is_public ? <><Globe size={11} strokeWidth={2} /> Public</> : <><Lock size={11} strokeWidth={2} /> Private</>}
