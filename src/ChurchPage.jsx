@@ -73,6 +73,11 @@ export default function ChurchPage({
   const [churchPrayers, setChurchPrayers] = useState([]);
   const [prayedIds, setPrayedIds] = useState(() => new Set());
   const [feedRefresh, setFeedRefresh] = useState(0);
+  // Inline prayer compose
+  const [prayComposeOpen, setPrayComposeOpen] = useState(false);
+  const [prayText, setPrayText] = useState('');
+  const [prayAnonymous, setPrayAnonymous] = useState(false);
+  const [praySubmitting, setPraySubmitting] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
@@ -1184,41 +1189,120 @@ export default function ChurchPage({
         {/* ── Pray tab ── */}
         {tab === 'pray' && (isMember || isPastor) && (
           <>
-            {/* Header + add button */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 700, color: T.ink, letterSpacing: '-0.015em' }}>
-                Praying together
-              </div>
-              {onOpenPrayer && (
-                <button
-                  onClick={onOpenPrayer}
-                  style={{
-                    background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
-                    padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                  }}
-                >+ Add yours</button>
-              )}
+            <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 700, color: T.ink, letterSpacing: '-0.015em', marginBottom: 16 }}>
+              Praying together
             </div>
+
+            {/* ── Inline compose ── */}
+            {!prayComposeOpen ? (
+              <button
+                onClick={() => setPrayComposeOpen(true)}
+                style={{
+                  width: '100%', textAlign: 'left',
+                  background: T.white, border: `1px solid ${T.line}`,
+                  borderRadius: 14, padding: '13px 16px',
+                  fontSize: 14, color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic',
+                  cursor: 'pointer', marginBottom: 20,
+                  transition: 'border-color 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = T.goldLight)}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = T.line)}
+              >
+                Share a prayer with your congregation…
+              </button>
+            ) : (
+              <div style={{
+                background: T.white, border: `1px solid ${T.goldLight}`,
+                borderRadius: 14, padding: '14px 16px', marginBottom: 20,
+              }}>
+                <textarea
+                  autoFocus
+                  value={prayText}
+                  onChange={(e) => setPrayText(e.target.value)}
+                  placeholder="What would you like your congregation to pray for?"
+                  rows={3}
+                  style={{
+                    width: '100%', boxSizing: 'border-box', resize: 'none',
+                    background: 'transparent', border: 'none', outline: 'none',
+                    fontSize: 15, color: T.ink, fontFamily: T.serif,
+                    lineHeight: 1.65, marginBottom: 12,
+                  }}
+                />
+                <div style={{ borderTop: `1px solid ${T.line}`, paddingTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                  {/* Anonymous toggle */}
+                  <div style={{ display: 'flex', background: T.parchment, borderRadius: 999, padding: 3, gap: 2 }}>
+                    <button type="button" onClick={() => setPrayAnonymous(false)} style={{
+                      background: !prayAnonymous ? T.white : 'transparent',
+                      border: 'none', borderRadius: 999, padding: '6px 12px', fontSize: 12,
+                      color: !prayAnonymous ? T.ink : T.inkMuted,
+                      fontWeight: !prayAnonymous ? 600 : 400, cursor: 'pointer',
+                      boxShadow: !prayAnonymous ? '0 1px 2px rgba(44,24,16,0.08)' : 'none',
+                      display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.15s',
+                    }}>
+                      🌐 Public
+                    </button>
+                    <button type="button" onClick={() => setPrayAnonymous(true)} style={{
+                      background: prayAnonymous ? T.white : 'transparent',
+                      border: 'none', borderRadius: 999, padding: '6px 12px', fontSize: 12,
+                      color: prayAnonymous ? T.ink : T.inkMuted,
+                      fontWeight: prayAnonymous ? 600 : 400, cursor: 'pointer',
+                      boxShadow: prayAnonymous ? '0 1px 2px rgba(44,24,16,0.08)' : 'none',
+                      display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.15s',
+                    }}>
+                      🔒 Anonymous
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <button onClick={() => { setPrayComposeOpen(false); setPrayText(''); setPrayAnonymous(false); }} style={{
+                      background: 'none', border: 'none', color: T.inkMuted,
+                      fontSize: 13, cursor: 'pointer', padding: '6px 10px',
+                    }}>Cancel</button>
+                    <button
+                      disabled={!prayText.trim() || praySubmitting}
+                      onClick={async () => {
+                        if (!prayText.trim() || !session?.user?.id) return;
+                        setPraySubmitting(true);
+                        const { data } = await supabase.from('personal_prayers').insert({
+                          user_id: session.user.id,
+                          body: prayText.trim(),
+                          is_public: true,
+                          is_anonymous: prayAnonymous,
+                        }).select('id, body, is_anonymous').single();
+                        setPraySubmitting(false);
+                        if (data) {
+                          const displayName = prayAnonymous ? 'Anonymous' : (profile?.display_name ?? 'You');
+                          setChurchPrayers((prev) => [{ id: data.id, body: data.body, name: displayName }, ...prev]);
+                        }
+                        setPrayComposeOpen(false);
+                        setPrayText('');
+                        setPrayAnonymous(false);
+                      }}
+                      style={{
+                        background: prayText.trim() ? T.gold : T.line,
+                        color: T.cream, border: 'none', borderRadius: 999,
+                        padding: '8px 20px', fontSize: 13, fontWeight: 600,
+                        cursor: prayText.trim() ? 'pointer' : 'not-allowed',
+                        transition: 'background 0.15s',
+                      }}
+                    >{praySubmitting ? 'Sharing…' : 'Share prayer'}</button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Prayer list */}
             {churchPrayers.length === 0 ? (
               <div style={{
-                textAlign: 'center', padding: '48px 20px',
+                textAlign: 'center', padding: '40px 20px',
                 background: T.white, border: `1px dashed ${T.line}`, borderRadius: 14,
               }}>
                 <div style={{ fontSize: 32, marginBottom: 12 }}>🙏</div>
                 <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, marginBottom: 8 }}>
                   No prayers shared yet
                 </div>
-                <div style={{ fontSize: 14, color: T.inkSoft, lineHeight: 1.6, maxWidth: 280, margin: '0 auto 20px' }}>
+                <div style={{ fontSize: 14, color: T.inkSoft, lineHeight: 1.6, maxWidth: 280, margin: '0 auto' }}>
                   Be the first to share a prayer with your congregation.
                 </div>
-                {onOpenPrayer && (
-                  <button onClick={onOpenPrayer} style={{
-                    background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
-                    padding: '10px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                  }}>Share a prayer</button>
-                )}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -1226,16 +1310,16 @@ export default function ChurchPage({
                   <div key={p.id} style={{
                     background: T.parchment,
                     border: `1px solid rgba(26,17,8,0.10)`,
-                    borderRadius: 14,
-                    padding: '16px 18px',
+                    borderRadius: 14, padding: '16px 18px',
                     display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 14,
                   }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: T.goldDark, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>{p.name}</div>
-                      <div style={{
-                        fontSize: 15, color: T.ink, lineHeight: 1.65, fontFamily: T.serif,
-                        fontVariationSettings: '"opsz" 18',
-                      }}>{p.body}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: T.goldDark, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        {p.name}
+                      </div>
+                      <div style={{ fontSize: 15, color: T.ink, lineHeight: 1.65, fontFamily: T.serif, fontVariationSettings: '"opsz" 18' }}>
+                        {p.body}
+                      </div>
                     </div>
                     <button
                       onClick={async () => {
@@ -1260,13 +1344,13 @@ export default function ChurchPage({
               </div>
             )}
 
-            {/* Soft nudge to open personal prayer */}
-            {onOpenPrayer && churchPrayers.length > 0 && (
-              <div style={{ textAlign: 'center', marginTop: 20 }}>
+            {/* Personal journal link — subtle, at the bottom */}
+            {onOpenPrayer && (
+              <div style={{ textAlign: 'center', marginTop: 24 }}>
                 <button onClick={onOpenPrayer} style={{
-                  background: 'none', border: 'none', color: T.inkSoft,
-                  fontSize: 13, cursor: 'pointer', textDecoration: 'underline',
-                }}>Open your prayer journal</button>
+                  background: 'none', border: 'none', color: T.inkMuted,
+                  fontSize: 12.5, cursor: 'pointer', textDecoration: 'underline',
+                }}>View your personal prayer journal</button>
               </div>
             )}
           </>
