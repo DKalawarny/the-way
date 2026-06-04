@@ -782,7 +782,7 @@ export default function Prayer({ session, profile, onClose, userGroup, hideHeade
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.inkMuted, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 5, fontSize: 13 }}>
             <ArrowLeft size={15} strokeWidth={2} /> Back
           </button>
-          <div style={{ fontFamily: T.serif, fontSize: 21, fontWeight: 600, color: T.ink, flex: 1, letterSpacing: '-0.012em' }}>Prayer</div>
+          <div style={{ fontFamily: T.serif, fontSize: 21, fontWeight: 600, color: T.ink, flex: 1, letterSpacing: '-0.012em' }}>Prayer Journal</div>
           {/* Reserved space for fixed FAB cluster (bell + messages + search + menu ≈ 200px from right) */}
           <div style={{ width: 204, flexShrink: 0 }} aria-hidden="true" />
         </header>

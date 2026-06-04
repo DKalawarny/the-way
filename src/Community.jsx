@@ -28,7 +28,7 @@ const REACTIONS = [
     activeShadow: '0 2px 6px rgba(196,122,134,0.30)',
   },
   {
-    kind: 'amen', label: 'Amen', emoji: '🙏',
+    kind: 'amen', label: 'With you', emoji: '🙏',
     activeBg: 'linear-gradient(180deg, #F4D89A 0%, #E8B563 100%)',
     activeBorder: '#9a6328', activeText: '#4d2c0d',
     activeShadow: '0 2px 8px rgba(154,99,40,0.40)',

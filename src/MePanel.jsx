@@ -1296,7 +1296,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
         }}>
           {[
             { id: 'posts',   label: 'Posts'   },
-            { id: 'prayers', label: 'Prayers' },
+            { id: 'prayers', label: 'Prayer Journal' },
             { id: 'saved',   label: 'Saves'   },
             { id: 'about',   label: 'About'   },
           ].map((t) => {
