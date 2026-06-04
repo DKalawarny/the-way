@@ -252,11 +252,30 @@ export default function ChurchPage({
       setPendingInvites(invitesRes.data ?? []);
       setIsCareTeam(!!careRes.data);
       setFeaturedWalk(walkRes.data ?? null);
-      // Filter prayers to this church's members only (no slice — show all on dedicated tab)
-      const prayers = (prayersRes.data ?? [])
-        .filter((p) => p.profiles?.church_id === churchId)
-        .map((p) => ({ id: p.id, body: p.body, name: p.is_anonymous ? 'Anonymous' : (p.profiles?.display_name ?? 'Someone') }));
+      // Filter prayers to this church's members only
+      const rawPrayers = (prayersRes.data ?? [])
+        .filter((p) => p.profiles?.church_id === churchId);
+      const prayerIdList = rawPrayers.map((p) => p.id);
+      // Load pray counts + user's own prayed IDs
+      let countMap = {};
+      let prayedSet = new Set();
+      if (prayerIdList.length > 0) {
+        const [{ data: supportRows }, { data: ownRows }] = await Promise.all([
+          supabase.from('personal_prayer_support').select('prayer_id').in('prayer_id', prayerIdList),
+          session?.user?.id
+            ? supabase.from('personal_prayer_support').select('prayer_id').in('prayer_id', prayerIdList).eq('user_id', session.user.id)
+            : Promise.resolve({ data: [] }),
+        ]);
+        (supportRows ?? []).forEach((r) => { countMap[r.prayer_id] = (countMap[r.prayer_id] ?? 0) + 1; });
+        prayedSet = new Set((ownRows ?? []).map((r) => r.prayer_id));
+      }
+      const prayers = rawPrayers.map((p) => ({
+        id: p.id, body: p.body,
+        name: p.is_anonymous ? 'Anonymous' : (p.profiles?.display_name ?? 'Someone'),
+        count: countMap[p.id] ?? 0,
+      }));
       setChurchPrayers(prayers);
+      setPrayedIds(prayedSet);
     })();
     return () => { cancelled = true; };
   }, [isMember, churchId, session?.user?.id, church?.featured_walk_id]);
@@ -1271,7 +1290,7 @@ export default function ChurchPage({
                         setPraySubmitting(false);
                         if (data) {
                           const displayName = prayAnonymous ? 'Anonymous' : (profile?.display_name ?? 'You');
-                          setChurchPrayers((prev) => [{ id: data.id, body: data.body, name: displayName }, ...prev]);
+                          setChurchPrayers((prev) => [{ id: data.id, body: data.body, name: displayName, count: 0 }, ...prev]);
                         }
                         setPrayComposeOpen(false);
                         setPrayText('');
@@ -1326,6 +1345,7 @@ export default function ChurchPage({
                         if (prayedIds.has(p.id) || !session?.user?.id) return;
                         await supabase.from('personal_prayer_support').insert({ prayer_id: p.id, user_id: session.user.id }).then(null, () => {});
                         setPrayedIds((s) => new Set([...s, p.id]));
+                        setChurchPrayers((prev) => prev.map((pr) => pr.id === p.id ? { ...pr, count: (pr.count ?? 0) + 1 } : pr));
                       }}
                       style={{
                         flexShrink: 0, marginTop: 2,
@@ -1335,9 +1355,13 @@ export default function ChurchPage({
                         color: prayedIds.has(p.id) ? T.goldDark : T.inkSoft,
                         cursor: prayedIds.has(p.id) ? 'default' : 'pointer',
                         transition: 'border-color 0.15s, background 0.15s, color 0.15s',
+                        display: 'flex', alignItems: 'center', gap: 5,
                       }}
                     >
                       {prayedIds.has(p.id) ? '🙏 Prayed' : '🙏 Pray'}
+                      {p.count > 0 && (
+                        <span style={{ fontSize: 11, fontWeight: 500, opacity: 0.7 }}>{p.count}</span>
+                      )}
                     </button>
                   </div>
                 ))}

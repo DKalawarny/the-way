@@ -1955,18 +1955,40 @@ useEffect(() => {
                   </div>
                 )}
                 {!loading && !feedError && filtered.length === 0 && (
-                  <EmptyState
-                    icon={
-                      <svg width={30} height={30} viewBox="0 0 36 36" fill="none" aria-hidden>
-                        {/* Two connected circles — community */}
-                        <circle cx="13" cy="17" r="7" fill="none" stroke={T.gold} strokeWidth="1.8"/>
-                        <circle cx="23" cy="17" r="7" fill="none" stroke={T.gold} strokeWidth="1.8"/>
-                        <path d="M18 11 Q21 9 24 11" stroke={T.gold} strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.5"/>
-                      </svg>
-                    }
-                    title="Nothing here yet."
-                    body="Be the first to start the conversation."
-                  />
+                  !profile?.church_id ? (
+                    <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+                      <div style={{ fontSize: 40, marginBottom: 14 }}>⛪</div>
+                      <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, marginBottom: 8, lineHeight: 1.3 }}>
+                        Find your church on kinwove
+                      </div>
+                      <div style={{ fontSize: 14, color: T.inkSoft, lineHeight: 1.65, maxWidth: 270, margin: '0 auto 22px' }}>
+                        Join your church to see your community's posts, prayers, and sermons right here.
+                      </div>
+                      <button
+                        onClick={() => onFindPeople?.()}
+                        style={{
+                          background: T.ink, color: T.cream, border: 'none',
+                          borderRadius: 999, padding: '11px 24px',
+                          fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                          letterSpacing: '-0.01em',
+                        }}
+                      >
+                        Find a church →
+                      </button>
+                    </div>
+                  ) : (
+                    <EmptyState
+                      icon={
+                        <svg width={30} height={30} viewBox="0 0 36 36" fill="none" aria-hidden>
+                          <circle cx="13" cy="17" r="7" fill="none" stroke={T.gold} strokeWidth="1.8"/>
+                          <circle cx="23" cy="17" r="7" fill="none" stroke={T.gold} strokeWidth="1.8"/>
+                          <path d="M18 11 Q21 9 24 11" stroke={T.gold} strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.5"/>
+                        </svg>
+                      }
+                      title="Nothing here yet."
+                      body="Be the first to start the conversation."
+                    />
+                  )
                 )}
                 <div className="stagger-in">
                   {(() => {

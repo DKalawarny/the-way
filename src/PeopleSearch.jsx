@@ -302,7 +302,6 @@ export default function PeopleSearch({ session, profile, onClose, onViewProfile,
     const { data: churches } = await supabase
       .from('churches')
       .select('id, name, city, country, denomination, pastor_id')
-      .eq('verification_status', 'verified')
       .eq('is_public', true)
       .not('pastor_id', 'is', null)
       .limit(60);
@@ -569,14 +568,14 @@ export default function PeopleSearch({ session, profile, onClose, onViewProfile,
                     No pastors yet
                   </div>
                   <div style={{ fontSize: 13.5, color: T.inkMuted, lineHeight: 1.6 }}>
-                    Pastors from verified churches will appear here.
+                    Pastors from public churches will appear here.
                   </div>
                 </div>
               )}
               {!pastorsLoading && pastorResults.length > 0 && (
                 <>
                   <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 10, letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 600 }}>
-                    {pastorResults.length} verified pastor{pastorResults.length !== 1 ? 's' : ''}
+                    {pastorResults.length} pastor{pastorResults.length !== 1 ? 's' : ''}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {pastorResults.map((p) => (
