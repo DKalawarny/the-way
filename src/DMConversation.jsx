@@ -159,7 +159,7 @@ function PostLinkCard({ postId, isMe, onOpenPost }) {
   );
 }
 
-export default function DMConversation({ session, profile, conversationId, otherProfile, onBack, initialMessage, onOpenPost }) {
+export default function DMConversation({ session, profile, conversationId, otherProfile, onBack, initialMessage, onOpenPost, onViewProfile }) {
   const [messages, setMessages] = useState([]);
   const DRAFT_KEY = `kw:dm-draft:${conversationId}`;
   // initialMessage (e.g. a share URL) takes priority over the saved draft
@@ -395,16 +395,24 @@ export default function DMConversation({ session, profile, conversationId, other
           background: 'none', border: 'none', color: T.goldDark, fontSize: 20,
           cursor: 'pointer', padding: 0, lineHeight: 1,
         }}>←</button>
-        {other && (
-          <Avatar name={other.display_name} avatarConfig={other.avatar_config} photoUrl={other.avatar_url} size={32} />
-        )}
-        <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: T.display, fontSize: 16, fontWeight: 600, color: T.ink }}>
-            {other?.display_name ?? '…'}
-          </div>
-          {isSystem && (
-            <div style={{ fontSize: 11, color: T.goldDark, letterSpacing: '0.04em' }}>Your welcome message</div>
+        <div
+          onClick={() => !isSystem && other?.id && onViewProfile?.(other.id)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0,
+            cursor: !isSystem && other?.id && onViewProfile ? 'pointer' : 'default',
+          }}
+        >
+          {other && (
+            <Avatar name={other.display_name} avatarConfig={other.avatar_config} photoUrl={other.avatar_url} size={32} />
           )}
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontFamily: T.display, fontSize: 16, fontWeight: 600, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {other?.display_name ?? '…'}
+            </div>
+            {isSystem && (
+              <div style={{ fontSize: 11, color: T.goldDark, letterSpacing: '0.04em' }}>Your welcome message</div>
+            )}
+          </div>
         </div>
       </div></div>
 

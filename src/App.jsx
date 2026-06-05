@@ -2955,6 +2955,7 @@ export default function App() {
           pendingShareUrl={pendingShareUrl}
           onShareSent={() => setPendingShareUrl(null)}
           onOpenPost={(postId) => { setOpenCommentPostId(postId); setStage('feed'); }}
+          onViewProfile={(uid) => setViewingUserId(uid)}
           initialCareId={pendingCareId}
           onInitialCareConsumed={() => setPendingCareId(null)}
           initialDmId={pendingDmId}

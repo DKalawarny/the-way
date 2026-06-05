@@ -197,7 +197,7 @@ function EmptyPane() {
   );
 }
 
-export default function MessagesInbox({ session, profile, onBack, pendingShareUrl, onShareSent, onOpenPost, initialCareId, onInitialCareConsumed, initialDmId, onInitialDmConsumed }) {
+export default function MessagesInbox({ session, profile, onBack, pendingShareUrl, onShareSent, onOpenPost, onViewProfile, initialCareId, onInitialCareConsumed, initialDmId, onInitialDmConsumed }) {
   const [careConvs, setCareConvs] = useState([]);
   const [dmConvs, setDmConvs] = useState([]);
   const [careLastMsgs, setCareLastMsgs] = useState({});
@@ -510,6 +510,7 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
           initialMessage={openDm.initialMessage}
           onBack={() => { setOpenDm(null); setRefreshKey((k) => k + 1); }}
           onOpenPost={onOpenPost}
+          onViewProfile={onViewProfile}
         />
       </Suspense>
     );
@@ -846,6 +847,7 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
               initialMessage={openDm.initialMessage}
               onBack={() => { setOpenDm(null); setRefreshKey((k) => k + 1); }}
               onOpenPost={onOpenPost}
+              onViewProfile={onViewProfile}
             />
           </Suspense>
         ) : openCare ? (
