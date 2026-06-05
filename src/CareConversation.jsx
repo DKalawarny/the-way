@@ -63,6 +63,7 @@ export default function CareConversation({ session, profile, conversationId, vie
   const [showSafety, setShowSafety] = useState(false);
   const [otherProfile, setOtherProfile] = useState(null);
   const scrollRef = useRef(null);
+  const draftRef = useRef(null);
   const { askConfirm, ui: uikitUi } = useUiKit();
 
   useEffect(() => {
@@ -149,6 +150,7 @@ export default function CareConversation({ session, profile, conversationId, vie
       }
     }
     setSending(false);
+    setTimeout(() => draftRef.current?.focus(), 0);
   }
 
   async function handleClaim() {
@@ -357,10 +359,11 @@ export default function CareConversation({ session, profile, conversationId, vie
         }}>
           <div style={{ maxWidth: 640, margin: '0 auto', display: 'flex', gap: 10, alignItems: 'flex-end' }}>
             <textarea
+              ref={draftRef}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSend(); }
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
               }}
               placeholder="Write a message…"
               rows={1}

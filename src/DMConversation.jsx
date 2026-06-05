@@ -175,6 +175,7 @@ export default function DMConversation({ session, profile, conversationId, other
   const [aiLoading, setAiLoading] = useState(false);
   const bottomRef = useRef(null);
   const editRef = useRef(null);
+  const inputRef = useRef(null);
   const aiBottomRef = useRef(null);
   const aiAbortRef = useRef(null);
   const isSystem = isSystemAccount(other);
@@ -346,6 +347,7 @@ export default function DMConversation({ session, profile, conversationId, other
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     }
     setSending(false);
+    setTimeout(() => inputRef.current?.focus(), 0);
   }
 
   async function deleteMsg(id) {
@@ -683,6 +685,7 @@ export default function DMConversation({ session, profile, conversationId, other
               }}
             ><KinwoveStar size={18} color={T.gold} /></button>
             <textarea
+              ref={inputRef}
               value={input}
               onChange={(e) => { setInput(e.target.value); sessionStorage.setItem(DRAFT_KEY, e.target.value); }}
               onKeyDown={onKeyDown}
