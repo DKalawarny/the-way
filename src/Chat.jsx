@@ -781,6 +781,45 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
   );
 }
 
+// ── Capability hint strip near the camera / attach button ────────────────────
+const IMG_HINTS = [
+  { icon: '📷', text: 'Attach a photo — Bible pages, handwritten notes, journal entries' },
+  { icon: '📜', text: 'Photo a Hebrew scroll or Greek manuscript — kinwove can read it' },
+  { icon: '🔤', text: 'Ask about the original Hebrew or Greek word behind any translation' },
+  { icon: '✍️', text: 'Snap a handwritten question or note and ask about it' },
+];
+
+function _ImgHint({ C }) {
+  const [idx, setIdx] = useState(0);
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const t = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => { setIdx((i) => (i + 1) % IMG_HINTS.length); setVisible(true); }, 280);
+    }, 5000);
+    return () => clearInterval(t);
+  }, []);
+  const h = IMG_HINTS[idx];
+  return (
+    <div style={{ maxWidth: 720, margin: '0 auto 6px', display: 'flex', alignItems: 'center', gap: 6, minHeight: 18 }}>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.45, flexShrink: 0 }}>
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      <span
+        style={{
+          fontSize: 11, color: C.muted, letterSpacing: '0.01em',
+          opacity: visible ? 0.6 : 0,
+          transition: 'opacity 0.25s ease',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}
+      >
+        {h.icon} {h.text}
+      </span>
+    </div>
+  );
+}
+
 const CHAT_LIGHT = {
   bg: '#FDF8F0', text: T.ink, muted: T.inkMuted, textSoft: T.inkSoft,
   border: T.line, headerBg: '#FFFFFF', footerBg: '#FFFFFF',
@@ -1957,7 +1996,7 @@ export default function Chat({
         />
 
         {/* Image preview strip (above input row) */}
-        {attachedImg && (
+        {attachedImg ? (
           <div style={{ maxWidth: 720, margin: '0 auto 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ position: 'relative', display: 'inline-block' }}>
               <img
@@ -1974,6 +2013,9 @@ export default function Chat({
             </div>
             <div style={{ fontSize: 12, color: C.muted, fontStyle: 'italic' }}>Image attached — ask a question about it</div>
           </div>
+        ) : !showGuestWall && (
+          /* Capability hint — rotates every 5 s to surface image features */
+          <_ImgHint C={C} />
         )}
 
         <div
