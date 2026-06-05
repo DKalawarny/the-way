@@ -53,6 +53,7 @@ function NotificationRow({ n, onClick, onFriendAction, onAvatarClick, onRoleAcce
 
   const [friendState, setFriendState] = useState(null); // null | 'busy' | 'accepted' | 'declined'
   const [roleState,   setRoleState]   = useState(null); // null | 'busy' | 'accepted' | 'declined'
+  const [roleError,   setRoleError]   = useState(null); // error message string
 
   // On mount, check if this friend request was already actioned
   useEffect(() => {
@@ -100,7 +101,16 @@ function NotificationRow({ n, onClick, onFriendAction, onAvatarClick, onRoleAcce
     setRoleState('busy');
     const fn = action === 'accept' ? 'accept_role_invite' : 'decline_role_invite';
     const { error } = await supabase.rpc(fn, { p_invite_id: n.target_id });
-    if (!error && action === 'accept') {
+    if (error) {
+      console.error('[role invite]', error.message);
+      setRoleState(null); // reset so they can try again
+      setRoleError(error.message.includes('not a member')
+        ? 'You need to be a member of this church first.'
+        : 'Something went wrong — please try again.');
+      return;
+    }
+    setRoleError(null);
+    if (action === 'accept') {
       const roleLabel = n.data?.role_label ?? n.data?.role_key ?? 'your role';
       onRoleAccepted?.({ roleLabel, churchName: n.data?.church_name });
     }
@@ -188,28 +198,33 @@ function NotificationRow({ n, onClick, onFriendAction, onAvatarClick, onRoleAcce
 
         {/* Accept / Decline buttons for role invites */}
         {isRoleInvite && (
-          <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: 7, marginTop: 8 }}>
-            {roleState === 'accepted' && (
-              <span style={{ fontSize: 12, color: T.goldDark, fontWeight: 600 }}>✓ Role accepted</span>
+          <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 8 }}>
+            {roleError && (
+              <span style={{ fontSize: 11, color: '#b94040', lineHeight: 1.4 }}>{roleError}</span>
             )}
-            {roleState === 'declined' && (
-              <span style={{ fontSize: 12, color: T.inkMuted }}>Role declined</span>
-            )}
-            {roleState === 'busy' && (
-              <span style={{ fontSize: 12, color: T.inkMuted }}>Saving…</span>
-            )}
-            {!roleState && (
-              <>
-                <button onClick={(e) => handleRoleInvite(e, 'accept')} style={{
-                  background: T.ink, color: T.cream, border: 'none', borderRadius: 8,
-                  padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                }}>Accept</button>
-                <button onClick={(e) => handleRoleInvite(e, 'decline')} style={{
-                  background: 'transparent', color: T.inkSoft, border: `1px solid ${T.line}`,
-                  borderRadius: 8, padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                }}>Decline</button>
-              </>
-            )}
+            <div style={{ display: 'flex', gap: 7 }}>
+              {roleState === 'accepted' && (
+                <span style={{ fontSize: 12, color: T.goldDark, fontWeight: 600 }}>✓ Role accepted</span>
+              )}
+              {roleState === 'declined' && (
+                <span style={{ fontSize: 12, color: T.inkMuted }}>Role declined</span>
+              )}
+              {roleState === 'busy' && (
+                <span style={{ fontSize: 12, color: T.inkMuted }}>Saving…</span>
+              )}
+              {!roleState && (
+                <>
+                  <button onClick={(e) => handleRoleInvite(e, 'accept')} style={{
+                    background: T.ink, color: T.cream, border: 'none', borderRadius: 8,
+                    padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  }}>Accept</button>
+                  <button onClick={(e) => handleRoleInvite(e, 'decline')} style={{
+                    background: 'transparent', color: T.inkSoft, border: `1px solid ${T.line}`,
+                    borderRadius: 8, padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                  }}>Decline</button>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>

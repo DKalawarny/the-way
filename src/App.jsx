@@ -162,15 +162,21 @@ const ROLE_LABELS_CLIENT = {
 // ── Role invite deep-link modal ───────────────────────────────────────────────
 // Shown when the user arrives via ?invite=<id> from an email link.
 function InviteDeepLinkModal({ invite, onAccept, onDecline, onDismiss }) {
-  const [busy, setBusy] = useState(null); // 'accept' | 'decline'
+  const [busy, setBusy]   = useState(null);  // 'accept' | 'decline'
+  const [err,  setErr]    = useState(null);  // error string
   const roleLabel = invite.role_label || ROLE_LABELS_CLIENT[invite.role_key] || invite.role_key;
   const churchName = invite.churches?.name ?? 'your church';
   const pastorName = invite.profiles?.display_name ?? null;
 
   async function handle(action) {
     setBusy(action);
-    if (action === 'accept') await onAccept();
-    else await onDecline();
+    setErr(null);
+    try {
+      if (action === 'accept') await onAccept();
+      else await onDecline();
+    } catch (e) {
+      setErr(e?.message ?? 'Something went wrong — please try again.');
+    }
     setBusy(null);
   }
 
@@ -214,6 +220,16 @@ function InviteDeepLinkModal({ invite, onAccept, onDecline, onDismiss }) {
             fontStyle: 'italic', marginBottom: 20, textAlign: 'left',
           }}>
             "{invite.message}"
+          </div>
+        )}
+
+        {err && (
+          <div style={{
+            background: '#fdf0f0', border: '1px solid #e8b4b4', borderRadius: 10,
+            padding: '10px 14px', fontSize: 13, color: '#b94040', lineHeight: 1.5,
+            marginBottom: 14, textAlign: 'left',
+          }}>
+            {err}
           </div>
         )}
 
@@ -2057,6 +2073,21 @@ export default function App() {
     setActiveCareConv(prev.activeCareConv);
   }
 
+  // Intercept the browser back button and use the app's own goBack() instead.
+  // Without this, pressing back navigates to the previous browser URL (always '/'),
+  // which reloads the SPA back to the home/landing stage.
+  // We push a sentinel history entry on mount so there's always something to pop,
+  // then re-push after each intercept so subsequent back presses are also caught.
+  useEffect(() => {
+    window.history.pushState({ kw: 1 }, '');
+    function handlePopState() {
+      goBack();
+      window.history.pushState({ kw: 1 }, '');
+    }
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Clear churchReturnTab one tick after ChurchPage mounts so subsequent
   // church navigations use ChurchPage's own default tab logic.
   useEffect(() => {
@@ -3541,13 +3572,19 @@ export default function App() {
           invite={pendingInvite}
           onAccept={async () => {
             const { error } = await supabase.rpc('accept_role_invite', { p_invite_id: pendingInvite.id });
-            if (!error) {
-              const roleLabel = pendingInvite.role_label || ROLE_LABELS_CLIENT[pendingInvite.role_key] || pendingInvite.role_key;
-              setPendingInvite(null);
-              setBadgeEarned({ roleLabel, churchName: pendingInvite.churches?.name });
-              setTimeout(() => setBadgeEarned(null), 3200);
-              loadChurchRoles(session.user.id);
+            if (error) {
+              // Re-throw so InviteDeepLinkModal can display the error message
+              throw new Error(
+                error.message.includes('not a member')
+                  ? 'You need to be a member of this church first.'
+                  : error.message || 'Something went wrong — please try again.'
+              );
             }
+            const roleLabel = pendingInvite.role_label || ROLE_LABELS_CLIENT[pendingInvite.role_key] || pendingInvite.role_key;
+            setPendingInvite(null);
+            setBadgeEarned({ roleLabel, churchName: pendingInvite.churches?.name });
+            setTimeout(() => setBadgeEarned(null), 3200);
+            loadChurchRoles(session.user.id);
           }}
           onDecline={async () => {
             await supabase.rpc('decline_role_invite', { p_invite_id: pendingInvite.id });
