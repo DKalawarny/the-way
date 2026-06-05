@@ -1145,58 +1145,75 @@ async function sendEmail(to, subject, html) {
   if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text().catch(() => '')}`);
 }
 
+// Kinwove wordmark safe for all email clients including Gmail.
+// Gmail strips position:absolute/relative, so we stack the star above the
+// dotless-ı using display:block spans inside an inline-block container.
+// ✦ (U+2726) is the same 4-pointed star shape as our SVG logo.
+const KW = [
+  'k',
+  '<span style="display:inline-block;vertical-align:baseline;line-height:1.15;text-align:center">',
+    '<span style="display:block;font-size:0.48em;color:#A85530;line-height:1;margin-bottom:1px">&#10022;</span>',
+    '<span style="display:block;line-height:1">&#305;</span>',  // dotless ı
+  '</span>',
+  'nwove',
+].join('');
+
 // Shared brand wrapper — keeps all kinwove emails visually consistent.
 function emailWrap(bodyHtml) {
-  return `<div style="font-family:Georgia,serif;max-width:480px;margin:0 auto;padding:40px 24px;color:#2C1810">
-    <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#B8733A;margin-bottom:28px">kinwove</div>
+  return `<div style="font-family:Georgia,serif;max-width:480px;margin:0 auto;padding:40px 24px;color:#2C1810;background:#ffffff">
+    <!-- Logo mark -->
+    <div style="text-align:center;margin-bottom:36px">
+      <div style="font-size:34px;color:#A85530;line-height:1;margin-bottom:7px">&#10022;</div>
+      <div style="font-size:11px;letter-spacing:3.5px;text-transform:uppercase;color:#A85530;font-family:Georgia,serif">kinwove</div>
+    </div>
     ${bodyHtml}
-    <div style="margin-top:36px;padding-top:20px;border-top:1px solid #E8D5BB;font-size:12px;color:#9C7B5E;line-height:1.6">
-      You're receiving this because you have a kinwove account.<br>
-      <a href="https://www.kinwove.com" style="color:#B8733A;text-decoration:none">www.kinwove.com</a>
+    <div style="margin-top:40px;padding-top:20px;border-top:1px solid #E8D5BB;font-size:12px;color:#9C7B5E;line-height:1.7">
+      You're receiving this because you have a ${KW} account.<br>
+      <a href="https://www.kinwove.com" style="color:#A85530;text-decoration:none">www.kinwove.com</a>
     </div>
   </div>`;
 }
 
 function btnHtml(label, url) {
-  return `<a href="${url}" style="display:inline-block;background:#B8733A;color:#FDF8F0;text-decoration:none;padding:14px 28px;border-radius:999px;font-size:15px;font-weight:600;margin:24px 0">${label} →</a>`;
+  return `<a href="${url}" style="display:inline-block;background:#B8733A;color:#FDF8F0;text-decoration:none;padding:14px 28px;border-radius:999px;font-size:15px;font-weight:600;margin:24px 0;letter-spacing:0.01em">${label} →</a>`;
 }
 
 function welcomeEmailHtml(firstName) {
   return emailWrap(`
-    <h1 style="font-size:28px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em">Welcome, ${firstName}.</h1>
-    <p style="font-size:16px;color:#6B5344;line-height:1.7;margin:0 0 14px">
+    <h1 style="font-size:28px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">Welcome, ${firstName}.</h1>
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
       You've joined a space to explore the Bible honestly — whether you're full of faith, full of questions, or somewhere in between.
     </p>
-    <p style="font-size:16px;color:#6B5344;line-height:1.7;margin:0 0 4px">
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 4px">
       Ask anything. Read deeply. Save what matters.
     </p>
-    ${btnHtml('Open kinwove', 'https://www.kinwove.com')}
+    ${btnHtml('Open ' + KW, 'https://www.kinwove.com')}
     <p style="font-size:13px;color:#9C7B5E;margin:0">No pressure. No agenda. Just honest answers.</p>
   `);
 }
 
 function roleInviteEmailHtml({ memberName, pastorName, roleLabel, churchName }) {
   return emailWrap(`
-    <h1 style="font-size:26px;font-weight:600;margin:0 0 14px;letter-spacing:-0.02em">You've been invited.</h1>
-    <p style="font-size:16px;color:#6B5344;line-height:1.7;margin:0 0 20px">
-      <strong>${pastorName}</strong> has invited you to join the <strong>${roleLabel}</strong> team at <strong>${churchName}</strong> on kinwove.
+    <h1 style="font-size:26px;font-weight:600;margin:0 0 14px;letter-spacing:-0.02em;color:#2C1810">You've been invited.</h1>
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 20px">
+      <strong>${pastorName}</strong> has invited you to join the <strong>${roleLabel}</strong> team at <strong>${churchName}</strong> on ${KW}.
     </p>
-    <div style="background:#FDF8F0;border:1px solid #E8D5BB;border-radius:12px;padding:18px 20px;margin-bottom:24px;font-size:14px;color:#6B5344;line-height:1.6">
-      Open kinwove to accept or decline — the invitation is waiting in your notifications 🔔
+    <div style="background:#FDF8F0;border:1px solid #E8D5BB;border-radius:12px;padding:18px 20px;margin-bottom:24px;font-size:14px;color:#6B5344;line-height:1.7">
+      Open ${KW} to accept or decline — the invitation is waiting in your notifications 🔔
     </div>
-    ${btnHtml('Open kinwove', 'https://www.kinwove.com')}
+    ${btnHtml('Open ' + KW, 'https://www.kinwove.com')}
     <p style="font-size:13px;color:#9C7B5E;margin:0">Questions? Reply to this email and we'll help.</p>
   `);
 }
 
 function nudgeEmailHtml(firstName) {
   return emailWrap(`
-    <h1 style="font-size:26px;font-weight:600;margin:0 0 14px;letter-spacing:-0.02em">Your profile is waiting.</h1>
-    <p style="font-size:16px;color:#6B5344;line-height:1.7;margin:0 0 14px">
-      Hey ${firstName} — you started setting up your kinwove profile but haven't quite finished.
+    <h1 style="font-size:26px;font-weight:600;margin:0 0 14px;letter-spacing:-0.02em;color:#2C1810">Your profile is waiting.</h1>
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
+      Hey ${firstName} — you started setting up your ${KW} profile but haven't quite finished.
     </p>
-    <p style="font-size:16px;color:#6B5344;line-height:1.7;margin:0 0 4px">
-      It only takes a minute, and it helps kinwove give you much better answers from the start.
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 4px">
+      It only takes a minute, and it helps ${KW} give you much better answers from the start.
     </p>
     ${btnHtml('Complete my profile', 'https://www.kinwove.com')}
     <p style="font-size:13px;color:#9C7B5E;margin:0">No pressure — we'll be here whenever you're ready.</p>
