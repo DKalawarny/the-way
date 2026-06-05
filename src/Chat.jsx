@@ -15,6 +15,7 @@ import AiLimitWall, { AiUsageWarning } from './AiLimitWall.jsx';
 import { track } from './analytics.js';
 import Tip from './Tip.jsx';
 import { extractRefs, parseRef, toApiVerseId, VALIDATION_BIBLE_ID } from './bibleRefUtils.js';
+import { cleanText } from './moderation.js';
 
 const GUEST_COUNT_KEY = 'kinwove:guest_count';
 
@@ -1185,8 +1186,10 @@ export default function Chat({
     const img = attachedImg;
     if (img) setAttachedImg(null);
 
-    // Display message: store text + imagePreview for rendering in the bubble
-    const displayMsg = { role: 'user', content: prompt || '(image)', _imagePreview: img?.previewUrl };
+    // Display message: profanity-cleaned for the visible chat bubble.
+    // The raw prompt is kept for the API message so Claude still understands
+    // the question — e.g. someone quoting offensive language they've encountered.
+    const displayMsg = { role: 'user', content: cleanText(prompt) || '(image)', _imagePreview: img?.previewUrl };
 
     // API message: multimodal content if image attached, plain string otherwise
     const apiMsg = img
