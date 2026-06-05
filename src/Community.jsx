@@ -1332,7 +1332,7 @@ useEffect(() => {
     // posts here too, which isn't what we want for the universal feed.
     let query = supabase
       .from('posts')
-      .select(`*, profiles!author_id(display_name, city, country, tradition, person_type, avatar_config, avatar_url, show_flag, flags), post_comments(id, body, created_at, profiles!author_id(display_name, avatar_config, avatar_url))`)
+      .select(`*, profiles!author_id(display_name, city, country, tradition, person_type, avatar_config, avatar_url, show_flag, flags, is_system_account), post_comments(id, body, created_at, profiles!author_id(display_name, avatar_config, avatar_url))`)
       .eq('scope', 'me')        // community feed = personal posts only; church posts stay in church
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
@@ -1430,8 +1430,11 @@ useEffect(() => {
     const pMap = {}; (pastors ?? []).forEach((p) => { pMap[p.id] = p; });
     const cMap = {}; (churches ?? []).forEach((c) => { cMap[c.id] = c; });
 
-    // Hide any posts authored by the kinwove system account
-    const visible = enriched.filter((p) => p.profiles?.display_name !== 'kinwove');
+    // Hide posts from accounts flagged as the kinwove system account.
+    // Filter on is_system_account (not display_name) so real users named
+    // 'kinwove' aren't caught. Safe to query before the DB column exists —
+    // Supabase returns null for unknown columns, which is falsy.
+    const visible = enriched.filter((p) => !p.profiles?.is_system_account);
     setPosts(visible);
     setSermonItems(sermons);
     setPastorMap(pMap);
