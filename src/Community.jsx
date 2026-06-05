@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback, lazy, Suspense, Fragment } from 'react';
+import { createPortal } from 'react-dom';
 import { Smile, Bookmark } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { useUiKit } from './uikit.jsx';
@@ -535,8 +536,9 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
         </div>
       </div>
 
-      {/* Facebook-style centered post dialog */}
-      {commentsOpen && (
+      {/* Facebook-style centered post dialog — portalled to body so position:fixed
+          is never trapped by an ancestor overflow:hidden stacking context */}
+      {commentsOpen && createPortal(
         <div
           onClick={() => setCommentsOpen(false)}
           style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -548,6 +550,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
               background: T.white, borderRadius: 10,
               width: 'min(660px, 96vw)', height: '85vh',
               display: 'flex', flexDirection: 'column',
+              overflow: 'hidden',
               boxShadow: '0 8px 48px rgba(0,0,0,0.3)',
               animation: 'fadeIn 0.18s ease',
             }}
@@ -566,7 +569,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
             </div>
 
             {/* Scrollable post + comments */}
-            <div ref={commentScrollRef} className="scroll" style={{ flex: 1, overflowY: 'auto' }}>
+            <div ref={commentScrollRef} className="scroll" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
               {/* Post author */}
               <div style={{ padding: '16px 18px 0' }}>
                 <div style={{ display: 'flex', gap: 11, alignItems: 'center', marginBottom: 12 }}>
@@ -741,7 +744,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
             )}
           </div>
         </div>
-      )}
+      , document.body)}
 
       {reportOpen && (
         <div
