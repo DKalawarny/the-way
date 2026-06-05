@@ -1906,6 +1906,86 @@ function escapeXml(s) {
     .replace(/>/g, '&gt;');
 }
 
+// Topic tags extracted from conversation question — used for internal linking
+// and category classification. Returns up to 3 tags.
+function topicTags(text) {
+  const t = (text ?? '').toLowerCase();
+  const all = [
+    { r: /\bpra(y|yer|ying|yers)\b/, label: 'Prayer', slug: 'prayer' },
+    { r: /salvation|saved|born again|repent|forgiven|sin\b|sinner/, label: 'Salvation', slug: 'salvation' },
+    { r: /\bjesus\b|christ\b|messiah|son of god|incarnation|resurrection/, label: 'Jesus Christ', slug: 'jesus' },
+    { r: /\bbible\b|scripture|word of god|testament|verse|passage|book of/, label: 'Bible', slug: 'bible' },
+    { r: /\bchurch\b|congregation|pastor|denomination|worship|sunday|attend/, label: 'Church', slug: 'church' },
+    { r: /doubt|skeptic|evidence|proof|atheist|agnostic|how (can|do) (i|you) believe/, label: 'Faith & Doubt', slug: 'faith-doubt' },
+    { r: /\bgrace\b|mercy|forgiveness|love of god|unconditional/, label: 'Grace', slug: 'grace' },
+    { r: /marriage|divorce|relationship|sex|lust|spouse|family|parenting/, label: 'Relationships', slug: 'relationships' },
+    { r: /heaven|hell|afterlife|eternal|death|judgment|purgatory/, label: 'Eternal Life', slug: 'eternal-life' },
+    { r: /holy spirit|spirit of god|gifts|pentecost|tongues|anointing/, label: 'Holy Spirit', slug: 'holy-spirit' },
+    { r: /suffering|evil|pain|why does god allow|theodicy|bad things/, label: 'Suffering & Evil', slug: 'suffering' },
+    { r: /genesis|creation|evolution|adam|eve|earth|big bang|dinosaur/, label: 'Creation', slug: 'creation' },
+    { r: /revelation|end times|rapture|apocalypse|antichrist|tribulation/, label: 'End Times', slug: 'end-times' },
+    { r: /anxiety|depression|mental health|worry|fear|lonely|loneliness/, label: 'Mental Health', slug: 'mental-health' },
+    { r: /purpose|meaning|calling|vocation|plan|destiny|why am i/, label: 'Purpose', slug: 'purpose' },
+    { r: /money|wealth|tithing|giving|stewardship|rich|poor|prosperity/, label: 'Money & Giving', slug: 'money' },
+    { r: /baptism|baptized|communion|eucharist|sacrament/, label: 'Sacraments', slug: 'sacraments' },
+    { r: /old testament|new testament|law|moses|paul|psalm|gospel|epistle/, label: 'Scripture', slug: 'scripture' },
+  ];
+  return all.filter((tag) => tag.r.test(t)).slice(0, 3).map(({ label, slug }) => ({ label, slug }));
+}
+
+// Inline CSS for the share blog post page — parchment/ink kinwove brand
+const SHARE_PAGE_CSS = `
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Georgia,serif;background:#FAF3E2;color:#2C1810;line-height:1.7}
+  a{color:#8E5528;text-decoration:none}
+  a:hover{text-decoration:underline}
+  .kw-nav{background:#1A1108;color:#F5EDD8;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .kw-nav-logo{font-family:Georgia,serif;font-size:20px;font-weight:700;color:#F5EDD8;letter-spacing:-0.02em}
+  .kw-nav-cta{background:#B8733A;color:#fff;padding:8px 18px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap}
+  .kw-nav-cta:hover{background:#a0622e;text-decoration:none}
+  .kw-layout{max-width:860px;margin:0 auto;padding:40px 20px 60px;display:grid;grid-template-columns:1fr 280px;gap:48px;align-items:start}
+  @media(max-width:700px){.kw-layout{grid-template-columns:1fr;padding:24px 16px 48px}}
+  .kw-eyebrow{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#8E5528;font-weight:700;margin-bottom:14px}
+  h1{font-size:clamp(1.5rem,4vw,2.1rem);font-weight:700;line-height:1.25;color:#1A1108;margin-bottom:10px}
+  .kw-meta{font-size:13px;color:#8E5528;margin-bottom:32px;border-bottom:1px solid rgba(26,17,8,0.12);padding-bottom:20px}
+  .kw-turn{margin-bottom:32px}
+  .kw-q{font-size:15px;font-weight:700;color:#1A1108;background:rgba(184,115,58,0.08);border-left:3px solid #B8733A;padding:10px 14px;border-radius:0 8px 8px 0;margin-bottom:14px}
+  .kw-a{font-size:16px;line-height:1.8;color:#2C1810;white-space:pre-wrap}
+  .kw-a p{margin-bottom:1em}
+  .kw-divider{border:none;border-top:1px solid rgba(26,17,8,0.1);margin:28px 0}
+  .kw-topics{margin-top:32px;display:flex;flex-wrap:wrap;gap:8px}
+  .kw-tag{background:rgba(184,115,58,0.1);color:#8E5528;border:1px solid rgba(184,115,58,0.25);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:600}
+  .kw-sidebar{position:sticky;top:24px}
+  .kw-cta-box{background:#1A1108;color:#F5EDD8;border-radius:14px;padding:28px 24px;margin-bottom:24px}
+  .kw-cta-box h2{font-size:17px;font-weight:700;margin-bottom:10px;line-height:1.3}
+  .kw-cta-box p{font-size:13.5px;color:#D4C5B0;line-height:1.6;margin-bottom:18px}
+  .kw-cta-link{display:block;text-align:center;background:#B8733A;color:#fff;border-radius:999px;padding:11px 20px;font-weight:600;font-size:14px}
+  .kw-cta-link:hover{background:#a0622e;text-decoration:none}
+  .kw-related-box{background:#fff;border:1px solid rgba(26,17,8,0.1);border-radius:14px;padding:20px}
+  .kw-related-box h3{font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#8E5528;margin-bottom:14px;font-weight:700}
+  .kw-related-box ul{list-style:none;display:flex;flex-direction:column;gap:10px}
+  .kw-related-box li a{font-size:14px;color:#2C1810;line-height:1.4}
+  .kw-related-box li a:hover{color:#8E5528}
+  .kw-footer{background:#1A1108;color:#8E7060;padding:20px 24px;text-align:center;font-size:13px;margin-top:40px}
+  .kw-footer a{color:#B8733A}
+`;
+
+// Shared conversations index — fetch N most recent public conversations
+async function fetchRecentConversations(limit = 60) {
+  if (!SUPABASE_URL || !SUPABASE_ANON) return [];
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/shared_conversations?select=id,title,messages,created_at&order=created_at.desc&limit=${limit}`,
+      { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` } }
+    );
+    if (!r.ok) return [];
+    return await r.json();
+  } catch (e) {
+    console.error('[kinwove] fetchRecentConversations error:', e?.message);
+    return [];
+  }
+}
+
 async function fetchSharedConversation(id) {
   if (!SUPABASE_URL || !SUPABASE_ANON) return null;
   try {
@@ -1933,7 +2013,9 @@ if (process.env.NODE_ENV !== 'development') {
     return _indexTemplate;
   }
 
-  // /share/:id — pre-render OG meta + body content for crawlers
+  // /share/:id — full blog-post page for each shared conversation
+  // Visible content for humans + crawlers; React mounts after load for full app.
+  // Only indexes conversations users explicitly chose to share (public URLs).
   app.get('/share/:id', async (req, res, next) => {
     try {
       const row = await fetchSharedConversation(req.params.id);
@@ -1943,35 +2025,135 @@ if (process.env.NODE_ENV !== 'development') {
       const firstUser = messages.find((m) => m.role === 'user')?.content ?? '';
       const firstAssistant = messages.find((m) => m.role === 'assistant')?.content ?? '';
       const rawTitle = (row.title || firstUser || 'A conversation about faith, doubt, and the Bible').trim();
-      const title = rawTitle.length > 70 ? rawTitle.slice(0, 67) + '…' : rawTitle;
-      const descSource = firstAssistant || firstUser || rawTitle;
-      const description = descSource.replace(/\s+/g, ' ').slice(0, 200);
-      const url = `${req.protocol}://${req.get('host')}/share/${req.params.id}`;
+      const seotitle = rawTitle.length > 65 ? rawTitle.slice(0, 62) + '…' : rawTitle;
+      const pageTitle = `${seotitle} — kinwove AI Bible Study`;
+      const descSource = (firstAssistant || firstUser || rawTitle).replace(/\s+/g, ' ');
+      const description = descSource.slice(0, 158) + (descSource.length > 158 ? '…' : '');
+      const canonicalUrl = `https://www.kinwove.com/share/${req.params.id}`;
+      const dateStr = row.created_at ? new Date(row.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+      const dateIso = row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString();
+      const tags = topicTags(rawTitle + ' ' + firstUser);
+
+      // Format each Q&A turn as readable HTML
+      const turnsHtml = (() => {
+        const turns = [];
+        for (let i = 0; i < messages.length; i++) {
+          const m = messages[i];
+          if (m.role === 'user') {
+            turns.push(`<div class="kw-turn"><div class="kw-q">${escapeHtml(m.content)}</div>`);
+          } else if (m.role === 'assistant') {
+            // Format paragraphs
+            const paras = m.content.split(/\n\n+/).map((p) => `<p>${escapeHtml(p.trim())}</p>`).join('');
+            turns.push(`<div class="kw-a">${paras}</div></div>`);
+            if (i < messages.length - 1) turns.push(`<hr class="kw-divider" />`);
+          }
+        }
+        return turns.join('');
+      })();
+
+      // Topic tag pills
+      const tagsHtml = tags.length ? `
+        <div class="kw-topics">
+          ${tags.map((t) => `<span class="kw-tag">${escapeHtml(t.label)}</span>`).join('')}
+        </div>` : '';
+
+      // Related suggestions (static — works without DB)
+      const relatedHtml = `
+        <div class="kw-related-box">
+          <h3>Explore on kinwove</h3>
+          <ul>
+            <li><a href="https://www.kinwove.com/conversations">Browse all AI Bible conversations</a></li>
+            <li><a href="https://www.kinwove.com/">Ask your own question →</a></li>
+            <li><a href="https://www.kinwove.com/">Find your church</a></li>
+            <li><a href="https://www.kinwove.com/">Daily devotionals</a></li>
+          </ul>
+        </div>`;
+
+      // Article JSON-LD
+      const articleSchema = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'QAPage',
+        'mainEntity': {
+          '@type': 'Question',
+          'name': rawTitle,
+          'dateCreated': dateIso,
+          'text': firstUser,
+          'acceptedAnswer': firstAssistant ? {
+            '@type': 'Answer',
+            'text': firstAssistant.slice(0, 2000),
+            'dateCreated': dateIso,
+            'url': canonicalUrl,
+            'author': { '@type': 'Organization', 'name': 'kinwove AI', 'url': 'https://www.kinwove.com' },
+          } : undefined,
+        },
+      });
+
+      // Full blog-post body — visible to humans + crawlers before React mounts
+      const blogContent = `
+<div class="kw-share-wrap" id="kw-prerender">
+  <style>${SHARE_PAGE_CSS}</style>
+  <nav class="kw-nav">
+    <a href="https://www.kinwove.com/" class="kw-nav-logo">✦ kinwove</a>
+    <a href="https://www.kinwove.com/" class="kw-nav-cta">Ask your own question →</a>
+  </nav>
+  <div class="kw-layout">
+    <article>
+      <div class="kw-eyebrow">AI Bible Study · kinwove</div>
+      <h1>${escapeHtml(rawTitle)}</h1>
+      <div class="kw-meta">Shared conversation${dateStr ? ` · ${dateStr}` : ''} · <a href="https://www.kinwove.com/">kinwove.com</a></div>
+      ${turnsHtml}
+      ${tagsHtml}
+    </article>
+    <aside class="kw-sidebar">
+      <div class="kw-cta-box">
+        <h2>Ask your own Bible question</h2>
+        <p>Get a thoughtful, grace-first answer from kinwove's AI companion — free, no account required to start.</p>
+        <a href="https://www.kinwove.com/" class="kw-cta-link">Start a conversation →</a>
+      </div>
+      ${relatedHtml}
+    </aside>
+  </div>
+  <footer class="kw-footer">
+    <p>
+      This conversation was publicly shared on <a href="https://www.kinwove.com/">kinwove</a> · AI Bible Study &amp; Christian Community ·
+      <a href="https://www.kinwove.com/conversations">Browse all conversations</a>
+    </p>
+    <p style="margin-top:6px;font-size:11px;color:#5a4030">
+      Shared conversations are public and may be indexed by search engines. Only content you explicitly share is visible here.
+    </p>
+  </footer>
+</div>
+<script>
+  // Once React mounts into #root, hide the prerender blog content
+  (function() {
+    var el = document.getElementById('kw-prerender');
+    var root = document.getElementById('root');
+    if (!el || !root) return;
+    var obs = new MutationObserver(function() {
+      if (root.children.length > 0) { el.style.display = 'none'; obs.disconnect(); }
+    });
+    obs.observe(root, { childList: true });
+  })();
+</script>`;
+
+      const tEsc = escapeHtml(pageTitle);
+      const dEsc = escapeHtml(description);
+      const cEsc = escapeHtml(canonicalUrl);
 
       const template = await getIndexTemplate();
-
-      const bodyContent = `
-    <div data-prerender hidden aria-hidden="true">
-      <article>
-        <h1>${escapeHtml(rawTitle)}</h1>
-        ${messages.map((m) => `<section><h2>${m.role === 'user' ? 'Question' : 'Answer'}</h2><p>${escapeHtml(m.content)}</p></section>`).join('')}
-        <p><a href="/">Ask your own question on kinwove</a></p>
-      </article>
-    </div>`;
-
-      const tEsc = escapeHtml(title);
-      const dEsc = escapeHtml(description);
-      const uEsc = escapeHtml(url);
-
       const html = template
-        .replace(/<title>[^<]*<\/title>/, `<title>${tEsc} — kinwove</title>`)
+        .replace(/<title>[^<]*<\/title>/, `<title>${tEsc}</title>`)
         .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${dEsc}" />`)
+        .replace(/<link rel="canonical"[^>]*>/, `<link rel="canonical" href="${cEsc}" />`)
         .replace(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${tEsc}" />`)
         .replace(/<meta property="og:description"[^>]*>/, `<meta property="og:description" content="${dEsc}" />`)
-        .replace(/<meta property="og:type"[^>]*>/, `<meta property="og:type" content="article" />\n    <meta property="og:url" content="${uEsc}" />`)
+        .replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${cEsc}" />`)
+        .replace(/<meta property="og:type"[^>]*>/, `<meta property="og:type" content="article" />`)
         .replace(/<meta name="twitter:title"[^>]*>/, `<meta name="twitter:title" content="${tEsc}" />`)
         .replace(/<meta name="twitter:description"[^>]*>/, `<meta name="twitter:description" content="${dEsc}" />`)
-        .replace('</body>', `${bodyContent}\n  </body>`);
+        // Inject Article schema + prerender blog content
+        .replace('</head>', `  <script type="application/ld+json">${articleSchema}<\/script>\n  </head>`)
+        .replace('<div id="root"></div>', `<div id="root"></div>\n  ${blogContent}`);
 
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=3600');
@@ -1980,6 +2162,133 @@ if (process.env.NODE_ENV !== 'development') {
       console.error('[kinwove] /share/:id error:', e?.message);
       next();
     }
+  });
+
+  // /conversations — public blog index of all shared AI conversations
+  // This gives Google an entry point to crawl all /share/:id pages.
+  // It's a standalone HTML page (not the React SPA) for maximum indexability.
+  app.get('/conversations', async (req, res) => {
+    const rows = await fetchRecentConversations(100);
+    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const convListHtml = rows.length === 0
+      ? `<p style="color:#8E7060;font-style:italic">No public conversations yet. <a href="https://www.kinwove.com/">Be the first to ask →</a></p>`
+      : rows.map((row) => {
+          const msgs = Array.isArray(row.messages) ? row.messages : [];
+          const firstUser = msgs.find((m) => m.role === 'user')?.content ?? '';
+          const firstAI = msgs.find((m) => m.role === 'assistant')?.content ?? '';
+          const rawTitle = (row.title || firstUser || 'A conversation about faith').trim();
+          const displayTitle = rawTitle.length > 90 ? rawTitle.slice(0, 87) + '…' : rawTitle;
+          const snippet = firstAI.replace(/\s+/g, ' ').slice(0, 140) + (firstAI.length > 140 ? '…' : '');
+          const dateStr = row.created_at ? new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+          const tags = topicTags(rawTitle + ' ' + firstUser);
+          const tagsHtml = tags.map((t) => `<span class="cv-tag">${escapeHtml(t.label)}</span>`).join('');
+          return `
+          <article class="cv-card">
+            <a href="https://www.kinwove.com/share/${escapeHtml(row.id)}" class="cv-link">
+              <h2 class="cv-title">${escapeHtml(displayTitle)}</h2>
+              ${snippet ? `<p class="cv-snippet">${escapeHtml(snippet)}</p>` : ''}
+            </a>
+            <div class="cv-footer">
+              <div class="cv-tags">${tagsHtml}</div>
+              ${dateStr ? `<span class="cv-date">${dateStr}</span>` : ''}
+            </div>
+          </article>`;
+        }).join('');
+
+    const collectionSchema = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      'name': 'AI Bible Study Conversations — kinwove',
+      'description': 'Browse publicly shared conversations from kinwove\'s AI Bible companion. Real questions about scripture, faith, and doubt — answered with grace and honesty.',
+      'url': 'https://www.kinwove.com/conversations',
+      'publisher': { '@type': 'Organization', 'name': 'kinwove', 'url': 'https://www.kinwove.com' },
+    });
+
+    const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Bible Study Conversations — kinwove</title>
+  <meta name="description" content="Browse real conversations from kinwove's AI Bible companion — questions about scripture, faith, doubt, and Christian living answered honestly and without judgment." />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
+  <link rel="canonical" href="https://www.kinwove.com/conversations" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.kinwove.com/conversations" />
+  <meta property="og:title" content="AI Bible Study Conversations — kinwove" />
+  <meta property="og:description" content="Browse real conversations from kinwove's AI Bible companion — questions about scripture, faith, doubt, and Christian living answered honestly." />
+  <meta property="og:image" content="https://www.kinwove.com/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="AI Bible Study Conversations — kinwove" />
+  <meta name="twitter:description" content="Real questions about faith answered honestly. Browse publicly shared kinwove AI conversations." />
+  <script type="application/ld+json">${collectionSchema}</script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Georgia,serif;background:#FAF3E2;color:#2C1810;line-height:1.7;min-height:100vh}
+    a{color:#8E5528;text-decoration:none}a:hover{text-decoration:underline}
+    .cv-nav{background:#1A1108;color:#F5EDD8;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+    .cv-nav-logo{font-size:20px;font-weight:700;color:#F5EDD8;letter-spacing:-0.02em}
+    .cv-nav-cta{background:#B8733A;color:#fff;padding:8px 18px;border-radius:999px;font-size:13px;font-weight:600}
+    .cv-nav-cta:hover{background:#a0622e;text-decoration:none}
+    .cv-wrap{max-width:840px;margin:0 auto;padding:40px 20px 80px}
+    .cv-hero{margin-bottom:36px}
+    .cv-eyebrow{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#8E5528;font-weight:700;margin-bottom:12px}
+    .cv-hero h1{font-size:clamp(1.6rem,4vw,2.2rem);font-weight:700;line-height:1.2;color:#1A1108;margin-bottom:12px}
+    .cv-hero p{font-size:16px;color:#5A4733;line-height:1.7;max-width:600px}
+    .cv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px}
+    @media(max-width:500px){.cv-grid{grid-template-columns:1fr}}
+    .cv-card{background:#fff;border:1px solid rgba(26,17,8,0.1);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:10px;transition:box-shadow 0.15s}
+    .cv-card:hover{box-shadow:0 4px 20px rgba(44,24,16,0.1)}
+    .cv-link{display:block;text-decoration:none;color:inherit;flex:1}
+    .cv-title{font-size:15.5px;font-weight:700;color:#1A1108;line-height:1.35;margin-bottom:8px}
+    .cv-title:hover{color:#8E5528}
+    .cv-snippet{font-size:13.5px;color:#5A4733;line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+    .cv-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:4px}
+    .cv-tags{display:flex;flex-wrap:wrap;gap:5px}
+    .cv-tag{background:rgba(184,115,58,0.1);color:#8E5528;border:1px solid rgba(184,115,58,0.2);border-radius:999px;padding:2px 9px;font-size:11px;font-weight:600}
+    .cv-date{font-size:12px;color:#8E9060;flex-shrink:0}
+    .cv-empty{color:#8E7060;font-style:italic;padding:20px 0}
+    .cv-cta{background:#1A1108;color:#F5EDD8;border-radius:14px;padding:28px 28px;margin-top:48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px}
+    .cv-cta h2{font-size:18px;font-weight:700;max-width:400px;line-height:1.3}
+    .cv-cta-btn{background:#B8733A;color:#fff;border-radius:999px;padding:12px 24px;font-weight:600;font-size:15px;white-space:nowrap}
+    .cv-cta-btn:hover{background:#a0622e;text-decoration:none}
+    .cv-footer-bar{background:#1A1108;color:#5a4030;padding:18px 24px;text-align:center;font-size:12.5px;margin-top:0}
+    .cv-footer-bar a{color:#B8733A}
+  </style>
+</head>
+<body>
+  <nav class="cv-nav">
+    <a href="https://www.kinwove.com/" class="cv-nav-logo">✦ kinwove</a>
+    <a href="https://www.kinwove.com/" class="cv-nav-cta">Ask your own question →</a>
+  </nav>
+  <div class="cv-wrap">
+    <header class="cv-hero">
+      <div class="cv-eyebrow">AI Bible Study · kinwove</div>
+      <h1>Real questions about faith.<br>Honest answers.</h1>
+      <p>Browse publicly shared conversations from kinwove's AI Bible companion — scripture explanations, theological questions, and faith conversations answered with grace and without judgment.</p>
+    </header>
+    <div class="cv-grid">
+      ${convListHtml}
+    </div>
+    <div class="cv-cta">
+      <h2>Have a question of your own?</h2>
+      <a href="https://www.kinwove.com/" class="cv-cta-btn">Ask kinwove — it's free →</a>
+    </div>
+  </div>
+  <footer class="cv-footer-bar">
+    <p>
+      <a href="https://www.kinwove.com/">kinwove</a> · AI Bible Study &amp; Christian Community ·
+      <a href="mailto:hello@kinwove.app">hello@kinwove.app</a>
+    </p>
+    <p style="margin-top:4px">Only conversations users explicitly shared are shown here.</p>
+  </footer>
+</body>
+</html>`;
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=1800');
+    res.send(html);
   });
 
   // /sitemap.xml — static pages + every public shared conversation
@@ -1991,8 +2300,9 @@ if (process.env.NODE_ENV !== 'development') {
     const entries = [
       // Core pages
       `<url><loc>${host}/</loc><changefreq>daily</changefreq><priority>1.0</priority><lastmod>${today}</lastmod></url>`,
+      // Blog / conversations index — changes every time someone shares a conversation
+      `<url><loc>${host}/conversations</loc><changefreq>hourly</changefreq><priority>0.9</priority><lastmod>${today}</lastmod></url>`,
       `<url><loc>${host}/llms.txt</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>`,
-      `<url><loc>${host}/.well-known/llms.txt</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>`,
     ];
 
     // Add all public shared conversations (user-generated content Google can index)
