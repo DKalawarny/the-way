@@ -26,6 +26,7 @@ const KIND_COPY = {
   sermon_published:          { verb: 'published a new sermon', Icon: BookOpen },
   follow:                    { verb: 'started following you', Icon: UserPlus },
   role_assigned:             { verb: 'gave you a role', Icon: null, emoji: '🎖' },
+  role_invited:              { verb: 'invited you to a role', Icon: null, emoji: '🎖' },
   dm_message:                { verb: 'sent you a message', Icon: MessageCircle },
   care_message:              { verb: 'sent you a care message', Icon: MessageCircle },
 };
@@ -40,13 +41,17 @@ function NotificationRow({ n, onClick, onFriendAction }) {
 
   const snippet = n.kind === 'role_assigned'
     ? [n.data?.role_label, n.data?.church_name].filter(Boolean).join(' at ')
+    : n.kind === 'role_invited'
+    ? (n.data?.role_label ?? n.data?.role_key)
     : n.data?.snippet;
   const unread = !n.read_at;
-  const isFriendReq = n.kind === 'friend_request_received';
+  const isFriendReq  = n.kind === 'friend_request_received';
+  const isRoleInvite = n.kind === 'role_invited';
 
   const [friendState, setFriendState] = useState(null); // null | 'busy' | 'accepted' | 'declined'
+  const [roleState,   setRoleState]   = useState(null); // null | 'busy' | 'accepted' | 'declined'
 
-  // On mount, check if this request was already actioned (e.g. accepted in Find Friends tab)
+  // On mount, check if this friend request was already actioned
   useEffect(() => {
     if (!isFriendReq || !n.target_id) return;
     supabase
@@ -60,6 +65,20 @@ function NotificationRow({ n, onClick, onFriendAction }) {
       });
   }, [n.target_id, isFriendReq]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // On mount, check if this role invite was already actioned
+  useEffect(() => {
+    if (!isRoleInvite || !n.target_id) return;
+    supabase
+      .from('church_role_invites')
+      .select('status')
+      .eq('id', n.target_id)
+      .single()
+      .then(({ data }) => {
+        if (data?.status === 'accepted') setRoleState('accepted');
+        else if (data?.status === 'declined' || data?.status === 'cancelled') setRoleState('declined');
+      });
+  }, [n.target_id, isRoleInvite]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function handleFriend(e, action) {
     e.stopPropagation();
     setFriendState('busy');
@@ -71,6 +90,14 @@ function NotificationRow({ n, onClick, onFriendAction }) {
     // Don't call onFriendAction/loadRecent — it sets loading=true which
     // unmounts and remounts all rows, resetting friendState back to null.
     // The confirmed label stays until the user closes and reopens the panel.
+  }
+
+  async function handleRoleInvite(e, action) {
+    e.stopPropagation();
+    setRoleState('busy');
+    const fn = action === 'accept' ? 'accept_role_invite' : 'decline_role_invite';
+    await supabase.rpc(fn, { p_invite_id: n.target_id });
+    setRoleState(action === 'accept' ? 'accepted' : 'declined');
   }
 
   return (
@@ -140,6 +167,33 @@ function NotificationRow({ n, onClick, onFriendAction }) {
                   padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 }}>Accept</button>
                 <button onClick={(e) => handleFriend(e, 'decline')} disabled={friendState === 'busy'} style={{
+                  background: 'transparent', color: T.inkSoft, border: `1px solid ${T.line}`,
+                  borderRadius: 8, padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}>Decline</button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Accept / Decline buttons for role invites */}
+        {isRoleInvite && (
+          <div onClick={(e) => e.stopPropagation()} style={{ display: 'flex', gap: 7, marginTop: 8 }}>
+            {roleState === 'accepted' && (
+              <span style={{ fontSize: 12, color: T.goldDark, fontWeight: 600 }}>✓ Role accepted</span>
+            )}
+            {roleState === 'declined' && (
+              <span style={{ fontSize: 12, color: T.inkMuted }}>Role declined</span>
+            )}
+            {roleState === 'busy' && (
+              <span style={{ fontSize: 12, color: T.inkMuted }}>Saving…</span>
+            )}
+            {!roleState && (
+              <>
+                <button onClick={(e) => handleRoleInvite(e, 'accept')} style={{
+                  background: T.ink, color: T.cream, border: 'none', borderRadius: 8,
+                  padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}>Accept</button>
+                <button onClick={(e) => handleRoleInvite(e, 'decline')} style={{
                   background: 'transparent', color: T.inkSoft, border: `1px solid ${T.line}`,
                   borderRadius: 8, padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 }}>Decline</button>

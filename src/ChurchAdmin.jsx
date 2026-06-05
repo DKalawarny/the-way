@@ -1010,7 +1010,7 @@ const FILTERS = [
   { id: 'blocked', label: 'Blocked' },
 ];
 
-function InviteModal({ member, existingRoles, onClose, onSubmit }) {
+function InviteModal({ member, existingRoles, pendingInvites, onClose, onSubmit }) {
   const [roleKey, setRoleKey] = useState(INVITABLE_ROLES[0].key);
   const [customLabel, setCustomLabel] = useState('');
   const [message, setMessage] = useState('');
@@ -1019,7 +1019,9 @@ function InviteModal({ member, existingRoles, onClose, onSubmit }) {
 
   const isCustom = roleKey === '__custom__';
   const preset = presetForRole(roleKey);
-  const alreadyHas = (existingRoles ?? []).some((r) => r.role_key === roleKey);
+  const alreadyHas    = (existingRoles  ?? []).some((r) => r.role_key === roleKey);
+  const alreadyPending = !isCustom && (pendingInvites ?? []).some((i) => i.role_key === roleKey);
+  const blocked = alreadyHas || alreadyPending;
 
   async function submit() {
     setErr(null);
@@ -1049,11 +1051,11 @@ function InviteModal({ member, existingRoles, onClose, onSubmit }) {
         maxHeight: 'calc(100dvh - 40px)', overflowY: 'auto',
       }}>
         <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, marginBottom: 6 }}>
-          Assign a role
+          Invite to a role
         </div>
         <p style={{ fontSize: 14, color: T.inkSoft, lineHeight: 1.55, margin: '0 0 14px' }}>
-          {member.display_name ?? 'This member'} will be assigned this role immediately.
-          A badge appears next to their name everywhere they show up in the church.
+          {member.display_name ?? 'This member'} will receive a notification and can Accept
+          or Decline. Their badge appears once they accept.
         </p>
 
         <div style={{ fontSize: 11.5, letterSpacing: 1.4, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 8 }}>
@@ -1129,6 +1131,14 @@ function InviteModal({ member, existingRoles, onClose, onSubmit }) {
             They already have this role. You can revoke it from their card if you want to start fresh.
           </div>
         )}
+        {alreadyPending && (
+          <div style={{
+            fontSize: 13, color: T.goldDark, padding: '8px 10px', background: T.parchment,
+            borderRadius: 8, marginBottom: 12,
+          }}>
+            They already have a pending invite for this role. Cancel it first if you'd like to re-send.
+          </div>
+        )}
 
         {err && (
           <div style={{
@@ -1144,11 +1154,11 @@ function InviteModal({ member, existingRoles, onClose, onSubmit }) {
             background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
             padding: '9px 16px', fontSize: 13, color: T.inkSoft, cursor: 'pointer',
           }}>Cancel</button>
-          <button onClick={submit} disabled={busy || alreadyHas} style={{
+          <button onClick={submit} disabled={busy || blocked} style={{
             background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
             padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-            opacity: (busy || alreadyHas) ? 0.5 : 1,
-          }}>{busy ? 'Assigning…' : 'Assign role'}</button>
+            opacity: (busy || blocked) ? 0.5 : 1,
+          }}>{busy ? 'Sending…' : 'Send invite'}</button>
         </div>
       </div>
     </div>
@@ -1211,7 +1221,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
         .eq('church_id', churchId),
       supabase
         .from('church_role_invites')
-        .select('id, user_id, role_key, role_label, message, status, created_at')
+        .select('id, user_id, role_key, role_label, message, status, created_at, granted_by')
         .eq('church_id', churchId)
         .eq('status', 'pending')
         .order('created_at', { ascending: false }),
@@ -1394,28 +1404,22 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
     showToast(`${presetLabel} revoked.`, 'success');
   }
 
-  async function grantRole({ user_id, role_key, role_label, message: _message }) {
+  async function grantRole({ user_id, role_key, role_label, message }) {
+    // Insert a pending invite — the member gets a notification and must Accept
+    // before the role becomes active. The DB trigger notify_role_invited() fires
+    // and creates the notification row automatically.
     const { error } = await supabase
-      .from('church_roles')
-      .upsert({
+      .from('church_role_invites')
+      .insert({
         church_id:  churchId,
         user_id,
         role_key,
         role_label: role_label ?? null,
+        message:    message   ?? null,
         granted_by: session?.user?.id ?? null,
-      }, { onConflict: 'church_id,user_id,role_key' });
+        status:     'pending',
+      });
     if (error) return { error: error.message };
-
-    // Care team role → also add to care_team_members so they get care inbox access
-    if (role_key === 'care') {
-      await supabase
-        .from('care_team_members')
-        .upsert(
-          { church_id: churchId, user_id, role_label: role_label ?? 'Care team', is_active: true },
-          { onConflict: 'church_id,user_id' }
-        ).then(null, () => {});
-    }
-
     loadAll();
     return { error: null };
   }
@@ -1709,7 +1713,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
           </div>
           {pendingInvites.length === 0 ? (
             <div style={{ color: T.inkMuted, fontStyle: 'italic', padding: 12, lineHeight: 1.6 }}>
-              No pending invites. Roles are now assigned directly — use "Assign role" on any member card.
+              No pending invites. Use "Assign role" on any member card to send one.
             </div>
           ) : pendingInvites.map((inv) => {
             const preset = presetForRole(inv.role_key);
@@ -1825,10 +1829,25 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
                           <Badge key={r.id} role={r} />
                         ))}
                         {memberPending.map((inv) => (
-                          <span key={inv.id} style={{
-                            fontSize: 10.5, color: T.inkMuted, fontStyle: 'italic',
-                          }}>
-                            invited: {presetForRole(inv.role_key)?.label ?? inv.role_label ?? inv.role_key}
+                          <span
+                            key={inv.id}
+                            title="Pending — waiting for member to accept"
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 4,
+                              fontSize: 11, fontWeight: 600, color: T.inkMuted,
+                              background: T.parchment, border: `1px dashed ${T.line}`,
+                              borderRadius: 999, padding: '2px 8px',
+                            }}
+                          >
+                            ⏳ {presetForRole(inv.role_key)?.label ?? inv.role_label ?? inv.role_key}
+                            <button
+                              onClick={() => cancelInvite(inv.id)}
+                              title="Cancel invite"
+                              style={{
+                                background: 'none', border: 'none', cursor: 'pointer',
+                                color: T.inkMuted, fontSize: 13, lineHeight: 1, padding: '0 2px',
+                              }}
+                            >×</button>
                           </span>
                         ))}
                       </div>
@@ -1880,6 +1899,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
         <InviteModal
           member={invitingMember}
           existingRoles={rolesByUser[invitingMember.id] ?? []}
+          pendingInvites={pendingInvites.filter((i) => i.user_id === invitingMember.id)}
           onClose={() => setInvitingMember(null)}
           onSubmit={async (payload) => {
             const r = await grantRole({ user_id: invitingMember.id, ...payload });
