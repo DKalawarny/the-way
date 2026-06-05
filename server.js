@@ -343,6 +343,31 @@ async function logQaEvent({ personType, question, userId, wasCacheHit, isFirstTu
   }
 }
 
+// ── Anonymous topic analytics ─────────────────────────────────────────────────
+// Increments a per-topic counter. No question content, no user ID stored here —
+// only the topic slug (e.g. "prayer", "suffering") and a timestamp.
+// Tags are derived by keyword matching (topicTags) — no AI API call needed.
+// Requires the topic_counts table + increment_topic_count RPC — see SQL below.
+async function logTopicCounts(tags) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !tags?.length) return;
+  try {
+    // topicTags returns up to 3 tags. Fire all increments in parallel.
+    await Promise.all(tags.map((tag) =>
+      fetch(`${SUPABASE_URL}/rest/v1/rpc/increment_topic_count`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_SERVICE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ p_slug: tag.slug }),
+      })
+    ));
+  } catch (e) {
+    console.error('[kinwove] topic count error:', e?.message);
+  }
+}
+
 // Map profile voice names → actual OpenAI voices.
 const VOICE_MAP = {
   onyx:    'fable',   // fable = naturally British male
@@ -630,6 +655,8 @@ app.post('/api/chat', optionalAuth, limitEither(
       isFirstTurn,
       model,
     });
+    // Topic analytics — keyword-classified, no content or user ID stored.
+    if (isFirstTurn) logTopicCounts(topicTags(lastUserMsg));
   } catch (err) {
     console.error('[kinwove] api error:', err);
     if (!res.headersSent) {
@@ -1464,6 +1491,7 @@ app.post('/api/anon/ask', limitAnon({ capacity: 6, refillPerSec: 6 / 300 }), asy
 
     // Fire-and-forget: classify + store. Only attribute to a church we
     // verified against the DB above; otherwise stash with church_id=null.
+    // Also bump anonymous topic counts (no content, no user ID).
     if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
       classifyTheme(question).then(async (theme_tag) => {
         try {
@@ -1487,6 +1515,8 @@ app.post('/api/anon/ask', limitAnon({ capacity: 6, refillPerSec: 6 / 300 }), asy
           console.error('[kinwove] anon/ask store failed:', e?.message);
         }
       });
+      // Keyword-based topic counts — no content or user ID stored
+      logTopicCounts(topicTags(question));
     }
 
     send('done', { stop_reason: final.stop_reason });
@@ -1885,6 +1915,39 @@ app.post('/api/send-sermon-digest', requireAuth, async (req, res) => {
     res.json({ sent, members: queue.length });
   } catch (err) {
     safeError(res, err, 'send-sermon-digest');
+  }
+});
+
+// ── Topic analytics (admin read) ─────────────────────────────────────────────
+// GET /api/admin/topic-stats — returns topic counts sorted by frequency.
+// Requires a valid auth token; no content or user data is exposed here.
+app.get('/api/admin/topic-stats', requireAuth, async (req, res) => {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    return res.status(503).json({ error: 'not configured' });
+  }
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/topic_counts?order=count.desc&select=topic_slug,count,last_seen_at`,
+      {
+        headers: {
+          apikey: SUPABASE_SERVICE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        },
+      }
+    );
+    if (!r.ok) return res.status(502).json({ error: 'db error' });
+    const rows = await r.json();
+    const total = rows.reduce((s, row) => s + Number(row.count ?? 0), 0);
+    // Return percentage alongside raw counts so a dashboard can show a heatmap
+    const topics = rows.map((row) => ({
+      slug: row.topic_slug,
+      count: Number(row.count),
+      pct: total > 0 ? Math.round((Number(row.count) / total) * 100) : 0,
+      last_seen_at: row.last_seen_at,
+    }));
+    res.json({ topics, total });
+  } catch (e) {
+    safeError(res, e, 'topic-stats');
   }
 });
 
