@@ -30,9 +30,13 @@ function normalize(text) {
 }
 
 app.use(cors());
-// Hard cap on request body size before JSON.parse() runs.
-// 64 KB is more than enough for any legitimate chat payload.
-app.use(express.json({ limit: '64kb' }));
+// Route-aware body size limit:
+//   /api/chat allows up to 20 MB so users can attach images (base64 encoded).
+//   All other routes stay at 64 KB — no legitimate non-image payload is larger.
+app.use((req, res, next) => {
+  const limit = req.path === '/api/chat' ? '20mb' : '64kb';
+  express.json({ limit })(req, res, next);
+});
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON = process.env.VITE_SUPABASE_ANON_KEY;
@@ -531,12 +535,39 @@ app.post('/api/chat', optionalAuth, limitEither(
     return res.status(400).json({ error: 'system and messages are required' });
   }
   if (system.length > 32000) return res.status(413).json({ error: 'system too long' });
-  if (messages.some((m) => typeof m?.content !== 'string' || m.content.length > 8000)) {
-    return res.status(413).json({ error: 'message too long' });
+
+  // Validate each message — content can be a string OR a multimodal array (for image vision).
+  const VALID_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+  for (const m of messages) {
+    if (typeof m?.content === 'string') {
+      if (m.content.length > 8000) return res.status(413).json({ error: 'message too long' });
+    } else if (Array.isArray(m?.content)) {
+      for (const block of m.content) {
+        if (block.type === 'text' && block.text?.length > 8000) return res.status(413).json({ error: 'message too long' });
+        if (block.type === 'image') {
+          if (!VALID_IMAGE_TYPES.has(block.source?.media_type)) return res.status(400).json({ error: 'unsupported image type' });
+          // base64 of a 5 MB image ≈ 6.8 MB — reject anything larger
+          if (block.source?.data?.length > 7_000_000) return res.status(413).json({ error: 'image too large (max ~5 MB)' });
+        }
+      }
+    } else {
+      return res.status(400).json({ error: 'invalid message content' });
+    }
   }
+
   if (seekingContext && (typeof seekingContext !== 'string' || seekingContext.length > 4000)) {
     return res.status(413).json({ error: 'seekingContext too long' });
   }
+
+  // Helper: extract plain text from string or multimodal content (for cache + logging).
+  function msgText(content) {
+    if (typeof content === 'string') return content;
+    if (Array.isArray(content)) return content.filter((b) => b.type === 'text').map((b) => b.text ?? '').join(' ');
+    return '';
+  }
+
+  // True if any message in the conversation contains an image block.
+  const hasImages = messages.some((m) => Array.isArray(m.content) && m.content.some((b) => b.type === 'image'));
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -552,11 +583,11 @@ app.post('/api/chat', optionalAuth, limitEither(
   // Cache lookup is keyed on the latest user message + person type. We only
   // serve cached answers on first-turn (context-free) requests to avoid
   // returning stale follow-ups, but every ask is logged to qa_events so the
-  // dataset grows with real usage.
-  const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
+  // dataset grows with real usage. Image conversations are never cached.
+  const lastUserMsg = msgText([...messages].reverse().find((m) => m.role === 'user')?.content ?? '');
   const isFirstTurn = messages.length === 1 && messages[0].role === 'user';
 
-  if (isFirstTurn && personType) {
+  if (isFirstTurn && personType && !hasImages) {
     const cached = await lookupCachedAnswer(personType, lastUserMsg);
     if (cached?.answer) {
       send('cache_hit', { id: cached.id });
@@ -644,7 +675,8 @@ app.post('/api/chat', optionalAuth, limitEither(
     res.end();
 
     // Persist cache + event after the response is on its way to the client.
-    if (isFirstTurn && personType && fullText.length > 0 && !hasUrlContext) {
+    // Never cache image conversations — every image is unique context.
+    if (isFirstTurn && personType && fullText.length > 0 && !hasUrlContext && !hasImages) {
       writeCacheEntry({ personType, question: lastUserMsg, answer: fullText, model });
     }
     logQaEvent({

@@ -863,6 +863,31 @@ export default function Chat({
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const { listening: micListening, toggle: toggleMic, supported: micSupported } =
     useSpeechRecognition((t) => { setInput(t); taRef.current?.focus(); });
+
+  // ── Image attachment (vision) ──────────────────────────────────────────────
+  const [attachedImg, setAttachedImg] = useState(null); // { base64, mediaType, previewUrl }
+  const imgInputRef = useRef(null);
+
+  function pickImage() { imgInputRef.current?.click(); }
+
+  function onImagePicked(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) { alert('Please attach a JPEG, PNG, GIF, or WebP image.'); return; }
+    if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5 MB.'); return; }
+    const previewUrl = URL.createObjectURL(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result;
+      // dataUrl = "data:image/jpeg;base64,/9j/..."
+      const base64 = dataUrl.split(',')[1];
+      setAttachedImg({ base64, mediaType: file.type, previewUrl });
+    };
+    reader.readAsDataURL(file);
+  }
+
   const ttsVoice = profile?.tts_voice ?? 'onyx';
   const { speakingId, speak: speakMsg, stop: stopSpeech, supported: ttsSupported } = useTextToSpeech({ voice: ttsVoice });
 
@@ -1109,23 +1134,52 @@ export default function Chat({
 
   async function send(text) {
     const prompt = (text ?? input).trim();
-    if (!prompt || busy) return;
+    if (!prompt && !attachedImg) return;
+    if (busy) return;
     if (aiUsage.atLimit) return; // hard gate — UI should prevent this anyway
     resetScroll();
     setInput('');
     setError(null);
     setSuggestions([]);
 
-    const next = [...messages, { role: 'user', content: prompt }];
+    // Capture and clear the attached image before state updates
+    const img = attachedImg;
+    if (img) setAttachedImg(null);
+
+    // Display message: store text + imagePreview for rendering in the bubble
+    const displayMsg = { role: 'user', content: prompt || '(image)', _imagePreview: img?.previewUrl };
+
+    // API message: multimodal content if image attached, plain string otherwise
+    const apiMsg = img
+      ? {
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.base64 } },
+            ...(prompt ? [{ type: 'text', text: prompt }] : []),
+          ],
+        }
+      : { role: 'user', content: prompt };
+
+    // UI messages (for display) — history uses plain string content
+    const next = [...messages, displayMsg];
     setMessages(next);
     setBusy(true);
     let assistantContent = '';
+
+    // API messages — previous turns use plain text; only this turn can be multimodal
+    const apiMessages = [
+      ...messages.map((m) => ({
+        role: m.role,
+        content: typeof m.content === 'string' ? m.content : (m._apiContent ?? m.content),
+      })),
+      apiMsg,
+    ];
 
     try {
       const res = await authedFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ system, messages: next, personType, seekingContext, plan: aiPlan }),
+        body: JSON.stringify({ system, messages: apiMessages, personType, seekingContext, plan: aiPlan }),
       });
 
       if (!res.ok || !res.body) {
@@ -1198,7 +1252,7 @@ export default function Chat({
         const finalMsgs = [...next, { role: 'assistant', content: assistantContent }];
         fetchSuggestions(finalMsgs);
         const lastUser = next.filter((m) => m.role === 'user').at(-1)?.content ?? '';
-        maybeShowNudge(lastUser);
+        maybeShowNudge(typeof lastUser === 'string' ? lastUser : prompt);
       }
     }
   }
@@ -1598,20 +1652,35 @@ export default function Chat({
                     maxWidth: m.role === 'user' ? '80%' : '100%',
                     background: m.role === 'user' ? T.gold : 'transparent',
                     color: m.role === 'user' ? T.cream : C.text,
-                    padding: m.role === 'user' ? '12px 18px' : '4px 0',
+                    padding: m.role === 'user' ? (m._imagePreview ? '10px 10px' : '12px 18px') : '4px 0',
                     borderRadius: m.role === 'user' ? 18 : 0,
                     fontFamily: m.role === 'user' ? T.sans : T.serif,
                     fontSize: m.role === 'user' ? 15 : 17,
                     lineHeight: m.role === 'user' ? 1.5 : 1.7,
                     whiteSpace: 'pre-wrap',
+                    overflow: 'hidden',
                   }}
                 >
-                  {isStreaming ? <TypingDots /> : (
-                    <MsgText
-                      text={m.content}
-                      onRefClick={handleRefClick}
-                      refStatus={refStatusMap[i]}
+                  {/* Image thumbnail in user bubble */}
+                  {m._imagePreview && (
+                    <img
+                      src={m._imagePreview}
+                      alt="Attached"
+                      style={{ display: 'block', width: '100%', maxWidth: 240, borderRadius: 10, marginBottom: m.content && m.content !== '(image)' ? 8 : 0, objectFit: 'cover' }}
                     />
+                  )}
+                  {isStreaming ? <TypingDots /> : (
+                    m.content && m.content !== '(image)' ? (
+                      <div style={{ padding: m._imagePreview ? '2px 8px 8px' : undefined }}>
+                        <MsgText
+                          text={m.content}
+                          onRefClick={handleRefClick}
+                          refStatus={refStatusMap[i]}
+                        />
+                      </div>
+                    ) : !m._imagePreview ? (
+                      <MsgText text={m.content} onRefClick={handleRefClick} refStatus={refStatusMap[i]} />
+                    ) : null
                   )}
                 </div>
                 {canSave && (
@@ -1878,15 +1947,65 @@ export default function Chat({
             </div>
           );
         })()}
+        {/* Hidden image file input */}
+        <input
+          ref={imgInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          style={{ display: 'none' }}
+          onChange={onImagePicked}
+        />
+
+        {/* Image preview strip (above input row) */}
+        {attachedImg && (
+          <div style={{ maxWidth: 720, margin: '0 auto 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <img
+                src={attachedImg.previewUrl}
+                alt="Attached"
+                style={{ height: 64, width: 64, objectFit: 'cover', borderRadius: 10, border: `2px solid ${T.gold}`, display: 'block' }}
+              />
+              <button
+                onClick={() => setAttachedImg(null)}
+                style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', background: T.ink, border: 'none', color: T.cream, cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ fontSize: 12, color: C.muted, fontStyle: 'italic' }}>Image attached — ask a question about it</div>
+          </div>
+        )}
+
         <div
           style={{
             maxWidth: 720,
             margin: '0 auto',
             display: 'flex',
-            gap: 10,
+            gap: 8,
             alignItems: 'flex-end',
           }}
         >
+          {/* Camera / image attach button */}
+          <button
+            onClick={pickImage}
+            disabled={busy || showGuestWall || !!attachedImg}
+            title={attachedImg ? 'Image attached' : 'Attach an image'}
+            style={{
+              background: attachedImg ? 'rgba(184,115,58,0.15)' : 'transparent',
+              border: `1px solid ${attachedImg ? T.gold : C.border}`,
+              color: attachedImg ? T.gold : C.muted,
+              borderRadius: 999, width: 42, height: 42, flexShrink: 0,
+              cursor: busy || showGuestWall ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s', opacity: busy || showGuestWall ? 0.4 : 1,
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+          </button>
+
           <textarea
             ref={taRef}
             value={input}
@@ -1897,7 +2016,7 @@ export default function Chat({
                 send();
               }
             }}
-            placeholder="Ask anything about faith, God, or the Bible…"
+            placeholder={attachedImg ? 'Ask about this image…' : 'Ask anything about faith, God, or the Bible…'}
             rows={1}
             disabled={busy || showGuestWall}
             style={{
@@ -1939,18 +2058,18 @@ export default function Chat({
           )}
           <button
             onClick={() => send()}
-            disabled={busy || !input.trim()}
+            disabled={busy || (!input.trim() && !attachedImg)}
             style={{
-              background: busy || !input.trim() ? T.line : `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
+              background: busy || (!input.trim() && !attachedImg) ? T.line : `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
               color: T.cream,
               border: 'none',
               borderRadius: 999,
               padding: '12px 22px',
               fontSize: 14,
               fontWeight: 600,
-              cursor: busy || !input.trim() ? 'not-allowed' : 'pointer',
+              cursor: busy || (!input.trim() && !attachedImg) ? 'not-allowed' : 'pointer',
               transition: 'all 0.15s ease',
-              boxShadow: busy || !input.trim() ? 'none' : '0 4px 14px rgba(184,115,58,0.35)',
+              boxShadow: busy || (!input.trim() && !attachedImg) ? 'none' : '0 4px 14px rgba(184,115,58,0.35)',
             }}
           >
             Send
