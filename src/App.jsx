@@ -200,7 +200,7 @@ function InviteDeepLinkModal({ invite, onAccept, onDecline, onDismiss }) {
         </div>
 
         <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: 8 }}>
-          {roleLabel} team
+          {(roleLabel ?? '').replace(/\s*team$/i, '')} team
         </div>
 
         <div style={{ fontSize: 15, color: T.inkSoft, marginBottom: 6 }}>
@@ -3619,7 +3619,7 @@ export default function App() {
               fontFamily: T.serif, fontSize: 30, fontWeight: 600,
               color: '#FAF3E2', letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: 10,
             }}>
-              Welcome to the<br />{badgeEarned.roleLabel} team.
+              Welcome to the<br />{(badgeEarned.roleLabel ?? '').replace(/\s*team$/i, '')} team.
             </div>
             {badgeEarned.churchName && (
               <div style={{ fontSize: 15, color: '#C17B45', marginTop: 6 }}>
