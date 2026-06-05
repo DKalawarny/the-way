@@ -169,6 +169,25 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
     if (!session?.user?.id || !churchId) return;
     setCreating(true);
     const person = overridePerson ?? selectedPerson;
+
+    // Reuse any existing open/claimed conversation from this member in this church
+    // so repeated taps don't flood the pastor's inbox with separate threads.
+    const { data: existing } = await supabase
+      .from('care_conversations')
+      .select('id')
+      .eq('church_id', churchId)
+      .eq('requester_id', session.user.id)
+      .in('status', ['open', 'claimed'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing?.id) {
+      setCreating(false);
+      setConversationId(existing.id);
+      return;
+    }
+
     const payload = {
       church_id: churchId,
       requester_id: session.user.id,

@@ -1046,6 +1046,7 @@ function InviteModal({ member, existingRoles, onClose, onSubmit }) {
       <div onClick={(e) => e.stopPropagation()} className="modal-sheet" style={{
         background: T.cream, borderRadius: 16, maxWidth: 480, width: '100%',
         padding: 'clamp(20px, 4vw, 26px)', border: `1px solid ${T.line}`,
+        maxHeight: 'calc(100dvh - 40px)', overflowY: 'auto',
       }}>
         <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, marginBottom: 6 }}>
           Assign a role
