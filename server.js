@@ -1105,15 +1105,32 @@ app.post('/api/dev/become-pastor', requireAuth, limitAuthed({ capacity: 5, refil
 
 /** Fetch a user's email address from the Supabase auth admin API. */
 async function getUserEmail(userId) {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null;
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    console.warn('[getUserEmail] missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
+    return null;
+  }
   try {
     const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
       headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
     });
-    if (!r.ok) return null;
-    return (await r.json())?.email ?? null;
-  } catch { return null; }
+    if (!r.ok) {
+      console.warn(`[getUserEmail] Supabase admin API ${r.status} for user ${userId}`);
+      return null;
+    }
+    const data = await r.json();
+    return data?.email ?? null;
+  } catch (e) {
+    console.warn('[getUserEmail] error:', e.message);
+    return null;
+  }
 }
+
+// Server-side role key → display label (mirrors Badge.jsx ROLE_PRESETS)
+const ROLE_LABELS = {
+  owner: 'Owner', elder: 'Elder', staff: 'Staff',
+  care: 'Care team', careTeam: 'Care team',
+  worship: 'Worship', youth: 'Youth',
+};
 
 /** Send an email via Resend. Throws on failure. */
 async function sendEmail(to, subject, html) {
@@ -1238,25 +1255,31 @@ app.post('/api/church/role-invite', requireAuth, limitAuthed({ capacity: 20, ref
     return res.status(500).json({ error: err });
   }
 
-  // Send email — fire-and-forget so a failed email doesn't break the invite
+  // Send email — fire-and-forget so a failed email doesn't break the invite flow
   (async () => {
     try {
       const [memberEmail, memberPr, pastorPr] = await Promise.all([
         getUserEmail(user_id),
-        fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${user_id}&select=display_name`, { headers: h }).then((r) => r.json()),
-        fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}&select=display_name`, { headers: h }).then((r) => r.json()),
+        fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${user_id}&select=display_name`, { headers: h }).then((r) => r.json()).catch(() => []),
+        fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}&select=display_name`, { headers: h }).then((r) => r.json()).catch(() => []),
       ]);
-      if (!memberEmail) return;
-      const memberName  = (memberPr[0]?.display_name  ?? '').split(' ')[0] || 'friend';
-      const pastorName  = pastorPr[0]?.display_name   ?? 'Your pastor';
-      const label       = role_label ?? role_key;
+      if (!memberEmail) {
+        console.warn(`[role-invite email] no email found for user ${user_id} — skipping`);
+        return;
+      }
+      const memberName = (memberPr[0]?.display_name ?? '').split(' ')[0] || 'friend';
+      const pastorName = pastorPr[0]?.display_name ?? 'Your pastor';
+      // Use human-readable label: custom label → preset lookup → raw key
+      const label = role_label || ROLE_LABELS[role_key] || role_key;
+      console.log(`[role-invite email] sending to ${memberEmail} for role "${label}"`);
       await sendEmail(
         memberEmail,
-        `You've been invited to the ${label} team at ${church.name}`,
+        `You've been invited to join the ${label} team at ${church.name}`,
         roleInviteEmailHtml({ memberName, pastorName, roleLabel: label, churchName: church.name }),
       );
+      console.log(`[role-invite email] sent OK to ${memberEmail}`);
     } catch (e) {
-      console.error('[role-invite email]', e.message);
+      console.error('[role-invite email] FAILED:', e.message);
     }
   })();
 
