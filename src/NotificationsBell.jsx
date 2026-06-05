@@ -37,10 +37,13 @@ function NotificationRow({ n, onClick, onFriendAction, onAvatarClick }) {
 
   // Anonymous care messages: don't reveal sender identity
   const isCareAnonymous = n.kind === 'care_message' && (n.data?.is_anonymous || !n.actor_id);
-  const actorName = isCareAnonymous ? 'Anonymous' : (actor?.display_name || 'Someone');
+  // Role notifications: fall back to church name when pastor actor_id isn't resolved
+  const isRoleNotif = n.kind === 'role_assigned' || n.kind === 'role_invited';
+  const actorName = isCareAnonymous ? 'Anonymous'
+    : (actor?.display_name || (isRoleNotif ? (n.data?.church_name ?? 'Your church') : 'Someone'));
 
   const snippet = n.kind === 'role_assigned'
-    ? [n.data?.role_label, n.data?.church_name].filter(Boolean).join(' at ')
+    ? (n.data?.role_label ?? n.data?.role_key)
     : n.kind === 'role_invited'
     ? (n.data?.role_label ?? n.data?.role_key)
     : n.data?.snippet;
