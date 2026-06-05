@@ -469,7 +469,16 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
     what_brought:       existing?.what_brought ?? '',
     looking_for:        existing?.looking_for ?? [],
     tts_voice:          existing?.tts_voice ?? 'onyx',
-    flags:              existing?.flags ?? [],
+    flags:              (() => {
+      const saved = existing?.flags ?? [];
+      if (saved.length > 0) return saved;
+      // Backward-compat: if only the text country field is set, find its code
+      if (existing?.country) {
+        const match = COUNTRIES.find(([, name]) => name === existing.country);
+        if (match) return [match[0]];
+      }
+      return [];
+    })(),
     show_flag:          existing?.show_flag ?? false,
     preferred_language: existing?.preferred_language ?? (navigator.language?.split('-')[0] ?? 'en'),
   });

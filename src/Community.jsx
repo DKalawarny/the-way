@@ -1433,7 +1433,9 @@ useEffect(() => {
     const pMap = {}; (pastors ?? []).forEach((p) => { pMap[p.id] = p; });
     const cMap = {}; (churches ?? []).forEach((c) => { cMap[c.id] = c; });
 
-    setPosts(enriched);
+    // Hide any posts authored by the kinwove system account
+    const visible = enriched.filter((p) => p.profiles?.display_name !== 'kinwove');
+    setPosts(visible);
     setSermonItems(sermons);
     setPastorMap(pMap);
     setChurchMap(cMap);

@@ -711,7 +711,7 @@ function PastorPrompt({ open, onApply, onClose }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 50,
+        zIndex: 120,
         padding: 20,
         animation: 'fadeIn 0.15s ease',
       }}
