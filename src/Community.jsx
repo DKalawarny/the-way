@@ -28,7 +28,7 @@ const REACTIONS = [
     activeShadow: '0 2px 6px rgba(196,122,134,0.30)',
   },
   {
-    kind: 'amen', label: 'With you', emoji: '🙏',
+    kind: 'amen', label: 'Amen', emoji: '🙏',
     activeBg: 'linear-gradient(180deg, #F4D89A 0%, #E8B563 100%)',
     activeBorder: '#9a6328', activeText: '#4d2c0d',
     activeShadow: '0 2px 8px rgba(154,99,40,0.40)',
@@ -197,10 +197,10 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
   const commentScrollRef = useRef(null);
   const { showToast, ui: postToastUi } = useUiKit();
 
-  // Scroll to bottom of comments list when modal opens so the input is in view
+  // Reset scroll to top when modal opens so author + post is visible first
   useEffect(() => {
     if (commentsOpen && commentScrollRef.current) {
-      commentScrollRef.current.scrollTop = commentScrollRef.current.scrollHeight;
+      commentScrollRef.current.scrollTop = 0;
     }
   }, [commentsOpen]);
 
@@ -632,7 +632,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                 ) : null;
               })()}
 
-              {/* Action bar — Like | Comment | Share */}
+              {/* Action bar — Love | Amen | Insightful */}
               <div style={{ display: 'flex', borderBottom: `1px solid ${T.line}` }}>
                 {REACTIONS.map((r, i) => {
                   const active = myReaction === r.kind;
@@ -648,14 +648,6 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                     </button>
                   );
                 })}
-                <button onClick={() => { setCommentsOpen(false); setShareOpen(true); }} style={{
-                  flex: 1, padding: '10px 4px', background: 'none',
-                  border: 'none', borderLeft: `1px solid ${T.line}`,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  fontSize: 14, fontWeight: 600, color: T.inkSoft,
-                }}>
-                  ↗ Share
-                </button>
               </div>
 
               {/* Comments */}
@@ -687,7 +679,11 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
 
             {/* Pinned comment input */}
             {currentUserId && (
-              <div style={{ borderTop: `1px solid ${T.line}`, padding: '10px 16px 14px', flexShrink: 0, background: T.white, position: 'relative' }}>
+              <div style={{ borderTop: `1px solid ${T.line}`, padding: '8px 16px 14px', flexShrink: 0, background: T.white, position: 'relative' }}>
+                {/* Visibility label */}
+                <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  👥 {churchName ? `Visible to ${churchName}` : post.visibility === 'public' ? 'Anyone on kinwove' : 'Your community'}
+                </div>
                 {emojiOpen && (
                   <>
                     <div onClick={() => setEmojiOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
