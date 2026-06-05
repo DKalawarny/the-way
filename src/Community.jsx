@@ -239,7 +239,8 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
   }
 
   const myReaction = post.my_reaction;
-  const isOwnPost  = currentUserId && post.author_id === currentUserId;
+  const isOwnPost  = !!(currentUserId && post.author_id === currentUserId)
+                  || !!(userProfile?.id && post.author_id === userProfile.id);
 
   async function handleReply(e) {
     e?.preventDefault();
@@ -545,7 +546,9 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
             className="full-screen-mobile"
             style={{
               background: T.white, borderRadius: 10,
-              width: 'min(660px, 96vw)', height: '85vh',
+              width: 'min(660px, 96vw)',
+              minHeight: 'min(50vh, 380px)',
+              maxHeight: 'min(88vh, 680px)',
               display: 'flex', flexDirection: 'column',
               boxShadow: '0 8px 48px rgba(0,0,0,0.3)',
               animation: 'fadeIn 0.18s ease',
@@ -565,7 +568,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
             </div>
 
             {/* Scrollable post + comments */}
-            <div ref={commentScrollRef} className="scroll" style={{ flex: 1, overflowY: 'auto' }}>
+            <div ref={commentScrollRef} className="scroll" style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
               {/* Post author */}
               <div style={{ padding: '16px 18px 0' }}>
                 <div style={{ display: 'flex', gap: 11, alignItems: 'center', marginBottom: 12 }}>
@@ -1061,7 +1064,9 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tab
             className="full-screen-mobile"
             style={{
               background: T.white, borderRadius: 10,
-              width: 'min(660px, 96vw)', height: '85vh',
+              width: 'min(660px, 96vw)',
+              minHeight: 'min(50vh, 380px)',
+              maxHeight: 'min(88vh, 680px)',
               display: 'flex', flexDirection: 'column',
               boxShadow: '0 8px 48px rgba(0,0,0,0.3)',
               animation: 'fadeIn 0.18s ease',
