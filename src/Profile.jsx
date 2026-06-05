@@ -451,8 +451,9 @@ function ProfileWizard({ user, existing, onSave }) {
 }
 
 export default function ProfileSetup({ user, existing, onSave, onCancel }) {
-  // New users get the step-by-step wizard
-  if (!existing?.display_name) {
+  // New users (no name) OR accounts whose display_name is a reserved word
+  // (e.g. 'kinwove') get the wizard so they can set a proper name.
+  if (!existing?.display_name || isReservedName(existing.display_name)) {
     return <ProfileWizard user={user} existing={existing} onSave={onSave} />;
   }
   const nameParts = (existing?.display_name ?? '').split(' ');

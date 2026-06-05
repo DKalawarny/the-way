@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback, lazy, Suspense, Fragment } from 'react';
+import { useEffect, useRef, useState, useCallback, lazy, Suspense, Fragment, createPortal } from 'react';
 import { Smile, Bookmark } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { useUiKit } from './uikit.jsx';
@@ -536,7 +536,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
       </div>
 
       {/* Facebook-style centered post dialog */}
-      {commentsOpen && (
+      {commentsOpen && createPortal(
         <div
           onClick={() => setCommentsOpen(false)}
           style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -747,7 +747,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
             )}
           </div>
         </div>
-      )}
+      , document.body)}
 
       {reportOpen && (
         <div
