@@ -1,13 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
-  <!-- Background: copper/orange rounded square -->
-  <rect width="192" height="192" rx="44" fill="#A85530"/>
-  <!-- Corner star: upper-right, cream -->
-  <path fill="#F5EDD8" opacity="0.9"
-    transform="translate(119,15) scale(1.05)"
+  <!-- Parchment background — matches the app's own cream -->
+  <rect width="192" height="192" rx="42" fill="#FAF3E2"/>
+  <!-- Large centered 4-pointed star in copper — the kinwove mark -->
+  <path fill="#A85530"
+    transform="translate(96,96) scale(4.4) translate(-12,-12)"
     d="M12 1 L13.4 9.6 L22 11 L13.4 12.4 L12 23 L10.6 12.4 L2 11 L10.6 9.6 Z"/>
-  <!-- k letterform: Georgia serif, cream -->
-  <text x="96" y="154" text-anchor="middle"
-    font-family="Georgia, serif"
-    font-size="138" font-weight="400"
-    fill="#F5EDD8">k</text>
 </svg>

@@ -3615,10 +3615,10 @@ export default function App() {
         >
           <div style={{ textAlign: 'center', padding: '0 32px', pointerEvents: 'none' }}>
             <div style={{
-              display: 'inline-block', marginBottom: 24,
+              marginBottom: 28,
               animation: 'badgePop 0.5s cubic-bezier(0.175,0.885,0.32,1.275) both',
             }}>
-              <KinwoveAppIcon size={88} />
+              <KinwoveWordmark size={38} textColor="#FAF3E2" starColor="#C17B45" />
             </div>
             <div style={{
               fontFamily: T.serif, fontSize: 13, letterSpacing: '3px',
