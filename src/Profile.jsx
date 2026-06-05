@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, Check } from 'lucide-react';
-import { supabase } from './supabase.js';
+import { supabase, authedFetch } from './supabase.js';
 import { containsProfanity } from './moderation.js';
 import { T } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
@@ -236,6 +236,8 @@ function ProfileWizard({ user, existing, onSave }) {
     const { error: err } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
     setSaving(false);
     if (err) return setError(err.message);
+    // Fire welcome email — best effort, never block the wizard completing
+    authedFetch('/api/email/welcome', { method: 'POST' }).catch(() => {});
     onSave(payload);
   }
 

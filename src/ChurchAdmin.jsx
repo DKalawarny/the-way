@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Download, Copy, Check, QrCode } from 'lucide-react';
-import { supabase, resizeImageToDataUrl } from './supabase.js';
+import { supabase, resizeImageToDataUrl, authedFetch } from './supabase.js';
 import { moderateImage } from './moderation.js';
 import { T } from './theme.js';
 import PageTour, { isPageTourDone } from './PageTour.jsx';
@@ -1412,21 +1412,19 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
   }
 
   async function grantRole({ user_id, role_key, role_label, message }) {
-    // Insert a pending invite — the member gets a notification and must Accept
-    // before the role becomes active. The DB trigger notify_role_invited() fires
-    // and creates the notification row automatically.
-    const { error } = await supabase
-      .from('church_role_invites')
-      .insert({
-        church_id:  churchId,
-        user_id,
-        role_key,
-        role_label: role_label ?? null,
-        message:    message   ?? null,
-        granted_by: session?.user?.id ?? null,
-        status:     'pending',
+    // Post to server — server creates the invite row, fires the DB trigger, and
+    // emails the member via Resend (hello@kinwove.app).
+    try {
+      const res = await authedFetch('/api/church/role-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ church_id: churchId, user_id, role_key, role_label, message }),
       });
-    if (error) return { error: error.message };
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) return { error: json.error ?? 'Could not send invite.' };
+    } catch (e) {
+      return { error: e.message ?? 'Network error.' };
+    }
     loadAll();
     return { error: null };
   }

@@ -1101,6 +1101,208 @@ app.post('/api/dev/become-pastor', requireAuth, limitAuthed({ capacity: 5, refil
   }
 });
 
+// ── Email helpers ─────────────────────────────────────────────────────────────
+
+/** Fetch a user's email address from the Supabase auth admin API. */
+async function getUserEmail(userId) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
+      headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
+    });
+    if (!r.ok) return null;
+    return (await r.json())?.email ?? null;
+  } catch { return null; }
+}
+
+/** Send an email via Resend. Throws on failure. */
+async function sendEmail(to, subject, html) {
+  const key  = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM || 'kinwove <onboarding@resend.dev>';
+  if (!key) throw new Error('RESEND_API_KEY not set');
+  const r = await fetch('https://api.resend.com/emails', {
+    method:  'POST',
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ from, to: [to], subject, html }),
+  });
+  if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text().catch(() => '')}`);
+}
+
+// Shared brand wrapper — keeps all kinwove emails visually consistent.
+function emailWrap(bodyHtml) {
+  return `<div style="font-family:Georgia,serif;max-width:480px;margin:0 auto;padding:40px 24px;color:#2C1810">
+    <div style="font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#B8733A;margin-bottom:28px">kinwove</div>
+    ${bodyHtml}
+    <div style="margin-top:36px;padding-top:20px;border-top:1px solid #E8D5BB;font-size:12px;color:#9C7B5E;line-height:1.6">
+      You're receiving this because you have a kinwove account.<br>
+      <a href="https://www.kinwove.com" style="color:#B8733A;text-decoration:none">www.kinwove.com</a>
+    </div>
+  </div>`;
+}
+
+function btnHtml(label, url) {
+  return `<a href="${url}" style="display:inline-block;background:#B8733A;color:#FDF8F0;text-decoration:none;padding:14px 28px;border-radius:999px;font-size:15px;font-weight:600;margin:24px 0">${label} →</a>`;
+}
+
+function welcomeEmailHtml(firstName) {
+  return emailWrap(`
+    <h1 style="font-size:28px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em">Welcome, ${firstName}.</h1>
+    <p style="font-size:16px;color:#6B5344;line-height:1.7;margin:0 0 14px">
+      You've joined a space to explore the Bible honestly — whether you're full of faith, full of questions, or somewhere in between.
+    </p>
+    <p style="font-size:16px;color:#6B5344;line-height:1.7;margin:0 0 4px">
+      Ask anything. Read deeply. Save what matters.
+    </p>
+    ${btnHtml('Open kinwove', 'https://www.kinwove.com')}
+    <p style="font-size:13px;color:#9C7B5E;margin:0">No pressure. No agenda. Just honest answers.</p>
+  `);
+}
+
+function roleInviteEmailHtml({ memberName, pastorName, roleLabel, churchName }) {
+  return emailWrap(`
+    <h1 style="font-size:26px;font-weight:600;margin:0 0 14px;letter-spacing:-0.02em">You've been invited.</h1>
+    <p style="font-size:16px;color:#6B5344;line-height:1.7;margin:0 0 20px">
+      <strong>${pastorName}</strong> has invited you to join the <strong>${roleLabel}</strong> team at <strong>${churchName}</strong> on kinwove.
+    </p>
+    <div style="background:#FDF8F0;border:1px solid #E8D5BB;border-radius:12px;padding:18px 20px;margin-bottom:24px;font-size:14px;color:#6B5344;line-height:1.6">
+      Open kinwove to accept or decline — the invitation is waiting in your notifications 🔔
+    </div>
+    ${btnHtml('Open kinwove', 'https://www.kinwove.com')}
+    <p style="font-size:13px;color:#9C7B5E;margin:0">Questions? Reply to this email and we'll help.</p>
+  `);
+}
+
+function nudgeEmailHtml(firstName) {
+  return emailWrap(`
+    <h1 style="font-size:26px;font-weight:600;margin:0 0 14px;letter-spacing:-0.02em">Your profile is waiting.</h1>
+    <p style="font-size:16px;color:#6B5344;line-height:1.7;margin:0 0 14px">
+      Hey ${firstName} — you started setting up your kinwove profile but haven't quite finished.
+    </p>
+    <p style="font-size:16px;color:#6B5344;line-height:1.7;margin:0 0 4px">
+      It only takes a minute, and it helps kinwove give you much better answers from the start.
+    </p>
+    ${btnHtml('Complete my profile', 'https://www.kinwove.com')}
+    <p style="font-size:13px;color:#9C7B5E;margin:0">No pressure — we'll be here whenever you're ready.</p>
+  `);
+}
+
+// ── Welcome email (called after profile wizard completes) ─────────────────────
+app.post('/api/email/welcome', requireAuth, async (req, res) => {
+  try {
+    const email = await getUserEmail(req.userId);
+    if (!email) return res.status(404).json({ error: 'no email found' });
+
+    const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+    const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}&select=display_name`, { headers: h });
+    const [profile] = await pr.json().catch(() => [{}]);
+    const firstName = (profile?.display_name ?? '').split(' ')[0] || 'friend';
+
+    await sendEmail(email, `Welcome to kinwove, ${firstName} ✦`, welcomeEmailHtml(firstName));
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[email/welcome]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── Role invite: create invite row + email the member ─────────────────────────
+app.post('/api/church/role-invite', requireAuth, limitAuthed({ capacity: 20, refillPerSec: 20 / 60 }), async (req, res) => {
+  const { church_id, user_id, role_key, role_label, message } = req.body ?? {};
+  if (!church_id || !user_id || !role_key) {
+    return res.status(400).json({ error: 'church_id, user_id, role_key required' });
+  }
+
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
+
+  // Verify caller is a pastor/owner of this church
+  const churchR = await fetch(`${SUPABASE_URL}/rest/v1/churches?id=eq.${church_id}&select=id,name,pastor_id`, { headers: h });
+  const [church] = await churchR.json().catch(() => []);
+  if (!church) return res.status(404).json({ error: 'church not found' });
+
+  const isOwner = church.pastor_id === req.userId;
+  if (!isOwner) {
+    // Also check church_roles for manager/owner role
+    const rolesR = await fetch(`${SUPABASE_URL}/rest/v1/church_roles?church_id=eq.${church_id}&user_id=eq.${req.userId}&is_owner=eq.true&select=id`, { headers: h });
+    const roles = await rolesR.json().catch(() => []);
+    if (!roles.length) return res.status(403).json({ error: 'pastor access required' });
+  }
+
+  // Insert the pending invite
+  const inviteR = await fetch(`${SUPABASE_URL}/rest/v1/church_role_invites`, {
+    method: 'POST',
+    headers: { ...h, Prefer: 'return=representation' },
+    body: JSON.stringify({ church_id, user_id, role_key, role_label: role_label ?? null, message: message ?? null, granted_by: req.userId, status: 'pending' }),
+  });
+  if (!inviteR.ok) {
+    const err = await inviteR.text().catch(() => '');
+    return res.status(500).json({ error: err });
+  }
+
+  // Send email — fire-and-forget so a failed email doesn't break the invite
+  (async () => {
+    try {
+      const [memberEmail, memberPr, pastorPr] = await Promise.all([
+        getUserEmail(user_id),
+        fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${user_id}&select=display_name`, { headers: h }).then((r) => r.json()),
+        fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}&select=display_name`, { headers: h }).then((r) => r.json()),
+      ]);
+      if (!memberEmail) return;
+      const memberName  = (memberPr[0]?.display_name  ?? '').split(' ')[0] || 'friend';
+      const pastorName  = pastorPr[0]?.display_name   ?? 'Your pastor';
+      const label       = role_label ?? role_key;
+      await sendEmail(
+        memberEmail,
+        `You've been invited to the ${label} team at ${church.name}`,
+        roleInviteEmailHtml({ memberName, pastorName, roleLabel: label, churchName: church.name }),
+      );
+    } catch (e) {
+      console.error('[role-invite email]', e.message);
+    }
+  })();
+
+  res.json({ ok: true });
+});
+
+// ── Incomplete-profile nudge (cron) ───────────────────────────────────────────
+// Hit this endpoint with a cron job once per day (e.g. Render cron or uptime service).
+// Finds users who signed up 24–72 h ago with no display_name and sends one nudge email.
+// Add a secret header in your cron config: X-Cron-Secret: <CRON_SECRET env var>
+app.post('/api/cron/nudge-incomplete', async (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  if (secret && req.headers['x-cron-secret'] !== secret) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+  const since = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
+  const after  = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  // Profiles created 24–72 h ago with no display_name
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/profiles?display_name=is.null&created_at=gte.${since}&created_at=lte.${after}&select=id&limit=50`,
+    { headers: h }
+  );
+  const incomplete = await r.json().catch(() => []);
+  if (!incomplete.length) return res.json({ sent: 0 });
+
+  let sent = 0;
+  for (const { id } of incomplete) {
+    try {
+      const email = await getUserEmail(id);
+      if (!email) continue;
+      const firstName = email.split('@')[0] || 'friend'; // best we can do without a name
+      await sendEmail(email, 'Your kinwove profile is waiting', nudgeEmailHtml(firstName));
+      sent++;
+      await new Promise((r) => setTimeout(r, 200)); // gentle rate-limit between sends
+    } catch (e) {
+      console.error('[nudge-incomplete]', e.message);
+    }
+  }
+  console.log(`[nudge-incomplete] sent ${sent} of ${incomplete.length}`);
+  res.json({ sent, total: incomplete.length });
+});
+
 // ── Church email verification ────────────────────────────────────────────────
 
 const VERIFY_CODE_TTL_MS = 15 * 60 * 1000;
