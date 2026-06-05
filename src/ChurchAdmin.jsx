@@ -1830,9 +1830,24 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
                       <div style={{ fontSize: 14.5, fontWeight: 600, color: T.ink, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                         {m.display_name ?? 'Member'}
                         {(rolesByUser[m.id] ?? []).some(r => r.is_owner) && <Badge role={{ role_key: 'pastor' }} />}
+                        {/* Active roles — badge + inline × to revoke */}
                         {memberRoles.map((r) => (
-                          <Badge key={r.id} role={r} />
+                          <span key={r.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+                            <Badge role={r} />
+                            {m.id !== session?.user?.id && (
+                              <button
+                                onClick={() => revokeRole(r, m.display_name)}
+                                title={`Revoke ${presetForRole(r.role_key)?.label ?? r.role_label ?? r.role_key}`}
+                                style={{
+                                  background: 'none', border: 'none', cursor: 'pointer',
+                                  color: T.inkMuted, fontSize: 13, lineHeight: 1,
+                                  padding: '0 3px', marginLeft: 1,
+                                }}
+                              >×</button>
+                            )}
+                          </span>
                         ))}
+                        {/* Pending invites — dashed pill + inline × to cancel */}
                         {memberPending.map((inv) => (
                           <span
                             key={inv.id}
@@ -1859,19 +1874,6 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
                       {(m.city || m.country) && (
                         <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2 }}>
                           {[m.city, m.country].filter(Boolean).join(', ')}
-                        </div>
-                      )}
-                      {memberRoles.length > 0 && m.id !== session?.user?.id && (
-                        <div style={{ marginTop: 2, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                          {memberRoles.map((r) => (
-                            <TextButton
-                              key={`revoke-${r.id}`}
-                              onClick={() => revokeRole(r, m.display_name)}
-                              danger
-                            >
-                              revoke {presetForRole(r.role_key)?.label?.toLowerCase() ?? r.role_label ?? r.role_key}
-                            </TextButton>
-                          ))}
                         </div>
                       )}
                     </div>
