@@ -31,7 +31,7 @@ const KIND_COPY = {
   care_message:              { verb: 'sent you a care message', Icon: MessageCircle },
 };
 
-function NotificationRow({ n, onClick, onFriendAction, onAvatarClick }) {
+function NotificationRow({ n, onClick, onFriendAction, onAvatarClick, onRoleAccepted }) {
   const copy = KIND_COPY[n.kind] ?? { verb: n.kind, Icon: null, emoji: <KinwoveStar size={10} /> };
   const actor = n.actor_profile;
 
@@ -99,7 +99,11 @@ function NotificationRow({ n, onClick, onFriendAction, onAvatarClick }) {
     e.stopPropagation();
     setRoleState('busy');
     const fn = action === 'accept' ? 'accept_role_invite' : 'decline_role_invite';
-    await supabase.rpc(fn, { p_invite_id: n.target_id });
+    const { error } = await supabase.rpc(fn, { p_invite_id: n.target_id });
+    if (!error && action === 'accept') {
+      const roleLabel = n.data?.role_label ?? n.data?.role_key ?? 'your role';
+      onRoleAccepted?.({ roleLabel, churchName: n.data?.church_name });
+    }
     setRoleState(action === 'accept' ? 'accepted' : 'declined');
   }
 
@@ -220,7 +224,7 @@ function NotificationRow({ n, onClick, onFriendAction, onAvatarClick }) {
   );
 }
 
-export default function NotificationsBell({ session, rightOffset = 0, isDesktop = false, onNavigate, onOpen, onViewProfile }) {
+export default function NotificationsBell({ session, rightOffset = 0, isDesktop = false, onNavigate, onOpen, onViewProfile, onRoleAccepted }) {
   const [open, setOpen] = useState(false);
   const [notifs, setNotifs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -446,13 +450,13 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
                     {newItems.length > 0 && (
                       <>
                         <div style={{ padding: '6px 4px 4px', fontSize: 13, fontWeight: 700, color: T.ink }}>New</div>
-                        {newItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} onAvatarClick={handleAvatarClick} />)}
+                        {newItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} onAvatarClick={handleAvatarClick} onRoleAccepted={onRoleAccepted} />)}
                       </>
                     )}
                     {oldItems.length > 0 && (
                       <>
                         <div style={{ padding: newItems.length ? '14px 4px 4px' : '6px 4px 4px', fontSize: 13, fontWeight: 700, color: T.ink }}>Earlier</div>
-                        {oldItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} onAvatarClick={handleAvatarClick} />)}
+                        {oldItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} onAvatarClick={handleAvatarClick} onRoleAccepted={onRoleAccepted} />)}
                       </>
                     )}
                   </>

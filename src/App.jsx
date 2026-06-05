@@ -1736,6 +1736,7 @@ export default function App() {
   const [pendingShareUrl, setPendingShareUrl] = useState(null);
   const [pendingCareId, setPendingCareId] = useState(null);
   const [pendingDmId,   setPendingDmId]   = useState(null);
+  const [badgeEarned,   setBadgeEarned]   = useState(null); // { roleLabel, churchName }
   const [shareCopied, setShareCopied] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [currentConvId, setCurrentConvId] = useState(null);
@@ -3364,6 +3365,12 @@ export default function App() {
           rightOffset={isDocked ? chatPanelWidth : 0}
           onOpen={() => requestNotificationPermission()}
           onViewProfile={(uid) => uid === session?.user?.id ? setStage('me') : setViewingUserId(uid)}
+          onRoleAccepted={({ roleLabel, churchName }) => {
+            setBadgeEarned({ roleLabel, churchName });
+            setTimeout(() => setBadgeEarned(null), 3200);
+            // Reload roles so Care Inbox unlocks immediately if it's the care role
+            loadChurchRoles(session?.user?.id);
+          }}
           onNavigate={async (n) => {
             if (n.target_type === 'post' || n.type === 'post_comment' || n.type === 'post_comment_reply') {
               setOpenCommentPostId(n.target_id);
@@ -3402,6 +3409,54 @@ export default function App() {
             }
           }}
         />
+      )}
+
+      {/* ── Badge earned celebration ── */}
+      {badgeEarned && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(26,17,8,0.82)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          animation: 'fadeIn 0.3s ease',
+        }}
+          onClick={() => setBadgeEarned(null)}
+        >
+          <div style={{ textAlign: 'center', padding: '0 32px', pointerEvents: 'none' }}>
+            <div style={{
+              fontSize: 72, lineHeight: 1, marginBottom: 20,
+              animation: 'badgePop 0.5s cubic-bezier(0.175,0.885,0.32,1.275) both',
+            }}>✦</div>
+            <div style={{
+              fontFamily: T.serif, fontSize: 13, letterSpacing: '3px',
+              textTransform: 'uppercase', color: '#C17B45', marginBottom: 12,
+            }}>
+              Role accepted
+            </div>
+            <div style={{
+              fontFamily: T.serif, fontSize: 30, fontWeight: 600,
+              color: '#FAF3E2', letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: 10,
+            }}>
+              Welcome to the<br />{badgeEarned.roleLabel} team.
+            </div>
+            {badgeEarned.churchName && (
+              <div style={{ fontSize: 15, color: '#C17B45', marginTop: 6 }}>
+                {badgeEarned.churchName}
+              </div>
+            )}
+            <div style={{ fontSize: 13, color: 'rgba(250,243,226,0.45)', marginTop: 28 }}>
+              Tap anywhere to continue
+            </div>
+          </div>
+          <style>{`
+            @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
+            @keyframes badgePop {
+              0%   { transform: scale(0.4); opacity:0; color:#C17B45 }
+              60%  { transform: scale(1.2); opacity:1 }
+              100% { transform: scale(1);   color:#FAF3E2 }
+            }
+          `}</style>
+        </div>
       )}
 
       {/* ── Upgrade modal ── */}

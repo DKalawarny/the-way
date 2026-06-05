@@ -1161,10 +1161,12 @@ const KW = [
 // Shared brand wrapper — keeps all kinwove emails visually consistent.
 function emailWrap(bodyHtml) {
   return `<div style="font-family:Georgia,serif;max-width:480px;margin:0 auto;padding:40px 24px;color:#2C1810;background:#ffffff">
-    <!-- Logo mark -->
+    <!-- Logo: app icon (dark rounded square + star) + wordmark below -->
     <div style="text-align:center;margin-bottom:36px">
-      <div style="font-size:34px;color:#A85530;line-height:1;margin-bottom:7px">&#10022;</div>
-      <div style="font-size:11px;letter-spacing:3.5px;text-transform:uppercase;color:#A85530;font-family:Georgia,serif">kinwove</div>
+      <div style="display:inline-block;background:#1A1108;border-radius:18px;width:60px;height:60px;line-height:60px;text-align:center;margin-bottom:12px">
+        <span style="font-size:30px;color:#C17B45;line-height:60px;display:inline-block;vertical-align:middle">&#10022;</span>
+      </div>
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:500;color:#1A1108;letter-spacing:-0.02em">kinwove</div>
     </div>
     ${bodyHtml}
     <div style="margin-top:40px;padding-top:20px;border-top:1px solid #E8D5BB;font-size:12px;color:#9C7B5E;line-height:1.7">

@@ -735,15 +735,16 @@ export default function PostCard({
             {!item.is_anonymous && authorProfile?.show_flag && (authorProfile?.flags ?? []).length > 0 && (
               <span style={{ fontSize: 14, lineHeight: 1 }}>{codeToFlag(authorProfile.flags[0])}</span>
             )}
+            {/* Role badge pills — show up to 2, skip 'owner' (pastor handles that separately) */}
+            {!item.is_anonymous && authorRoles && authorRoles.length > 0 && (
+              <BadgeList
+                roles={authorRoles.filter((r) => r.role_key !== 'owner')}
+                size="sm"
+                max={2}
+              />
+            )}
           </div>
           <div style={{ fontSize: 11.5, color: T.inkMuted }}>
-            {/* Role title inline — shows the top role as readable text */}
-            {!item.is_anonymous && authorRoles && authorRoles.length > 0 && (() => {
-              const top = authorRoles.find((r) => r.role_key !== 'owner');
-              if (!top) return null;
-              const label = top.role_label ?? presetForRole(top.role_key)?.label ?? top.role_key;
-              return <span style={{ color: T.goldDark, fontWeight: 600, marginRight: 4 }}>{label} · </span>;
-            })()}
             {relativeTime(item.created_at)}
             {item.scope === 'church' && churchInfo?.name && <> · in {churchInfo.name}</>}
             {item.source === 'post' && localVisibility !== 'public' && ` · ${visMeta.emoji} ${visMeta.label}`}

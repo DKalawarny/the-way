@@ -5,6 +5,7 @@ import { trialStatus } from './trial.js';
 import { supabase, uploadProfileImage, directProfileUpdate } from './supabase.js';
 import AvatarPicker, { avatarUrl } from './AvatarPicker.jsx';
 import ShareSheet from './ShareSheet.jsx';
+import { BadgeList } from './Badge.jsx';
 
 const BANNER_PRESETS = [
   { key: 'parchment', label: 'Parchment', bg: `linear-gradient(135deg, #f5ede0 0%, rgba(184,115,58,0.35) 60%, rgba(139,90,43,0.2) 100%)` },
@@ -115,6 +116,7 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
   const [bannerError, setBannerError] = useState(null);
   const [bannerPickerOpen, setBannerPickerOpen] = useState(false);
   const [avatarLightbox, setAvatarLightbox] = useState(false);
+  const [myRoles, setMyRoles] = useState([]);
 
   useEffect(() => {
     if (!session) return;
@@ -126,6 +128,14 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
     ]).then(([{ count: p }, { count: ing }, { count: ers }]) => {
       setStats({ posts: p ?? 0, following: ing ?? 0, followers: ers ?? 0 });
     });
+
+    // Load church roles for badge display — RLS limits to churches viewer belongs to
+    supabase
+      .from('church_roles')
+      .select('id, role_key, role_label')
+      .eq('user_id', session.user.id)
+      .neq('role_key', 'owner')   // owner/pastor badge shown separately
+      .then(({ data }) => setMyRoles(data ?? []));
 
     supabase.from('follows').select('following_id').eq('follower_id', session.user.id)
       .then(async ({ data }) => {
@@ -355,9 +365,16 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
                 </div>
               )}
 
-              <div style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 4 }}>
+              <div style={{ fontFamily: T.serif, fontSize: 28, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: myRoles.length > 0 ? 8 : 4 }}>
                 {profile?.display_name ?? 'Friend'}
               </div>
+
+              {/* Church role badges */}
+              {myRoles.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                  <BadgeList roles={myRoles} size="md" max={4} />
+                </div>
+              )}
 
               {(profile?.city || profile?.country) && (
                 <div style={{ fontSize: 13, color: T.inkMuted, marginBottom: 10 }}>
