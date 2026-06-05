@@ -1918,27 +1918,72 @@ app.post('/api/send-sermon-digest', requireAuth, async (req, res) => {
   }
 });
 
+// ── Admin auth + data helpers ─────────────────────────────────────────────────
+
+// Verifies the caller is authenticated AND has is_admin=true in their profile.
+// Use as a standalone middleware (replaces requireAuth for admin routes).
+async function requireAdmin(req, res, next) {
+  const userId = await attachUser(req);
+  if (!userId) return res.status(401).json({ error: 'auth required' });
+  req.userId = userId;
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=is_admin&limit=1`,
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } },
+    );
+    const rows = await r.json();
+    if (!rows[0]?.is_admin) return res.status(403).json({ error: 'admin only' });
+    next();
+  } catch (e) {
+    console.error('[kinwove] requireAdmin error:', e?.message);
+    res.status(500).json({ error: 'admin check failed' });
+  }
+}
+
+// Service-role REST fetch — returns [] on any error.
+async function adminFetch(path, qs = '') {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return [];
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}${qs ? '?' + qs : ''}`, {
+      headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
+    });
+    if (!r.ok) return [];
+    return await r.json();
+  } catch { return []; }
+}
+
+// Service-role RPC call — returns null on any error.
+async function adminRpc(fn, body = {}) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch { return null; }
+}
+
 // ── Topic analytics (admin read) ─────────────────────────────────────────────
-// GET /api/admin/topic-stats — returns topic counts sorted by frequency.
-// Requires a valid auth token; no content or user data is exposed here.
-app.get('/api/admin/topic-stats', requireAuth, async (req, res) => {
+app.get('/api/admin/topic-stats', requireAdmin, async (req, res) => {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
     return res.status(503).json({ error: 'not configured' });
   }
   try {
     const r = await fetch(
       `${SUPABASE_URL}/rest/v1/topic_counts?order=count.desc&select=topic_slug,count,last_seen_at`,
-      {
-        headers: {
-          apikey: SUPABASE_SERVICE_KEY,
-          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-        },
-      }
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
     );
     if (!r.ok) return res.status(502).json({ error: 'db error' });
     const rows = await r.json();
     const total = rows.reduce((s, row) => s + Number(row.count ?? 0), 0);
-    // Return percentage alongside raw counts so a dashboard can show a heatmap
     const topics = rows.map((row) => ({
       slug: row.topic_slug,
       count: Number(row.count),
@@ -1948,6 +1993,35 @@ app.get('/api/admin/topic-stats', requireAuth, async (req, res) => {
     res.json({ topics, total });
   } catch (e) {
     safeError(res, e, 'topic-stats');
+  }
+});
+
+// ── Platform admin dashboard ──────────────────────────────────────────────────
+// Single endpoint that returns everything the AdminPage needs.
+// Calls the get_platform_stats() Supabase RPC for aggregate counts + trends,
+// then fetches content/operations rows in parallel.
+// SQL to run in Supabase to create get_platform_stats() — see MEMORY / README.
+app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
+  try {
+    const [platformStats, topicRows, topQuestions, recentShared, pendingApps, recentFeedback] = await Promise.all([
+      adminRpc('get_platform_stats'),
+      adminFetch('topic_counts', 'order=count.desc'),
+      adminFetch('qa_cache', 'select=question_raw,hit_count&order=hit_count.desc&limit=15'),
+      adminFetch('shared_conversations', 'select=id,title,created_at&order=created_at.desc&limit=15'),
+      adminFetch('pastor_applications', 'select=id,full_name,church_name,denomination,city,country,reason,status,created_at&status=eq.pending&order=created_at.desc'),
+      adminFetch('ai_feedback', 'select=message_text,created_at&order=created_at.desc&limit=30'),
+    ]);
+
+    res.json({
+      stats: platformStats ?? {},
+      topics: Array.isArray(topicRows) ? topicRows : [],
+      topQuestions: Array.isArray(topQuestions) ? topQuestions : [],
+      recentShared: Array.isArray(recentShared) ? recentShared : [],
+      pendingApps: Array.isArray(pendingApps) ? pendingApps : [],
+      recentFeedback: Array.isArray(recentFeedback) ? recentFeedback : [],
+    });
+  } catch (e) {
+    safeError(res, e, 'admin-dashboard');
   }
 });
 
