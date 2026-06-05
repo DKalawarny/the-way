@@ -3521,9 +3521,14 @@ export default function App() {
           rightOffset={isDocked ? chatPanelWidth : 0}
           onOpen={() => requestNotificationPermission()}
           onViewProfile={(uid) => uid === session?.user?.id ? setStage('me') : setViewingUserId(uid)}
-          onRoleAccepted={({ roleLabel, churchName }) => {
+          onRoleAccepted={({ roleLabel, churchName, churchId, roleKey }) => {
             setBadgeEarned({ roleLabel, churchName });
-            // stays until tapped — no auto-dismiss
+            // Optimistic update — show Care inbox immediately without waiting
+            // for the DB trigger chain (invite → church_roles → care_team_members)
+            if (roleKey === 'care' && churchId) {
+              setCareTeamRecord({ church_id: churchId, role_label: roleLabel, is_active: true });
+            }
+            // Then reload from DB to get the real record
             loadChurchRoles(session?.user?.id);
           }}
           onNavigate={async (n) => {
@@ -3583,7 +3588,10 @@ export default function App() {
             const roleLabel = pendingInvite.role_label || ROLE_LABELS_CLIENT[pendingInvite.role_key] || pendingInvite.role_key;
             setPendingInvite(null);
             setBadgeEarned({ roleLabel, churchName: pendingInvite.churches?.name });
-            // stays until tapped — no auto-dismiss
+            // Optimistic — show Care inbox immediately
+            if (pendingInvite.role_key === 'care' && pendingInvite.church_id) {
+              setCareTeamRecord({ church_id: pendingInvite.church_id, role_label: roleLabel, is_active: true });
+            }
             loadChurchRoles(session.user.id);
           }}
           onDecline={async () => {

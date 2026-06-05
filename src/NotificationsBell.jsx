@@ -112,7 +112,12 @@ function NotificationRow({ n, onClick, onFriendAction, onAvatarClick, onRoleAcce
     setRoleError(null);
     if (action === 'accept') {
       const roleLabel = n.data?.role_label ?? n.data?.role_key ?? 'your role';
-      onRoleAccepted?.({ roleLabel, churchName: n.data?.church_name });
+      onRoleAccepted?.({
+        roleLabel,
+        churchName: n.data?.church_name,
+        churchId:   n.data?.church_id,
+        roleKey:    n.data?.role_key,
+      });
     }
     setRoleState(action === 'accept' ? 'accepted' : 'declined');
   }
