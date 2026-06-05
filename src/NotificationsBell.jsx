@@ -470,13 +470,13 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
                     {newItems.length > 0 && (
                       <>
                         <div style={{ padding: '6px 4px 4px', fontSize: 13, fontWeight: 700, color: T.ink }}>New</div>
-                        {newItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} onAvatarClick={handleAvatarClick} onRoleAccepted={onRoleAccepted} />)}
+                        {newItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} onAvatarClick={handleAvatarClick} onRoleAccepted={(data) => { onRoleAccepted?.(data); setTimeout(loadRecent, 700); }} />)}
                       </>
                     )}
                     {oldItems.length > 0 && (
                       <>
                         <div style={{ padding: newItems.length ? '14px 4px 4px' : '6px 4px 4px', fontSize: 13, fontWeight: 700, color: T.ink }}>Earlier</div>
-                        {oldItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} onAvatarClick={handleAvatarClick} onRoleAccepted={onRoleAccepted} />)}
+                        {oldItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} onAvatarClick={handleAvatarClick} onRoleAccepted={(data) => { onRoleAccepted?.(data); setTimeout(loadRecent, 700); }} />)}
                       </>
                     )}
                   </>
