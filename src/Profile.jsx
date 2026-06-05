@@ -11,6 +11,11 @@ import { COUNTRIES } from './countries.js';
 // intentionally excluded here; they live in constants.js for the AI prompts.
 const PROFILE_PERSON_TYPES = ['curious','seeking','skeptic','heard-things','new-faith','deeper','inter-faith'];
 
+// Names that cannot be used as a display name (case-insensitive)
+const RESERVED_NAMES = ['kinwove', 'admin', 'system', 'moderator', 'support', 'help', 'the way'];
+const isReservedName = (name) =>
+  RESERVED_NAMES.some((r) => name.trim().toLowerCase() === r);
+
 const AGE_RANGES = ['Under 18','18–24','25–34','35–49','50–64','65+'];
 
 const EXPLORING_SINCE = [
@@ -205,11 +210,15 @@ function ProfileWizard({ user, existing, onSave }) {
   }
 
   async function finish() {
-    setSaving(true);
     setError(null);
+    const displayName = [form.first_name.trim(), form.last_name.trim()].filter(Boolean).join(' ');
+    if (isReservedName(displayName)) {
+      return setError('That name is reserved — please use your real name.');
+    }
+    setSaving(true);
     const payload = {
       id: user.id,
-      display_name:    [form.first_name.trim(), form.last_name.trim()].filter(Boolean).join(' '),
+      display_name:    displayName,
       person_type:     form.person_type,
       tradition:       form.tradition,
       exploring_since: form.exploring_since,
@@ -478,17 +487,22 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
 
   async function handleSave(e) {
     e.preventDefault();
-    setSaving(true);
     setError(null);
 
+    const { first_name, last_name, ...formRest } = form;
+    const displayName = [first_name.trim(), last_name.trim()].filter(Boolean).join(' ');
+    if (isReservedName(displayName)) {
+      return setError('That name is reserved — please use your real name.');
+    }
+
+    setSaving(true);
     const isNewHome = prevTradition === 'Still Discovering' && form.tradition !== 'Still Discovering';
     const countryText = form.flags.length > 0
       ? (COUNTRIES.find(([c]) => c === form.flags[0])?.[1] ?? '') : '';
 
-    const { first_name, last_name, ...formRest } = form;
     const payload = {
       id: user.id, ...formRest,
-      display_name: [first_name.trim(), last_name.trim()].filter(Boolean).join(' '),
+      display_name: displayName,
       country: countryText,
       ...(existing?.avatar_config ? { avatar_config: existing.avatar_config } : {}),
       ...(isNewHome ? { home_found_at: new Date().toISOString() } : {}),
