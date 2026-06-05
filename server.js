@@ -1149,26 +1149,26 @@ async function sendEmail(to, subject, html) {
 // Gmail strips position:absolute/relative, so we stack the star above the
 // dotless-ı using display:block spans inside an inline-block container.
 // ✦ (U+2726) is the same 4-pointed star shape as our SVG logo.
-const KW = [
-  'k',
-  '<span style="display:inline-block;vertical-align:baseline;line-height:1.15;text-align:center">',
-    '<span style="display:block;font-size:0.48em;color:#A85530;line-height:1;margin-bottom:1px">&#10022;</span>',
-    '<span style="display:block;line-height:1">&#305;</span>',  // dotless ı
-  '</span>',
-  'nwove',
-].join('');
+// Email-safe wordmark: two stacked divs — star above word.
+// Avoids display:inline-block tricks that break in Gmail / Outlook.
+const KW_LOGO = `
+  <div style="margin-bottom:4px;line-height:1">
+    <span style="font-size:14px;color:#C17B45">&#10022;</span>
+  </div>
+  <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:500;color:#FAF3E2;letter-spacing:0.05em;line-height:1">kinwove</div>
+`.trim();
 
 // Shared brand wrapper — keeps all kinwove emails visually consistent.
 function emailWrap(bodyHtml) {
   return `<div style="font-family:Georgia,serif;max-width:480px;margin:0 auto;color:#2C1810;background:#ffffff">
-    <!-- Wordmark header: dark chocolate bar, cream serif 'kinwove' — matches brand identity -->
-    <div style="background:#1A1108;padding:22px 32px;margin-bottom:36px;border-radius:0">
-      <div style="font-family:Georgia,'Times New Roman',serif;font-size:26px;font-weight:500;color:#FAF3E2;letter-spacing:-0.02em;line-height:1">${KW.replace(/color:#A85530/g, 'color:#C17B45')}</div>
+    <!-- Wordmark header: dark chocolate bar with ✦ + serif kinwove -->
+    <div style="background:#1A1108;padding:22px 32px;margin-bottom:36px">
+      ${KW_LOGO}
     </div>
     <div style="padding:0 32px 40px">
     ${bodyHtml}
     <div style="margin-top:40px;padding-top:20px;border-top:1px solid #E8D5BB;font-size:12px;color:#9C7B5E;line-height:1.7">
-      You're receiving this because you have a ${KW} account.<br>
+      You're receiving this because you have a kinwove account.<br>
       <a href="https://www.kinwove.com" style="color:#A85530;text-decoration:none">www.kinwove.com</a>
     </div>
     </div>
@@ -1188,7 +1188,7 @@ function welcomeEmailHtml(firstName) {
     <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 4px">
       Ask anything. Read deeply. Save what matters.
     </p>
-    ${btnHtml('Open ' + KW, 'https://www.kinwove.com')}
+    ${btnHtml('Open kinwove', 'https://www.kinwove.com')}
     <p style="font-size:13px;color:#9C7B5E;margin:0">No pressure. No agenda. Just honest answers.</p>
   `);
 }
@@ -1212,10 +1212,10 @@ function nudgeEmailHtml(firstName) {
   return emailWrap(`
     <h1 style="font-size:26px;font-weight:600;margin:0 0 14px;letter-spacing:-0.02em;color:#2C1810">Your profile is waiting.</h1>
     <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
-      Hey ${firstName} — you started setting up your ${KW} profile but haven't quite finished.
+      Hey ${firstName} — you started setting up your kinwove profile but haven't quite finished.
     </p>
     <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 4px">
-      It only takes a minute, and it helps ${KW} give you much better answers from the start.
+      It only takes a minute, and it helps kinwove give you much better answers from the start.
     </p>
     ${btnHtml('Complete my profile', 'https://www.kinwove.com')}
     <p style="font-size:13px;color:#9C7B5E;margin:0">No pressure — we'll be here whenever you're ready.</p>

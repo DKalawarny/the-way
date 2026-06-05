@@ -3522,8 +3522,7 @@ export default function App() {
           onViewProfile={(uid) => uid === session?.user?.id ? setStage('me') : setViewingUserId(uid)}
           onRoleAccepted={({ roleLabel, churchName }) => {
             setBadgeEarned({ roleLabel, churchName });
-            setTimeout(() => setBadgeEarned(null), 3200);
-            // Reload roles so Care Inbox unlocks immediately if it's the care role
+            // stays until tapped — no auto-dismiss
             loadChurchRoles(session?.user?.id);
           }}
           onNavigate={async (n) => {
@@ -3583,7 +3582,7 @@ export default function App() {
             const roleLabel = pendingInvite.role_label || ROLE_LABELS_CLIENT[pendingInvite.role_key] || pendingInvite.role_key;
             setPendingInvite(null);
             setBadgeEarned({ roleLabel, churchName: pendingInvite.churches?.name });
-            setTimeout(() => setBadgeEarned(null), 3200);
+            // stays until tapped — no auto-dismiss
             loadChurchRoles(session.user.id);
           }}
           onDecline={async () => {
