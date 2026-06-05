@@ -31,7 +31,7 @@ const KIND_COPY = {
   care_message:              { verb: 'sent you a care message', Icon: MessageCircle },
 };
 
-function NotificationRow({ n, onClick, onFriendAction }) {
+function NotificationRow({ n, onClick, onFriendAction, onAvatarClick }) {
   const copy = KIND_COPY[n.kind] ?? { verb: n.kind, Icon: null, emoji: <KinwoveStar size={10} /> };
   const actor = n.actor_profile;
 
@@ -116,8 +116,12 @@ function NotificationRow({ n, onClick, onFriendAction }) {
       onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(44,24,16,0.05)'}
       onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
     >
-      {/* Avatar + icon badge */}
-      <div style={{ position: 'relative', flexShrink: 0 }}>
+      {/* Avatar + icon badge — click goes to actor's profile */}
+      <div
+        style={{ position: 'relative', flexShrink: 0, cursor: (!isCareAnonymous && n.actor_id && onAvatarClick) ? 'pointer' : 'default' }}
+        onClick={(!isCareAnonymous && n.actor_id && onAvatarClick) ? (e) => { e.stopPropagation(); onAvatarClick(n.actor_id); } : undefined}
+        title={(!isCareAnonymous && n.actor_id) ? `View ${actorName}'s profile` : undefined}
+      >
         <Avatar
           name={actorName}
           avatarConfig={isCareAnonymous ? null : actor?.avatar_config}
@@ -213,7 +217,7 @@ function NotificationRow({ n, onClick, onFriendAction }) {
   );
 }
 
-export default function NotificationsBell({ session, rightOffset = 0, isDesktop = false, onNavigate, onOpen }) {
+export default function NotificationsBell({ session, rightOffset = 0, isDesktop = false, onNavigate, onOpen, onViewProfile }) {
   const [open, setOpen] = useState(false);
   const [notifs, setNotifs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -295,6 +299,12 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
     } else {
       setOpen(false);
     }
+  }
+
+  function handleAvatarClick(actorId) {
+    if (!actorId) return;
+    setOpen(false);
+    onViewProfile?.(actorId);
   }
 
   async function handleClick(n) {
@@ -433,13 +443,13 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
                     {newItems.length > 0 && (
                       <>
                         <div style={{ padding: '6px 4px 4px', fontSize: 13, fontWeight: 700, color: T.ink }}>New</div>
-                        {newItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} />)}
+                        {newItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} onAvatarClick={handleAvatarClick} />)}
                       </>
                     )}
                     {oldItems.length > 0 && (
                       <>
                         <div style={{ padding: newItems.length ? '14px 4px 4px' : '6px 4px 4px', fontSize: 13, fontWeight: 700, color: T.ink }}>Earlier</div>
-                        {oldItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} />)}
+                        {oldItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} onAvatarClick={handleAvatarClick} />)}
                       </>
                     )}
                   </>

@@ -3322,6 +3322,7 @@ export default function App() {
           isDesktop={isDesktop}
           rightOffset={isDocked ? chatPanelWidth : 0}
           onOpen={() => requestNotificationPermission()}
+          onViewProfile={(uid) => uid === session?.user?.id ? setStage('me') : setViewingUserId(uid)}
           onNavigate={async (n) => {
             if (n.target_type === 'post' || n.type === 'post_comment' || n.type === 'post_comment_reply') {
               setOpenCommentPostId(n.target_id);
