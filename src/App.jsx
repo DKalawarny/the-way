@@ -152,6 +152,107 @@ import FeatureTour, { isTourDone } from './FeatureTour.jsx';
 import CoachMark, { incrementLoginCount } from './CoachMark.jsx';
 import DailyVerseCard, { shouldShowDailyVerse, markVerseAsSeen } from './DailyVerseCard.jsx';
 
+// ── Role label map (client-side mirror of server ROLE_LABELS) ────────────────
+const ROLE_LABELS_CLIENT = {
+  owner: 'Owner', elder: 'Elder', staff: 'Staff',
+  care: 'Care team', careTeam: 'Care team',
+  worship: 'Worship', youth: 'Youth',
+};
+
+// ── Role invite deep-link modal ───────────────────────────────────────────────
+// Shown when the user arrives via ?invite=<id> from an email link.
+function InviteDeepLinkModal({ invite, onAccept, onDecline, onDismiss }) {
+  const [busy, setBusy] = useState(null); // 'accept' | 'decline'
+  const roleLabel = invite.role_label || ROLE_LABELS_CLIENT[invite.role_key] || invite.role_key;
+  const churchName = invite.churches?.name ?? 'your church';
+  const pastorName = invite.profiles?.display_name ?? null;
+
+  async function handle(action) {
+    setBusy(action);
+    if (action === 'accept') await onAccept();
+    else await onDecline();
+    setBusy(null);
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9998,
+      background: 'rgba(26,17,8,0.7)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 24,
+    }} onClick={onDismiss}>
+      <div onClick={(e) => e.stopPropagation()} style={{
+        background: T.parchment, borderRadius: 20, maxWidth: 400, width: '100%',
+        padding: '32px 28px', border: `1px solid ${T.line}`, textAlign: 'center',
+        boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
+      }}>
+        {/* Star mark */}
+        <div style={{ fontSize: 36, color: T.gold, marginBottom: 16, lineHeight: 1 }}>✦</div>
+
+        <div style={{ fontFamily: T.serif, fontSize: 11, letterSpacing: '3px', textTransform: 'uppercase', color: T.gold, marginBottom: 12 }}>
+          You've been invited
+        </div>
+
+        <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: '-0.02em', lineHeight: 1.2, marginBottom: 8 }}>
+          {roleLabel} team
+        </div>
+
+        <div style={{ fontSize: 15, color: T.inkSoft, marginBottom: 6 }}>
+          {churchName}
+        </div>
+
+        {pastorName && (
+          <div style={{ fontSize: 13, color: T.inkMuted, marginBottom: 20 }}>
+            Invited by {pastorName}
+          </div>
+        )}
+
+        {invite.message && (
+          <div style={{
+            background: T.cream, border: `1px solid ${T.line}`, borderRadius: 12,
+            padding: '12px 16px', fontSize: 14, color: T.ink, lineHeight: 1.6,
+            fontStyle: 'italic', marginBottom: 20, textAlign: 'left',
+          }}>
+            "{invite.message}"
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+          <button
+            onClick={() => handle('decline')}
+            disabled={!!busy}
+            style={{
+              flex: 1, padding: '13px 0', borderRadius: 999, border: `1px solid ${T.line}`,
+              background: 'transparent', color: T.inkSoft, fontSize: 15, fontWeight: 600,
+              cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            {busy === 'decline' ? 'Declining…' : 'Decline'}
+          </button>
+          <button
+            onClick={() => handle('accept')}
+            disabled={!!busy}
+            style={{
+              flex: 1, padding: '13px 0', borderRadius: 999, border: 'none',
+              background: T.gold, color: T.cream, fontSize: 15, fontWeight: 600,
+              cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            {busy === 'accept' ? 'Accepting…' : 'Accept'}
+          </button>
+        </div>
+
+        <button onClick={onDismiss} style={{
+          marginTop: 16, background: 'none', border: 'none', color: T.inkMuted,
+          fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+        }}>
+          Decide later
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── AI exchange preview (landing page social proof) ──────────────────────────
 function CommunityPreview({ onBegin }) {
   const DIM   = 'rgba(253,248,240,0.55)';
@@ -1701,6 +1802,7 @@ export default function App() {
   const [userGroup, setUserGroup] = useState(null);   // { group, role }
   const [shareId] = useState(() => new URLSearchParams(window.location.search).get('s'));
   const [deepLinkPostId] = useState(() => new URLSearchParams(window.location.search).get('post'));
+  const [deepLinkInviteId] = useState(() => new URLSearchParams(window.location.search).get('invite'));
   const [guestPost, setGuestPost] = useState(null);
   const [studySessionId] = useState(() => new URLSearchParams(window.location.search).get('gs'));
   const [initialChurchId] = useState(() => new URLSearchParams(window.location.search).get('church'));
@@ -1737,6 +1839,7 @@ export default function App() {
   const [pendingCareId, setPendingCareId] = useState(null);
   const [pendingDmId,   setPendingDmId]   = useState(null);
   const [badgeEarned,   setBadgeEarned]   = useState(null); // { roleLabel, churchName }
+  const [pendingInvite, setPendingInvite] = useState(null); // invite row from deep link
   const [shareCopied, setShareCopied] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [currentConvId, setCurrentConvId] = useState(null);
@@ -1969,7 +2072,8 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => {
       _setSession(data.session ?? null);
       if (data.session) {
-        if (deepLinkPostId) { localStorage.removeItem('kw:stage'); setStage('feed'); loadProfile(data.session.user.id); window.history.replaceState({}, '', window.location.pathname); }
+        if (deepLinkInviteId) { loadInvite(deepLinkInviteId); loadProfile(data.session.user.id); }
+        else if (deepLinkPostId) { localStorage.removeItem('kw:stage'); setStage('feed'); loadProfile(data.session.user.id); window.history.replaceState({}, '', window.location.pathname); }
         else if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); loadProfile(data.session.user.id); }
         else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); loadProfile(data.session.user.id); }
         else {
@@ -1984,6 +2088,10 @@ export default function App() {
           }
         }
         if (shouldShowDailyVerse()) setShowVerseCard(true);
+      } else if (deepLinkInviteId) {
+        // No session — store invite ID so we can open it after sign-in
+        sessionStorage.setItem('kw:pendingInvite', deepLinkInviteId);
+        window.history.replaceState({}, '', window.location.pathname);
       } else if (deepLinkPostId) {
         // No session + deep link → fetch the post for a read-only guest preview
         fetch(`/api/post/${encodeURIComponent(deepLinkPostId)}`)
@@ -2009,7 +2117,10 @@ export default function App() {
         const isInitialLoad = event === 'SIGNED_IN' || event === 'INITIAL_SESSION';
         if (isInitialLoad) {
           // Deep link always wins — never let localStorage override it
-          if (deepLinkPostId) { setStage('feed'); loadProfile(s.user.id); window.history.replaceState({}, '', window.location.pathname); }
+          const storedInviteId = sessionStorage.getItem('kw:pendingInvite');
+          if (storedInviteId) { sessionStorage.removeItem('kw:pendingInvite'); loadInvite(storedInviteId); loadProfile(s.user.id); }
+          else if (deepLinkInviteId) { loadInvite(deepLinkInviteId); loadProfile(s.user.id); }
+          else if (deepLinkPostId) { setStage('feed'); loadProfile(s.user.id); window.history.replaceState({}, '', window.location.pathname); }
           else if (initialAnonChurchId) { setViewingChurchId(initialAnonChurchId); setStage('church-entry'); }
           else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); }
           else {
@@ -2276,6 +2387,19 @@ export default function App() {
     if (!isTourDone()) setShowTour(true);
     await Promise.all([loadGroup(userId), loadChurchRoles(userId)]);
     return data ?? null;
+  }
+
+  async function loadInvite(inviteId) {
+    if (!inviteId) return;
+    const { data } = await supabase
+      .from('church_role_invites')
+      .select('id, role_key, role_label, message, status, church_id, invited_by, churches(name), profiles!invited_by(display_name)')
+      .eq('id', inviteId)
+      .eq('status', 'pending')
+      .maybeSingle();
+    if (data) setPendingInvite(data);
+    // Clean the param from the URL so refresh doesn't re-trigger
+    window.history.replaceState({}, '', window.location.pathname);
   }
 
   async function loadChurchRoles(userId) {
@@ -3408,6 +3532,28 @@ export default function App() {
               }
             }
           }}
+        />
+      )}
+
+      {/* ── Role invite deep-link modal ── */}
+      {pendingInvite && session && (
+        <InviteDeepLinkModal
+          invite={pendingInvite}
+          onAccept={async () => {
+            const { error } = await supabase.rpc('accept_role_invite', { p_invite_id: pendingInvite.id });
+            if (!error) {
+              const roleLabel = pendingInvite.role_label || ROLE_LABELS_CLIENT[pendingInvite.role_key] || pendingInvite.role_key;
+              setPendingInvite(null);
+              setBadgeEarned({ roleLabel, churchName: pendingInvite.churches?.name });
+              setTimeout(() => setBadgeEarned(null), 3200);
+              loadChurchRoles(session.user.id);
+            }
+          }}
+          onDecline={async () => {
+            await supabase.rpc('decline_role_invite', { p_invite_id: pendingInvite.id });
+            setPendingInvite(null);
+          }}
+          onDismiss={() => setPendingInvite(null)}
         />
       )}
 

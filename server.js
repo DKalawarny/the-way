@@ -1193,16 +1193,17 @@ function welcomeEmailHtml(firstName) {
   `);
 }
 
-function roleInviteEmailHtml({ memberName, pastorName, roleLabel, churchName }) {
+function roleInviteEmailHtml({ memberName, pastorName, roleLabel, churchName, inviteUrl }) {
+  const url = inviteUrl || 'https://www.kinwove.com';
   return emailWrap(`
     <h1 style="font-size:26px;font-weight:600;margin:0 0 14px;letter-spacing:-0.02em;color:#2C1810">You've been invited.</h1>
     <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 20px">
-      <strong>${pastorName}</strong> has invited you to join the <strong>${roleLabel}</strong> team at <strong>${churchName}</strong> on ${KW}.
+      <strong>${pastorName}</strong> has invited you to join the <strong>${roleLabel}</strong> team at <strong>${churchName}</strong>.
     </p>
     <div style="background:#FDF8F0;border:1px solid #E8D5BB;border-radius:12px;padding:18px 20px;margin-bottom:24px;font-size:14px;color:#6B5344;line-height:1.7">
-      Open ${KW} to accept or decline — the invitation is waiting in your notifications 🔔
+      Tap the button below to accept or decline — it takes you straight to the invitation, no searching required.
     </div>
-    ${btnHtml('Open ' + KW, 'https://www.kinwove.com')}
+    ${btnHtml('Review invitation →', url)}
     <p style="font-size:13px;color:#9C7B5E;margin:0">Questions? Reply to this email and we'll help.</p>
   `);
 }
@@ -1262,16 +1263,22 @@ app.post('/api/church/role-invite', requireAuth, limitAuthed({ capacity: 20, ref
     if (!roles.length) return res.status(403).json({ error: 'pastor access required' });
   }
 
-  // Insert the pending invite
+  // Insert the pending invite — return=representation gives us the created row (with id)
   const inviteR = await fetch(`${SUPABASE_URL}/rest/v1/church_role_invites`, {
     method: 'POST',
     headers: { ...h, Prefer: 'return=representation' },
-    body: JSON.stringify({ church_id, user_id, role_key, role_label: role_label ?? null, message: message ?? null, granted_by: req.userId, status: 'pending' }),
+    body: JSON.stringify({ church_id, user_id, role_key, role_label: role_label ?? null, message: message ?? null, invited_by: req.userId, status: 'pending' }),
   });
   if (!inviteR.ok) {
     const err = await inviteR.text().catch(() => '');
     return res.status(500).json({ error: err });
   }
+  const [createdInvite] = await inviteR.json().catch(() => [{}]);
+  const inviteId = createdInvite?.id ?? null;
+
+  // Deep-link URL — takes recipient straight to the Accept/Decline modal in the app
+  const BASE_URL = process.env.APP_URL || 'https://www.kinwove.com';
+  const inviteUrl = inviteId ? `${BASE_URL}?invite=${inviteId}` : BASE_URL;
 
   // Send email — fire-and-forget so a failed email doesn't break the invite flow
   (async () => {
@@ -1287,13 +1294,12 @@ app.post('/api/church/role-invite', requireAuth, limitAuthed({ capacity: 20, ref
       }
       const memberName = (memberPr[0]?.display_name ?? '').split(' ')[0] || 'friend';
       const pastorName = pastorPr[0]?.display_name ?? 'Your pastor';
-      // Use human-readable label: custom label → preset lookup → raw key
       const label = role_label || ROLE_LABELS[role_key] || role_key;
-      console.log(`[role-invite email] sending to ${memberEmail} for role "${label}"`);
+      console.log(`[role-invite email] sending to ${memberEmail} for role "${label}" — link: ${inviteUrl}`);
       await sendEmail(
         memberEmail,
         `You've been invited to join the ${label} team at ${church.name}`,
-        roleInviteEmailHtml({ memberName, pastorName, roleLabel: label, churchName: church.name }),
+        roleInviteEmailHtml({ memberName, pastorName, roleLabel: label, churchName: church.name, inviteUrl }),
       );
       console.log(`[role-invite email] sent OK to ${memberEmail}`);
     } catch (e) {
@@ -1301,7 +1307,7 @@ app.post('/api/church/role-invite', requireAuth, limitAuthed({ capacity: 20, ref
     }
   })();
 
-  res.json({ ok: true });
+  res.json({ ok: true, invite_id: inviteId });
 });
 
 // ── Incomplete-profile nudge (cron) ───────────────────────────────────────────
