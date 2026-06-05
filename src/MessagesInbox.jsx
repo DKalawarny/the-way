@@ -197,7 +197,7 @@ function EmptyPane() {
   );
 }
 
-export default function MessagesInbox({ session, profile, onBack, pendingShareUrl, onShareSent, onOpenPost, initialCareId, onInitialCareConsumed }) {
+export default function MessagesInbox({ session, profile, onBack, pendingShareUrl, onShareSent, onOpenPost, initialCareId, onInitialCareConsumed, initialDmId, onInitialDmConsumed }) {
   const [careConvs, setCareConvs] = useState([]);
   const [dmConvs, setDmConvs] = useState([]);
   const [careLastMsgs, setCareLastMsgs] = useState({});
@@ -207,6 +207,7 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
   const [openDm, setOpenDm] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const initialCareIdRef = useRef(initialCareId);
+  const initialDmIdRef   = useRef(initialDmId);
   const [readVersion, setReadVersion] = useState(0); // bumped to re-render unread state without full reload
 
   function markUnread(id) {
@@ -337,6 +338,22 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
     // If data not loaded yet, the load effect will pick it up via initialCareIdRef
   }, [initialCareId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Handle DM notification/button tap while Messages is already open
+  useEffect(() => {
+    if (!initialDmId) return;
+    initialDmIdRef.current = initialDmId;
+    if (!loading && dmConvs.length > 0) {
+      const target = dmConvs.find((c) => c.id === initialDmId);
+      if (target) {
+        openConversation(target.id);
+        setOpenCare(null);
+        setOpenDm({ id: target.id, otherProfile: target.otherProfile });
+        initialDmIdRef.current = null;
+        onInitialDmConsumed?.();
+      }
+    }
+  }, [initialDmId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!session?.user?.id) return;
     setLoading(true);
@@ -438,6 +455,18 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
           setOpenCare({ id: target.id, side: target._side });
           initialCareIdRef.current = null; // only auto-open once
           onInitialCareConsumed?.();       // clear pendingCareId in App
+        }
+      }
+
+      // Auto-open a specific DM conversation if requested (e.g., via notification or MessagesButton tap)
+      if (initialDmIdRef.current) {
+        const target = dmList.find((c) => c.id === initialDmIdRef.current);
+        if (target) {
+          openConversation(target.id);
+          setOpenCare(null);
+          setOpenDm({ id: target.id, otherProfile: profileMap[target.participant_ids.find((id) => id !== uid)] ?? null });
+          initialDmIdRef.current = null;
+          onInitialDmConsumed?.();
         }
       }
     })();

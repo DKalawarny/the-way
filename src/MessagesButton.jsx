@@ -108,15 +108,17 @@ export default function MessagesButton({
     const dmRows = dmList.map(c => {
       const otherId = c.participant_ids.find(id => id !== uid);
       const prof = profileMap[otherId] ?? null;
+      const isSystem = prof?.display_name === 'kinwove';
       return {
         ...c, _kind: 'dm',
         _name: prof?.display_name ?? 'Someone',
         _avatarConfig: prof?.avatar_config,
         _avatarUrl: prof?.avatar_url,
-        _subtitle: 'Direct message',
+        _subtitle: isSystem ? 'Welcome message' : 'Direct message',
+        _isSystem: isSystem,
         _ts: c.last_message_at ?? c.created_at,
       };
-    });
+    }).filter(c => !c._isSystem); // hide the kinwove system DM from the quick-access dropdown
 
     // Fetch last messages
     const allConvs = [...careRows, ...dmRows]

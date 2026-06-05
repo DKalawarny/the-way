@@ -1694,6 +1694,7 @@ export default function App() {
   const [openCommentPostId, setOpenCommentPostId] = useState(() => deepLinkPostId ?? null);
   const [pendingShareUrl, setPendingShareUrl] = useState(null);
   const [pendingCareId, setPendingCareId] = useState(null);
+  const [pendingDmId,   setPendingDmId]   = useState(null);
   const [shareCopied, setShareCopied] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [currentConvId, setCurrentConvId] = useState(null);
@@ -2956,6 +2957,8 @@ export default function App() {
           onOpenPost={(postId) => { setOpenCommentPostId(postId); setStage('feed'); }}
           initialCareId={pendingCareId}
           onInitialCareConsumed={() => setPendingCareId(null)}
+          initialDmId={pendingDmId}
+          onInitialDmConsumed={() => setPendingDmId(null)}
         />
       )}
       {stage === 'dm-conversation' && session && activeDmConv && (
@@ -3307,6 +3310,7 @@ export default function App() {
           onOpenMessages={() => setStage('messages')}
           onOpenConversation={(id, kind) => {
             if (kind === 'care') setPendingCareId(id);
+            else if (kind === 'dm') setPendingDmId(id);
             setStage('messages');
           }}
         />
@@ -3324,8 +3328,13 @@ export default function App() {
             }
             else if (n.target_type === 'prayer')    { setStage('feed'); }
             else if (n.target_type === 'sermon')    { setViewingSermonId(n.target_id); setStage('sermon-view'); }
-            else if (n.target_type === 'friend_request') { setViewingUserId(n.actor_id); }
-            else if (n.kind === 'follow') { setViewingUserId(n.actor_id); }
+            else if (n.target_type === 'friend_request') {
+              // Don't open the kinwove system account profile — it's not a real person
+              if (n.actor_profile?.display_name !== 'kinwove') setViewingUserId(n.actor_id);
+            }
+            else if (n.kind === 'follow') {
+              if (n.actor_profile?.display_name !== 'kinwove') setViewingUserId(n.actor_id);
+            }
             else if (n.kind === 'care_message' || n.target_type === 'care_conversation') {
               const convId = n.data?.conversation_id ?? n.target_id;
               setPendingCareId(convId ?? null);
@@ -3333,17 +3342,8 @@ export default function App() {
             }
             else if (n.kind === 'dm_message' || n.target_type === 'dm_conversation') {
               const convId = n.data?.conversation_id ?? n.target_id;
-              if (convId && n.actor_id) {
-                const { data: otherProf } = await supabase
-                  .from('profiles')
-                  .select('id, display_name, avatar_config, avatar_url')
-                  .eq('id', n.actor_id)
-                  .maybeSingle();
-                setActiveDmConv({ id: convId, otherProfile: otherProf ?? null });
-                setStage('dm-conversation');
-              } else {
-                setStage('messages');
-              }
+              if (convId) setPendingDmId(convId);
+              setStage('messages');
             }
             else if (n.target_type === 'church' || n.kind === 'role_assigned') {
               const cId = n.data?.church_id ?? n.target_id;
