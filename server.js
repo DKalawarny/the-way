@@ -31,10 +31,11 @@ function normalize(text) {
 
 app.use(cors());
 // Route-aware body size limit:
-//   /api/chat allows up to 20 MB so users can attach images (base64 encoded).
+//   /api/chat and /api/moderate-image allow up to 20 MB (base64 image payloads).
 //   All other routes stay at 64 KB — no legitimate non-image payload is larger.
+const LARGE_BODY_PATHS = new Set(['/api/chat', '/api/moderate-image']);
 app.use((req, res, next) => {
-  const limit = req.path === '/api/chat' ? '20mb' : '64kb';
+  const limit = LARGE_BODY_PATHS.has(req.path) ? '20mb' : '64kb';
   express.json({ limit })(req, res, next);
 });
 
@@ -2002,6 +2003,64 @@ async function adminRpc(fn, body = {}) {
     return await r.json();
   } catch { return null; }
 }
+
+// ── Image moderation (Claude Haiku vision) ────────────────────────────────────
+// Called client-side before any base64 image is saved to the DB.
+// Uses Haiku for speed + cost — typical latency ~400–700 ms.
+// Rate-limited to 30 req/min per IP (same as anon endpoints).
+app.post('/api/moderate-image', limitAnon({ capacity: 30, refillPerSec: 30 / 60 }), async (req, res) => {
+  const { imageData } = req.body ?? {};
+  if (!imageData || typeof imageData !== 'string' || !imageData.startsWith('data:image/')) {
+    return res.status(400).json({ approved: false, reason: 'invalid_payload' });
+  }
+
+  // Parse the data URL: "data:image/jpeg;base64,/9j/..."
+  const commaIdx = imageData.indexOf(',');
+  if (commaIdx === -1) return res.status(400).json({ approved: false, reason: 'invalid_data_url' });
+  const header    = imageData.slice(0, commaIdx);          // "data:image/jpeg;base64"
+  const base64    = imageData.slice(commaIdx + 1);
+  const mediaType = header.match(/data:([^;]+)/)?.[1] ?? 'image/jpeg';
+  const validTypes = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+  if (!validTypes.has(mediaType)) return res.json({ approved: true }); // unknown type — pass through
+
+  try {
+    const msg = await anthropic.messages.create({
+      model:      'claude-haiku-4-5-20251001', // fast + cheap for moderation
+      max_tokens: 5,
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type:   'image',
+            source: { type: 'base64', media_type: mediaType, data: base64 },
+          },
+          {
+            type: 'text',
+            text: [
+              'You are a content moderator for kinwove — a Christian Bible study and church community platform.',
+              'Review this image. Reply with exactly one word:',
+              '  APPROVED — if the image is wholesome: a person, nature, art, scripture, text, or anything appropriate for a church.',
+              '  REJECTED  — if the image contains nudity, sexual content, graphic violence, hate symbols, or anything clearly inappropriate.',
+              'If you are uncertain, reply APPROVED.',
+              'Reply with ONLY one word.',
+            ].join('\n'),
+          },
+        ],
+      }],
+    });
+
+    const verdict = (msg.content[0]?.text ?? '').trim().toUpperCase();
+    const approved = verdict !== 'REJECTED';
+    if (!approved) {
+      console.warn('[moderate-image] REJECTED — media_type:', mediaType, 'size:', base64.length);
+    }
+    return res.json({ approved });
+  } catch (e) {
+    // Fail open — Claude API error should not block legitimate uploads
+    console.error('[moderate-image] API error (failing open):', e.message);
+    return res.json({ approved: true });
+  }
+});
 
 // ── Topic analytics (admin read) ─────────────────────────────────────────────
 app.get('/api/admin/topic-stats', requireAdmin, async (req, res) => {

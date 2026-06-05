@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Download, Copy, Check, QrCode } from 'lucide-react';
-import { supabase } from './supabase.js';
+import { supabase, resizeImageToDataUrl } from './supabase.js';
+import { moderateImage } from './moderation.js';
 import { T } from './theme.js';
 import PageTour, { isPageTourDone } from './PageTour.jsx';
 import Badge, { INVITABLE_ROLES, presetForRole } from './Badge.jsx';
@@ -64,6 +65,12 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
     if (!file || !churchId) return;
     if (!file.type.startsWith('image/')) { showToast('Please pick an image file.', 'error'); return; }
     if (file.size > 5 * 1024 * 1024) { showToast('Image must be under 5 MB.', 'error'); return; }
+    // Moderate before uploading to storage
+    try {
+      const preview = await resizeImageToDataUrl(file, 400, 0.82);
+      const approved = await moderateImage(preview);
+      if (!approved) { showToast('This photo was flagged as inappropriate. Please choose another.', 'error'); return; }
+    } catch { /* fail open — moderation error should not block a legitimate upload */ }
     setAvatarUploading(true);
     const ext = file.name.split('.').pop() || 'jpg';
     const path = `${churchId}/avatar.${ext}`;

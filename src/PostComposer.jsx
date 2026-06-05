@@ -6,6 +6,7 @@ import { track } from './analytics.js';
 import MentionInput from './MentionInput.jsx';
 import { Avatar } from './ProfilePage.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
+import { cleanText } from './moderation.js';
 
 const MAX_IMAGES_PER_POST = 4;
 
@@ -174,7 +175,7 @@ export default function PostComposer({
       if (eventLocation.trim())   bodyData.event_location = eventLocation.trim();
     }
     if (postKind === 'poll') {
-      bodyData.poll_options = pollOptions.filter((o) => o.trim()).map((o) => o.trim());
+      bodyData.poll_options = pollOptions.filter((o) => o.trim()).map((o) => cleanText(o.trim()));
     }
 
     const dbKind = postKind === 'milestone' ? 'journey_milestone' : postKind;
@@ -186,7 +187,7 @@ export default function PostComposer({
         scope,
         scope_id:     scope === 'me' ? null : scopeId,
         kind:         dbKind,
-        body:         text.trim(),
+        body:         cleanText(text.trim()),
         body_data:    bodyData,
         is_anonymous: anon,
         person_type:  personType,

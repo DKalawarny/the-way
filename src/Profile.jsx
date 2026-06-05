@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Check } from 'lucide-react';
 import { supabase } from './supabase.js';
+import { containsProfanity } from './moderation.js';
 import { T } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
 import HomeFound from './HomeFound.jsx';
@@ -214,6 +215,9 @@ function ProfileWizard({ user, existing, onSave }) {
     const displayName = [form.first_name.trim(), form.last_name.trim()].filter(Boolean).join(' ');
     if (isReservedName(displayName)) {
       return setError('That name is reserved — please use your real name.');
+    }
+    if (containsProfanity(displayName)) {
+      return setError('Please use a respectful name that\'s appropriate for our community.');
     }
     setSaving(true);
     const payload = {
@@ -503,6 +507,9 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
     const displayName = [first_name.trim(), last_name.trim()].filter(Boolean).join(' ');
     if (isReservedName(displayName)) {
       return setError('That name is reserved — please use your real name.');
+    }
+    if (containsProfanity(displayName)) {
+      return setError('Please use a respectful name that\'s appropriate for our community.');
     }
 
     setSaving(true);

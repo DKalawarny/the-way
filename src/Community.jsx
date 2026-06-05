@@ -16,6 +16,7 @@ import EmptyState from './EmptyState.jsx';
 import SponsoredCard from './SponsoredCard.jsx';
 import LinkPreview, { stripFirstUrl } from './LinkPreview.jsx';
 import { track } from './analytics.js';
+import { cleanText } from './moderation.js';
 const PostComposer = lazy(() => import('./PostComposer.jsx'));
 
 // Each reaction owns its own register: Love is warm + relational (rose),
@@ -1503,7 +1504,7 @@ useEffect(() => {
     // post_comments is the privacy-gated canonical table (see
     // scripts/2026-05-01-private-comments.sql). The legacy 'replies' table
     // is wide-open to any authed user and should not be written anymore.
-    await supabase.from('post_comments').insert({ post_id: postId, author_id: session.user.id, body });
+    await supabase.from('post_comments').insert({ post_id: postId, author_id: session.user.id, body: cleanText(body) });
     loadPosts();
   }
 
@@ -1581,7 +1582,7 @@ useEffect(() => {
     setPrayerSubmitting(true);
     const { data, error } = await supabase
       .from('personal_prayers')
-      .insert({ user_id: session.user.id, body: prayerText.trim(), is_public: true })
+      .insert({ user_id: session.user.id, body: cleanText(prayerText.trim()), is_public: true })
       .select('*, profiles(display_name, city, country, tradition, person_type, avatar_config, avatar_url, show_flag, flags)')
       .single();
     setPrayerSubmitting(false);

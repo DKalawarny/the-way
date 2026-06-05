@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { moderateImage } from './moderation.js';
 
 const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -69,7 +70,7 @@ export async function uploadPostImage(file, _userId) {
   // Bypass Supabase Storage entirely — resize on canvas and return a base64
   // data URL stored directly in posts.body_data.image_urls (jsonb). Maintains
   // the original aspect ratio, max 1000 px on the long edge, ~150–250 KB each.
-  return new Promise((resolve, reject) => {
+  const dataUrl = await new Promise((resolve, reject) => {
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);
     img.onload = () => {
@@ -87,6 +88,9 @@ export async function uploadPostImage(file, _userId) {
     img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Could not load image')); };
     img.src = objectUrl;
   });
+  const approved = await moderateImage(dataUrl);
+  if (!approved) throw new Error('This image was flagged as inappropriate and cannot be posted.');
+  return dataUrl;
 }
 
 // Upload a profile asset (avatar or banner). Reuses the post-images bucket
@@ -122,5 +126,8 @@ export async function uploadProfileImage(file, userId, kind = 'avatar') {
   if (!file || !userId) throw new Error('uploadProfileImage: missing file or userId');
   // 400 px gives the lightbox enough resolution to look sharp at 280 px display
   // size while keeping the base64 payload comfortably under 100 KB.
-  return resizeImageToDataUrl(file, 400, 0.82);
+  const dataUrl = await resizeImageToDataUrl(file, 400, 0.82);
+  const approved = await moderateImage(dataUrl);
+  if (!approved) throw new Error('This photo was flagged as inappropriate. Please choose a different image.');
+  return dataUrl;
 }
