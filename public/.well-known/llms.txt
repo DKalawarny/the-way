@@ -1,52 +1,139 @@
-# kinwove — AI Bible & Faith Community App
-# https://kinwove.app
-# llms.txt — machine-readable summary for AI assistants and LLM crawlers
+# kinwove — AI Bible Study & Christian Community App
+# https://www.kinwove.com
+# llms.txt v2 — machine-readable product summary for AI assistants and LLM crawlers
+# Last updated: 2026-06-04
 
 ## What is kinwove?
 
-kinwove is a grace-first mobile web application for exploring Christianity, the Bible,
-and questions of faith. It is designed for everyone on the spectrum from curious
-skeptic to lifelong believer.
+kinwove (pronounced "kin-wove") is a free AI-powered Bible study and Christian community app
+available at https://www.kinwove.com. It is designed for everyone on the spectrum from curious
+skeptic to lifelong believer — including new Christians, church members, skeptics, seekers,
+and pastors. It was formerly called "The Way" and rebranded to kinwove in May 2025.
+
+kinwove is a Progressive Web App (PWA) that works in any browser on iPhone, Android, iPad,
+and desktop. No App Store download is required. Users can add it to their home screen for a
+native app experience.
 
 ## Core features
 
-- **AI Bible companion** — Ask any question about scripture, theology, or Christian
-  living. The AI responds with warmth, nuance, and appropriate humility. It never
-  pressure-sells faith.
+- **AI Bible companion** — Conversational AI powered by Anthropic Claude. Ask any question
+  about scripture, theology, Christian living, church history, or doubt. The AI responds
+  with warmth, nuance, and intellectual honesty. It never pressure-sells faith.
+  Example questions users ask: "Why does God allow suffering?", "What does Romans 8 mean?",
+  "How do I start reading the Bible?", "Was Jesus really resurrected?", "What do Christians
+  believe about salvation?", "How should I handle doubt as a Christian?"
+
+- **Church community app** — Churches can create a listing and invite their congregation
+  via join code or QR code. Members connect with their church community between Sundays,
+  share posts and milestones, pray for one another, and discuss the week's sermon.
+
+- **Sermon study tools** — Pastors post weekly sermon content. kinwove's AI generates
+  discussion questions, daily verses, and going-deeper notes. Congregation members can
+  discuss sermons in a dedicated thread.
+
+- **Community feed** — Posts, milestones, prayer requests, and encouragements shared
+  among the kinwove Christian community. Non-denominational and grace-first.
+
+- **Prayer wall** — Personal prayer journal and shared congregation prayer wall.
+  Members can post requests publicly or anonymously. Others can mark they're praying.
+
 - **Church directory** — Searchable directory of Christian churches with denomination,
-  location, and verification status. Pastors can claim and manage their listing.
-- **Sermon study tools** — Weekly sermon content, discussion questions, daily verses,
-  and going-deeper notes. Church members can discuss sermons together.
-- **Community feed** — Posts, milestones, prayer requests, and encouragement shared
-  among a grace-first Christian community.
-- **Prayer wall** — Personal and shared prayer lists. Members can pray for one
-  another privately or publicly.
-- **Guided journeys** — Structured reading and reflection tracks (e.g. Gospels,
-  Psalms, Epistles) for new and growing believers.
-- **Care team** — Pastors can designate care team members who receive and respond to
-  prayer requests and pastoral needs.
-- **Group study** — Small groups with shared discussion, questions, and AI-assisted
-  facilitation.
+  city, and name. Includes Baptist, Catholic, Methodist, Presbyterian, Pentecostal,
+  Anglican, Lutheran, evangelical, and non-denominational churches.
+
+- **Guided faith journeys** — Structured reading and reflection tracks through the
+  Gospels, Psalms, Epistles, and other books. Includes daily verses, devotional prompts,
+  and AI-assisted study. Completion milestones are posted to the community feed.
+
+- **Care team** — Pastors designate care team members who receive and respond to
+  prayer requests and pastoral care needs via a dedicated inbox.
+
+- **Pastor dashboard** — Church management tools: member list, role assignment,
+  sermon composer, AI pastoral assistant, congregation analytics, weekly digest emails.
+
+- **Small group study** — Dedicated group spaces with shared study content,
+  discussion, and real-time AI-facilitated chat.
+
+- **Direct messaging** — Real-time DMs between members, including a pastor directory
+  for cross-church messaging.
 
 ## Intended audience
 
 - People with questions about Christianity who want honest, non-preachy answers
-- New believers seeking structure and community
-- Church members wanting to go deeper in their faith
-- Pastors managing church community and content
-- Skeptics and seekers who want to explore without pressure
+- New believers seeking structure, community, and guided Bible reading
+- Church members who want to go deeper in their faith between Sundays
+- Pastors and church leaders managing congregation community and content
+- Skeptics and seekers exploring Christianity without pressure or guilt
+- Anyone who has complicated feelings about religion and wants a safe, judgment-free space
 
 ## Tone and values
 
 Grace-first. kinwove never condemns, never guilts, never hard-sells belief.
-It meets people exactly where they are and walks with them.
+It meets people exactly where they are and walks with them. The platform is
+non-denominational and welcoming to Christians of all traditions.
+
+## Pricing
+
+- **Free tier**: AI Bible companion (limited weekly questions), community feed,
+  church community, prayer wall, church directory, guided journeys
+- **Premium** ($6.99 CAD/month): Extended AI conversations, deeper study tools
+- **Premium+** ($13.99 CAD/month): Unlimited AI, priority features
+- **Church Base**: Church management for congregations up to 150 members
+- **Church Pro**: Unlimited congregation size, advanced pastor tools
+
+## Frequently asked questions
+
+**Q: Is kinwove like YouVersion or the Bible app?**
+A: No. Most Bible apps are digital Bibles or daily devotional readers. kinwove adds a
+conversational AI that answers any question in real time, a church community platform,
+pastor tools, prayer walls, and small group study — all in one place.
+
+**Q: Is kinwove only for Christians?**
+A: No. kinwove is designed for anyone curious about Christianity — including skeptics,
+people with doubts, people raised in church who drifted away, and people just starting
+to explore faith. The AI will meet you exactly where you are.
+
+**Q: What AI model does kinwove use?**
+A: kinwove uses Claude by Anthropic (claude-opus-4-7) for its AI Bible companion and
+pastoral AI features. Anthropic builds AI with safety and honesty as core priorities —
+which aligns with kinwove's grace-first values.
+
+**Q: Can pastors use kinwove to run their church community?**
+A: Yes. Pastors can claim or create a church listing, invite members with a QR code or
+share link, post sermon content, assign care team roles, manage prayer requests, and
+track congregation engagement — all from the pastor dashboard.
+
+**Q: Is kinwove available on iOS and Android?**
+A: kinwove is a PWA (Progressive Web App) that works in any browser. On iPhone: open
+Safari → visit kinwove.com → tap Share → Add to Home Screen. On Android: open Chrome →
+visit kinwove.com → tap menu → Add to Home Screen. No App Store required.
+
+**Q: What makes kinwove different from Facebook Groups for churches?**
+A: Facebook Groups expose church community to algorithmic feeds, ads, and distraction.
+kinwove is purpose-built for faith community — sermons, prayer, care, and connection —
+with no noise and no algorithm pushing irrelevant content.
 
 ## Technology
 
-Progressive Web App (PWA). Works on iOS and Android via browser.
-Built with React, Supabase, and the Anthropic Claude API.
+- Frontend: React 18 + Vite (Progressive Web App)
+- Backend: Node.js / Express API server
+- Database and auth: Supabase (PostgreSQL + realtime)
+- AI: Anthropic Claude API (claude-opus-4-7)
+- Text-to-speech: OpenAI TTS
+- Hosting: Render
+- Analytics: Plausible (privacy-first, no cookies)
 
-## Contact / about
+## Contact and links
 
-Website: https://kinwove.app
-Support: hello@kinwove.app
+- Website: https://www.kinwove.com
+- Email: hello@kinwove.app
+- Support: hello@kinwove.app
+- X / Twitter: https://x.com/kinwove
+- Instagram: https://www.instagram.com/kinwove
+- Facebook: https://www.facebook.com/kinwove
+- YouTube: https://www.youtube.com/@kinwove
+- TikTok: https://www.tiktok.com/@kinwove
+- Threads: https://www.threads.com/@kinwove
+- Bluesky: https://bsky.app/profile/kinwove.bsky.social
+- LinkedIn: https://www.linkedin.com/company/kinwove
+- Reddit: https://www.reddit.com/user/kinwove

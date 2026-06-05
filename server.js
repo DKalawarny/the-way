@@ -1982,13 +1982,20 @@ if (process.env.NODE_ENV !== 'development') {
     }
   });
 
-  // /sitemap.xml — lists every shared conversation as an indexable URL
+  // /sitemap.xml — static pages + every public shared conversation
   app.get('/sitemap.xml', async (req, res) => {
-    const host = `${req.protocol}://${req.get('host')}`;
+    // Always use canonical domain so crawlers get consistent URLs
+    const host = 'https://www.kinwove.com';
+    const today = new Date().toISOString().slice(0, 10);
+
     const entries = [
-      `<url><loc>${escapeXml(host)}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`,
+      // Core pages
+      `<url><loc>${host}/</loc><changefreq>daily</changefreq><priority>1.0</priority><lastmod>${today}</lastmod></url>`,
+      `<url><loc>${host}/llms.txt</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>`,
+      `<url><loc>${host}/.well-known/llms.txt</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>`,
     ];
 
+    // Add all public shared conversations (user-generated content Google can index)
     if (SUPABASE_URL && SUPABASE_ANON) {
       try {
         const r = await fetch(
@@ -1998,8 +2005,8 @@ if (process.env.NODE_ENV !== 'development') {
         if (r.ok) {
           const rows = await r.json();
           for (const row of rows) {
-            const lastmod = row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString();
-            entries.push(`<url><loc>${escapeXml(host)}/share/${escapeXml(row.id)}</loc><lastmod>${lastmod}</lastmod></url>`);
+            const lastmod = row.created_at ? new Date(row.created_at).toISOString().slice(0, 10) : today;
+            entries.push(`<url><loc>${host}/share/${escapeXml(row.id)}</loc><lastmod>${lastmod}</lastmod><changefreq>never</changefreq><priority>0.7</priority></url>`);
           }
         }
       } catch (e) {
@@ -2099,10 +2106,15 @@ ${entries.join('\n')}
     }
   });
 
-  // /robots.txt — points crawlers at the sitemap
-  app.get('/robots.txt', (req, res) => {
-    const host = `${req.protocol}://${req.get('host')}`;
-    res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: ${host}/sitemap.xml\n`);
+  // /robots.txt — the static file in /public is served first; this is a fallback
+  // for dev where /public isn't being served as static files.
+  app.get('/robots.txt', (_req, res) => {
+    res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /auth/callback\nSitemap: https://www.kinwove.com/sitemap.xml\n`);
+  });
+
+  // /llms.txt — also serve from root (canonical: /.well-known/llms.txt handled by static)
+  app.get('/llms.txt', (_req, res) => {
+    res.sendFile(path.join(distPath, '..', 'public', 'llms.txt'));
   });
 
   app.use(express.static(distPath));
