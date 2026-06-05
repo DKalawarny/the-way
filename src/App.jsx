@@ -570,7 +570,7 @@ function Onboarding({ onPick, onBack }) {
       </div>
 
       {/* Cards */}
-      <div style={{ flex: 1, padding: '0 24px 60px', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+      <div style={{ flex: 1, padding: '0 24px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14, width: '100%', maxWidth: 820 }}>
           {PERSON_TYPES.map((p) => (
             <button
@@ -601,6 +601,47 @@ function Onboarding({ onPick, onBack }) {
               <div style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: T.cream, marginBottom: 6, letterSpacing: '-0.012em', lineHeight: 1.2 }}>{p.label}</div>
               <div style={{ fontSize: 13, color: 'rgba(253,248,240,0.5)', lineHeight: 1.6 }}>{p.description}</div>
             </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Feature highlights strip */}
+      <div style={{ padding: '52px 24px 60px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+        <div style={{ fontSize: 11, letterSpacing: 4, textTransform: 'uppercase', color: T.gold, opacity: 0.55 }}>
+          What kinwove AI can do
+        </div>
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '10px 14px',
+          justifyContent: 'center',
+          maxWidth: 680,
+        }}>
+          {[
+            { icon: '🔤', label: 'Hebrew & Greek originals', desc: 'Surfaces the original word behind any translation' },
+            { icon: '📷', label: 'Analyze images', desc: 'Attach a photo — manuscripts, pages, art, notes' },
+            { icon: '🔊', label: 'Listen aloud', desc: 'Tap any answer to hear it read to you' },
+            { icon: '💾', label: 'Save to your board', desc: 'Keep answers that matter with one tap' },
+            { icon: '🔗', label: 'Share conversations', desc: 'Send a link to any conversation with anyone' },
+            { icon: '⛪', label: 'Church study groups', desc: 'Connect with your church and study together' },
+          ].map((f) => (
+            <div
+              key={f.label}
+              title={f.desc}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(184,115,58,0.15)',
+                borderRadius: 100,
+                padding: '8px 16px',
+                cursor: 'default',
+              }}
+            >
+              <span style={{ fontSize: 15 }}>{f.icon}</span>
+              <span style={{ fontSize: 12.5, color: 'rgba(253,248,240,0.55)', letterSpacing: '0.01em', whiteSpace: 'nowrap' }}>{f.label}</span>
+            </div>
           ))}
         </div>
       </div>
