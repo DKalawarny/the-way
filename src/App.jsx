@@ -3,6 +3,7 @@ import { T, globalCss } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
 import { KinwoveWordmark } from './components/brand/KinwoveWordmark.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
+import { KinwoveAppIcon } from './components/brand/KinwoveAppIcon.jsx';
 
 function ScreenLoader() {
   return (
@@ -3606,9 +3607,11 @@ export default function App() {
         >
           <div style={{ textAlign: 'center', padding: '0 32px', pointerEvents: 'none' }}>
             <div style={{
-              fontSize: 72, lineHeight: 1, marginBottom: 20,
+              display: 'inline-block', marginBottom: 24,
               animation: 'badgePop 0.5s cubic-bezier(0.175,0.885,0.32,1.275) both',
-            }}>✦</div>
+            }}>
+              <KinwoveAppIcon size={88} />
+            </div>
             <div style={{
               fontFamily: T.serif, fontSize: 13, letterSpacing: '3px',
               textTransform: 'uppercase', color: '#C17B45', marginBottom: 12,
@@ -3633,9 +3636,9 @@ export default function App() {
           <style>{`
             @keyframes fadeIn { from { opacity:0 } to { opacity:1 } }
             @keyframes badgePop {
-              0%   { transform: scale(0.4); opacity:0; color:#C17B45 }
-              60%  { transform: scale(1.2); opacity:1 }
-              100% { transform: scale(1);   color:#FAF3E2 }
+              0%   { transform: scale(0.3); opacity:0; }
+              60%  { transform: scale(1.12); opacity:1; }
+              100% { transform: scale(1); opacity:1; }
             }
           `}</style>
         </div>
