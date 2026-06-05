@@ -540,6 +540,12 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
 
   const empty = filteredDms.length === 0 && filteredCare.length === 0;
 
+  // Merge DMs + care conversations into one list sorted by most recent activity
+  const allConvsSorted = [
+    ...filteredDms.map(c => ({ ...c, _kind: 'dm', _ts: c.last_message_at ?? c.created_at })),
+    ...filteredCare.map(c => ({ ...c, _kind: 'care', _ts: c.last_message_at ?? c.created_at })),
+  ].sort((a, b) => new Date(b._ts) - new Date(a._ts));
+
   const convList = (
     <>
       {loading ? (
@@ -554,33 +560,33 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
         </div>
       ) : (
         <>
-          {filteredDms.map((c) => {
-            const isSystem = c.otherProfile?.display_name === 'kinwove';
-            return (
-              <ThreadRow
-                key={c.id}
-                name={c.otherProfile?.display_name}
-                avatarConfig={c.otherProfile?.avatar_config}
-                photoUrl={c.otherProfile?.avatar_url}
-                subtitle={isSystem ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>Welcome message <KinwoveStar size={10} style={{ verticalAlign: 'middle', flexShrink: 0 }} /></span> : 'Direct message'}
-                subtitleColor={isSystem ? T.goldDark : undefined}
-                ts={c.last_message_at ?? c.created_at}
-                lastBody={dmLastMsgs[c.id]?.body}
-                unread={
-                  !!dmLastMsgs[c.id] &&
-                  dmLastMsgs[c.id].sender_id !== session?.user?.id &&
-                  (c.last_message_at ?? c.created_at) > convReadTime(c.id)
-                }
-                onOpen={() => { openConversation(c.id); setOpenCare(null); setOpenDm({ id: c.id, otherProfile: c.otherProfile, initialMessage: pendingShareUrl ?? undefined }); if (pendingShareUrl) onShareSent?.(); }}
-                accent={isSystem}
-                active={!isMobile && openDm?.id === c.id}
-                onDelete={() => setDeleteConfirm({ type: 'dm', id: c.id, name: c.otherProfile?.display_name ?? 'this person' })}
-                onMarkUnread={() => markUnread(c.id)}
-              />
-            );
-          })}
-          {filteredCare.map((c) => {
-            // Incoming (pastor/care team receiving): show requester or "Someone"
+          {allConvsSorted.map((c) => {
+            if (c._kind === 'dm') {
+              const isSystem = c.otherProfile?.display_name === 'kinwove';
+              return (
+                <ThreadRow
+                  key={`dm-${c.id}`}
+                  name={c.otherProfile?.display_name}
+                  avatarConfig={c.otherProfile?.avatar_config}
+                  photoUrl={c.otherProfile?.avatar_url}
+                  subtitle={isSystem ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>Welcome message <KinwoveStar size={10} style={{ verticalAlign: 'middle', flexShrink: 0 }} /></span> : 'Direct message'}
+                  subtitleColor={isSystem ? T.goldDark : undefined}
+                  ts={c.last_message_at ?? c.created_at}
+                  lastBody={dmLastMsgs[c.id]?.body}
+                  unread={
+                    !!dmLastMsgs[c.id] &&
+                    dmLastMsgs[c.id].sender_id !== session?.user?.id &&
+                    (c.last_message_at ?? c.created_at) > convReadTime(c.id)
+                  }
+                  onOpen={() => { openConversation(c.id); setOpenCare(null); setOpenDm({ id: c.id, otherProfile: c.otherProfile, initialMessage: pendingShareUrl ?? undefined }); if (pendingShareUrl) onShareSent?.(); }}
+                  accent={isSystem}
+                  active={!isMobile && openDm?.id === c.id}
+                  onDelete={() => setDeleteConfirm({ type: 'dm', id: c.id, name: c.otherProfile?.display_name ?? 'this person' })}
+                  onMarkUnread={() => markUnread(c.id)}
+                />
+              );
+            }
+            // Care conversation
             const isIncoming = c._side === 'in';
             const displayName = isIncoming
               ? (c.is_anonymous ? 'Someone from your church' : (c.requester?.display_name ?? 'Someone'))
@@ -589,7 +595,7 @@ export default function MessagesInbox({ session, profile, onBack, pendingShareUr
             const photoUrl = isIncoming ? (c.is_anonymous ? null : c.requester?.avatar_url) : c.care_member?.avatar_url;
             return (
               <ThreadRow
-                key={c.id}
+                key={`care-${c.id}`}
                 name={displayName}
                 avatarConfig={avatarConfig}
                 photoUrl={photoUrl}
