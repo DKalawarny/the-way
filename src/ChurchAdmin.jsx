@@ -2027,12 +2027,15 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
   const [tab, setTab] = useState(initialTab && VALID_TABS.includes(initialTab) ? initialTab : 'overview');
   const [church, setChurch] = useState(null);
   const [showPastorTour, setShowPastorTour] = useState(false);
+  // Wait for church data to load before measuring — the sticky nav includes the
+  // church name/city, so it's a different height until that data arrives.
+  // We fire after church is loaded + a short rAF-style delay for the re-render.
   useEffect(() => {
-    if (!isPageTourDone(PASTOR_TOUR_KEY)) {
-      const t = setTimeout(() => setShowPastorTour(true), 400);
-      return () => clearTimeout(t);
-    }
-  }, []); // fires once after layout settles
+    if (!church) return; // wait for data
+    if (isPageTourDone(PASTOR_TOUR_KEY)) return;
+    const t = setTimeout(() => setShowPastorTour(true), 120);
+    return () => clearTimeout(t);
+  }, [church]);
   const [composerSermonId, setComposerSermonId] = useState(null);
   const { plan, hasAccess, daysLeft, trialExpired } = usePlan(churchId);
   // One-shot action that the next mounted panel should execute (e.g. when the
