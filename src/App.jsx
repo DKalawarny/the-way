@@ -2182,7 +2182,10 @@ export default function App() {
           // TOKEN_REFRESHED, USER_UPDATED, etc. — refresh profile silently, don't touch stage.
           loadProfile(s.user.id);
         }
-        // Import guest Q+A saved before sign-up
+        // Import guest Q+A saved before sign-up — restore silently, don't
+        // auto-open the panel. The conversation is saved in history so the
+        // user can open it when they're ready; forcing it open on a brand-new
+        // account makes the app look pre-populated / confusing.
         if (event === 'SIGNED_IN') {
           try {
             const raw = localStorage.getItem('kinwove:pendingConv');
@@ -2195,7 +2198,7 @@ export default function App() {
                   { role: 'assistant', content: a },
                 ]);
                 setCurrentConvId(conv.id);
-                setChatPanelOpen(true);
+                // Don't open panel — user can open it from history when ready
               }
               localStorage.removeItem('kinwove:pendingConv');
             }
@@ -3667,8 +3670,11 @@ export default function App() {
       )}
 
       {/* ── Daily verse card — shown once per day on app open ── */}
-      {/* Wait for both the feature tour AND the pastor prompt to close first */}
-      {showVerseCard && !showTour && !showPastorPrompt && session && (
+      {/* Wait for both the feature tour AND the pastor prompt to close first.
+          Also require profile?.person_type so brand-new users don't see
+          the verse (set at auth time from old localStorage) before the
+          profile wizard runs and the pastor prompt is set. */}
+      {showVerseCard && !showTour && !showPastorPrompt && session && profile?.person_type && (
         <DailyVerseCard
           onReflect={(verse) => {
             if (!currentConvId) startChatFromProfile();
