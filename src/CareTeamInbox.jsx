@@ -62,7 +62,7 @@ function timeAgo(ts) {
   return `${Math.floor(diff / 86400)}d`;
 }
 
-function ConversationRow({ conversation, lastMessage, onOpen, isUnclaimed }) {
+function ConversationRow({ conversation, lastMessage, onOpen, isUnclaimed, helperName }) {
   const subjectName = conversation.is_anonymous ? 'Someone in your church' : 'A member';
   return (
     <button onClick={() => onOpen(conversation)} style={{
@@ -107,6 +107,19 @@ function ConversationRow({ conversation, lastMessage, onOpen, isUnclaimed }) {
           }}>Closed</span>
         )}
       </div>
+      {/* Show who is handling / handled this conversation */}
+      {helperName && (
+        <div style={{
+          fontSize: 11.5, color: conversation.status === 'closed' ? T.inkMuted : T.goldDark,
+          fontWeight: 500, marginBottom: lastMessage ? 6 : 0,
+          display: 'flex', alignItems: 'center', gap: 4,
+        }}>
+          <span style={{ opacity: 0.6 }}>
+            {conversation.status === 'closed' ? 'Closed by' : 'Being helped by'}
+          </span>
+          <span style={{ fontWeight: 700 }}>{helperName}</span>
+        </div>
+      )}
       {lastMessage && (
         <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.5, fontFamily: T.serif, fontStyle: 'italic',
           overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box',
@@ -129,6 +142,7 @@ export default function CareTeamInbox({ session, profile, churchId, onBack }) {
   const [loading, setLoading] = useState(true);
   const [showCovenant, setShowCovenant] = useState(false);
   const [memberRecord, setMemberRecord] = useState(null);
+  const [helperProfiles, setHelperProfiles] = useState({}); // care_member_id → display_name
 
   useEffect(() => {
     if (!session?.user?.id || !churchId) return;
@@ -165,6 +179,20 @@ export default function CareTeamInbox({ session, profile, churchId, onBack }) {
 
       setConversations(claimed ?? []);
       setUnclaimed(open ?? []);
+
+      // Fetch display names for everyone who has claimed a conversation
+      const helperIds = [...new Set((claimed ?? []).map((c) => c.care_member_id).filter(Boolean))];
+      if (helperIds.length > 0) {
+        const { data: helpers } = await supabase
+          .from('profiles')
+          .select('id, display_name, first_name, last_name')
+          .in('id', helperIds);
+        const profileMap = {};
+        (helpers ?? []).forEach((p) => {
+          profileMap[p.id] = p.display_name || [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Care team member';
+        });
+        setHelperProfiles(profileMap);
+      }
 
       const allIds = [...(claimed ?? []), ...(open ?? [])].map((c) => c.id);
       if (allIds.length > 0) {
@@ -244,7 +272,7 @@ export default function CareTeamInbox({ session, profile, churchId, onBack }) {
                   <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Open · waiting for someone
                 </div>
                 {unclaimed.map((c) => (
-                  <ConversationRow key={c.id} conversation={c} lastMessage={lastMsgs[c.id]} onOpen={openConversation} isUnclaimed />
+                  <ConversationRow key={c.id} conversation={c} lastMessage={lastMsgs[c.id]} onOpen={openConversation} isUnclaimed helperName={null} />
                 ))}
               </>
             )}
@@ -255,7 +283,8 @@ export default function CareTeamInbox({ session, profile, churchId, onBack }) {
                   Yours
                 </div>
                 {conversations.map((c) => (
-                  <ConversationRow key={c.id} conversation={c} lastMessage={lastMsgs[c.id]} onOpen={openConversation} />
+                  <ConversationRow key={c.id} conversation={c} lastMessage={lastMsgs[c.id]} onOpen={openConversation}
+                    helperName={c.care_member_id ? helperProfiles[c.care_member_id] ?? 'Care team member' : null} />
                 ))}
               </>
             )}
