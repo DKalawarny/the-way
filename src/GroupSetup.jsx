@@ -61,7 +61,7 @@ export default function GroupSetup({ session, onJoined, onClose }) {
       .insert({ name: name.trim(), tradition, pastor_id: session.user.id, invite_code: inviteCode })
       .select()
       .single();
-    if (gErr) { setError('Something went wrong. Try again.'); setBusy(false); return; }
+    if (gErr) { setError(gErr.message || 'Something went wrong. Try again.'); setBusy(false); return; }
     await supabase.from('group_members').insert({
       group_id: group.id, member_id: session.user.id, role: 'pastor',
     });
