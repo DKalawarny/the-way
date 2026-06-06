@@ -3525,13 +3525,12 @@ export default function App() {
           onOpen={() => requestNotificationPermission()}
           onViewProfile={(uid) => uid === session?.user?.id ? setStage('me') : setViewingUserId(uid)}
           onRoleAccepted={({ roleLabel, churchName, churchId, roleKey }) => {
-            setBadgeEarned({ roleLabel, churchName });
+            // Store roleKey so the badge overlay can navigate correctly on dismiss
+            setBadgeEarned({ roleLabel, churchName, roleKey, churchId });
             // Optimistic update — show Care inbox immediately without waiting
             // for the DB trigger chain (invite → church_roles → care_team_members)
             if (roleKey === 'care' && churchId) {
               setCareTeamRecord({ church_id: churchId, role_label: roleLabel, is_active: true });
-              // Navigate straight to the care inbox after accepting
-              setStage('care-inbox');
             }
             // Then reload from DB to get the real record
             loadChurchRoles(session?.user?.id);
@@ -3616,7 +3615,12 @@ export default function App() {
           alignItems: 'center', justifyContent: 'center',
           animation: 'fadeIn 0.3s ease',
         }}
-          onClick={() => setBadgeEarned(null)}
+          onClick={() => {
+            const rk = badgeEarned?.roleKey;
+            const cid = badgeEarned?.churchId;
+            setBadgeEarned(null);
+            if (rk === 'care' && cid) setStage('care-inbox');
+          }}
         >
           <div style={{ textAlign: 'center', padding: '0 32px', pointerEvents: 'none' }}>
             <div style={{
@@ -3643,7 +3647,7 @@ export default function App() {
               </div>
             )}
             <div style={{ fontSize: 13, color: 'rgba(250,243,226,0.45)', marginTop: 28 }}>
-              Tap anywhere to continue
+              {badgeEarned?.roleKey === 'care' ? 'Tap to open your conversations →' : 'Tap anywhere to continue'}
             </div>
           </div>
           <style>{`
