@@ -54,7 +54,7 @@ export default function ChurchModeShell({
   return (
     <div style={{ minHeight: '100vh', background: T.cream, overflowY: 'auto' }}>
       <div style={{
-        position: 'sticky', top: 0, zIndex: 20,
+        position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 20,
         background: '#1e1208',
         borderBottom: 'none',
         padding: '14px 20px 0',

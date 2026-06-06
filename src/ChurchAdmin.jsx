@@ -2026,7 +2026,13 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
   const VALID_TABS = ['overview', 'people', 'ask', 'bible', 'sermons', 'settings'];
   const [tab, setTab] = useState(initialTab && VALID_TABS.includes(initialTab) ? initialTab : 'overview');
   const [church, setChurch] = useState(null);
-  const [showPastorTour, setShowPastorTour] = useState(() => !isPageTourDone(PASTOR_TOUR_KEY));
+  const [showPastorTour, setShowPastorTour] = useState(false);
+  useEffect(() => {
+    if (!isPageTourDone(PASTOR_TOUR_KEY)) {
+      const t = setTimeout(() => setShowPastorTour(true), 400);
+      return () => clearTimeout(t);
+    }
+  }, []); // fires once after layout settles
   const [composerSermonId, setComposerSermonId] = useState(null);
   const { plan, hasAccess, daysLeft, trialExpired } = usePlan(churchId);
   // One-shot action that the next mounted panel should execute (e.g. when the
