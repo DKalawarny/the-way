@@ -14,7 +14,7 @@
  *   {showTour && <PageTour steps={STEPS} storageKey={STORAGE_KEY} onClose={() => setShowTour(false)} />}
  */
 
-import { useState, useEffect, useLayoutEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { T } from './theme.js';
 
@@ -112,17 +112,45 @@ export default function PageTour({ steps = [], storageKey, onClose }) {
   const isLast = step === steps.length - 1;
   const total  = steps.length;
 
-  useLayoutEffect(() => {
+  // Re-measure the target element's position and update the spotlight.
+  // Called on mount, step change, scroll, and resize so sticky/fixed
+  // elements always track correctly regardless of scroll state.
+  const measureTarget = useCallback(() => {
     if (!s?.tourId) { setTargetRect(null); return; }
-    const id = setTimeout(() => {
-      const el = document.querySelector(`[data-tour-id="${s.tourId}"]`);
-      if (!el) { setTargetRect(null); return; }
-      // Scroll into view instantly so getBoundingClientRect() is in-viewport
-      el.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'nearest' });
-      setTargetRect(el.getBoundingClientRect());
-    }, 120);
-    return () => clearTimeout(id);
+    const el = document.querySelector(`[data-tour-id="${s.tourId}"]`);
+    if (!el) { setTargetRect(null); return; }
+    // Scroll element into view (nearest edge only — avoids unexpected jumps
+    // for elements inside sticky containers where 'center' can overshoot).
+    const r = el.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const inView = r.top >= 0 && r.bottom <= vh;
+    if (!inView) {
+      el.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'nearest' });
+    }
+    // Two rAF frames to let the browser finish any layout/sticky recalc
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setTargetRect(el.getBoundingClientRect());
+      });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, s?.tourId]);
+
+  useLayoutEffect(() => {
+    // Small initial delay so the page is fully laid out before first measurement
+    const id = setTimeout(measureTarget, 80);
+    return () => clearTimeout(id);
+  }, [measureTarget]);
+
+  // Keep spotlight tracking even when user scrolls or resizes
+  useEffect(() => {
+    window.addEventListener('scroll', measureTarget, { passive: true, capture: true });
+    window.addEventListener('resize', measureTarget, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', measureTarget, { capture: true });
+      window.removeEventListener('resize', measureTarget);
+    };
+  }, [measureTarget]);
 
   useEffect(() => {
     const handler = (e) => {
