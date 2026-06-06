@@ -103,6 +103,130 @@ function getComposePrompt() {
 // Tiny ornamental separator between feed cards — a hairline rule with a
 // faint ✦ floating in the middle. Pulled into the existing 22px margin
 // with negative offset so it sits in the gap rather than adding height.
+// ── Discover section ────────────────────────────────────────────────────────
+function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, onViewProfile }) {
+  const [churches,  setChurches]  = useState([]);
+  const [people,    setPeople]    = useState([]);
+  const [chLoading, setChLoading] = useState(true);
+  const [peLoading, setPeLoading] = useState(true);
+  const [churchFollows, setChurchFollows] = useState(new Set());
+
+  useEffect(() => {
+    // Verified churches — exclude user's own church
+    supabase.from('churches')
+      .select('id, name, city, country, denomination, verification_status, avatar_url')
+      .eq('verification_status', 'verified')
+      .neq('id', profile?.church_id ?? '00000000-0000-0000-0000-000000000000')
+      .limit(8)
+      .then(({ data }) => { setChurches(data ?? []); setChLoading(false); });
+
+    // Verified pastors / notable people not yet followed
+    supabase.from('profiles')
+      .select('id, display_name, city, country, denomination, tradition, person_type, avatar_config, avatar_url, is_pastor')
+      .eq('is_pastor', true)
+      .neq('id', session?.user?.id ?? '00000000-0000-0000-0000-000000000000')
+      .limit(12)
+      .then(({ data }) => { setPeople(data ?? []); setPeLoading(false); });
+
+    // Which churches the user already follows
+    if (session?.user?.id) {
+      supabase.from('church_follows').select('church_id').eq('user_id', session.user.id)
+        .then(({ data }) => setChurchFollows(new Set(data?.map((r) => r.church_id) ?? [])));
+    }
+  }, [session?.user?.id, profile?.church_id]);
+
+  async function toggleChurchFollow(churchId) {
+    if (!session?.user?.id) return;
+    if (churchFollows.has(churchId)) {
+      await supabase.from('church_follows').delete().eq('church_id', churchId).eq('user_id', session.user.id);
+      setChurchFollows((prev) => { const s = new Set(prev); s.delete(churchId); return s; });
+    } else {
+      await supabase.from('church_follows').insert({ church_id: churchId, user_id: session.user.id });
+      setChurchFollows((prev) => new Set([...prev, churchId]));
+    }
+  }
+
+  const unfollowedPeople = people.filter((p) => !following.has(p.id));
+
+  return (
+    <div style={{ padding: '16px 0 40px' }}>
+      {/* Churches to follow */}
+      <div style={{ padding: '0 16px', marginBottom: 28 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: T.inkMuted, fontFamily: T.sans, marginBottom: 14 }}>
+          Verified churches
+        </div>
+        {chLoading && <div style={{ color: T.inkMuted, fontSize: 14, padding: '12px 0' }}>Loading…</div>}
+        {!chLoading && churches.length === 0 && (
+          <div style={{ color: T.inkMuted, fontSize: 14, lineHeight: 1.6 }}>No verified churches yet — check back soon.</div>
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {churches.map((c) => (
+            <div key={c.id} style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', background: T.parchment, border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0, overflow: 'hidden' }}>
+                {c.avatar_url ? <img src={c.avatar_url} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '⛪'}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, fontFamily: T.serif, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+                <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2 }}>
+                  {[c.denomination, [c.city, c.country].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}
+                </div>
+              </div>
+              <button
+                onClick={() => toggleChurchFollow(c.id)}
+                style={{ flexShrink: 0, background: churchFollows.has(c.id) ? 'transparent' : T.gold, color: churchFollows.has(c.id) ? T.inkMuted : T.cream, border: `1px solid ${churchFollows.has(c.id) ? T.line : T.gold}`, borderRadius: 999, padding: '6px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              >
+                {churchFollows.has(c.id) ? '✓ Following' : '+ Follow'}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* People to follow */}
+      {unfollowedPeople.length > 0 && (
+        <div style={{ padding: '0 16px' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: T.inkMuted, fontFamily: T.sans, marginBottom: 14 }}>
+            Pastors &amp; leaders
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {unfollowedPeople.map((p) => (
+              <div key={p.id} style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div
+                  onClick={() => onViewProfile?.(p.id)}
+                  style={{ width: 44, height: 44, borderRadius: '50%', background: T.parchment, border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0, overflow: 'hidden', cursor: 'pointer' }}
+                >
+                  {p.avatar_url ? <img src={p.avatar_url} alt={p.display_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '👤'}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, fontFamily: T.serif, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {p.display_name}
+                    {p.is_pastor && <span style={{ marginLeft: 6, fontSize: 11, color: T.gold, fontWeight: 700 }}>Pastor ✓</span>}
+                  </div>
+                  <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2 }}>
+                    {[p.tradition, [p.city, p.country].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}
+                  </div>
+                </div>
+                <button
+                  onClick={() => onFollow(p.id, following.has(p.id))}
+                  style={{ flexShrink: 0, background: following.has(p.id) ? 'transparent' : T.gold, color: following.has(p.id) ? T.inkMuted : T.cream, border: `1px solid ${following.has(p.id) ? T.line : T.gold}`, borderRadius: 999, padding: '6px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  {following.has(p.id) ? '✓ Following' : '+ Follow'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!chLoading && !peLoading && churches.length === 0 && unfollowedPeople.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '40px 24px', color: T.inkMuted, fontFamily: T.serif, fontSize: 16 }}>
+          You're already following everyone here. Check back as kinwove grows.
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CardSeparator() {
   return (
     <div style={{
@@ -1323,14 +1447,31 @@ useEffect(() => {
   const loadPosts = useCallback(async () => {
     setLoading(true);
     setFeedError(false);
+
+    const myId = session?.user?.id;
+
+    // Build the set of author IDs whose posts belong in this user's feed:
+    // themselves + people they follow + members of their church.
+    // A brand-new user with no follows and no church gets an empty feed
+    // (which shows the discover/empty state instead of random strangers).
+    let relevantAuthorIds = myId ? [myId] : [];
+    if (myId) {
+      const [{ data: followRows }, { data: memberRows }] = await Promise.all([
+        supabase.from('follows').select('following_id').eq('follower_id', myId),
+        profile?.church_id
+          ? supabase.from('profiles').select('id').eq('church_id', profile.church_id)
+          : Promise.resolve({ data: [] }),
+      ]);
+      relevantAuthorIds = [...new Set([
+        ...relevantAuthorIds,
+        ...(followRows?.map((f) => f.following_id) ?? []),
+        ...(memberRows?.map((m) => m.id) ?? []),
+      ])];
+    }
+
     // Disambiguate the FK: post_comments + reactions also link posts→profiles,
     // so PostgREST refuses the bare `profiles(...)` embed. !author_id pins it
     // to posts.author_id. Same for post_comments → profiles via author_id.
-    //
-    // visibility='public' filter: Community only shows posts the author
-    // explicitly marked public. 'church' and 'private' are excluded by RLS
-    // for non-authors, but authors would otherwise see their own non-public
-    // posts here too, which isn't what we want for the universal feed.
     let query = supabase
       .from('posts')
       .select(`*, profiles!author_id(display_name, city, country, tradition, person_type, avatar_config, avatar_url, show_flag, flags, is_system_account), post_comments(id, body, created_at, profiles!author_id(display_name, avatar_config, avatar_url))`)
@@ -1338,6 +1479,11 @@ useEffect(() => {
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
       .limit(60);
+
+    // Only show posts from the user's social graph (self + following + church).
+    // .in() with an empty array returns nothing, which is correct for new users.
+    query = query.in('author_id', relevantAuthorIds.length ? relevantAuthorIds : ['00000000-0000-0000-0000-000000000000']);
+
     if (filter !== 'all') query = query.eq('person_type', filter);
 
     // Sermon items live in their own tables — feed_items unions them in.
@@ -1690,6 +1836,7 @@ useEffect(() => {
           { id: 'posts',      label: '📝 Posts'     },
           { id: 'following',  label: '👥 Following'  },
           { id: 'prayers',    label: '🙏 Prayers'   },
+          { id: 'discover',   label: '✦ Discover'   },
           { id: 'milestones', label: <><KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 4, flexShrink: 0 }} /> Milestones</> },
         ].map(t => {
           const isActive = feedType === t.id;
@@ -1964,40 +2111,35 @@ useEffect(() => {
                   </div>
                 )}
                 {!loading && !feedError && filtered.length === 0 && (
-                  !profile?.church_id ? (
-                    <div style={{ textAlign: 'center', padding: '48px 24px' }}>
-                      <div style={{ fontSize: 40, marginBottom: 14 }}>⛪</div>
-                      <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 600, color: T.ink, marginBottom: 8, lineHeight: 1.3 }}>
-                        Find your church on kinwove
-                      </div>
-                      <div style={{ fontSize: 14, color: T.inkSoft, lineHeight: 1.65, maxWidth: 270, margin: '0 auto 22px' }}>
-                        Join your church to see your community's posts, prayers, and sermons right here.
-                      </div>
+                  <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+                    <div style={{ fontSize: 38, marginBottom: 14 }}>✦</div>
+                    <div style={{ fontFamily: T.serif, fontSize: 19, fontWeight: 600, color: T.ink, marginBottom: 8, lineHeight: 1.25 }}>
+                      {!profile?.church_id
+                        ? 'Your feed is waiting'
+                        : 'Nothing here yet'}
+                    </div>
+                    <div style={{ fontSize: 14, color: T.inkSoft, lineHeight: 1.65, maxWidth: 280, margin: '0 auto 22px' }}>
+                      {!profile?.church_id
+                        ? 'Join your church or follow people to fill your feed. Or browse Discover to find churches and voices worth following.'
+                        : 'Follow people or explore Discover to find more voices worth following.'}
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                      {!profile?.church_id && (
+                        <button
+                          onClick={onOpenChurch}
+                          style={{ background: T.ink, color: T.cream, border: 'none', borderRadius: 999, padding: '11px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+                        >
+                          Find your church →
+                        </button>
+                      )}
                       <button
-                        onClick={() => onFindPeople?.()}
-                        style={{
-                          background: T.ink, color: T.cream, border: 'none',
-                          borderRadius: 999, padding: '11px 24px',
-                          fontSize: 14, fontWeight: 600, cursor: 'pointer',
-                          letterSpacing: '-0.01em',
-                        }}
+                        onClick={() => setFeedType('discover')}
+                        style={{ background: 'none', color: T.goldDark, border: `1.5px solid ${T.gold}`, borderRadius: 999, padding: '11px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
                       >
-                        Find a church →
+                        ✦ Discover
                       </button>
                     </div>
-                  ) : (
-                    <EmptyState
-                      icon={
-                        <svg width={30} height={30} viewBox="0 0 36 36" fill="none" aria-hidden>
-                          <circle cx="13" cy="17" r="7" fill="none" stroke={T.gold} strokeWidth="1.8"/>
-                          <circle cx="23" cy="17" r="7" fill="none" stroke={T.gold} strokeWidth="1.8"/>
-                          <path d="M18 11 Q21 9 24 11" stroke={T.gold} strokeWidth="1.2" fill="none" strokeLinecap="round" opacity="0.5"/>
-                        </svg>
-                      }
-                      title="Nothing here yet."
-                      body="Be the first to start the conversation."
-                    />
-                  )
+                  </div>
                 )}
                 <div className="stagger-in">
                   {(() => {
@@ -2175,6 +2317,18 @@ useEffect(() => {
               </>
             );
           })()}
+
+          {/* ── Discover tab ── */}
+          {feedType === 'discover' && (
+            <DiscoverSection
+              session={session}
+              profile={profile}
+              following={following}
+              onFollow={handleFollow}
+              onOpenChurch={onOpenChurch}
+              onViewProfile={onViewProfile}
+            />
+          )}
 
           {/* ── Milestones feed ── */}
           {feedType === 'milestones' && (() => {

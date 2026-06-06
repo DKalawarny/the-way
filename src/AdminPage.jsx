@@ -133,6 +133,8 @@ const EMPTY_FORM = {
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function AdminPage({ onBack }) {
   const [tab, setTab] = useState('overview');
+  const [verifyBusy, setVerifyBusy] = useState(null); // church id being toggled
+  const [approveBusy, setApproveBusy] = useState(null); // app id being actioned
 
   // Dashboard data
   const [dash, setDash] = useState(null);
@@ -174,6 +176,36 @@ export default function AdminPage({ onBack }) {
   useEffect(() => { if (tab === 'sponsors') loadSponsors(); }, [tab]);
 
   // ── Sponsors CRUD ───────────────────────────────────────────────────────
+  async function toggleChurchVerify(churchId, currentStatus) {
+    setVerifyBusy(churchId);
+    const newStatus = currentStatus === 'verified' ? 'self_reported' : 'verified';
+    const { error } = await supabase.from('churches').update({ verification_status: newStatus }).eq('id', churchId);
+    if (!error) {
+      setDash((prev) => ({
+        ...prev,
+        topChurches: prev.topChurches.map((c) =>
+          c.id === churchId ? { ...c, status: newStatus } : c
+        ),
+      }));
+    }
+    setVerifyBusy(null);
+  }
+
+  async function handlePastorApp(appId, approve) {
+    setApproveBusy(appId);
+    const { error } = await supabase
+      .from('pastor_applications')
+      .update({ status: approve ? 'approved' : 'declined', reviewed_at: new Date().toISOString() })
+      .eq('id', appId);
+    if (!error) {
+      setDash((prev) => ({
+        ...prev,
+        pendingApps: prev.pendingApps.filter((a) => a.id !== appId),
+      }));
+    }
+    setApproveBusy(null);
+  }
+
   async function loadSponsors() {
     setSponsorsLoading(true);
     const { data } = await supabase.from('sponsored_posts').select('*')
@@ -435,7 +467,7 @@ export default function AdminPage({ onBack }) {
                         <div style={{ fontSize: 14, fontWeight: 600, color: T.ink }}>{c.name}</div>
                         {c.city && <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2 }}>{c.city}</div>}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                         <span style={{ fontSize: 13, fontWeight: 700, color: T.goldDark }}>
                           {Number(c.member_count ?? 0).toLocaleString()} members
                         </span>
@@ -448,6 +480,19 @@ export default function AdminPage({ onBack }) {
                         }}>
                           {c.status ?? 'pending'}
                         </span>
+                        <button
+                          onClick={() => toggleChurchVerify(c.id, c.status)}
+                          disabled={verifyBusy === c.id}
+                          style={{
+                            fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '3px 10px', cursor: 'pointer',
+                            border: 'none',
+                            background: c.status === 'verified' ? 'rgba(180,60,60,0.08)' : 'rgba(46,122,72,0.10)',
+                            color: c.status === 'verified' ? '#b43c3c' : T.success,
+                            opacity: verifyBusy === c.id ? 0.5 : 1,
+                          }}
+                        >
+                          {verifyBusy === c.id ? '…' : c.status === 'verified' ? 'Unverify' : 'Verify ✓'}
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -473,8 +518,24 @@ export default function AdminPage({ onBack }) {
                           "{a.reason.slice(0, 240)}{a.reason.length > 240 ? '…' : ''}"
                         </div>
                       )}
-                      <div style={{ fontSize: 11, color: T.inkMuted }}>
+                      <div style={{ fontSize: 11, color: T.inkMuted, marginBottom: 10 }}>
                         Applied {a.created_at ? new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          onClick={() => handlePastorApp(a.id, true)}
+                          disabled={approveBusy === a.id}
+                          style={{ background: T.success, color: '#fff', border: 'none', borderRadius: 999, padding: '7px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: approveBusy === a.id ? 0.5 : 1 }}
+                        >
+                          {approveBusy === a.id ? '…' : 'Approve ✓'}
+                        </button>
+                        <button
+                          onClick={() => handlePastorApp(a.id, false)}
+                          disabled={approveBusy === a.id}
+                          style={{ background: 'transparent', color: '#b43c3c', border: '1px solid rgba(180,60,60,0.3)', borderRadius: 999, padding: '7px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: approveBusy === a.id ? 0.5 : 1 }}
+                        >
+                          Decline
+                        </button>
                       </div>
                     </div>
                   ))}
