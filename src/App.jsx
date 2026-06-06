@@ -3667,7 +3667,8 @@ export default function App() {
       )}
 
       {/* ── Daily verse card — shown once per day on app open ── */}
-      {showVerseCard && !showTour && session && (
+      {/* Wait for both the feature tour AND the pastor prompt to close first */}
+      {showVerseCard && !showTour && !showPastorPrompt && session && (
         <DailyVerseCard
           onReflect={(verse) => {
             if (!currentConvId) startChatFromProfile();
