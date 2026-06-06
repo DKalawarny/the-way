@@ -58,7 +58,7 @@ export default function GroupSetup({ session, onJoined, onClose }) {
     const inviteCode = makeInviteCode();
     const { data: group, error: gErr } = await supabase
       .from('church_groups')
-      .insert({ name: name.trim(), tradition, pastor_id: session.user.id, invite_code: inviteCode })
+      .insert({ name: name.trim(), created_by: session.user.id, invite_code: inviteCode })
       .select()
       .single();
     if (gErr) { setError(gErr.message || 'Something went wrong. Try again.'); setBusy(false); return; }
