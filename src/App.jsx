@@ -2848,6 +2848,8 @@ export default function App() {
             else setStage('churches');
           }}
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
+          onOpenConnect={() => setStage('connect')}
+          onOpenGroups={() => setStage('groups')}
           onSendDM={(url) => { setPendingShareUrl(url); setStage('messages'); }}
         />
       )}
