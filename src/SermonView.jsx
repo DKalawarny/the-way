@@ -38,6 +38,9 @@ export default function SermonView({ session, profile, sermonId, onBack, onChang
   // (drafts with no scheduled_at, or future-scheduled).
   const [pastorPreview, setPastorPreview] = useState(false);
 
+  // Always open at the top of the page
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [sermonId]);
+
   const isPastor = !!(sermon && session?.user?.id && sermon.pastor_id === session.user.id);
 
   useEffect(() => {
