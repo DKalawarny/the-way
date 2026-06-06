@@ -3530,6 +3530,8 @@ export default function App() {
             // for the DB trigger chain (invite → church_roles → care_team_members)
             if (roleKey === 'care' && churchId) {
               setCareTeamRecord({ church_id: churchId, role_label: roleLabel, is_active: true });
+              // Navigate straight to the care inbox after accepting
+              setStage('care-inbox');
             }
             // Then reload from DB to get the real record
             loadChurchRoles(session?.user?.id);
