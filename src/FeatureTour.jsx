@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect } from 'react';
 import { T } from './theme.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
+import { KinwoveAppIcon } from './components/brand/KinwoveAppIcon.jsx';
 
 // ── Steps ─────────────────────────────────────────────────────────────────────
 // tourId matches the data-tour-id attribute on the nav button.
@@ -303,8 +304,10 @@ export default function FeatureTour({ onClose }) {
           </div>
           {/* Content */}
           <div style={{ padding: '28px 28px 24px', textAlign: 'center', animation: 'tourFadeUp 0.3s ease both' }}>
-            <div style={{ marginBottom: 20 }}>
-              <KinwoveStar size={52} color={T.gold} />
+            <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'center' }}>
+              {s.tourId === null
+                ? <KinwoveAppIcon size={88} />
+                : <KinwoveStar size={52} color={s.color ?? T.gold} />}
             </div>
             <h2 style={{ fontFamily: T.serif, fontSize: 24, fontWeight: 600, color: T.ink, margin: '0 0 14px', letterSpacing: '-0.025em', lineHeight: 1.15 }}>
               {s.title}
