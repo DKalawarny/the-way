@@ -1535,8 +1535,6 @@ useEffect(() => {
     const [{ data: postData, error: postErr }, { data: sermonData }, { data: churchPostData, sermonTeasers: churchSermonTeasers = [] }] = await Promise.all([query, sermonPromise, churchPostPromise]);
     if (postErr || !postData) { setFeedError(true); setLoading(false); return; }
 
-    const myId = session?.user?.id;
-
     // Merge: community posts + pastor church posts + sermon teasers (sorted newest first)
     const merged = [...postData];
     const seenIds = new Set(postData.map((p) => p.id));
