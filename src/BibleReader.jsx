@@ -1469,7 +1469,6 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
         })()}
 
         {/* Book grids — organised by canonical section with illustrated headers */}
-        <div data-tour-id="bible-books-section" style={{ marginBottom: 0 }} />
         {['Old Testament', 'New Testament'].map((testament) => {
           const isOT = testament === 'Old Testament';
           const sections = BIBLE_SECTIONS.filter((s) =>
@@ -1478,7 +1477,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
           );
           return (
             <div key={testament} style={{ marginBottom: 32 }}>
-              <div style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.verse, fontWeight: 700, marginBottom: 20 }}>{testament}</div>
+              <div data-tour-id={isOT ? 'bible-books-section' : undefined} style={{ fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.verse, fontWeight: 700, marginBottom: 20 }}>{testament}</div>
               {sections.map((section) => {
                 const sectionBooks = ALL_BOOKS.filter((b) => section.bookIds.includes(b.id));
                 const colors = BOOK_CAT_COLORS[section.key] ?? BOOK_CAT_COLORS.law;
