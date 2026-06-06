@@ -2030,8 +2030,8 @@ useEffect(() => {
 
 
 
-          {/* ── Groups card ── */}
-          {feedType === 'posts' && onOpenGroups && (
+          {/* ── Groups card ── always visible so users can find it from any tab */}
+          {onOpenGroups && (
             <button
               onClick={onOpenGroups}
               style={{
@@ -2045,7 +2045,7 @@ useEffect(() => {
                 cursor: 'pointer', textAlign: 'left',
               }}
             >
-              <span style={{ fontSize: 26, flexShrink: 0 }}>⛪</span>
+              <span style={{ fontSize: 26, flexShrink: 0 }}>📖</span>
               <div style={{ flex: 1 }}>
                 {userGroup ? (
                   <>
@@ -2053,16 +2053,16 @@ useEffect(() => {
                       {userGroup.group.name}
                     </div>
                     <div style={{ fontSize: 12, color: T.inkMuted }}>
-                      Your group · Tap to open
+                      Your study group · Tap to open
                     </div>
                   </>
                 ) : (
                   <>
                     <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink, marginBottom: 2 }}>
-                      Join or create a group
+                      Start or join a study group
                     </div>
                     <div style={{ fontSize: 12, color: T.inkMuted }}>
-                      Private Bible study, discipleship circle, or church group.
+                      Free · Bible study, prayer circle, or discipleship group.
                     </div>
                   </>
                 )}
