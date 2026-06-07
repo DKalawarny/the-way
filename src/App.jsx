@@ -2922,7 +2922,7 @@ export default function App() {
               role={userGroup.role}
               session={session}
               profile={profile}
-              onClose={() => goBack('feed')}
+              onClose={() => { setChurchReturnTab('groups'); setStage('church'); }}
               onFindPeople={() => setPeopleSearchOpen(true)}
               onLeave={async () => {
                 await supabase.from('group_members').delete().eq('member_id', session.user.id).eq('group_id', userGroup.group.id);
