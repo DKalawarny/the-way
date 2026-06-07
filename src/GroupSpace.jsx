@@ -209,10 +209,12 @@ function stripMd(text) {
 
 // ── Reddit-style discussion thread for one question ───────────────────────────
 function QuestionThread({ question, questionIdx, focusId, groupId, session, profile, isPastor }) {
-  const [replies, setReplies] = useState([]);
-  const [loaded, setLoaded]   = useState(false);
-  const [text, setText]       = useState('');
-  const [busy, setBusy]       = useState(false);
+  const [replies, setReplies]     = useState([]);
+  const [loaded, setLoaded]       = useState(false);
+  const [text, setText]           = useState('');
+  const [busy, setBusy]           = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+  const myId = session?.user?.id;
 
   useEffect(() => {
     supabase
@@ -230,12 +232,18 @@ function QuestionThread({ question, questionIdx, focusId, groupId, session, prof
     setBusy(true);
     const { data } = await supabase
       .from('group_posts')
-      .insert({ group_id: groupId, author_id: session.user.id, focus_id: focusId, question_idx: questionIdx, body: text.trim() })
+      .insert({ group_id: groupId, author_id: myId, focus_id: focusId, question_idx: questionIdx, body: text.trim() })
       .select('*, profiles(display_name, avatar_config, avatar_url)')
       .single();
     setText('');
     setBusy(false);
     if (data) setReplies((prev) => [...prev, data]);
+  }
+
+  async function deleteReply(id) {
+    setReplies((prev) => prev.filter((r) => r.id !== id));
+    setDeletingId(null);
+    await supabase.from('group_posts').delete().eq('id', id);
   }
 
   return (
@@ -259,22 +267,37 @@ function QuestionThread({ question, questionIdx, focusId, groupId, session, prof
           Be the first to share a reflection…
         </div>
       )}
-      {replies.map((r, i) => (
-        <div key={r.id} style={{
-          padding: '14px 20px', background: T.parchment,
-          borderBottom: i < replies.length - 1 ? `1px solid rgba(184,115,58,0.1)` : `1px solid ${T.line}`,
-          display: 'flex', gap: 12, alignItems: 'flex-start',
-        }}>
-          <Avatar name={r.profiles?.display_name} avatarConfig={r.profiles?.avatar_config} photoUrl={r.profiles?.avatar_url} size={30} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{r.profiles?.display_name ?? 'Member'}</span>
-              <span style={{ fontSize: 11, color: T.inkMuted }}>{timeAgo(r.created_at)}</span>
+      {replies.map((r, i) => {
+        const isOwn = r.author_id === myId;
+        const canDelete = isOwn || isPastor;
+        return (
+          <div key={r.id} style={{
+            padding: '14px 20px', background: T.parchment,
+            borderBottom: i < replies.length - 1 ? `1px solid rgba(184,115,58,0.1)` : `1px solid ${T.line}`,
+            display: 'flex', gap: 12, alignItems: 'flex-start',
+          }}>
+            <Avatar name={r.profiles?.display_name} avatarConfig={r.profiles?.avatar_config} photoUrl={r.profiles?.avatar_url} size={30} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{r.profiles?.display_name ?? 'Member'}</span>
+                <span style={{ fontSize: 11, color: T.inkMuted }}>{timeAgo(r.created_at)}</span>
+                {canDelete && deletingId !== r.id && (
+                  <button onClick={() => setDeletingId(r.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: T.inkMuted, fontSize: 11, cursor: 'pointer', padding: 0, opacity: 0.5 }}>
+                    ✕
+                  </button>
+                )}
+                {canDelete && deletingId === r.id && (
+                  <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <button onClick={() => deleteReply(r.id)} style={{ background: 'none', border: 'none', color: '#c0392b', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}>Delete</button>
+                    <button onClick={() => setDeletingId(null)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 11, cursor: 'pointer', padding: 0 }}>Cancel</button>
+                  </div>
+                )}
+              </div>
+              <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.7 }}>{r.body}</div>
             </div>
-            <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.7 }}>{r.body}</div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {/* Reply input */}
       {session && (
@@ -794,9 +817,20 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
                   </div>
                 )}
                 {isPastor && (
-                  <button onClick={() => setSettingFocus(true)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer', padding: 0, marginTop: 10 }}>
-                    Update topic →
-                  </button>
+                  <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
+                    <button onClick={() => setSettingFocus(true)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer', padding: 0 }}>
+                      Update topic →
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFocus(null);
+                        setSettingFocus(true);
+                      }}
+                      style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '6px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      + New discussion
+                    </button>
+                  </div>
                 )}
               </div>
             ) : (
@@ -912,14 +946,29 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
               </>
             )}
 
-            {/* Leave group */}
-            {!isPastor && (
-              <div style={{ textAlign: 'center', marginTop: 32 }}>
+            {/* Leave / Delete group */}
+            <div style={{ textAlign: 'center', marginTop: 40 }}>
+              {!isPastor && (
                 <button onClick={onLeave} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer' }}>
                   Leave this group
                 </button>
-              </div>
-            )}
+              )}
+              {isPastor && (
+                <button
+                  onClick={async () => {
+                    if (!window.confirm('Delete this group and all its data? This cannot be undone.')) return;
+                    await supabase.from('group_members').delete().eq('group_id', group.id);
+                    await supabase.from('group_posts').delete().eq('group_id', group.id);
+                    await supabase.from('weekly_focus').delete().eq('group_id', group.id);
+                    await supabase.from('church_groups').delete().eq('id', group.id);
+                    onLeave?.();
+                  }}
+                  style={{ background: 'none', border: 'none', color: '#c0392b', fontSize: 12, cursor: 'pointer', opacity: 0.6 }}
+                >
+                  Delete group
+                </button>
+              )}
+            </div>
           </div>
         </div>
         );
