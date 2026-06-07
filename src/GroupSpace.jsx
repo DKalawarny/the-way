@@ -688,66 +688,75 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
         </div>
       )}
 
-      {/* ── Friend invite picker ── */}
+      {/* ── Invite dropdown ── */}
       {inviteOpen && !shareOpen && (
         <>
-          <div onClick={() => setInviteOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(20,12,8,0.52)' }} />
+          {/* backdrop — transparent so it just catches outside clicks */}
+          <div onClick={() => setInviteOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 400 }} />
+
+          {/* dropdown panel */}
           <div style={{
-            position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 401,
-            background: T.white, borderRadius: '22px 22px 0 0',
-            padding: '20px 0 calc(28px + env(safe-area-inset-bottom))',
-            maxHeight: '75dvh', display: 'flex', flexDirection: 'column',
-            boxShadow: '0 -8px 40px rgba(0,0,0,0.18)',
+            position: 'fixed', top: 64, right: 16, zIndex: 401,
+            width: 300, maxHeight: 480,
+            background: T.white, borderRadius: 16,
+            boxShadow: '0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08)',
+            border: `1px solid ${T.line}`,
+            display: 'flex', flexDirection: 'column',
+            overflow: 'hidden',
           }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
-              <div style={{ width: 40, height: 5, borderRadius: 3, background: '#E0D8CE' }} />
-            </div>
-            <div style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 600, color: T.ink, textAlign: 'center', marginBottom: 4, letterSpacing: '-0.015em' }}>
-              Invite to {group.name}
-            </div>
-            <div style={{ fontSize: 13, color: T.inkMuted, textAlign: 'center', marginBottom: 18 }}>
-              Invite code: <strong style={{ color: T.ink, letterSpacing: 3 }}>{group.invite_code}</strong>
+            {/* Header */}
+            <div style={{ padding: '14px 16px 10px', borderBottom: `1px solid ${T.line}`, flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 600, color: T.ink, letterSpacing: '-0.01em' }}>
+                  Invite to group
+                </div>
+                <button onClick={() => setInviteOpen(false)} style={{ background: 'none', border: 'none', color: T.inkMuted, cursor: 'pointer', fontSize: 16, padding: 0, lineHeight: 1 }}>✕</button>
+              </div>
+              <div style={{ fontSize: 12, color: T.inkMuted }}>
+                Code: <strong style={{ color: T.ink, letterSpacing: 2, fontFamily: 'monospace' }}>{group.invite_code}</strong>
+              </div>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px' }}>
+            {/* Friends list */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
               {friendsLoading ? (
                 <div style={{ textAlign: 'center', color: T.inkMuted, fontSize: 13, padding: '20px 0' }}>Loading…</div>
               ) : friends.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '16px 0 20px' }}>
-                  <div style={{ fontSize: 13, color: T.inkMuted, lineHeight: 1.6, marginBottom: 14 }}>
-                    You haven't connected with anyone yet.
+                <div style={{ padding: '16px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 13, color: T.inkMuted, lineHeight: 1.6, marginBottom: 12 }}>
+                    No connections yet.
                   </div>
                   {onFindPeople && (
                     <button
                       onClick={() => { setInviteOpen(false); onFindPeople(); }}
-                      style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '10px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                      style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '8px 18px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                     >
-                      Find people on kinwove →
+                      Find people →
                     </button>
                   )}
                 </div>
               ) : (
                 <>
-                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, marginBottom: 10 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, padding: '4px 16px 8px' }}>
                     Your connections
                   </div>
                   {friends.map((f) => {
                     const name = f.display_name || [f.first_name, f.last_name].filter(Boolean).join(' ') || 'Friend';
                     const sent = sentInvites.has(f.id);
                     return (
-                      <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: `1px solid ${T.line}` }}>
-                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: memberColor(f.id), color: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
+                      <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px' }}>
+                        <div style={{ width: 34, height: 34, borderRadius: '50%', background: memberColor(f.id), color: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
                           {f.avatar_url
                             ? <img src={f.avatar_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             : name.charAt(0).toUpperCase()}
                         </div>
-                        <div style={{ flex: 1, fontSize: 14, fontWeight: 500, color: T.ink }}>{name}</div>
+                        <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
                         <button
                           onClick={() => !sent && sendFriendInvite(f.id)}
                           disabled={sent}
-                          style={{ background: sent ? 'rgba(80,160,80,0.12)' : T.gold, color: sent ? '#4a9a4a' : T.cream, border: sent ? '1px solid rgba(80,160,80,0.4)' : 'none', borderRadius: 999, padding: '7px 16px', fontSize: 13, fontWeight: 600, cursor: sent ? 'default' : 'pointer', transition: 'all 0.2s', flexShrink: 0 }}
+                          style={{ background: sent ? 'rgba(80,160,80,0.12)' : T.gold, color: sent ? '#4a9a4a' : T.cream, border: sent ? '1px solid rgba(80,160,80,0.4)' : 'none', borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: sent ? 'default' : 'pointer', flexShrink: 0 }}
                         >
-                          {sent ? '✓ Sent' : 'Invite'}
+                          {sent ? '✓' : 'Invite'}
                         </button>
                       </div>
                     );
@@ -756,10 +765,11 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
               )}
             </div>
 
-            <div style={{ padding: '16px 16px 0' }}>
+            {/* Share link footer */}
+            <div style={{ padding: '10px 12px', borderTop: `1px solid ${T.line}`, flexShrink: 0 }}>
               <button
                 onClick={() => setShareOpen(true)}
-                style={{ width: '100%', padding: '13px', background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 14, fontSize: 14, fontWeight: 600, color: T.ink, cursor: 'pointer' }}
+                style={{ width: '100%', padding: '10px', background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 10, fontSize: 13, fontWeight: 600, color: T.ink, cursor: 'pointer' }}
               >
                 ↗ Share invite link
               </button>
