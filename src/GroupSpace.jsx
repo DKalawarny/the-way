@@ -339,6 +339,9 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [sentInvites, setSentInvites] = useState(new Set());
   const [shareOpen, setShareOpen]   = useState(false);
+  const [inviteSearch, setInviteSearch]           = useState('');
+  const [inviteSearchResults, setInviteSearchResults] = useState([]);
+  const [inviteSearching, setInviteSearching]     = useState(false);
   const imageDrafts = useImageDrafts(4);
 
   // Chat
@@ -373,6 +376,24 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
       setFriendsLoading(false);
     });
   }, [inviteOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Search all profiles when typing in invite dropdown
+  useEffect(() => {
+    const q = inviteSearch.trim();
+    if (q.length < 2) { setInviteSearchResults([]); return; }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setInviteSearching(true);
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, display_name, avatar_url, avatar_config')
+        .ilike('display_name', `%${q}%`)
+        .neq('id', myId ?? '')
+        .limit(8);
+      if (!cancelled) { setInviteSearchResults(data ?? []); setInviteSearching(false); }
+    }, 280);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [inviteSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function sendFriendInvite(recipientId) {
     setSentInvites((prev) => new Set([...prev, recipientId]));
@@ -692,7 +713,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
       {inviteOpen && !shareOpen && (
         <>
           {/* backdrop — transparent so it just catches outside clicks */}
-          <div onClick={() => setInviteOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 400 }} />
+          <div onClick={() => { setInviteOpen(false); setInviteSearch(''); setInviteSearchResults([]); }} style={{ position: 'fixed', inset: 0, zIndex: 400 }} />
 
           {/* dropdown panel */}
           <div style={{
@@ -710,45 +731,41 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
                 <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 600, color: T.ink, letterSpacing: '-0.01em' }}>
                   Invite to group
                 </div>
-                <button onClick={() => setInviteOpen(false)} style={{ background: 'none', border: 'none', color: T.inkMuted, cursor: 'pointer', fontSize: 16, padding: 0, lineHeight: 1 }}>✕</button>
+                <button onClick={() => { setInviteOpen(false); setInviteSearch(''); setInviteSearchResults([]); }} style={{ background: 'none', border: 'none', color: T.inkMuted, cursor: 'pointer', fontSize: 16, padding: 0, lineHeight: 1 }}>✕</button>
               </div>
               <div style={{ fontSize: 12, color: T.inkMuted }}>
                 Code: <strong style={{ color: T.ink, letterSpacing: 2, fontFamily: 'monospace' }}>{group.invite_code}</strong>
               </div>
             </div>
 
-            {/* Friends list */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
-              {friendsLoading ? (
-                <div style={{ textAlign: 'center', color: T.inkMuted, fontSize: 13, padding: '20px 0' }}>Loading…</div>
-              ) : friends.length === 0 ? (
-                <div style={{ padding: '16px', textAlign: 'center' }}>
-                  <div style={{ fontSize: 13, color: T.inkMuted, lineHeight: 1.6, marginBottom: 12 }}>
-                    No connections yet.
-                  </div>
-                  {onFindPeople && (
-                    <button
-                      onClick={() => { setInviteOpen(false); onFindPeople(); }}
-                      style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '8px 18px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-                    >
-                      Find people →
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, padding: '4px 16px 8px' }}>
-                    Your connections
-                  </div>
-                  {friends.map((f) => {
-                    const name = f.display_name || [f.first_name, f.last_name].filter(Boolean).join(' ') || 'Friend';
+            {/* Search box */}
+            <div style={{ padding: '8px 12px', borderBottom: `1px solid ${T.line}`, flexShrink: 0 }}>
+              <input
+                value={inviteSearch}
+                onChange={(e) => setInviteSearch(e.target.value)}
+                placeholder="Search by name…"
+                style={{ width: '100%', boxSizing: 'border-box', background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 8, padding: '7px 12px', fontSize: 13, color: T.ink, outline: 'none' }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
+                onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
+              />
+            </div>
+
+            {/* Results / connections list */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
+              {inviteSearch.trim().length >= 2 ? (
+                // Search results
+                inviteSearching ? (
+                  <div style={{ textAlign: 'center', color: T.inkMuted, fontSize: 13, padding: '16px 0' }}>Searching…</div>
+                ) : inviteSearchResults.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: T.inkMuted, fontSize: 13, padding: '16px 0' }}>No one found</div>
+                ) : (
+                  inviteSearchResults.map((f) => {
+                    const name = f.display_name || 'Member';
                     const sent = sentInvites.has(f.id);
                     return (
                       <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px' }}>
                         <div style={{ width: 34, height: 34, borderRadius: '50%', background: memberColor(f.id), color: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
-                          {f.avatar_url
-                            ? <img src={f.avatar_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            : name.charAt(0).toUpperCase()}
+                          {f.avatar_url ? <img src={f.avatar_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : name.charAt(0).toUpperCase()}
                         </div>
                         <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
                         <button
@@ -756,12 +773,48 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
                           disabled={sent}
                           style={{ background: sent ? 'rgba(80,160,80,0.12)' : T.gold, color: sent ? '#4a9a4a' : T.cream, border: sent ? '1px solid rgba(80,160,80,0.4)' : 'none', borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: sent ? 'default' : 'pointer', flexShrink: 0 }}
                         >
-                          {sent ? '✓' : 'Invite'}
+                          {sent ? '✓ Sent' : 'Invite'}
                         </button>
                       </div>
                     );
-                  })}
-                </>
+                  })
+                )
+              ) : (
+                // Connections list (no search query)
+                friendsLoading ? (
+                  <div style={{ textAlign: 'center', color: T.inkMuted, fontSize: 13, padding: '16px 0' }}>Loading…</div>
+                ) : friends.length === 0 ? (
+                  <div style={{ padding: '14px 16px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 13, color: T.inkMuted, lineHeight: 1.6 }}>
+                      Search above to find anyone on kinwove and send them an invite.
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, padding: '4px 16px 8px' }}>
+                      Your connections
+                    </div>
+                    {friends.map((f) => {
+                      const name = f.display_name || [f.first_name, f.last_name].filter(Boolean).join(' ') || 'Friend';
+                      const sent = sentInvites.has(f.id);
+                      return (
+                        <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px' }}>
+                          <div style={{ width: 34, height: 34, borderRadius: '50%', background: memberColor(f.id), color: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
+                            {f.avatar_url ? <img src={f.avatar_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : name.charAt(0).toUpperCase()}
+                          </div>
+                          <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+                          <button
+                            onClick={() => !sent && sendFriendInvite(f.id)}
+                            disabled={sent}
+                            style={{ background: sent ? 'rgba(80,160,80,0.12)' : T.gold, color: sent ? '#4a9a4a' : T.cream, border: sent ? '1px solid rgba(80,160,80,0.4)' : 'none', borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: sent ? 'default' : 'pointer', flexShrink: 0 }}
+                          >
+                            {sent ? '✓ Sent' : 'Invite'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </>
+                )
               )}
             </div>
 
