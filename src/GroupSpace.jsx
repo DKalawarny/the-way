@@ -368,7 +368,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
       .from('profiles')
       .select('id, display_name, avatar_url, avatar_config')
       .neq('id', myId)
-      .eq('is_system_account', false)
+      .neq('is_system_account', true)
       .not('display_name', 'is', null)
       .order('display_name', { ascending: true })
       .limit(1000)
