@@ -202,7 +202,7 @@ function PostCard({ post, session, profile, isPastor }) {
   );
 }
 
-const STUDY_SYSTEM = `You are a group Bible study facilitator. Given a passage or theme, respond with exactly 3 open-ended discussion questions numbered 1–3. Output only the questions — no preamble, no titles, no explanations. Each question should invite personal reflection and different perspectives.`;
+const STUDY_SYSTEM = `You are a group Bible study facilitator. Given a specific Bible passage or theme, write exactly 3 discussion questions numbered 1–3. Rules: output only the questions — no preamble, no titles, no explanations. Ground each question directly in the specific text or theme given. Avoid generic phrases like "How have you experienced..." — make every question feel specific to this passage.`;
 
 async function streamStudyQuestions(passage, onChunk, signal) {
   const res = await authedFetch('/api/chat', {
@@ -244,81 +244,121 @@ function parseQuestions(raw) {
 }
 
 function StudyQuestionsCard({ focus, isPastor, onUseQuestion }) {
-  const [raw, setRaw] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [focusId, setFocusId] = useState(null);
+  const published = Array.isArray(focus?.questions) && focus.questions.length > 0 ? focus.questions : null;
+  const [editMode, setEditMode] = useState(!published && isPastor);
+  const [drafts, setDrafts]     = useState(published ?? ['', '', '']);
+  const [generating, setGenerating] = useState(false);
+  const [saving, setSaving]     = useState(false);
   const abortRef = useRef(null);
 
+  // Sync when focus changes (new week)
   useEffect(() => {
-    if (!focus || focus.id === focusId) return;
-    generate();
-  }, [focus]);
+    const q = Array.isArray(focus?.questions) && focus.questions.length > 0 ? focus.questions : null;
+    if (q) { setDrafts(q); setEditMode(false); }
+    else if (isPastor) { setDrafts(['', '', '']); setEditMode(true); }
+  }, [focus?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function generate() {
+  async function suggestWithAI() {
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
-    setRaw('');
-    setLoading(true);
-    setFocusId(focus.id);
+    setDrafts(['', '', '']);
+    setGenerating(true);
+    let raw = '';
     try {
-      await streamStudyQuestions(focus.passage, (chunk) => setRaw((r) => r + chunk), ctrl.signal);
+      await streamStudyQuestions(focus.passage, (chunk) => {
+        raw += chunk;
+        const parsed = parseQuestions(raw);
+        setDrafts([parsed[0] ?? '', parsed[1] ?? '', parsed[2] ?? '']);
+      }, ctrl.signal);
     } catch {}
-    setLoading(false);
+    setGenerating(false);
   }
 
-  const questions = parseQuestions(raw);
+  async function publish() {
+    const toSave = drafts.map((q) => q.trim()).filter(Boolean);
+    if (!toSave.length) return;
+    setSaving(true);
+    await supabase.from('weekly_focus').update({ questions: toSave }).eq('id', focus.id);
+    focus.questions = toSave; // update in-memory so members see immediately
+    setSaving(false);
+    setEditMode(false);
+  }
 
+  // Members: hide the card entirely if pastor hasn't published questions yet
+  if (!isPastor && !published) return null;
+
+  // Members: read-only view of published questions
+  if (!isPastor) {
+    return (
+      <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 18, padding: '20px 22px', marginBottom: 20 }}>
+        <div style={{ fontSize: 10, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', opacity: 0.8, marginBottom: 14 }}>
+          Discussion Questions
+        </div>
+        {published.map((q, i) => (
+          <div key={i} style={{ background: T.parchment, borderRadius: 12, padding: '14px 16px', marginBottom: i < published.length - 1 ? 10 : 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.65, flex: 1 }}>{q}</div>
+            <button onClick={() => onUseQuestion(q)} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '6px 14px', fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, transition: 'opacity 0.15s' }}>
+              Reflect →
+            </button>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Pastor: edit mode — write or generate questions
+  if (editMode) {
+    return (
+      <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 18, padding: '20px 22px', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <div style={{ fontSize: 10, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', opacity: 0.8 }}>Discussion Questions</div>
+          <button onClick={suggestWithAI} disabled={generating} style={{ background: 'none', border: `1px solid ${T.line}`, color: T.inkMuted, borderRadius: 999, padding: '4px 12px', fontSize: 11, cursor: 'pointer' }}>
+            {generating ? '…generating' : '✦ Suggest with AI'}
+          </button>
+        </div>
+        <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 14, lineHeight: 1.55 }}>
+          Write 3 questions for your group — or tap AI to suggest some. Published questions appear for all members.
+        </div>
+        {drafts.map((q, i) => (
+          <textarea
+            key={i}
+            value={q}
+            onChange={(e) => setDrafts((prev) => { const n = [...prev]; n[i] = e.target.value; return n; })}
+            placeholder={`Question ${i + 1}…`}
+            rows={2}
+            style={{ width: '100%', boxSizing: 'border-box', resize: 'none', background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 10, padding: '11px 14px', fontSize: 14, color: T.ink, fontFamily: T.serif, outline: 'none', lineHeight: 1.6, marginBottom: 10 }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
+            onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
+          />
+        ))}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <button onClick={publish} disabled={saving || drafts.every((q) => !q.trim())} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '10px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: saving || drafts.every((q) => !q.trim()) ? 0.5 : 1 }}>
+            {saving ? 'Publishing…' : 'Publish to group'}
+          </button>
+          {published && (
+            <button onClick={() => setEditMode(false)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer' }}>Cancel</button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Pastor: view published questions (with Edit button)
   return (
     <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 18, padding: '20px 22px', marginBottom: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div style={{ fontSize: 10, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', opacity: 0.8 }}>
-          Study Questions
-        </div>
-        {isPastor && !loading && raw && (
-          <button
-            onClick={generate}
-            style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 11, cursor: 'pointer', padding: 0 }}
-          >
-            ↻ Regenerate
-          </button>
-        )}
+        <div style={{ fontSize: 10, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', opacity: 0.8 }}>Discussion Questions</div>
+        <button onClick={() => { setDrafts(focus.questions ?? ['', '', '']); setEditMode(true); }} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 11, cursor: 'pointer', padding: 0 }}>Edit</button>
       </div>
-
-      {loading && questions.length === 0 && (
-        <div style={{ fontFamily: T.serif, fontSize: 14, color: T.inkMuted, lineHeight: 1.7 }}>
-          {raw || 'Generating questions…'}
-        </div>
-      )}
-
-      {questions.map((q, i) => (
-        <div key={i} style={{
-          background: T.parchment, borderRadius: 12, padding: '14px 16px',
-          marginBottom: i < questions.length - 1 ? 10 : 0,
-          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
-        }}>
-          <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.65, flex: 1 }}>
-            {q}
-          </div>
-          <button
-            onClick={() => onUseQuestion(q)}
-            style={{
-              background: 'none', border: `1px solid ${T.line}`, color: T.inkSoft,
-              borderRadius: 999, padding: '5px 12px', fontSize: 11, cursor: 'pointer',
-              whiteSpace: 'nowrap', flexShrink: 0,
-            }}
-          >
+      {(focus.questions ?? []).map((q, i) => (
+        <div key={i} style={{ background: T.parchment, borderRadius: 12, padding: '14px 16px', marginBottom: i < focus.questions.length - 1 ? 10 : 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.65, flex: 1 }}>{q}</div>
+          <button onClick={() => onUseQuestion(q)} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '6px 14px', fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
             Reflect →
           </button>
         </div>
       ))}
-
-      {loading && questions.length === 0 && !raw && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-          <div style={{ width: 14, height: 14, border: `1.5px solid ${T.line}`, borderTopColor: T.gold, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-          <span style={{ fontSize: 12, color: T.inkMuted }}>Generating…</span>
-        </div>
-      )}
     </div>
   );
 }
@@ -337,6 +377,9 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   const [friendsLoading, setFriendsLoading] = useState(false);
   const [sentInvites, setSentInvites] = useState(new Set()); // recipient IDs
   const [shareOpen, setShareOpen]     = useState(false);
+  const [reflectOpen, setReflectOpen] = useState(false);
+  const [reflectQuestion, setReflectQuestion] = useState('');
+  const composeRef = useRef(null);
   const imageDrafts = useImageDrafts(4);
 
   // Chat
@@ -554,16 +597,14 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
             {memberCount} {memberCount === 1 ? 'member' : 'members'}{group.tradition ? ` · ${group.tradition}` : ''}
           </div>
         </div>
-        {isPastor && (
-          <button onClick={() => setInviteOpen(true)} style={{
-            background: 'transparent',
-            border: `1px solid ${T.line}`, color: T.inkSoft,
-            borderRadius: 999, padding: '5px 14px', fontSize: 12, cursor: 'pointer',
-            transition: 'all 0.2s',
-          }}>
-            ↗ Invite
-          </button>
-        )}
+        <button onClick={() => setInviteOpen(true)} style={{
+          background: 'transparent',
+          border: `1px solid ${T.line}`, color: T.inkSoft,
+          borderRadius: 999, padding: '5px 14px', fontSize: 12, cursor: 'pointer',
+          transition: 'all 0.2s',
+        }}>
+          ↗ Invite
+        </button>
       </header>}
 
       {/* Tab bar */}
@@ -634,43 +675,11 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 100px', background: T.cream }}>
         <div style={{ maxWidth: 640, margin: '0 auto' }}>
 
-          {/* Invite code banner — always visible so members can share easily */}
-          <div style={{
-            background: 'rgba(184,115,58,0.08)', border: '1px solid rgba(184,115,58,0.25)',
-            borderRadius: 14, padding: '14px 18px', marginBottom: 20,
-            display: 'flex', alignItems: 'center', gap: 14,
-          }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 10, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', marginBottom: 4, opacity: 0.8 }}>
-                Invite code
-              </div>
-              <div style={{ fontFamily: T.display, fontSize: 26, fontWeight: 600, color: T.ink, letterSpacing: 6 }}>
-                {group.invite_code}
-              </div>
-              <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 4 }}>
-                Share this code so others can join
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(group.invite_code).catch(() => {});
-                setInviteOpen(true);
-              }}
-              style={{
-                background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
-                padding: '10px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                flexShrink: 0,
-              }}
-            >
-              ↗ Invite
-            </button>
-          </div>
-
-          {/* Weekly focus */}
+          {/* ── 1. Weekly focus ── */}
           {settingFocus ? (
             <SetFocusForm groupId={group.id} onSaved={(f) => { setFocus(f); setSettingFocus(false); }} onCancel={() => setSettingFocus(false)} />
           ) : focus ? (
-            <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 18, padding: '22px 22px', marginBottom: 16 }}>
+            <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 18, padding: '22px 22px', marginBottom: 20 }}>
               <div style={{ fontSize: 10, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', marginBottom: 10, opacity: 0.75 }}>This week</div>
               <div style={{ fontFamily: T.display, fontSize: 24, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.15, marginBottom: focus.pastor_note ? 12 : 0 }}>
                 {focus.passage}
@@ -691,31 +700,51 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
               {isPastor ? (
                 <>
                   <div style={{ fontFamily: T.serif, fontSize: 16, color: T.inkMuted, marginBottom: 14 }}>No focus set for this week yet.</div>
-                  <button onClick={() => setSettingFocus(true)} style={{
-                    background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
-                    padding: '10px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                  }}>
+                  <button onClick={() => setSettingFocus(true)} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '10px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                     Set this week's focus
                   </button>
                 </>
               ) : (
                 <div style={{ fontFamily: T.serif, fontSize: 15, color: T.inkMuted }}>
-                  Your pastor hasn't set a focus for this week yet.
+                  Your leader hasn't set a focus for this week yet.
                 </div>
               )}
             </div>
           )}
 
-          {/* AI study questions — shown whenever there's a focus */}
+          {/* ── 2. Post composer (above questions so action is immediate) ── */}
+          {!settingFocus && (
+            <form onSubmit={submitPost} style={{ marginBottom: 24 }}>
+              <textarea
+                ref={composeRef}
+                value={text}
+                onChange={(e) => { setText(e.target.value); sessionStorage.setItem(POST_DRAFT_KEY, e.target.value); }}
+                placeholder={focus ? `Share a reflection on ${focus.passage}…` : 'Share something with the group…'}
+                rows={3}
+                style={{ width: '100%', boxSizing: 'border-box', resize: 'none', background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '13px 16px', fontSize: 14, color: T.ink, fontFamily: T.serif, outline: 'none', lineHeight: 1.65 }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
+                onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
+              />
+              <ImageDraftGrid drafts={imageDrafts.drafts} onRemove={imageDrafts.remove} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, gap: 8 }}>
+                <ImageAttachButton drafts={imageDrafts.drafts} max={imageDrafts.max} fileInputRef={imageDrafts.fileInputRef} onPick={imageDrafts.pick} />
+                <button type="submit" disabled={submitting || (!text.trim() && imageDrafts.drafts.length === 0)} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '9px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: submitting || (!text.trim() && imageDrafts.drafts.length === 0) ? 0.5 : 1 }}>
+                  Post
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* ── 3. Discussion questions (pastor-controlled) ── */}
           {focus && !settingFocus && (
             <StudyQuestionsCard
               focus={focus}
               isPastor={isPastor}
-              onUseQuestion={(q) => setText(q)}
+              onUseQuestion={(q) => { setReflectQuestion(q); setReflectOpen(true); }}
             />
           )}
 
-          {/* Ask AI — inline, contextual to the focus passage */}
+          {/* ── 4. Ask AI ── */}
           {focus && !settingFocus && (
             <div style={{ marginBottom: 20 }}>
               {!askOpen ? (
@@ -764,41 +793,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
             </div>
           )}
 
-          {/* Post composer */}
-          <form onSubmit={submitPost} style={{ marginBottom: 24 }}>
-            <textarea
-              value={text}
-              onChange={(e) => { setText(e.target.value); sessionStorage.setItem(POST_DRAFT_KEY, e.target.value); }}
-              placeholder={focus ? `Share a reflection on ${focus.passage}…` : 'Share something with the group…'}
-              rows={3}
-              style={{
-                width: '100%', boxSizing: 'border-box', resize: 'none',
-                background: T.white, border: `1px solid ${T.line}`,
-                borderRadius: 14, padding: '13px 16px', fontSize: 14, color: T.ink,
-                fontFamily: T.serif, outline: 'none', lineHeight: 1.65,
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
-              onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
-            />
-            <ImageDraftGrid drafts={imageDrafts.drafts} onRemove={imageDrafts.remove} />
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, gap: 8 }}>
-              <ImageAttachButton
-                drafts={imageDrafts.drafts} max={imageDrafts.max}
-                fileInputRef={imageDrafts.fileInputRef} onPick={imageDrafts.pick}
-              />
-              <button type="submit"
-                disabled={submitting || (!text.trim() && imageDrafts.drafts.length === 0)}
-                style={{
-                  background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
-                  padding: '9px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                  opacity: submitting || (!text.trim() && imageDrafts.drafts.length === 0) ? 0.5 : 1,
-                }}>
-                Post
-              </button>
-            </div>
-          </form>
-
-          {/* Posts */}
+          {/* ── 5. Posts ── */}
           {posts.length === 0 && (
             <div style={{ textAlign: 'center', padding: '48px 20px' }}>
               <div style={{ fontFamily: T.serif, fontSize: 18, color: T.inkSoft, marginBottom: 8 }}>
@@ -823,6 +818,41 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
           )}
         </div>
       </div>
+      )}
+
+      {/* ── Reflect sheet — opens when a discussion question is tapped ─── */}
+      {reflectOpen && (
+        <>
+          <div onClick={() => setReflectOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(20,12,8,0.52)' }} />
+          <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 401, background: T.white, borderRadius: '22px 22px 0 0', padding: '20px 20px calc(28px + env(safe-area-inset-bottom))', boxShadow: '0 -8px 40px rgba(0,0,0,0.18)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 2 }}>
+              <div style={{ width: 40, height: 5, borderRadius: 3, background: '#E0D8CE' }} />
+            </div>
+            <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 15, color: T.inkSoft, lineHeight: 1.65, paddingBottom: 4, borderBottom: `1px solid ${T.line}` }}>
+              "{reflectQuestion}"
+            </div>
+            <textarea
+              autoFocus
+              value={text}
+              onChange={(e) => { setText(e.target.value); sessionStorage.setItem(POST_DRAFT_KEY, e.target.value); }}
+              placeholder="Your reflection…"
+              rows={5}
+              style={{ width: '100%', boxSizing: 'border-box', resize: 'none', background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 12, padding: '13px 16px', fontSize: 15, color: T.ink, fontFamily: T.serif, outline: 'none', lineHeight: 1.7 }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
+              onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
+            />
+            <button
+              onClick={async (e) => { await submitPost(e); setReflectOpen(false); }}
+              disabled={submitting || !text.trim()}
+              style={{ background: text.trim() ? T.gold : 'rgba(184,115,58,0.3)', color: T.cream, border: 'none', borderRadius: 999, padding: '14px', fontSize: 14, fontWeight: 600, cursor: text.trim() ? 'pointer' : 'default', width: '100%' }}
+            >
+              {submitting ? 'Posting…' : 'Post reflection'}
+            </button>
+            <button onClick={() => setReflectOpen(false)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 13, cursor: 'pointer', paddingBottom: 4 }}>
+              Cancel
+            </button>
+          </div>
+        </>
       )}
 
       {/* ── Friend invite picker ─────────────────────────────────────────── */}
