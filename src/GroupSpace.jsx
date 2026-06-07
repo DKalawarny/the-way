@@ -67,6 +67,7 @@ function ReplyRow({ reply, myId, isPastor, groupId, onDelete }) {
   const [busy, setBusy]               = useState(false);
   const [nested, setNested]           = useState(reply.nested ?? []);
   const [confirming, setConfirming]   = useState(false);
+  useEffect(() => { setNested(reply.nested ?? []); }, [reply.nested]);
   const canDelete = reply.author_id === myId || isPastor;
   const name = reply.profiles?.display_name ?? 'Member';
 
