@@ -2081,46 +2081,6 @@ useEffect(() => {
 
 
 
-          {/* ── Groups card ── always visible so users can find it from any tab */}
-          {onOpenGroups && (
-            <button
-              onClick={onOpenGroups}
-              style={{
-                width: '100%', margin: '0 0 10px', padding: '14px 18px',
-                background: userGroup
-                  ? 'linear-gradient(135deg, rgba(107,36,56,0.08) 0%, rgba(184,115,58,0.06) 100%)'
-                  : T.white,
-                border: `1px solid ${userGroup ? 'rgba(107,36,56,0.2)' : T.line}`,
-                borderRadius: 14,
-                display: 'flex', alignItems: 'center', gap: 14,
-                cursor: 'pointer', textAlign: 'left',
-              }}
-            >
-              <span style={{ fontSize: 26, flexShrink: 0 }}>📖</span>
-              <div style={{ flex: 1 }}>
-                {userGroup ? (
-                  <>
-                    <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink, marginBottom: 2 }}>
-                      {userGroup.group.name}
-                    </div>
-                    <div style={{ fontSize: 12, color: T.inkMuted }}>
-                      Your study group · Tap to open
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink, marginBottom: 2 }}>
-                      Start or join a study group
-                    </div>
-                    <div style={{ fontSize: 12, color: T.inkMuted }}>
-                      Free · Bible study, prayer circle, or discipleship group.
-                    </div>
-                  </>
-                )}
-              </div>
-              <span style={{ color: T.inkMuted, fontSize: 16, flexShrink: 0 }}>›</span>
-            </button>
-          )}
 
 
           {/* ── Posts feed (excludes milestones + sermons — those have own tabs) ── */}
