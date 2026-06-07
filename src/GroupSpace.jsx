@@ -271,8 +271,10 @@ function ThreadCard({ thread, groupId, myId, isPastor, onDelete, onPin, refreshK
           {expanded
             ? 'Hide replies'
             : loaded
-              ? `${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`
-              : 'Reply'}
+              ? `↩ ${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`
+              : (thread.reply_count ?? 0) > 0
+                ? `↩ ${thread.reply_count} ${thread.reply_count === 1 ? 'reply' : 'replies'}`
+                : 'Reply'}
         </button>
       </div>
 
@@ -442,7 +444,15 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
       .order('created_at', { ascending: false })
       .limit(50);
     if (error) console.error('[loadThreads]', error.message, error.details, error.hint);
-    setThreads(data ?? []);
+    const threads = data ?? [];
+    if (threads.length === 0) { setThreads([]); return; }
+    const { data: replyCounts } = await supabase
+      .from('group_posts')
+      .select('parent_id')
+      .in('parent_id', threads.map((t) => t.id));
+    const countMap = {};
+    (replyCounts ?? []).forEach((r) => { countMap[r.parent_id] = (countMap[r.parent_id] ?? 0) + 1; });
+    setThreads(threads.map((t) => ({ ...t, reply_count: countMap[t.id] ?? 0 })));
   }
 
   async function postThread(e) {
