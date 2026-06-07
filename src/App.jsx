@@ -117,6 +117,7 @@ const ConnectScreen     = lazy(() => import('./ConnectScreen.jsx'));
 const Prayer            = lazy(() => import('./Prayer.jsx'));
 const GroupSpace        = lazy(() => import('./GroupSpace.jsx'));
 const GroupSetup        = lazy(() => import('./GroupSetup.jsx'));
+const GroupsHome        = lazy(() => import('./GroupsHome.jsx'));
 const SeekingIntake     = lazy(() => import('./SeekingIntake.jsx'));
 const Journeys          = lazy(() => import('./Journeys.jsx'));
 const SharedView        = lazy(() => import('./SharedView.jsx'));
@@ -1816,7 +1817,8 @@ export default function App() {
   const [journeyProgress, setJourneyProgress] = useState(() => getJourneyProgress());
   const [autoSendPrompt, setAutoSendPrompt] = useState(null);
   const [installTrigger, setInstallTrigger] = useState(false);
-  const [userGroup, setUserGroup] = useState(null);   // { group, role }
+  const [userGroups, setUserGroups] = useState([]);   // [{ group, role }, ...]
+  const [viewingGroupEntry, setViewingGroupEntry] = useState(null); // { group, role } | null
   const [shareId] = useState(() => new URLSearchParams(window.location.search).get('s'));
   const [deepLinkPostId] = useState(() => new URLSearchParams(window.location.search).get('post'));
   const [deepLinkInviteId] = useState(() => new URLSearchParams(window.location.search).get('invite'));
@@ -2234,7 +2236,6 @@ export default function App() {
     const uid = session.user.id;
     const checkAndNavigate = async () => {
       await loadProfile(uid);
-      // If user has a group, send them there
       const { data } = await supabase.from('group_members').select('role, church_groups(*)').eq('member_id', uid).limit(1).maybeSingle();
       if (data?.church_groups) setStage('groups');
     };
@@ -2485,9 +2486,8 @@ export default function App() {
       .from('group_members')
       .select('role, church_groups(*)')
       .eq('member_id', userId)
-      .limit(1)
-      .maybeSingle();
-    if (data?.church_groups) setUserGroup({ group: data.church_groups, role: data.role });
+      .order('joined_at', { ascending: false });
+    setUserGroups((data ?? []).filter((m) => m.church_groups).map((m) => ({ group: m.church_groups, role: m.role })));
   }
 
   const currentConv = conversations.find((c) => c.id === currentConvId) ?? null;
@@ -2832,7 +2832,7 @@ export default function App() {
         <Community
           session={session}
           profile={profile}
-          userGroup={userGroup}
+          userGroup={userGroups[0] ?? null}
           hideHeader={showNav}
           onClose={() => goBack('home')}
           onOpenChat={(q) => { if (!currentConvId) startChatFromProfile(); if (q) setPrefilledInput(q); setChatPanelOpen(true); }}
@@ -2885,7 +2885,7 @@ export default function App() {
         <Community
           session={session}
           profile={profile}
-          userGroup={userGroup}
+          userGroup={userGroups[0] ?? null}
           accentColor="#6b2438"
           hideHeader={showNav}
           openCommentPostId={openCommentPostId}
@@ -2912,28 +2912,34 @@ export default function App() {
           session={session}
           profile={profile}
           onClose={() => goBack('feed')}
-          userGroup={userGroup}
+          userGroup={userGroups[0] ?? null}
         />
       )}
       {stage === 'groups' && session && (
-        userGroup
+        viewingGroupEntry
           ? <GroupSpace
-              group={userGroup.group}
-              role={userGroup.role}
+              group={viewingGroupEntry.group}
+              role={viewingGroupEntry.role}
               session={session}
               profile={profile}
-              onClose={() => { setChurchReturnTab('groups'); setStage('church'); }}
+              onClose={() => setViewingGroupEntry(null)}
               onFindPeople={() => setPeopleSearchOpen(true)}
               onLeave={async () => {
-                await supabase.from('group_members').delete().eq('member_id', session.user.id).eq('group_id', userGroup.group.id);
-                setUserGroup(null);
-                setStage('feed');
+                await supabase.from('group_members').delete().eq('member_id', session.user.id).eq('group_id', viewingGroupEntry.group.id);
+                setUserGroups((prev) => prev.filter((g) => g.group.id !== viewingGroupEntry.group.id));
+                setViewingGroupEntry(null);
               }}
             />
-          : <GroupSetup
+          : <GroupsHome
+              userGroups={userGroups}
               session={session}
-              onJoined={(g) => { setUserGroup(g); setStage('groups'); }}
-              onClose={() => goBack('feed')}
+              profile={profile}
+              onOpenGroup={setViewingGroupEntry}
+              onJoined={(g) => {
+                setUserGroups((prev) => [...prev, g]);
+                setViewingGroupEntry(g);
+              }}
+              onClose={() => { setChurchReturnTab(null); setStage('church'); }}
             />
       )}
       {stage === 'connect' && session && (
@@ -3324,7 +3330,7 @@ export default function App() {
               onConsumeAutoSend={() => setAutoSendPrompt(null)}
               profile={profile}
               session={session}
-              userGroup={userGroup}
+              userGroup={userGroups[0] ?? null}
               onSignUp={() => setAuthStage('auth')}
               initialMessages={currentConv?.messages ?? []}
               onMessagesChange={(msgs) => {

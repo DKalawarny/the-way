@@ -334,14 +334,14 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   const [threadText, setThreadText] = useState('');
   const [posting, setPosting]       = useState(false);
   const [memberCount, setMemberCount] = useState(0);
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [friends, setFriends]       = useState([]);
-  const [friendsLoading, setFriendsLoading] = useState(false);
-  const [sentInvites, setSentInvites] = useState(new Set());
-  const [shareOpen, setShareOpen]   = useState(false);
-  const [inviteSearch, setInviteSearch]           = useState('');
-  const [inviteSearchResults, setInviteSearchResults] = useState([]);
-  const [inviteSearching, setInviteSearching]     = useState(false);
+  const [inviteOpen, setInviteOpen]   = useState(false);
+  const [allUsers, setAllUsers]       = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [userFilter, setUserFilter]   = useState('');
+  const [selected, setSelected]       = useState(new Set());
+  const [inviteSent, setInviteSent]   = useState(new Set());
+  const [inviting, setInviting]       = useState(false);
+  const [shareOpen, setShareOpen]     = useState(false);
   const imageDrafts = useImageDrafts(4);
 
   // Chat
@@ -353,55 +353,39 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   const msgEndRef   = useRef(null);
   const msgInputRef = useRef(null);
 
-  // Load friends when invite picker opens
+  // Load ALL kinwove users when invite opens (cached per mount)
   useEffect(() => {
-    if (!inviteOpen) return;
-    const uid = myId;
-    if (!uid) return;
-    setFriendsLoading(true);
-    Promise.all([
-      supabase.from('follows').select('following_id').eq('follower_id', uid),
-      supabase.from('follows').select('follower_id').eq('following_id', uid),
-    ]).then(async ([{ data: following }, { data: followers }]) => {
-      const ids = [...new Set([
-        ...(following ?? []).map((r) => r.following_id),
-        ...(followers  ?? []).map((r) => r.follower_id),
-      ])].filter((id) => id !== uid);
-      if (!ids.length) { setFriends([]); setFriendsLoading(false); return; }
-      const { data: ps } = await supabase
-        .from('profiles')
-        .select('id, display_name, first_name, last_name, avatar_url, avatar_config')
-        .in('id', ids);
-      setFriends(ps ?? []);
-      setFriendsLoading(false);
-    });
+    if (!inviteOpen || !myId || allUsers.length > 0) return;
+    setUsersLoading(true);
+    supabase
+      .from('profiles')
+      .select('id, display_name, avatar_url, avatar_config')
+      .neq('id', myId)
+      .order('display_name', { ascending: true })
+      .limit(200)
+      .then(({ data }) => { setAllUsers(data ?? []); setUsersLoading(false); });
   }, [inviteOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Search all profiles when typing in invite dropdown
-  useEffect(() => {
-    const q = inviteSearch.trim();
-    if (q.length < 2) { setInviteSearchResults([]); return; }
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      setInviteSearching(true);
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, display_name, avatar_url, avatar_config')
-        .ilike('display_name', `%${q}%`)
-        .neq('id', myId ?? '')
-        .limit(8);
-      if (!cancelled) { setInviteSearchResults(data ?? []); setInviteSearching(false); }
-    }, 280);
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [inviteSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+  function toggleSelect(id) {
+    if (inviteSent.has(id)) return;
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
 
-  async function sendFriendInvite(recipientId) {
-    setSentInvites((prev) => new Set([...prev, recipientId]));
-    const { error } = await supabase.rpc('send_group_invite', { p_group_id: group.id, p_recipient_id: recipientId });
-    if (error) {
-      console.error('[group invite]', error.message);
-      setSentInvites((prev) => { const n = new Set(prev); n.delete(recipientId); return n; });
-    }
+  async function sendInvites() {
+    if (!selected.size || inviting) return;
+    setInviting(true);
+    const ids = [...selected];
+    const results = await Promise.all(
+      ids.map((id) => supabase.rpc('send_group_invite', { p_group_id: group.id, p_recipient_id: id }))
+    );
+    results.forEach(({ error }, i) => { if (error) console.error('[group invite]', ids[i], error.message); });
+    setInviteSent((prev) => new Set([...prev, ...ids]));
+    setSelected(new Set());
+    setInviting(false);
   }
 
   useEffect(() => {
@@ -709,127 +693,104 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
         </div>
       )}
 
-      {/* ── Invite dropdown ── */}
-      {inviteOpen && !shareOpen && (
-        <>
-          {/* backdrop — transparent so it just catches outside clicks */}
-          <div onClick={() => { setInviteOpen(false); setInviteSearch(''); setInviteSearchResults([]); }} style={{ position: 'fixed', inset: 0, zIndex: 400 }} />
-
-          {/* dropdown panel */}
-          <div style={{
-            position: 'fixed', top: 64, right: 16, zIndex: 401,
-            width: 300, maxHeight: 480,
-            background: T.white, borderRadius: 16,
-            boxShadow: '0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08)',
-            border: `1px solid ${T.line}`,
-            display: 'flex', flexDirection: 'column',
-            overflow: 'hidden',
-          }}>
-            {/* Header */}
-            <div style={{ padding: '14px 16px 10px', borderBottom: `1px solid ${T.line}`, flexShrink: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 600, color: T.ink, letterSpacing: '-0.01em' }}>
-                  Invite to group
+      {/* ── Invite panel — load all users, checkbox multi-select ── */}
+      {inviteOpen && !shareOpen && (() => {
+        const q = userFilter.trim().toLowerCase();
+        const filtered = q ? allUsers.filter((u) => (u.display_name ?? '').toLowerCase().includes(q)) : allUsers;
+        const selCount = selected.size;
+        const closeInvite = () => { setInviteOpen(false); setUserFilter(''); setSelected(new Set()); };
+        return (
+          <>
+            <div onClick={closeInvite} style={{ position: 'fixed', inset: 0, zIndex: 400 }} />
+            <div onClick={(e) => e.stopPropagation()} style={{
+              position: 'fixed', top: 64, right: 16, zIndex: 401,
+              width: 320, maxHeight: 520,
+              background: T.white, borderRadius: 16,
+              boxShadow: '0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08)',
+              border: `1px solid ${T.line}`,
+              display: 'flex', flexDirection: 'column', overflow: 'hidden',
+            }}>
+              {/* Header */}
+              <div style={{ padding: '14px 16px 10px', borderBottom: `1px solid ${T.line}`, flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 600, color: T.ink }}>Invite people</div>
+                  <button onClick={closeInvite} style={{ background: 'none', border: 'none', color: T.inkMuted, cursor: 'pointer', fontSize: 16, padding: 0, lineHeight: 1 }}>✕</button>
                 </div>
-                <button onClick={() => { setInviteOpen(false); setInviteSearch(''); setInviteSearchResults([]); }} style={{ background: 'none', border: 'none', color: T.inkMuted, cursor: 'pointer', fontSize: 16, padding: 0, lineHeight: 1 }}>✕</button>
+                <div style={{ fontSize: 12, color: T.inkMuted }}>
+                  Code: <strong style={{ color: T.ink, letterSpacing: 2, fontFamily: 'monospace' }}>{group.invite_code}</strong>
+                </div>
               </div>
-              <div style={{ fontSize: 12, color: T.inkMuted }}>
-                Code: <strong style={{ color: T.ink, letterSpacing: 2, fontFamily: 'monospace' }}>{group.invite_code}</strong>
+              {/* Filter */}
+              <div style={{ padding: '8px 12px', borderBottom: `1px solid ${T.line}`, flexShrink: 0 }}>
+                <input
+                  value={userFilter} onChange={(e) => setUserFilter(e.target.value)}
+                  placeholder="Filter by name…"
+                  style={{ width: '100%', boxSizing: 'border-box', background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 8, padding: '7px 12px', fontSize: 13, color: T.ink, outline: 'none' }}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
+                />
               </div>
-            </div>
-
-            {/* Search box */}
-            <div style={{ padding: '8px 12px', borderBottom: `1px solid ${T.line}`, flexShrink: 0 }}>
-              <input
-                value={inviteSearch}
-                onChange={(e) => setInviteSearch(e.target.value)}
-                placeholder="Search by name…"
-                style={{ width: '100%', boxSizing: 'border-box', background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 8, padding: '7px 12px', fontSize: 13, color: T.ink, outline: 'none' }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
-                onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
-              />
-            </div>
-
-            {/* Results / connections list */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
-              {inviteSearch.trim().length >= 2 ? (
-                // Search results
-                inviteSearching ? (
-                  <div style={{ textAlign: 'center', color: T.inkMuted, fontSize: 13, padding: '16px 0' }}>Searching…</div>
-                ) : inviteSearchResults.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: T.inkMuted, fontSize: 13, padding: '16px 0' }}>No one found</div>
-                ) : (
-                  inviteSearchResults.map((f) => {
-                    const name = f.display_name || 'Member';
-                    const sent = sentInvites.has(f.id);
-                    return (
-                      <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px' }}>
-                        <div style={{ width: 34, height: 34, borderRadius: '50%', background: memberColor(f.id), color: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
-                          {f.avatar_url ? <img src={f.avatar_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : name.charAt(0).toUpperCase()}
-                        </div>
-                        <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
-                        <button
-                          onClick={() => !sent && sendFriendInvite(f.id)}
-                          disabled={sent}
-                          style={{ background: sent ? 'rgba(80,160,80,0.12)' : T.gold, color: sent ? '#4a9a4a' : T.cream, border: sent ? '1px solid rgba(80,160,80,0.4)' : 'none', borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: sent ? 'default' : 'pointer', flexShrink: 0 }}
-                        >
-                          {sent ? '✓ Sent' : 'Invite'}
-                        </button>
+              {/* Scrollable list */}
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                {usersLoading ? (
+                  <div style={{ textAlign: 'center', color: T.inkMuted, fontSize: 13, padding: '24px 0' }}>Loading…</div>
+                ) : filtered.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: T.inkMuted, fontSize: 13, padding: '24px 16px' }}>No one found.</div>
+                ) : filtered.map((u) => {
+                  const name = u.display_name || 'Member';
+                  const isSent    = inviteSent.has(u.id);
+                  const isChecked = selected.has(u.id);
+                  return (
+                    <div key={u.id} onClick={() => toggleSelect(u.id)} style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '9px 16px', cursor: isSent ? 'default' : 'pointer',
+                      background: isChecked ? 'rgba(184,115,58,0.07)' : 'transparent',
+                      transition: 'background 0.1s',
+                    }}
+                      onMouseEnter={(e) => { if (!isSent) e.currentTarget.style.background = isChecked ? 'rgba(184,115,58,0.11)' : 'rgba(0,0,0,0.03)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = isChecked ? 'rgba(184,115,58,0.07)' : 'transparent'; }}
+                    >
+                      <div style={{
+                        width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                        border: isSent ? '2px solid rgba(80,160,80,0.5)' : isChecked ? `2px solid ${T.gold}` : `2px solid ${T.line}`,
+                        background: isSent ? 'rgba(80,160,80,0.12)' : isChecked ? T.gold : 'transparent',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.12s',
+                      }}>
+                        {(isSent || isChecked) && (
+                          <span style={{ color: isSent ? '#4a9a4a' : T.cream, fontSize: 11, fontWeight: 700, lineHeight: 1 }}>✓</span>
+                        )}
                       </div>
-                    );
-                  })
-                )
-              ) : (
-                // Connections list (no search query)
-                friendsLoading ? (
-                  <div style={{ textAlign: 'center', color: T.inkMuted, fontSize: 13, padding: '16px 0' }}>Loading…</div>
-                ) : friends.length === 0 ? (
-                  <div style={{ padding: '14px 16px', textAlign: 'center' }}>
-                    <div style={{ fontSize: 13, color: T.inkMuted, lineHeight: 1.6 }}>
-                      Search above to find anyone on kinwove and send them an invite.
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: memberColor(u.id), color: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
+                        {u.avatar_url ? <img src={u.avatar_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : name.charAt(0).toUpperCase()}
+                      </div>
+                      <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: isSent ? T.inkMuted : T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+                      {isSent && <span style={{ fontSize: 11, color: '#4a9a4a', fontWeight: 600, flexShrink: 0 }}>Sent</span>}
                     </div>
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, padding: '4px 16px 8px' }}>
-                      Your connections
-                    </div>
-                    {friends.map((f) => {
-                      const name = f.display_name || [f.first_name, f.last_name].filter(Boolean).join(' ') || 'Friend';
-                      const sent = sentInvites.has(f.id);
-                      return (
-                        <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px' }}>
-                          <div style={{ width: 34, height: 34, borderRadius: '50%', background: memberColor(f.id), color: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
-                            {f.avatar_url ? <img src={f.avatar_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : name.charAt(0).toUpperCase()}
-                          </div>
-                          <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
-                          <button
-                            onClick={() => !sent && sendFriendInvite(f.id)}
-                            disabled={sent}
-                            style={{ background: sent ? 'rgba(80,160,80,0.12)' : T.gold, color: sent ? '#4a9a4a' : T.cream, border: sent ? '1px solid rgba(80,160,80,0.4)' : 'none', borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: sent ? 'default' : 'pointer', flexShrink: 0 }}
-                          >
-                            {sent ? '✓ Sent' : 'Invite'}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </>
-                )
-              )}
+                  );
+                })}
+              </div>
+              {/* Footer */}
+              <div style={{ padding: '10px 12px', borderTop: `1px solid ${T.line}`, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <button onClick={sendInvites} disabled={!selCount || inviting} style={{
+                  width: '100%', padding: '11px',
+                  background: selCount ? T.gold : T.line,
+                  border: 'none', borderRadius: 10,
+                  fontSize: 13, fontWeight: 700,
+                  color: selCount ? T.cream : T.inkMuted,
+                  cursor: selCount ? 'pointer' : 'default',
+                  transition: 'all 0.15s',
+                }}>
+                  {inviting ? 'Sending…' : selCount ? `Invite ${selCount} ${selCount === 1 ? 'person' : 'people'}` : 'Select people to invite'}
+                </button>
+                <button onClick={() => setShareOpen(true)} style={{ width: '100%', padding: '9px', background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 10, fontSize: 13, fontWeight: 600, color: T.ink, cursor: 'pointer' }}>
+                  ↗ Share invite link
+                </button>
+              </div>
             </div>
-
-            {/* Share link footer */}
-            <div style={{ padding: '10px 12px', borderTop: `1px solid ${T.line}`, flexShrink: 0 }}>
-              <button
-                onClick={() => setShareOpen(true)}
-                style={{ width: '100%', padding: '10px', background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 10, fontSize: 13, fontWeight: 600, color: T.ink, cursor: 'pointer' }}
-              >
-                ↗ Share invite link
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+          </>
+        );
+      })()}
 
       {/* ── External share sheet ── */}
       {shareOpen && (
