@@ -191,7 +191,7 @@ export default function GroupsHome({ userGroups, session, profile, onOpenGroup, 
               Your circles<br />live here.
             </div>
             <p style={{ fontFamily: T.serif, fontSize: 15, color: T.inkSoft, lineHeight: 1.75, maxWidth: 300, margin: '0 0 36px' }}>
-              A private space for the people you study with, pray for, or just keep up with — wherever life takes you.
+              A circle is a small private group — for Bible study, prayer, staying connected, or anything in between. Threads stay forever, so someone can pick up the conversation a year from now.
             </p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
               <button
