@@ -332,7 +332,11 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   const [submitting, setSubmitting] = useState(false);
   const [settingFocus, setSettingFocus] = useState(false);
   const [memberCount, setMemberCount] = useState(0);
-  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteOpen, setInviteOpen]   = useState(false);
+  const [friends, setFriends]         = useState([]);
+  const [friendsLoading, setFriendsLoading] = useState(false);
+  const [sentInvites, setSentInvites] = useState(new Set()); // recipient IDs
+  const [shareOpen, setShareOpen]     = useState(false);
   const imageDrafts = useImageDrafts(4);
 
   // Chat
@@ -351,6 +355,42 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   const [askInput, setAskInput] = useState('');
   const [askBusy, setAskBusy] = useState(false);
   const askEndRef = useRef(null);
+
+  // Load friends (followers + following) when invite picker opens
+  useEffect(() => {
+    if (!inviteOpen) return;
+    const uid = session?.user?.id;
+    if (!uid) return;
+    setFriendsLoading(true);
+    Promise.all([
+      supabase.from('follows').select('following_id').eq('follower_id', uid),
+      supabase.from('follows').select('follower_id').eq('following_id', uid),
+    ]).then(async ([{ data: following }, { data: followers }]) => {
+      const ids = [...new Set([
+        ...(following ?? []).map((r) => r.following_id),
+        ...(followers  ?? []).map((r) => r.follower_id),
+      ])].filter((id) => id !== uid);
+      if (!ids.length) { setFriends([]); setFriendsLoading(false); return; }
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, display_name, first_name, last_name, avatar_url, avatar_config')
+        .in('id', ids);
+      setFriends(profiles ?? []);
+      setFriendsLoading(false);
+    });
+  }, [inviteOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function sendFriendInvite(recipientId) {
+    setSentInvites((prev) => new Set([...prev, recipientId]));
+    const { error } = await supabase.rpc('send_group_invite', {
+      p_group_id: group.id,
+      p_recipient_id: recipientId,
+    });
+    if (error) {
+      console.error('[group invite]', error.message);
+      setSentInvites((prev) => { const n = new Set(prev); n.delete(recipientId); return n; });
+    }
+  }
 
   useEffect(() => {
     loadFocus();
@@ -785,13 +825,112 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
       </div>
       )}
 
-      {inviteOpen && (
+      {/* ── Friend invite picker ─────────────────────────────────────────── */}
+      {inviteOpen && !shareOpen && (
+        <>
+          <div
+            onClick={() => setInviteOpen(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(20,12,8,0.52)' }}
+          />
+          <div style={{
+            position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 401,
+            background: T.white, borderRadius: '22px 22px 0 0',
+            padding: '20px 0 calc(28px + env(safe-area-inset-bottom))',
+            maxHeight: '75dvh', display: 'flex', flexDirection: 'column',
+            boxShadow: '0 -8px 40px rgba(0,0,0,0.18)',
+          }}>
+            {/* drag handle */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
+              <div style={{ width: 40, height: 5, borderRadius: 3, background: '#E0D8CE' }} />
+            </div>
+            <div style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 600, color: T.ink, textAlign: 'center', marginBottom: 4, letterSpacing: '-0.015em' }}>
+              Invite to {group.name}
+            </div>
+            <div style={{ fontSize: 13, color: T.inkMuted, textAlign: 'center', marginBottom: 18 }}>
+              Invite code: <strong style={{ color: T.ink, letterSpacing: 3 }}>{group.invite_code}</strong>
+            </div>
+
+            {/* Friends list */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px' }}>
+              {friendsLoading ? (
+                <div style={{ textAlign: 'center', color: T.inkMuted, fontSize: 13, padding: '20px 0' }}>Loading…</div>
+              ) : friends.length === 0 ? (
+                <div style={{ textAlign: 'center', color: T.inkMuted, fontSize: 13, padding: '12px 0 20px', lineHeight: 1.6 }}>
+                  No connections yet — you can still share the code below.
+                </div>
+              ) : (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, marginBottom: 10 }}>
+                    Your connections
+                  </div>
+                  {friends.map((f) => {
+                    const name = f.display_name || [f.first_name, f.last_name].filter(Boolean).join(' ') || 'Friend';
+                    const sent = sentInvites.has(f.id);
+                    return (
+                      <div key={f.id} style={{
+                        display: 'flex', alignItems: 'center', gap: 12,
+                        padding: '10px 0', borderBottom: `1px solid ${T.line}`,
+                      }}>
+                        {/* Avatar */}
+                        <div style={{
+                          width: 40, height: 40, borderRadius: '50%',
+                          background: memberColor(f.id), color: T.cream,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 15, fontWeight: 700, flexShrink: 0,
+                          overflow: 'hidden',
+                        }}>
+                          {f.avatar_url
+                            ? <img src={f.avatar_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : name.charAt(0).toUpperCase()}
+                        </div>
+                        <div style={{ flex: 1, fontSize: 14, fontWeight: 500, color: T.ink }}>{name}</div>
+                        <button
+                          onClick={() => !sent && sendFriendInvite(f.id)}
+                          disabled={sent}
+                          style={{
+                            background: sent ? 'rgba(80,160,80,0.12)' : T.gold,
+                            color: sent ? '#4a9a4a' : T.cream,
+                            border: sent ? '1px solid rgba(80,160,80,0.4)' : 'none',
+                            borderRadius: 999, padding: '7px 16px',
+                            fontSize: 13, fontWeight: 600,
+                            cursor: sent ? 'default' : 'pointer',
+                            transition: 'all 0.2s', flexShrink: 0,
+                          }}
+                        >
+                          {sent ? '✓ Sent' : 'Invite'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+
+            {/* Share link button */}
+            <div style={{ padding: '16px 16px 0' }}>
+              <button
+                onClick={() => setShareOpen(true)}
+                style={{
+                  width: '100%', padding: '13px', background: T.parchment,
+                  border: `1px solid ${T.line}`, borderRadius: 14,
+                  fontSize: 14, fontWeight: 600, color: T.ink, cursor: 'pointer',
+                }}
+              >
+                ↗ Share invite link
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── External share sheet ─────────────────────────────────────────────── */}
+      {shareOpen && (
         <ShareSheet
           body={`Join "${group.name}" on kinwove. Use invite code: ${group.invite_code}`}
           title={`Invite to ${group.name}`}
           intro={`Use code ${group.invite_code} to join`}
           previewBody={`Invite code: ${group.invite_code}`}
-          onClose={() => setInviteOpen(false)}
+          onClose={() => { setShareOpen(false); setInviteOpen(false); }}
         />
       )}
     </div>

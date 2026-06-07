@@ -29,6 +29,7 @@ const KIND_COPY = {
   role_invited:              { verb: 'invited you to a role', Icon: null, emoji: '🎖' },
   dm_message:                { verb: 'sent you a message', Icon: MessageCircle },
   care_message:              { verb: 'sent you a care message', Icon: MessageCircle },
+  group_invite:              { verb: 'invited you to a group', Icon: null, emoji: '📖' },
 };
 
 function NotificationRow({ n, onClick, onFriendAction, onAvatarClick, onRoleAccepted }) {
@@ -46,6 +47,8 @@ function NotificationRow({ n, onClick, onFriendAction, onAvatarClick, onRoleAcce
     ? (n.data?.role_label ?? n.data?.role_key)
     : n.kind === 'role_invited'
     ? (n.data?.role_label ?? n.data?.role_key)
+    : n.kind === 'group_invite'
+    ? `${n.data?.group_name ?? 'a group'} · code: ${n.data?.invite_code ?? ''}`
     : n.data?.snippet;
   const unread = !n.read_at;
   const isFriendReq  = n.kind === 'friend_request_received';
