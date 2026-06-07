@@ -104,7 +104,7 @@ function getComposePrompt() {
 // faint ✦ floating in the middle. Pulled into the existing 22px margin
 // with negative offset so it sits in the gap rather than adding height.
 // ── Discover section ────────────────────────────────────────────────────────
-function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, onViewProfile }) {
+function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, onViewProfile, userGroups = [], onOpenGroups, onOpenGroup }) {
   const [churches,  setChurches]  = useState([]);
   const [people,    setPeople]    = useState([]);
   const [chLoading, setChLoading] = useState(true);
@@ -150,6 +150,58 @@ function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, 
 
   return (
     <div style={{ padding: '16px 0 40px' }}>
+
+      {/* ── Circles ── */}
+      <div style={{ padding: '0 16px', marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: T.inkMuted, fontFamily: T.sans }}>
+            Your Circles
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={onOpenGroups} style={{ background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 600, color: T.inkSoft, cursor: 'pointer' }}>
+              Join with code
+            </button>
+            <button onClick={onOpenGroups} style={{ background: T.gold, border: 'none', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 600, color: T.cream, cursor: 'pointer' }}>
+              + New
+            </button>
+          </div>
+        </div>
+
+        {userGroups.length === 0 ? (
+          <button
+            onClick={onOpenGroups}
+            style={{ width: '100%', background: T.white, border: `1px dashed ${T.line}`, borderRadius: 14, padding: '18px 16px', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 12 }}
+          >
+            <span style={{ fontSize: 22, opacity: 0.4 }}>◯</span>
+            <span style={{ fontFamily: T.serif, fontSize: 14, color: T.inkSoft, lineHeight: 1.45 }}>
+              A circle is a small private group — for Bible study, prayer, or staying connected. <span style={{ color: T.gold }}>Start or join one →</span>
+            </span>
+          </button>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {userGroups.map((entry) => {
+              const COLORS = ['#B8733A','#6B4A35','#7A4A6B','#4A6B5B','#5B6E8A','#8B6E35','#6B2438','#4A5830'];
+              let h = 0;
+              for (let i = 0; i < entry.group.id.length; i++) h = (h * 31 + entry.group.id.charCodeAt(i)) >>> 0;
+              const color = COLORS[h % COLORS.length];
+              return (
+                <button
+                  key={entry.group.id}
+                  onClick={() => onOpenGroup ? onOpenGroup(entry) : onOpenGroups?.()}
+                  style={{ width: '100%', textAlign: 'left', background: T.white, border: `1px solid rgba(26,17,8,0.09)`, borderRadius: 14, padding: 0, cursor: 'pointer', overflow: 'hidden', display: 'flex', alignItems: 'stretch' }}
+                >
+                  <div style={{ width: 5, flexShrink: 0, background: color }} />
+                  <div style={{ flex: 1, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ fontFamily: T.serif, fontSize: 14, fontWeight: 700, color: T.ink }}>{entry.group.name}</div>
+                    <span style={{ fontSize: 16, color: T.inkMuted, opacity: 0.35 }}>›</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Churches to follow */}
       <div style={{ padding: '0 16px', marginBottom: 28 }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: T.inkMuted, fontFamily: T.sans, marginBottom: 14 }}>
@@ -1338,7 +1390,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tab
   );
 }
 
-export default function Community({ session, profile, onClose, onOpenChat, hideHeader, userGroup, onViewProfile, onFindPeople, onInviteFriends, onOpenPrayer, onOpenRead, onOpenBible, onVerseClick, onOpenChurch, onOpenSermon, onOpenConnect, onOpenGroups, accentColor, openCommentPostId, onSendDM }) {
+export default function Community({ session, profile, onClose, onOpenChat, hideHeader, userGroup, userGroups = [], onViewProfile, onFindPeople, onInviteFriends, onOpenPrayer, onOpenRead, onOpenBible, onVerseClick, onOpenChurch, onOpenSermon, onOpenConnect, onOpenGroups, onOpenGroup, accentColor, openCommentPostId, onSendDM }) {
   // Section colour: gold for main Feed, forest green for church community feed
   const TAB_COLOR = accentColor ?? '#B8733A';
   const TAB_TEXT  = accentColor ?? '#8E5528'; // slightly darker for text legibility
@@ -2301,6 +2353,9 @@ useEffect(() => {
               onFollow={handleFollow}
               onOpenChurch={onOpenChurch}
               onViewProfile={onViewProfile}
+              userGroups={userGroups}
+              onOpenGroups={onOpenGroups}
+              onOpenGroup={onOpenGroup}
             />
           )}
 

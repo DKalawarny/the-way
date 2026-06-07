@@ -2834,6 +2834,7 @@ export default function App() {
           session={session}
           profile={profile}
           userGroup={userGroups[0] ?? null}
+          userGroups={userGroups}
           hideHeader={showNav}
           onClose={() => goBack('home')}
           onOpenChat={(q) => { if (!currentConvId) startChatFromProfile(); if (q) setPrefilledInput(q); setChatPanelOpen(true); }}
@@ -2849,8 +2850,8 @@ export default function App() {
             else setStage('churches');
           }}
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
-
           onOpenGroups={() => setStage('groups')}
+          onOpenGroup={(entry) => { setViewingGroupEntry(entry); setStage('groups'); }}
           onSendDM={(url) => { setPendingShareUrl(url); setStage('messages'); }}
         />
       )}
@@ -2887,6 +2888,7 @@ export default function App() {
           session={session}
           profile={profile}
           userGroup={userGroups[0] ?? null}
+          userGroups={userGroups}
           accentColor="#6b2438"
           hideHeader={showNav}
           openCommentPostId={openCommentPostId}
@@ -2903,8 +2905,8 @@ export default function App() {
             else setStage('churches');
           }}
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
-
           onOpenGroups={() => setStage('groups')}
+          onOpenGroup={(entry) => { setViewingGroupEntry(entry); setStage('groups'); }}
           onSendDM={(url) => { setPendingShareUrl(url); setStage('messages'); }}
         />
       )}
@@ -2940,7 +2942,7 @@ export default function App() {
                 setUserGroups((prev) => [...prev, g]);
                 setViewingGroupEntry(g);
               }}
-              onClose={() => { setChurchReturnTab(null); setStage('church'); }}
+              onClose={() => setStage('feed')}
               initialGroupCode={pendingGroupCode}
               onConsumeGroupCode={() => setPendingGroupCode(null)}
             />
