@@ -1907,6 +1907,9 @@ useEffect(() => {
         display: 'flex',
         background: T.cream,
         borderBottom: `1px solid ${T.line}`,
+        overflowX: 'auto',
+        scrollbarWidth: 'none',
+        WebkitOverflowScrolling: 'touch',
       }}>
         {[
           { id: 'posts',      label: '📝 Posts'     },
@@ -1918,8 +1921,8 @@ useEffect(() => {
           const isActive = feedType === t.id;
           return (
             <button key={t.id} onClick={() => setFeedType(t.id)} style={{
-              flex: 1,
-              padding: '14px 0',
+              flexShrink: 0,
+              padding: '14px 18px',
               background: 'transparent',
               border: 'none',
               borderBottom: isActive ? `2px solid ${TAB_COLOR}` : '2px solid transparent',
@@ -1929,6 +1932,7 @@ useEffect(() => {
               fontFamily: T.serif,
               color: isActive ? TAB_TEXT : T.inkMuted,
               cursor: 'pointer',
+              whiteSpace: 'nowrap',
               transition: 'color 0.15s, border-color 0.15s',
             }}>{t.label}</button>
           );
