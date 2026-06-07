@@ -1390,7 +1390,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tab
   );
 }
 
-export default function Community({ session, profile, onClose, onOpenChat, hideHeader, userGroup, userGroups = [], onViewProfile, onFindPeople, onInviteFriends, onOpenPrayer, onOpenRead, onOpenBible, onVerseClick, onOpenChurch, onOpenSermon, onOpenConnect, onOpenGroups, onOpenGroup, accentColor, openCommentPostId, onSendDM }) {
+export default function Community({ session, profile, onClose, onOpenChat, hideHeader, userGroup, userGroups = [], onViewProfile, onFindPeople, onInviteFriends, onOpenPrayer, onOpenRead, onOpenBible, onVerseClick, onOpenChurch, onOpenSermon, onOpenConnect, onOpenGroups, onOpenGroup, accentColor, openCommentPostId, onSendDM, openTab, onConsumeTab }) {
   // Section colour: gold for main Feed, forest green for church community feed
   const TAB_COLOR = accentColor ?? '#B8733A';
   const TAB_TEXT  = accentColor ?? '#8E5528'; // slightly darker for text legibility
@@ -1411,6 +1411,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
   const [prayerText, setPrayerText] = useState('');
   const [prayerSubmitting, setPrayerSubmitting] = useState(false);
   const [feedType, setFeedType] = useState('posts');
+  useEffect(() => { if (openTab) { setFeedType(openTab); onConsumeTab?.(); } }, [openTab]);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [prayers, setPrayers] = useState([]);
   const [prayersLoading, setPrayersLoading] = useState(false);

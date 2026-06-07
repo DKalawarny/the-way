@@ -1820,6 +1820,7 @@ export default function App() {
   const [userGroups, setUserGroups] = useState([]);   // [{ group, role }, ...]
   const [viewingGroupEntry, setViewingGroupEntry] = useState(null); // { group, role } | null
   const [pendingGroupCode, setPendingGroupCode] = useState(null);
+  const [feedOpenTab, setFeedOpenTab] = useState(null);
   const [shareId] = useState(() => new URLSearchParams(window.location.search).get('s'));
   const [deepLinkPostId] = useState(() => new URLSearchParams(window.location.search).get('post'));
   const [deepLinkInviteId] = useState(() => new URLSearchParams(window.location.search).get('invite'));
@@ -2889,6 +2890,8 @@ export default function App() {
           profile={profile}
           userGroup={userGroups[0] ?? null}
           userGroups={userGroups}
+          openTab={feedOpenTab}
+          onConsumeTab={() => setFeedOpenTab(null)}
           accentColor="#6b2438"
           hideHeader={showNav}
           openCommentPostId={openCommentPostId}
@@ -2942,7 +2945,7 @@ export default function App() {
                 setUserGroups((prev) => [...prev, g]);
                 setViewingGroupEntry(g);
               }}
-              onClose={() => setStage('feed')}
+              onClose={() => { setFeedOpenTab('discover'); setStage('feed'); }}
               initialGroupCode={pendingGroupCode}
               onConsumeGroupCode={() => setPendingGroupCode(null)}
             />
