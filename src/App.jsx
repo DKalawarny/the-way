@@ -2923,6 +2923,7 @@ export default function App() {
               session={session}
               profile={profile}
               onClose={() => goBack('feed')}
+              onFindPeople={() => setPeopleSearchOpen(true)}
               onLeave={async () => {
                 await supabase.from('group_members').delete().eq('member_id', session.user.id).eq('group_id', userGroup.group.id);
                 setUserGroup(null);

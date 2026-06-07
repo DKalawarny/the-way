@@ -465,7 +465,7 @@ function QuestionsSheet({ focus, onClose, onPublished }) {
   );
 }
 
-export default function GroupSpace({ group, role, session, profile, onLeave, onClose, hideHeader }) {
+export default function GroupSpace({ group, role, session, profile, onLeave, onClose, hideHeader, onFindPeople }) {
   const isPastor = role === 'pastor';
   const [tab, setTab] = useState('study');
   const [focus, setFocus] = useState(null);
@@ -847,7 +847,37 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
               </div>
             )}
 
-            {/* ── 3. Ask AI ── */}
+            {/* ── 3. General posts (only shown when no discussion questions) ── */}
+            {(!publishedQs) && !settingFocus && (
+              <>
+                <form onSubmit={submitPost} style={{ marginBottom: 20 }}>
+                  <textarea
+                    value={text}
+                    onChange={(e) => { setText(e.target.value); sessionStorage.setItem(POST_DRAFT_KEY, e.target.value); }}
+                    placeholder={focus ? `Share a reflection on ${focus.passage}…` : 'Share something with the group…'}
+                    rows={3}
+                    style={{ width: '100%', boxSizing: 'border-box', resize: 'none', background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '13px 16px', fontSize: 14, color: T.ink, fontFamily: T.serif, outline: 'none', lineHeight: 1.65 }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
+                  />
+                  <ImageDraftGrid drafts={imageDrafts.drafts} onRemove={imageDrafts.remove} />
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, gap: 8 }}>
+                    <ImageAttachButton drafts={imageDrafts.drafts} max={imageDrafts.max} fileInputRef={imageDrafts.fileInputRef} onPick={imageDrafts.pick} />
+                    <button type="submit" disabled={submitting || (!text.trim() && imageDrafts.drafts.length === 0)} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '9px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: submitting || (!text.trim() && imageDrafts.drafts.length === 0) ? 0.5 : 1 }}>Post</button>
+                  </div>
+                </form>
+                {posts.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '40px 20px', fontFamily: T.serif, fontSize: 16, color: T.inkMuted }}>
+                    No reflections yet. Be the first.
+                  </div>
+                )}
+                {posts.map((p) => (
+                  <PostCard key={p.id} post={p} session={session} profile={profile} isPastor={isPastor} />
+                ))}
+              </>
+            )}
+
+            {/* ── 4. Ask AI (always at bottom when focus is set) ── */}
             {focus && !settingFocus && (
               <div style={{ marginBottom: 20 }}>
                 {!askOpen ? (
@@ -855,7 +885,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
                     <KinwoveStar size={18} color={T.gold} />
                     <div>
                       <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink, marginBottom: 2 }}>Ask about {focus.passage}</div>
-                      <div style={{ fontSize: 12, color: T.inkMuted }}>Ask the AI anything about this week's topic</div>
+                      <div style={{ fontSize: 12, color: T.inkMuted }}>Dig deeper with AI — context, cross-references, history</div>
                     </div>
                     <span style={{ marginLeft: 'auto', color: T.inkMuted, fontSize: 16 }}>›</span>
                   </button>
@@ -885,36 +915,6 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
                   </div>
                 )}
               </div>
-            )}
-
-            {/* ── 4. General posts (only shown when no discussion questions) ── */}
-            {(!publishedQs) && !settingFocus && (
-              <>
-                <form onSubmit={submitPost} style={{ marginBottom: 20 }}>
-                  <textarea
-                    value={text}
-                    onChange={(e) => { setText(e.target.value); sessionStorage.setItem(POST_DRAFT_KEY, e.target.value); }}
-                    placeholder={focus ? `Share a reflection on ${focus.passage}…` : 'Share something with the group…'}
-                    rows={3}
-                    style={{ width: '100%', boxSizing: 'border-box', resize: 'none', background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '13px 16px', fontSize: 14, color: T.ink, fontFamily: T.serif, outline: 'none', lineHeight: 1.65 }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
-                  />
-                  <ImageDraftGrid drafts={imageDrafts.drafts} onRemove={imageDrafts.remove} />
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, gap: 8 }}>
-                    <ImageAttachButton drafts={imageDrafts.drafts} max={imageDrafts.max} fileInputRef={imageDrafts.fileInputRef} onPick={imageDrafts.pick} />
-                    <button type="submit" disabled={submitting || (!text.trim() && imageDrafts.drafts.length === 0)} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '9px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: submitting || (!text.trim() && imageDrafts.drafts.length === 0) ? 0.5 : 1 }}>Post</button>
-                  </div>
-                </form>
-                {posts.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '40px 20px', fontFamily: T.serif, fontSize: 16, color: T.inkMuted }}>
-                    No reflections yet. Be the first.
-                  </div>
-                )}
-                {posts.map((p) => (
-                  <PostCard key={p.id} post={p} session={session} profile={profile} isPastor={isPastor} />
-                ))}
-              </>
             )}
 
             {/* Leave / Delete group */}
@@ -985,8 +985,18 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
               {friendsLoading ? (
                 <div style={{ textAlign: 'center', color: T.inkMuted, fontSize: 13, padding: '20px 0' }}>Loading…</div>
               ) : friends.length === 0 ? (
-                <div style={{ textAlign: 'center', color: T.inkMuted, fontSize: 13, padding: '12px 0 20px', lineHeight: 1.6 }}>
-                  No connections yet — you can still share the code below.
+                <div style={{ textAlign: 'center', padding: '16px 0 20px' }}>
+                  <div style={{ fontSize: 13, color: T.inkMuted, lineHeight: 1.6, marginBottom: 14 }}>
+                    You haven't connected with anyone yet.
+                  </div>
+                  {onFindPeople && (
+                    <button
+                      onClick={() => { setInviteOpen(false); onFindPeople(); }}
+                      style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '10px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Find people on kinwove →
+                    </button>
+                  )}
                 </div>
               ) : (
                 <>
