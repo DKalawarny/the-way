@@ -362,7 +362,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
       .select('id, display_name, avatar_url, avatar_config')
       .neq('id', myId)
       .order('display_name', { ascending: true })
-      .limit(200)
+      .limit(1000)
       .then(({ data }) => { setAllUsers(data ?? []); setUsersLoading(false); });
   }, [inviteOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
