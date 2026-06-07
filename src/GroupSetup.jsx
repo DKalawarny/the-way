@@ -20,6 +20,7 @@ export default function GroupSetup({ session, onJoined, onClose }) {
   const [busy, setBusy]         = useState(false);
   const [error, setError]       = useState('');
   const [created, setCreated]   = useState(null);
+  const [copied, setCopied]     = useState(false);
 
   // ── Join ──────────────────────────────────────────────────────────────────
   async function join() {
@@ -96,14 +97,44 @@ export default function GroupSetup({ session, onJoined, onClose }) {
             </div>
           </div>
           <button
-            onClick={() => navigator.clipboard.writeText(created.inviteCode).catch(() => {})}
+            onClick={() => {
+              const text = created.inviteCode;
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }).catch(() => {
+                  // fallback
+                  const el = document.createElement('input');
+                  el.value = text;
+                  document.body.appendChild(el);
+                  el.select();
+                  document.execCommand('copy');
+                  document.body.removeChild(el);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                });
+              } else {
+                const el = document.createElement('input');
+                el.value = text;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }
+            }}
             style={{
-              background: 'transparent', border: `1px solid rgba(184,115,58,0.35)`,
-              color: T.ink, borderRadius: 999, padding: '10px 24px',
+              background: copied ? 'rgba(80,160,80,0.12)' : 'transparent',
+              border: `1px solid ${copied ? 'rgba(80,160,80,0.4)' : 'rgba(184,115,58,0.35)'}`,
+              color: copied ? '#4a9a4a' : T.ink,
+              borderRadius: 999, padding: '10px 24px',
               fontSize: 13, cursor: 'pointer', marginBottom: 16,
+              transition: 'all 0.2s',
             }}
           >
-            Copy code
+            {copied ? '✓ Copied!' : 'Copy code'}
           </button>
           <br />
           <button
