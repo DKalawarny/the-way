@@ -966,7 +966,7 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
   // Map stages onto top-level tabs
   const tabFor = (s) => {
     if (s === 'home' || s === 'feed') return 'home';
-    if (s === 'church' || s === 'churches' || s === 'church-entry' || s === 'groups' || s === 'prayer' || s === 'talk-to-someone' || s === 'care-conversation' || s === 'church-admin' || s === 'pastor-dashboard' || s === 'sermon-composer' || s === 'care-admin' || s === 'sermon-view' || s === 'connect') return 'church';
+    if (s === 'church' || s === 'churches' || s === 'church-entry' || s === 'groups' || s === 'prayer' || s === 'talk-to-someone' || s === 'care-conversation' || s === 'church-admin' || s === 'pastor-dashboard' || s === 'sermon-composer' || s === 'care-admin' || s === 'sermon-view') return 'church';
     if (s === 'read') return 'read';
     if (s === 'me' || s === 'walks' || s === 'care-inbox' || s === 'messages' || s === 'dm-conversation' || s === 'app-admin') return 'me';
     return null;
@@ -1618,7 +1618,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
     if (s === 'home' || s === 'feed') return 'home';
     if (['church', 'churches', 'church-entry', 'groups', 'prayer',
          'talk-to-someone', 'care-conversation', 'church-admin', 'pastor-dashboard',
-         'sermon-composer', 'care-admin', 'sermon-view', 'connect'].includes(s)) return 'church';
+         'sermon-composer', 'care-admin', 'sermon-view'].includes(s)) return 'church';
     if (s === 'read') return 'read';
     if (['me', 'walks', 'care-inbox', 'messages', 'dm-conversation', 'app-admin'].includes(s)) return 'me';
     return null;
@@ -1992,7 +1992,7 @@ export default function App() {
     document.title = TITLES[stage] ?? 'kinwove';
     // Persist nav position so tab-suspend / mobile reload returns user to same screen.
     // localStorage: fast, same-browser. DB last_stage: cross-browser/device fallback (debounced).
-    const PERSIST = new Set(['home','feed','read','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
+    const PERSIST = new Set(['home','feed','read','church','me','messages','groups','prayer','walks','care-inbox','journal']);
     if (PERSIST.has(stage)) {
       localStorage.setItem('kw:stage', stage);
       // Reduced from 2000ms → 300ms so DB is updated before user leaves the tab
@@ -2007,7 +2007,7 @@ export default function App() {
   // Flush last_stage to DB immediately when tab is hidden (mobile Safari recycles
   // tabs aggressively — the debounce above often doesn't fire before the page unloads).
   useEffect(() => {
-    const PERSIST = new Set(['home','feed','read','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
+    const PERSIST = new Set(['home','feed','read','church','me','messages','groups','prayer','walks','care-inbox','journal']);
     const flush = () => {
       const uid = sessionRef.current?.user?.id;
       if (uid && PERSIST.has(stage)) {
@@ -2101,7 +2101,7 @@ export default function App() {
     }
   }, [stage, churchReturnTab]);
 
-  const STAGE_SAFE = new Set(['home','feed','read','church','me','messages','groups','prayer','walks','care-inbox','journal','connect']);
+  const STAGE_SAFE = new Set(['home','feed','read','church','me','messages','groups','prayer','walks','care-inbox','journal']);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -2849,7 +2849,7 @@ export default function App() {
             else setStage('churches');
           }}
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
-          onOpenConnect={() => setStage('connect')}
+
           onOpenGroups={() => setStage('groups')}
           onSendDM={(url) => { setPendingShareUrl(url); setStage('messages'); }}
         />
@@ -2903,7 +2903,7 @@ export default function App() {
             else setStage('churches');
           }}
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
-          onOpenConnect={() => setStage('connect')}
+
           onOpenGroups={() => setStage('groups')}
           onSendDM={(url) => { setPendingShareUrl(url); setStage('messages'); }}
         />
@@ -2945,14 +2945,6 @@ export default function App() {
               onConsumeGroupCode={() => setPendingGroupCode(null)}
             />
       )}
-      {stage === 'connect' && session && (
-        <ConnectScreen
-          session={session}
-          profile={profile}
-          onClose={() => goBack('feed')}
-          onStartDM={startDM}
-        />
-      )}
       {stage === 'me' && session && (
         <MePanel
           session={session}
@@ -2978,7 +2970,7 @@ export default function App() {
           onOpenTalkToSomeone={profile?.church_id ? () => { setViewingChurchId(profile.church_id); setStage('talk-to-someone'); } : undefined}
           onOpenCareInbox={(careTeamRecord || pastorChurchId) ? () => setStage('care-inbox') : undefined}
           onOpenMessages={() => setStage('messages')}
-          onOpenConnect={() => setStage('connect')}
+
           onOpenPastorDashboard={pastorChurchId ? () => setStage('church-admin') : undefined}
           hasCareTeamRole={!!(careTeamRecord || pastorChurchId)}
           hasPastoredChurch={!!pastorChurchId}
