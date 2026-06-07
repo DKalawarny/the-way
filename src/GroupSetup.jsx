@@ -12,9 +12,9 @@ function makeInviteCode() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
-export default function GroupSetup({ session, onJoined, onClose }) {
-  const [tab, setTab]           = useState('join');
-  const [code, setCode]         = useState('');
+export default function GroupSetup({ session, onJoined, onClose, initialCode, initialTab }) {
+  const [tab, setTab]           = useState(initialTab ?? 'join');
+  const [code, setCode]         = useState(initialCode ?? '');
   const [name, setName]         = useState('');
   const [tradition, setTradition] = useState('Non-denominational');
   const [busy, setBusy]         = useState(false);
@@ -166,7 +166,7 @@ export default function GroupSetup({ session, onJoined, onClose }) {
           fontSize: 13, cursor: 'pointer', padding: 0,
         }}>← Back</button>
         <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', flex: 1 }}>
-          Study group
+          Circle
         </div>
       </header>
 

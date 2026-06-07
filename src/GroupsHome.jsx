@@ -114,15 +114,20 @@ function CircleCard({ entry, onClick }) {
   );
 }
 
-export default function GroupsHome({ userGroups, session, profile, onOpenGroup, onJoined, onClose }) {
-  const [showSetup, setShowSetup] = useState(false);
+export default function GroupsHome({ userGroups, session, profile, onOpenGroup, onJoined, onClose, initialGroupCode, onConsumeGroupCode }) {
+  const [showSetup, setShowSetup] = useState(!!initialGroupCode);
+  const [setupTab, setSetupTab]   = useState(initialGroupCode ? 'join' : 'create');
+
+  function openSetup(tab) { setSetupTab(tab); setShowSetup(true); }
 
   if (showSetup) {
     return (
       <GroupSetup
         session={session}
-        onJoined={(g) => { onJoined(g); setShowSetup(false); }}
-        onClose={() => setShowSetup(false)}
+        initialCode={initialGroupCode ?? ''}
+        initialTab={setupTab}
+        onJoined={(g) => { onJoined(g); setShowSetup(false); onConsumeGroupCode?.(); }}
+        onClose={() => { setShowSetup(false); onConsumeGroupCode?.(); }}
       />
     );
   }
@@ -158,7 +163,7 @@ export default function GroupsHome({ userGroups, session, profile, onOpenGroup, 
             )}
           </div>
           <button
-            onClick={() => setShowSetup(true)}
+            onClick={() => openSetup('create')}
             style={{
               background: T.gold, color: T.cream, border: 'none',
               borderRadius: 999, padding: '7px 16px',
@@ -186,13 +191,13 @@ export default function GroupsHome({ userGroups, session, profile, onOpenGroup, 
             </p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
               <button
-                onClick={() => setShowSetup(true)}
+                onClick={() => openSetup('create')}
                 style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '12px 26px', fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(184,115,58,0.3)' }}
               >
                 Start a circle
               </button>
               <button
-                onClick={() => setShowSetup(true)}
+                onClick={() => openSetup('join')}
                 style={{ background: 'transparent', color: T.inkSoft, border: `1px solid ${T.line}`, borderRadius: 999, padding: '12px 26px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
               >
                 Join with code
@@ -204,13 +209,13 @@ export default function GroupsHome({ userGroups, session, profile, onOpenGroup, 
             {/* "Join another" row */}
             <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
               <button
-                onClick={() => setShowSetup(true)}
+                onClick={() => openSetup('create')}
                 style={{ flex: 1, background: T.white, border: `1px solid ${T.line}`, borderRadius: 12, padding: '10px 0', fontSize: 13, fontWeight: 600, color: T.inkSoft, cursor: 'pointer' }}
               >
                 + Start another
               </button>
               <button
-                onClick={() => setShowSetup(true)}
+                onClick={() => openSetup('join')}
                 style={{ flex: 1, background: T.white, border: `1px solid ${T.line}`, borderRadius: 12, padding: '10px 0', fontSize: 13, fontWeight: 600, color: T.inkSoft, cursor: 'pointer' }}
               >
                 Join with code

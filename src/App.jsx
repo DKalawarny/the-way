@@ -1819,6 +1819,7 @@ export default function App() {
   const [installTrigger, setInstallTrigger] = useState(false);
   const [userGroups, setUserGroups] = useState([]);   // [{ group, role }, ...]
   const [viewingGroupEntry, setViewingGroupEntry] = useState(null); // { group, role } | null
+  const [pendingGroupCode, setPendingGroupCode] = useState(null);
   const [shareId] = useState(() => new URLSearchParams(window.location.search).get('s'));
   const [deepLinkPostId] = useState(() => new URLSearchParams(window.location.search).get('post'));
   const [deepLinkInviteId] = useState(() => new URLSearchParams(window.location.search).get('invite'));
@@ -2940,6 +2941,8 @@ export default function App() {
                 setViewingGroupEntry(g);
               }}
               onClose={() => { setChurchReturnTab(null); setStage('church'); }}
+              initialGroupCode={pendingGroupCode}
+              onConsumeGroupCode={() => setPendingGroupCode(null)}
             />
       )}
       {stage === 'connect' && session && (
@@ -3567,6 +3570,10 @@ export default function App() {
               const convId = n.data?.conversation_id ?? n.target_id;
               if (convId) setPendingDmId(convId);
               setStage('messages');
+            }
+            else if (n.kind === 'group_invite') {
+              setPendingGroupCode(n.data?.invite_code ?? null);
+              setStage('groups');
             }
             else if (n.target_type === 'church' || n.kind === 'role_assigned') {
               const cId = n.data?.church_id ?? n.target_id;

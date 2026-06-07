@@ -718,6 +718,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
                 </div>
                 <div style={{ fontSize: 12, color: T.inkMuted }}>
                   Code: <strong style={{ color: T.ink, letterSpacing: 2, fontFamily: 'monospace' }}>{group.invite_code}</strong>
+                  <span style={{ marginLeft: 8, opacity: 0.6 }}>— they enter it under Groups → Join with code</span>
                 </div>
               </div>
               {/* Filter */}
