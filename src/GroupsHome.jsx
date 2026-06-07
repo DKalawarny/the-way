@@ -118,6 +118,10 @@ export default function GroupsHome({ userGroups, session, profile, onOpenGroup, 
   const [showSetup, setShowSetup] = useState(!!initialGroupCode);
   const [setupTab, setSetupTab]   = useState(initialGroupCode ? 'join' : 'create');
 
+  useEffect(() => {
+    if (initialGroupCode) { setSetupTab('join'); setShowSetup(true); }
+  }, [initialGroupCode]);
+
   function openSetup(tab) { setSetupTab(tab); setShowSetup(true); }
 
   if (showSetup) {

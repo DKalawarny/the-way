@@ -3564,6 +3564,7 @@ export default function App() {
               setStage('messages');
             }
             else if (n.kind === 'group_invite') {
+              setViewingGroupEntry(null);
               setPendingGroupCode(n.data?.invite_code ?? null);
               setStage('groups');
             }
