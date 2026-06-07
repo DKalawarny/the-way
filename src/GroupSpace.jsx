@@ -669,7 +669,9 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
                     <div
                       onClick={() => isMe && setDeletingId(deletingId === m.id ? null : m.id)}
                       style={{
-                        maxWidth: '78%',
+                        maxWidth: '78%', minWidth: 0,
+                        display: 'inline-block',
+                        wordBreak: 'break-word', overflowWrap: 'break-word',
                         background: isMe ? T.gold : T.white,
                         color: isMe ? T.cream : T.ink,
                         borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
