@@ -248,21 +248,6 @@ export default function GroupSetup({ session, onJoined, onClose, initialCode, in
               onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
             />
 
-            <label style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.inkMuted, marginBottom: 8, display: 'block' }}>
-              Tradition
-            </label>
-            <select
-              value={tradition}
-              onChange={(e) => setTradition(e.target.value)}
-              style={{
-                background: T.white, border: `1px solid ${T.line}`,
-                borderRadius: 12, padding: '13px 16px', fontSize: 15, color: T.ink,
-                outline: 'none', marginBottom: 28, width: '100%', boxSizing: 'border-box',
-              }}
-            >
-              {TRADITIONS.map((t) => <option key={t} value={t} style={{ background: T.cream }}>{t}</option>)}
-            </select>
-
             {error && <div style={{ fontSize: 13, color: '#E07070', marginBottom: 12 }}>{error}</div>}
 
             <button onClick={create} disabled={busy || !name.trim()} style={{
@@ -274,7 +259,7 @@ export default function GroupSetup({ session, onJoined, onClose, initialCode, in
               cursor: busy || !name.trim() ? 'default' : 'pointer', width: '100%',
               boxShadow: !busy && name.trim() ? '0 4px 16px rgba(184,115,58,0.35)' : 'none',
             }}>
-              {busy ? 'Creating…' : 'Create group — free →'}
+              {busy ? 'Creating…' : 'Create circle →'}
             </button>
           </>
         )}
