@@ -333,6 +333,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   const [threads, setThreads]       = useState([]);
   const [threadText, setThreadText] = useState('');
   const [posting, setPosting]       = useState(false);
+  const [postError, setPostError]   = useState('');
   const [memberCount, setMemberCount] = useState(0);
   const [inviteOpen, setInviteOpen]   = useState(false);
   const [allUsers, setAllUsers]       = useState([]);
@@ -398,6 +399,9 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
 
     const sub = supabase
       .channel(`group_messages:${group.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'group_posts', filter: `group_id=eq.${group.id}` }, () => {
+        loadThreads();
+      })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'group_messages', filter: `group_id=eq.${group.id}` }, (payload) => {
         const msg = payload.new;
         if (msg.author_id === myId) return;
@@ -431,13 +435,14 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
     e.preventDefault();
     if (!threadText.trim() && imageDrafts.drafts.length === 0) return;
     setPosting(true);
+    setPostError('');
     const image_urls = await imageDrafts.uploadAll(myId);
-    // Insert separately so a bad select doesn't swallow the insert error
     const { error: insertErr } = await supabase
       .from('group_posts')
       .insert({ group_id: group.id, author_id: myId, body: threadText.trim(), image_urls });
     if (insertErr) {
       console.error('[postThread] insert:', insertErr.message, insertErr.details, insertErr.hint);
+      setPostError(insertErr.message);
       setPosting(false);
       return;
     }
@@ -583,6 +588,11 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
                   {posting ? 'Posting…' : 'Post'}
                 </button>
               </div>
+              {postError && (
+                <div style={{ marginTop: 8, fontSize: 12, color: '#c0392b', background: 'rgba(192,57,43,0.07)', borderRadius: 8, padding: '8px 12px' }}>
+                  Post failed: {postError}
+                </div>
+              )}
             </form>
 
             {/* Thread feed */}
