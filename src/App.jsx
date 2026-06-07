@@ -2931,7 +2931,7 @@ export default function App() {
             />
           : <GroupSetup
               session={session}
-              onJoined={(g) => { setUserGroup(g); setStage('feed'); }}
+              onJoined={(g) => { setUserGroup(g); setStage('groups'); }}
               onClose={() => goBack('feed')}
             />
       )}
