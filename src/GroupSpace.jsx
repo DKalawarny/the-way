@@ -370,20 +370,13 @@ function parseQuestions(raw) {
     .filter((l) => l.length > 10);
 }
 
-function StudyQuestionsCard({ focus, isPastor, onUseQuestion }) {
-  const published = Array.isArray(focus?.questions) && focus.questions.length > 0 ? focus.questions : null;
-  const [editMode, setEditMode] = useState(!published && isPastor);
-  const [drafts, setDrafts]     = useState(published ?? ['', '', '']);
+// ── Questions bottom sheet (pastor only) ─────────────────────────────────────
+function QuestionsSheet({ focus, onClose, onPublished }) {
+  const existing = Array.isArray(focus?.questions) && focus.questions.length > 0 ? focus.questions : null;
+  const [drafts, setDrafts]       = useState(existing ?? ['', '', '']);
   const [generating, setGenerating] = useState(false);
-  const [saving, setSaving]     = useState(false);
+  const [saving, setSaving]       = useState(false);
   const abortRef = useRef(null);
-
-  // Sync when focus changes (new week)
-  useEffect(() => {
-    const q = Array.isArray(focus?.questions) && focus.questions.length > 0 ? focus.questions : null;
-    if (q) { setDrafts(q); setEditMode(false); }
-    else if (isPastor) { setDrafts(['', '', '']); setEditMode(true); }
-  }, [focus?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function suggestWithAI() {
     abortRef.current?.abort();
@@ -407,86 +400,68 @@ function StudyQuestionsCard({ focus, isPastor, onUseQuestion }) {
     if (!toSave.length) return;
     setSaving(true);
     await supabase.from('weekly_focus').update({ questions: toSave }).eq('id', focus.id);
-    focus.questions = toSave; // update in-memory so members see immediately
     setSaving(false);
-    setEditMode(false);
+    onPublished(toSave);
+    onClose();
   }
 
-  // Members: hide the card entirely if pastor hasn't published questions yet
-  if (!isPastor && !published) return null;
-
-  // Members: read-only view of published questions
-  if (!isPastor) {
-    return (
-      <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 18, padding: '20px 22px', marginBottom: 20 }}>
-        <div style={{ fontSize: 10, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', opacity: 0.8, marginBottom: 14 }}>
-          Discussion Questions
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(20,12,8,0.52)' }} />
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 401,
+        background: T.white, borderRadius: '22px 22px 0 0',
+        padding: '0 0 calc(24px + env(safe-area-inset-bottom))',
+        maxHeight: '88dvh', display: 'flex', flexDirection: 'column',
+        boxShadow: '0 -8px 40px rgba(0,0,0,0.18)',
+      }}>
+        {/* Drag handle */}
+        <div style={{ padding: '12px 0 4px', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 40, height: 5, borderRadius: 3, background: '#E0D8CE' }} />
         </div>
-        {published.map((q, i) => (
-          <div key={i} style={{ background: T.parchment, borderRadius: 12, padding: '14px 16px', marginBottom: i < published.length - 1 ? 10 : 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-            <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.65, flex: 1 }}>{q}</div>
-            <button onClick={() => onUseQuestion(q)} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '6px 14px', fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, transition: 'opacity 0.15s' }}>
-              Reflect →
-            </button>
-          </div>
-        ))}
-      </div>
-    );
-  }
 
-  // Pastor: edit mode — write or generate questions
-  if (editMode) {
-    return (
-      <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 18, padding: '20px 22px', marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <div style={{ fontSize: 10, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', opacity: 0.8 }}>Discussion Questions</div>
-          <button onClick={suggestWithAI} disabled={generating} style={{ background: 'none', border: `1px solid ${T.line}`, color: T.inkMuted, borderRadius: 999, padding: '4px 12px', fontSize: 11, cursor: 'pointer' }}>
-            {generating ? '…generating' : '✦ Suggest with AI'}
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 22px 16px', flexShrink: 0 }}>
+          <div>
+            <div style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>
+              {existing ? 'Edit questions' : 'Set discussion questions'}
+            </div>
+            <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2 }}>
+              Write 3 for your group, or let AI suggest from the passage.
+            </div>
+          </div>
+          <button onClick={suggestWithAI} disabled={generating} style={{ background: 'none', border: `1px solid ${T.line}`, color: T.inkMuted, borderRadius: 999, padding: '6px 14px', fontSize: 12, cursor: 'pointer', flexShrink: 0 }}>
+            {generating ? '…thinking' : '✦ Suggest with AI'}
           </button>
         </div>
-        <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 14, lineHeight: 1.55 }}>
-          Write 3 questions for your group — or tap AI to suggest some. Published questions appear for all members.
+
+        {/* Textareas */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '0 22px' }}>
+          {drafts.map((q, i) => (
+            <textarea
+              key={i}
+              value={q}
+              onChange={(e) => setDrafts((prev) => { const n = [...prev]; n[i] = e.target.value; return n; })}
+              placeholder={`Question ${i + 1}…`}
+              rows={3}
+              style={{ width: '100%', boxSizing: 'border-box', resize: 'none', background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 12, padding: '12px 14px', fontSize: 14, color: T.ink, fontFamily: T.serif, outline: 'none', lineHeight: 1.65, marginBottom: 10 }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
+              onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
+            />
+          ))}
         </div>
-        {drafts.map((q, i) => (
-          <textarea
-            key={i}
-            value={q}
-            onChange={(e) => setDrafts((prev) => { const n = [...prev]; n[i] = e.target.value; return n; })}
-            placeholder={`Question ${i + 1}…`}
-            rows={2}
-            style={{ width: '100%', boxSizing: 'border-box', resize: 'none', background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 10, padding: '11px 14px', fontSize: 14, color: T.ink, fontFamily: T.serif, outline: 'none', lineHeight: 1.6, marginBottom: 10 }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
-            onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
-          />
-        ))}
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <button onClick={publish} disabled={saving || drafts.every((q) => !q.trim())} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '10px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: saving || drafts.every((q) => !q.trim()) ? 0.5 : 1 }}>
+
+        {/* Actions */}
+        <div style={{ padding: '16px 22px 0', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <button onClick={publish} disabled={saving || drafts.every((q) => !q.trim())} style={{ background: drafts.some((q) => q.trim()) ? T.gold : 'rgba(184,115,58,0.3)', color: T.cream, border: 'none', borderRadius: 999, padding: '14px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }}>
             {saving ? 'Publishing…' : 'Publish to group'}
           </button>
-          {published && (
-            <button onClick={() => setEditMode(false)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer' }}>Cancel</button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Pastor: view published questions (with Edit button)
-  return (
-    <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 18, padding: '20px 22px', marginBottom: 20 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div style={{ fontSize: 10, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', opacity: 0.8 }}>Discussion Questions</div>
-        <button onClick={() => { setDrafts(focus.questions ?? ['', '', '']); setEditMode(true); }} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 11, cursor: 'pointer', padding: 0 }}>Edit</button>
-      </div>
-      {(focus.questions ?? []).map((q, i) => (
-        <div key={i} style={{ background: T.parchment, borderRadius: 12, padding: '14px 16px', marginBottom: i < focus.questions.length - 1 ? 10 : 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.65, flex: 1 }}>{q}</div>
-          <button onClick={() => onUseQuestion(q)} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '6px 14px', fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
-            Reflect →
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 13, cursor: 'pointer', textAlign: 'center', padding: '2px 0' }}>
+            Cancel
           </button>
         </div>
-      ))}
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -522,6 +497,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   const [askInput, setAskInput] = useState('');
   const [askBusy, setAskBusy] = useState(false);
   const askEndRef = useRef(null);
+  const [questionsSheetOpen, setQuestionsSheetOpen] = useState(false);
 
   // Load friends (followers + following) when invite picker opens
   useEffect(() => {
@@ -813,22 +789,26 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
                 </div>
                 {focus.pastor_note && (
                   <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 14, color: T.inkSoft, lineHeight: 1.65, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    "{stripMd(focus.pastor_note)}"
+                    {stripMd(focus.pastor_note)}
                   </div>
                 )}
                 {isPastor && (
-                  <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginTop: 14, gap: 10 }}>
                     <button onClick={() => setSettingFocus(true)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer', padding: 0 }}>
-                      Update topic →
+                      Edit topic →
                     </button>
                     <button
-                      onClick={() => {
-                        setFocus(null);
-                        setSettingFocus(true);
+                      onClick={() => setQuestionsSheetOpen(true)}
+                      style={{
+                        marginLeft: 'auto',
+                        background: publishedQs ? 'transparent' : T.gold,
+                        color: publishedQs ? T.inkSoft : T.cream,
+                        border: publishedQs ? `1px solid ${T.line}` : 'none',
+                        borderRadius: 999, padding: '5px 14px',
+                        fontSize: 12, fontWeight: 600, cursor: 'pointer',
                       }}
-                      style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '6px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                     >
-                      + New discussion
+                      {publishedQs ? 'Edit questions →' : 'Set questions →'}
                     </button>
                   </div>
                 )}
@@ -867,16 +847,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
               </div>
             )}
 
-            {/* ── 3. Pastor: question editor (always visible to pastor, hidden from members until published) ── */}
-            {focus && !settingFocus && (isPastor || !publishedQs) && (
-              <StudyQuestionsCard
-                focus={focus}
-                isPastor={isPastor}
-                onUseQuestion={() => {}}
-              />
-            )}
-
-            {/* ── 4. Ask AI ── */}
+            {/* ── 3. Ask AI ── */}
             {focus && !settingFocus && (
               <div style={{ marginBottom: 20 }}>
                 {!askOpen ? (
@@ -916,7 +887,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
               </div>
             )}
 
-            {/* ── 5. General posts (only shown when no discussion questions) ── */}
+            {/* ── 4. General posts (only shown when no discussion questions) ── */}
             {(!publishedQs) && !settingFocus && (
               <>
                 <form onSubmit={submitPost} style={{ marginBottom: 20 }}>
@@ -974,6 +945,15 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
         );
       })()}
 
+
+      {/* ── Questions sheet (pastor only) ───────────────────────────────── */}
+      {questionsSheetOpen && focus && (
+        <QuestionsSheet
+          focus={focus}
+          onClose={() => setQuestionsSheetOpen(false)}
+          onPublished={(qs) => { setFocus((f) => ({ ...f, questions: qs })); }}
+        />
+      )}
 
       {/* ── Friend invite picker ─────────────────────────────────────────── */}
       {inviteOpen && !shareOpen && (
