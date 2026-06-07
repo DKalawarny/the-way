@@ -143,7 +143,7 @@ function ReplyRow({ reply, myId, isPastor, groupId, onDelete }) {
 }
 
 // ── Thread card ──────────────────────────────────────────────────────────────
-function ThreadCard({ thread, groupId, myId, isPastor, onDelete, onPin }) {
+function ThreadCard({ thread, groupId, myId, isPastor, onDelete, onPin, refreshKey }) {
   const [replies, setReplies]       = useState([]);
   const [loaded, setLoaded]         = useState(false);
   const [expanded, setExpanded]     = useState(false);
@@ -182,6 +182,10 @@ function ThreadCard({ thread, groupId, myId, isPastor, onDelete, onPin }) {
     setReplies(direct.map((r) => ({ ...r, nested: nestedMap[r.id] ?? [] })));
     setLoaded(true);
   }
+
+  useEffect(() => {
+    if (expanded) load();
+  }, [refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggle() {
     if (!expanded && !loaded) load();
@@ -334,6 +338,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   const [threadText, setThreadText] = useState('');
   const [posting, setPosting]       = useState(false);
   const [postError, setPostError]   = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
   const [memberCount, setMemberCount] = useState(0);
   const [inviteOpen, setInviteOpen]   = useState(false);
   const [allUsers, setAllUsers]       = useState([]);
@@ -401,6 +406,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
       .channel(`group_messages:${group.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'group_posts', filter: `group_id=eq.${group.id}` }, () => {
         loadThreads();
+        setRefreshKey((k) => k + 1);
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'group_messages', filter: `group_id=eq.${group.id}` }, (payload) => {
         const msg = payload.new;
@@ -610,6 +616,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
                 isPastor={isPastor}
                 onDelete={deleteThread}
                 onPin={pinThread}
+                refreshKey={refreshKey}
               />
             ))}
 
