@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { supabase, authedFetch } from './supabase.js';
+import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { Avatar } from './ProfilePage.jsx';
-import { KinwoveStar } from './components/brand/KinwoveStar';
 import ShareSheet from './ShareSheet.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
 import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
@@ -23,7 +22,6 @@ function msgTimeAgo(ts) {
   if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
   return new Date(ts).toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
-
 function timeAgo(ts) {
   const diff = (Date.now() - new Date(ts)) / 1000;
   if (diff < 60) return 'just now';
@@ -32,477 +30,330 @@ function timeAgo(ts) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-function SetFocusForm({ groupId, onSaved, onCancel }) {
-  const [passage, setPassage] = useState('');
-  const [note, setNote] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  async function save() {
-    if (!passage.trim()) return;
-    setBusy(true);
-    const { data } = await supabase.from('weekly_focus').insert({
-      group_id: groupId,
-      passage: passage.trim(),
-      pastor_note: note.trim() || null,
-      week_of: new Date().toISOString().slice(0, 10),
-    }).select().single();
-    setBusy(false);
-    onSaved(data);
-  }
-
+// ── Nested reply (1 level deep, indented) ───────────────────────────────────
+function NestedReply({ reply, myId, isPastor, onDelete }) {
+  const [confirming, setConfirming] = useState(false);
+  const canDelete = reply.author_id === myId || isPastor;
+  const name = reply.profiles?.display_name ?? 'Member';
   return (
-    <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 16, padding: '22px 20px', marginBottom: 20 }}>
-      <div style={{ fontSize: 11, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', marginBottom: 16, opacity: 0.8 }}>Set this week's focus</div>
-      <input
-        value={passage}
-        onChange={(e) => setPassage(e.target.value)}
-        placeholder="Passage or theme — e.g. Romans 8:1-11"
-        style={{
-          width: '100%', boxSizing: 'border-box', background: T.white,
-          border: `1px solid ${T.line}`, borderRadius: 10, padding: '11px 14px',
-          fontSize: 14, color: T.ink, outline: 'none', marginBottom: 12,
-        }}
-        onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
-        onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
-      />
-      <textarea
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        placeholder="Your note to the group — what to sit with, what you want them to bring on Sunday…"
-        rows={4}
-        style={{
-          width: '100%', boxSizing: 'border-box', resize: 'none',
-          background: T.white, border: `1px solid ${T.line}`,
-          borderRadius: 10, padding: '11px 14px', fontSize: 14, color: T.ink,
-          fontFamily: T.serif, outline: 'none', lineHeight: 1.6, marginBottom: 14,
-        }}
-        onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
-        onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
-      />
-      <div style={{ display: 'flex', gap: 10 }}>
-        <button onClick={save} disabled={busy || !passage.trim()} style={{
-          background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
-          padding: '10px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-          opacity: busy || !passage.trim() ? 0.5 : 1,
-        }}>
-          {busy ? 'Saving…' : 'Post focus'}
-        </button>
-        <button onClick={onCancel} style={{ background: 'none', border: 'none', color: '#9B8C73', fontSize: 13, cursor: 'pointer' }}>
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ReplyThread({ postId, session, profile }) {
-  const [replies, setReplies] = useState([]);
-  const [text, setText] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    supabase
-      .from('group_replies')
-      .select('*, profiles(display_name, avatar_config, avatar_url)')
-      .eq('post_id', postId)
-      .order('created_at', { ascending: true })
-      .then(({ data }) => { setReplies(data ?? []); setLoaded(true); });
-  }, [postId]);
-
-  async function submit(e) {
-    e.preventDefault();
-    if (!text.trim() || !session) return;
-    setBusy(true);
-    const { data } = await supabase.from('group_replies').insert({
-      post_id: postId,
-      author_id: session.user.id,
-      body: text.trim(),
-    }).select('*, profiles(display_name, avatar_config, avatar_url)').single();
-    setText('');
-    setBusy(false);
-    if (data) setReplies((prev) => [...prev, data]);
-  }
-
-  if (!loaded) return <div style={{ padding: '8px 0', fontSize: 12, color: '#B0A28A' }}>Loading replies…</div>;
-
-  return (
-    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${T.line}` }}>
-      {replies.map((r) => (
-        <div key={r.id} style={{ display: 'flex', gap: 10, marginBottom: 12, alignItems: 'flex-start' }}>
-          <Avatar name={r.profiles?.display_name} avatarConfig={r.profiles?.avatar_config} photoUrl={r.profiles?.avatar_url} size={26} />
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: T.inkSoft, marginBottom: 3 }}>{r.profiles?.display_name ?? 'Member'}</div>
-            <div style={{ fontFamily: T.serif, fontSize: 14, color: T.inkSoft, lineHeight: 1.6 }}>{r.body}</div>
+    <div style={{ marginTop: 10, paddingLeft: 14, borderLeft: `2px solid rgba(184,115,58,0.18)` }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+        <Avatar name={name} avatarConfig={reply.profiles?.avatar_config} photoUrl={reply.profiles?.avatar_url} size={22} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: T.inkSoft }}>{name}</span>
+            <span style={{ fontSize: 11, color: T.inkMuted }}>{timeAgo(reply.created_at)}</span>
+            {canDelete && !confirming && (
+              <button onClick={() => setConfirming(true)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: T.inkMuted, fontSize: 11, cursor: 'pointer', padding: 0, opacity: 0.45 }}>✕</button>
+            )}
+            {confirming && (
+              <>
+                <button onClick={() => { onDelete(reply.id); setConfirming(false); }} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#c0392b', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}>Delete</button>
+                <button onClick={() => setConfirming(false)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 11, cursor: 'pointer', padding: 0 }}>Cancel</button>
+              </>
+            )}
           </div>
+          <div style={{ fontFamily: T.serif, fontSize: 13, color: T.ink, lineHeight: 1.65 }}>{reply.body}</div>
         </div>
-      ))}
-      {session && (
-        <form onSubmit={submit} style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Reply…"
-            style={{
-              flex: 1, background: T.white, border: `1px solid ${T.line}`,
-              borderRadius: 999, padding: '8px 14px', fontSize: 13, color: T.ink, outline: 'none',
-            }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
-            onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
-          />
-          <button type="submit" disabled={busy || !text.trim()} style={{
-            background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
-            padding: '8px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-            opacity: busy || !text.trim() ? 0.5 : 1,
-          }}>
-            Reply
-          </button>
-        </form>
-      )}
+      </div>
     </div>
   );
 }
 
-function PostCard({ post, session, profile, isPastor }) {
-  const [showReplies, setShowReplies] = useState(false);
-  const [replyCount, setReplyCount] = useState(post.reply_count ?? 0);
-  const isPastor_ = post.author_id === post.profiles?.id && isPastor;
+// ── Reply row with optional nested reply compose ─────────────────────────────
+function ReplyRow({ reply, myId, isPastor, groupId, onDelete }) {
+  const [showCompose, setShowCompose] = useState(false);
+  const [replyText, setReplyText]     = useState('');
+  const [busy, setBusy]               = useState(false);
+  const [nested, setNested]           = useState(reply.nested ?? []);
+  const [confirming, setConfirming]   = useState(false);
+  const canDelete = reply.author_id === myId || isPastor;
+  const name = reply.profiles?.display_name ?? 'Member';
 
-  return (
-    <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 16, padding: '18px 20px', marginBottom: 12 }}>
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
-        <Avatar name={post.profiles?.display_name} avatarConfig={post.profiles?.avatar_config} photoUrl={post.profiles?.avatar_url} size={32} />
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{post.profiles?.display_name ?? 'Member'}</div>
-          <div style={{ fontSize: 11, color: T.inkMuted }}>{timeAgo(post.created_at)}</div>
-        </div>
-      </div>
-      <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink, lineHeight: 1.7, marginBottom: 14 }}>
-        {post.body}
-      </div>
-      {Array.isArray(post.image_urls) && post.image_urls.length > 0 && (
-        <div style={{ marginBottom: 14 }}>
-          <PostImageGrid urls={post.image_urls} />
-        </div>
-      )}
-      <button
-        onClick={() => setShowReplies((v) => !v)}
-        style={{ background: 'none', border: 'none', color: T.gold, fontSize: 12, cursor: 'pointer', padding: 0, opacity: 0.75 }}
-      >
-        {showReplies ? 'Hide replies' : `Reply${replyCount > 0 ? ` · ${replyCount}` : ''}`}
-      </button>
-      {showReplies && (
-        <ReplyThread
-          postId={post.id}
-          session={session}
-          profile={profile}
-        />
-      )}
-    </div>
-  );
-}
-
-// Strip markdown bold/italic from pastor notes (in case AI text gets pasted)
-function stripMd(text) {
-  return (text ?? '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
-}
-
-// ── Reddit-style discussion thread for one question ───────────────────────────
-function QuestionThread({ question, questionIdx, focusId, groupId, session, profile, isPastor }) {
-  const [replies, setReplies]     = useState([]);
-  const [loaded, setLoaded]       = useState(false);
-  const [text, setText]           = useState('');
-  const [busy, setBusy]           = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
-  const myId = session?.user?.id;
-
-  useEffect(() => {
-    supabase
-      .from('group_posts')
-      .select('*, profiles(display_name, avatar_config, avatar_url)')
-      .eq('group_id', groupId)
-      .eq('question_idx', questionIdx)
-      .order('created_at', { ascending: true })
-      .then(({ data }) => { setReplies(data ?? []); setLoaded(true); });
-  }, [groupId, questionIdx]);
-
-  async function submit(e) {
+  async function submitNested(e) {
     e?.preventDefault();
-    if (!text.trim() || busy || !session) return;
+    if (!replyText.trim() || busy || !myId) return;
     setBusy(true);
     const { data } = await supabase
       .from('group_posts')
-      .insert({ group_id: groupId, author_id: myId, focus_id: focusId, question_idx: questionIdx, body: text.trim() })
+      .insert({ group_id: groupId, author_id: myId, parent_id: reply.id, body: replyText.trim() })
       .select('*, profiles(display_name, avatar_config, avatar_url)')
       .single();
-    setText('');
+    setReplyText('');
+    setShowCompose(false);
     setBusy(false);
-    if (data) setReplies((prev) => [...prev, data]);
+    if (data) setNested((prev) => [...prev, data]);
   }
 
-  async function deleteReply(id) {
-    setReplies((prev) => prev.filter((r) => r.id !== id));
-    setDeletingId(null);
-    await supabase.from('group_posts').delete().eq('id', id);
+  function deleteNested(id) {
+    setNested((prev) => prev.filter((n) => n.id !== id));
+    supabase.from('group_posts').delete().eq('id', id);
   }
 
   return (
-    <div style={{ marginBottom: 16, borderRadius: 16, overflow: 'hidden', border: `1px solid ${T.line}` }}>
-      {/* Question header */}
-      <div style={{ background: T.white, padding: '18px 20px', borderBottom: `1px solid ${T.line}` }}>
-        <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink, lineHeight: 1.65, fontWeight: 500 }}>
-          {question}
-        </div>
-        <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 6 }}>
-          {loaded ? `${replies.length} ${replies.length === 1 ? 'reflection' : 'reflections'}` : '…'}
+    <div style={{ paddingTop: 14, borderTop: `1px solid rgba(184,115,58,0.08)` }}>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+        <Avatar name={name} avatarConfig={reply.profiles?.avatar_config} photoUrl={reply.profiles?.avatar_url} size={28} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{name}</span>
+            <span style={{ fontSize: 11, color: T.inkMuted }}>{timeAgo(reply.created_at)}</span>
+            {canDelete && !confirming && (
+              <button onClick={() => setConfirming(true)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: T.inkMuted, fontSize: 11, cursor: 'pointer', padding: 0, opacity: 0.45 }}>✕</button>
+            )}
+            {confirming && (
+              <>
+                <button onClick={() => { onDelete(reply.id); setConfirming(false); }} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#c0392b', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}>Delete</button>
+                <button onClick={() => setConfirming(false)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 11, cursor: 'pointer', padding: 0 }}>Cancel</button>
+              </>
+            )}
+          </div>
+          <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.7, marginBottom: 6 }}>{reply.body}</div>
+          <button onClick={() => setShowCompose((v) => !v)} style={{ fontSize: 11, color: T.gold, background: 'none', border: 'none', cursor: 'pointer', padding: 0, opacity: 0.8 }}>
+            ↩ Reply
+          </button>
         </div>
       </div>
 
-      {/* Replies */}
-      {!loaded && (
-        <div style={{ padding: '12px 20px', background: T.parchment, fontSize: 13, color: T.inkMuted }}>Loading…</div>
-      )}
-      {loaded && replies.length === 0 && (
-        <div style={{ padding: '14px 20px', background: T.parchment, borderBottom: `1px solid ${T.line}`, fontSize: 13, color: T.inkMuted, fontStyle: 'italic' }}>
-          Be the first to share a reflection…
-        </div>
-      )}
-      {replies.map((r, i) => {
-        const isOwn = r.author_id === myId;
-        const canDelete = isOwn || isPastor;
-        return (
-          <div key={r.id} style={{
-            padding: '14px 20px', background: T.parchment,
-            borderBottom: i < replies.length - 1 ? `1px solid rgba(184,115,58,0.1)` : `1px solid ${T.line}`,
-            display: 'flex', gap: 12, alignItems: 'flex-start',
-          }}>
-            <Avatar name={r.profiles?.display_name} avatarConfig={r.profiles?.avatar_config} photoUrl={r.profiles?.avatar_url} size={30} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{r.profiles?.display_name ?? 'Member'}</span>
-                <span style={{ fontSize: 11, color: T.inkMuted }}>{timeAgo(r.created_at)}</span>
-                {canDelete && deletingId !== r.id && (
-                  <button onClick={() => setDeletingId(r.id)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: T.inkMuted, fontSize: 11, cursor: 'pointer', padding: 0, opacity: 0.5 }}>
-                    ✕
-                  </button>
-                )}
-                {canDelete && deletingId === r.id && (
-                  <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <button onClick={() => deleteReply(r.id)} style={{ background: 'none', border: 'none', color: '#c0392b', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}>Delete</button>
-                    <button onClick={() => setDeletingId(null)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 11, cursor: 'pointer', padding: 0 }}>Cancel</button>
-                  </div>
-                )}
-              </div>
-              <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.7 }}>{r.body}</div>
-            </div>
-          </div>
-        );
-      })}
+      {nested.map((n) => (
+        <NestedReply key={n.id} reply={n} myId={myId} isPastor={isPastor} onDelete={deleteNested} />
+      ))}
 
-      {/* Reply input */}
-      {session && (
-        <form onSubmit={submit} style={{ display: 'flex', background: T.white }}>
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
-            placeholder="Share a reflection…"
-            style={{ flex: 1, background: 'transparent', border: 'none', padding: '13px 18px', fontSize: 14, fontFamily: T.serif, color: T.ink, outline: 'none' }}
-          />
-          <button
-            type="submit"
-            disabled={busy || !text.trim()}
-            style={{
-              background: text.trim() ? T.gold : 'transparent', border: 'none',
-              borderLeft: `1px solid ${T.line}`, padding: '13px 20px',
-              fontSize: 13, fontWeight: 600,
-              color: text.trim() ? T.cream : T.inkMuted,
-              cursor: text.trim() ? 'pointer' : 'default',
-              transition: 'all 0.15s', whiteSpace: 'nowrap',
-            }}
-          >
-            {busy ? '…' : 'Post →'}
-          </button>
-        </form>
+      {showCompose && (
+        <div style={{ marginLeft: 38, marginTop: 10 }}>
+          <form onSubmit={submitNested} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); submitNested(); } }}
+              placeholder={`Reply to ${name}…`}
+              autoFocus
+              style={{ flex: 1, background: T.white, border: `1px solid ${T.line}`, borderRadius: 999, padding: '8px 14px', fontSize: 13, fontFamily: T.serif, color: T.ink, outline: 'none' }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
+              onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
+            />
+            <button type="submit" disabled={!replyText.trim() || busy} style={{ background: replyText.trim() ? T.gold : T.line, color: T.cream, border: 'none', borderRadius: 999, padding: '8px 14px', fontSize: 12, fontWeight: 600, cursor: replyText.trim() ? 'pointer' : 'default' }}>
+              {busy ? '…' : '↑'}
+            </button>
+          </form>
+        </div>
       )}
     </div>
   );
 }
 
-const STUDY_SYSTEM = `You are a group Bible study facilitator. Given a specific Bible passage or theme, write exactly 3 discussion questions numbered 1–3. Rules: output only the questions — no preamble, no titles, no explanations. Ground each question directly in the specific text or theme given. Avoid generic phrases like "How have you experienced..." — make every question feel specific to this passage.`;
+// ── Thread card ──────────────────────────────────────────────────────────────
+function ThreadCard({ thread, groupId, myId, isPastor, onDelete, onPin }) {
+  const [replies, setReplies]       = useState([]);
+  const [loaded, setLoaded]         = useState(false);
+  const [expanded, setExpanded]     = useState(false);
+  const [replyText, setReplyText]   = useState('');
+  const [busy, setBusy]             = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const name = thread.profiles?.display_name ?? 'Member';
+  const canDelete = thread.author_id === myId || isPastor;
 
-async function streamStudyQuestions(passage, onChunk, signal) {
-  const res = await authedFetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    signal,
-    body: JSON.stringify({
-      system: STUDY_SYSTEM,
-      messages: [{ role: 'user', content: `Passage or theme: ${passage}` }],
-      personType: 'group',
-    }),
-  });
-  if (!res.ok || !res.body) return;
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buf = '';
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    const events = buf.split('\n\n');
-    buf = events.pop() ?? '';
-    for (const raw of events) {
-      const lines = raw.split('\n');
-      const ev = lines.find((l) => l.startsWith('event: '))?.slice(7).trim();
-      const data = lines.find((l) => l.startsWith('data: '))?.slice(6);
-      if (ev === 'text' && data) {
-        try { onChunk(JSON.parse(data).delta); } catch {}
-      }
-    }
-  }
-}
+  async function load() {
+    // Load direct replies
+    const { data: direct } = await supabase
+      .from('group_posts')
+      .select('*, profiles(display_name, avatar_config, avatar_url)')
+      .eq('group_id', groupId)
+      .eq('parent_id', thread.id)
+      .order('created_at', { ascending: true });
 
-function parseQuestions(raw) {
-  return raw
-    .split('\n')
-    .map((l) => l.replace(/^\d+[.)]\s*/, '').trim())
-    .filter((l) => l.length > 10);
-}
+    if (!direct?.length) { setReplies([]); setLoaded(true); return; }
 
-// ── Questions bottom sheet (pastor only) ─────────────────────────────────────
-function QuestionsSheet({ focus, onClose, onPublished }) {
-  const existing = Array.isArray(focus?.questions) && focus.questions.length > 0 ? focus.questions : null;
-  const [drafts, setDrafts]       = useState(existing ?? ['', '', '']);
-  const [generating, setGenerating] = useState(false);
-  const [saving, setSaving]       = useState(false);
-  const abortRef = useRef(null);
+    // Load nested (replies to replies) in one extra query
+    const ids = direct.map((r) => r.id);
+    const { data: nested } = await supabase
+      .from('group_posts')
+      .select('*, profiles(display_name, avatar_config, avatar_url)')
+      .eq('group_id', groupId)
+      .in('parent_id', ids)
+      .order('created_at', { ascending: true });
 
-  async function suggestWithAI() {
-    abortRef.current?.abort();
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
-    setDrafts(['', '', '']);
-    setGenerating(true);
-    let raw = '';
-    try {
-      await streamStudyQuestions(focus.passage, (chunk) => {
-        raw += chunk;
-        const parsed = parseQuestions(raw);
-        setDrafts([parsed[0] ?? '', parsed[1] ?? '', parsed[2] ?? '']);
-      }, ctrl.signal);
-    } catch {}
-    setGenerating(false);
+    const nestedMap = {};
+    (nested ?? []).forEach((n) => {
+      if (!nestedMap[n.parent_id]) nestedMap[n.parent_id] = [];
+      nestedMap[n.parent_id].push(n);
+    });
+
+    setReplies(direct.map((r) => ({ ...r, nested: nestedMap[r.id] ?? [] })));
+    setLoaded(true);
   }
 
-  async function publish() {
-    const toSave = drafts.map((q) => q.trim()).filter(Boolean);
-    if (!toSave.length) return;
-    setSaving(true);
-    await supabase.from('weekly_focus').update({ questions: toSave }).eq('id', focus.id);
-    setSaving(false);
-    onPublished(toSave);
-    onClose();
+  function toggle() {
+    if (!expanded && !loaded) load();
+    setExpanded((v) => !v);
+  }
+
+  async function submitReply(e) {
+    e?.preventDefault();
+    if (!replyText.trim() || busy || !myId) return;
+    setBusy(true);
+    const { data } = await supabase
+      .from('group_posts')
+      .insert({ group_id: groupId, author_id: myId, parent_id: thread.id, body: replyText.trim() })
+      .select('*, profiles(display_name, avatar_config, avatar_url)')
+      .single();
+    setReplyText('');
+    setBusy(false);
+    if (data) setReplies((prev) => [...prev, { ...data, nested: [] }]);
+  }
+
+  function deleteReply(id) {
+    setReplies((prev) => prev.filter((r) => r.id !== id));
+    supabase.from('group_posts').delete().eq('id', id);
   }
 
   return (
-    <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(20,12,8,0.52)' }} />
-      <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 401,
-        background: T.white, borderRadius: '22px 22px 0 0',
-        padding: '0 0 calc(24px + env(safe-area-inset-bottom))',
-        maxHeight: '88dvh', display: 'flex', flexDirection: 'column',
-        boxShadow: '0 -8px 40px rgba(0,0,0,0.18)',
-      }}>
-        {/* Drag handle */}
-        <div style={{ padding: '12px 0 4px', display: 'flex', justifyContent: 'center', flexShrink: 0 }}>
-          <div style={{ width: 40, height: 5, borderRadius: 3, background: '#E0D8CE' }} />
-        </div>
-
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 22px 16px', flexShrink: 0 }}>
-          <div>
-            <div style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>
-              {existing ? 'Edit questions' : 'Set discussion questions'}
-            </div>
-            <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2 }}>
-              Write 3 for your group, or let AI suggest from the passage.
+    <div style={{
+      background: T.white,
+      border: `1px solid ${thread.pinned ? 'rgba(184,115,58,0.45)' : T.line}`,
+      borderRadius: 16,
+      overflow: 'hidden',
+      marginBottom: 12,
+    }}>
+      {/* Thread header + body */}
+      <div style={{ padding: '16px 18px' }}>
+        {thread.pinned && (
+          <div style={{ fontSize: 10, letterSpacing: 2.5, color: T.gold, textTransform: 'uppercase', marginBottom: 8, opacity: 0.8 }}>
+            📌 Pinned
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 10 }}>
+          <Avatar name={name} avatarConfig={thread.profiles?.avatar_config} photoUrl={thread.profiles?.avatar_url} size={32} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>{name}</span>
+              <span style={{ fontSize: 11, color: T.inkMuted }}>{timeAgo(thread.created_at)}</span>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
+                {isPastor && !thread.pinned && (
+                  <button onClick={() => onPin(thread.id)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 11, cursor: 'pointer', padding: 0, opacity: 0.6 }}>
+                    📌 Pin
+                  </button>
+                )}
+                {isPastor && thread.pinned && (
+                  <button onClick={() => onPin(null)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 11, cursor: 'pointer', padding: 0, opacity: 0.6 }}>
+                    Unpin
+                  </button>
+                )}
+                {canDelete && !confirming && (
+                  <button onClick={() => setConfirming(true)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer', padding: 0, opacity: 0.4 }}>✕</button>
+                )}
+                {confirming && (
+                  <>
+                    <button onClick={() => { onDelete(thread.id); setConfirming(false); }} style={{ background: 'none', border: 'none', color: '#c0392b', fontSize: 11, fontWeight: 600, cursor: 'pointer', padding: 0 }}>Delete</button>
+                    <button onClick={() => setConfirming(false)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 11, cursor: 'pointer', padding: 0 }}>Cancel</button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-          <button onClick={suggestWithAI} disabled={generating} style={{ background: 'none', border: `1px solid ${T.line}`, color: T.inkMuted, borderRadius: 999, padding: '6px 14px', fontSize: 12, cursor: 'pointer', flexShrink: 0 }}>
-            {generating ? '…thinking' : '✦ Suggest with AI'}
-          </button>
         </div>
 
-        {/* Textareas */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0 22px' }}>
-          {drafts.map((q, i) => (
-            <textarea
-              key={i}
-              value={q}
-              onChange={(e) => setDrafts((prev) => { const n = [...prev]; n[i] = e.target.value; return n; })}
-              placeholder={`Question ${i + 1}…`}
-              rows={3}
-              style={{ width: '100%', boxSizing: 'border-box', resize: 'none', background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 12, padding: '12px 14px', fontSize: 14, color: T.ink, fontFamily: T.serif, outline: 'none', lineHeight: 1.65, marginBottom: 10 }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
-              onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
-            />
-          ))}
+        <div style={{ fontFamily: T.serif, fontSize: 15, color: T.ink, lineHeight: 1.72 }}>
+          {thread.body}
         </div>
+        {Array.isArray(thread.image_urls) && thread.image_urls.length > 0 && (
+          <div style={{ marginTop: 12 }}>
+            <PostImageGrid urls={thread.image_urls} />
+          </div>
+        )}
 
-        {/* Actions */}
-        <div style={{ padding: '16px 22px 0', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <button onClick={publish} disabled={saving || drafts.every((q) => !q.trim())} style={{ background: drafts.some((q) => q.trim()) ? T.gold : 'rgba(184,115,58,0.3)', color: T.cream, border: 'none', borderRadius: 999, padding: '14px', fontSize: 14, fontWeight: 600, cursor: 'pointer', width: '100%' }}>
-            {saving ? 'Publishing…' : 'Publish to group'}
-          </button>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 13, cursor: 'pointer', textAlign: 'center', padding: '2px 0' }}>
-            Cancel
-          </button>
-        </div>
+        <button onClick={toggle} style={{ marginTop: 12, background: 'none', border: 'none', color: T.gold, fontSize: 12, cursor: 'pointer', padding: 0, opacity: 0.85 }}>
+          {expanded
+            ? 'Hide replies'
+            : loaded
+              ? `${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`
+              : 'Reply'}
+        </button>
       </div>
-    </>
+
+      {/* Replies */}
+      {expanded && (
+        <div style={{ borderTop: `1px solid ${T.line}` }}>
+          {!loaded && (
+            <div style={{ padding: '14px 18px', background: T.parchment, fontSize: 13, color: T.inkMuted }}>Loading…</div>
+          )}
+          {loaded && (
+            <div style={{ background: T.parchment, padding: '0 18px 6px' }}>
+              {replies.length === 0 && (
+                <div style={{ padding: '14px 0', fontSize: 13, color: T.inkMuted, fontStyle: 'italic' }}>
+                  No replies yet — be the first
+                </div>
+              )}
+              {replies.map((r) => (
+                <ReplyRow key={r.id} reply={r} myId={myId} isPastor={isPastor} groupId={groupId} onDelete={deleteReply} />
+              ))}
+            </div>
+          )}
+
+          {/* Reply compose */}
+          <form onSubmit={submitReply} style={{ display: 'flex', background: T.white, borderTop: `1px solid ${T.line}` }}>
+            <input
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitReply(); } }}
+              placeholder="Write a reply…"
+              style={{ flex: 1, background: 'transparent', border: 'none', padding: '12px 16px', fontSize: 14, fontFamily: T.serif, color: T.ink, outline: 'none' }}
+            />
+            <button
+              type="submit"
+              disabled={busy || !replyText.trim()}
+              style={{
+                background: replyText.trim() ? T.gold : 'transparent',
+                border: 'none',
+                borderLeft: `1px solid ${T.line}`,
+                padding: '12px 18px',
+                fontSize: 13,
+                fontWeight: 600,
+                color: replyText.trim() ? T.cream : T.inkMuted,
+                cursor: replyText.trim() ? 'pointer' : 'default',
+                transition: 'all 0.15s',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {busy ? '…' : 'Post →'}
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
   );
 }
 
+// ── Main component ───────────────────────────────────────────────────────────
 export default function GroupSpace({ group, role, session, profile, onLeave, onClose, hideHeader, onFindPeople }) {
   const isPastor = role === 'pastor';
-  const [tab, setTab] = useState('study');
-  const [focus, setFocus] = useState(null);
-  const [posts, setPosts] = useState([]);
-  const [text, setText] = useState(() => sessionStorage.getItem(`kw:group-post:${group.id}`) ?? '');
-  const [submitting, setSubmitting] = useState(false);
-  const [settingFocus, setSettingFocus] = useState(false);
+  const myId = session?.user?.id;
+
+  const [tab, setTab]               = useState('discussion');
+  const [threads, setThreads]       = useState([]);
+  const [threadText, setThreadText] = useState('');
+  const [posting, setPosting]       = useState(false);
   const [memberCount, setMemberCount] = useState(0);
-  const [inviteOpen, setInviteOpen]   = useState(false);
-  const [friends, setFriends]         = useState([]);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [friends, setFriends]       = useState([]);
   const [friendsLoading, setFriendsLoading] = useState(false);
-  const [sentInvites, setSentInvites] = useState(new Set()); // recipient IDs
-  const [shareOpen, setShareOpen]     = useState(false);
+  const [sentInvites, setSentInvites] = useState(new Set());
+  const [shareOpen, setShareOpen]   = useState(false);
   const imageDrafts = useImageDrafts(4);
 
   // Chat
   const CHAT_DRAFT_KEY = `kw:group-chat:${group.id}`;
-  const POST_DRAFT_KEY = `kw:group-post:${group.id}`;
-  const [messages, setMessages] = useState([]);
-  const [msgInput, setMsgInput] = useState(() => sessionStorage.getItem(CHAT_DRAFT_KEY) ?? '');
-  const [msgBusy, setMsgBusy] = useState(false);
+  const [messages, setMessages]     = useState([]);
+  const [msgInput, setMsgInput]     = useState(() => sessionStorage.getItem(CHAT_DRAFT_KEY) ?? '');
+  const [msgBusy, setMsgBusy]       = useState(false);
   const [deletingId, setDeletingId] = useState(null);
-  const msgEndRef = useRef(null);
+  const msgEndRef   = useRef(null);
   const msgInputRef = useRef(null);
 
-  // Ask AI (inline, contextual to focus passage)
-  const [askOpen, setAskOpen] = useState(false);
-  const [askMsgs, setAskMsgs] = useState([]);
-  const [askInput, setAskInput] = useState('');
-  const [askBusy, setAskBusy] = useState(false);
-  const askEndRef = useRef(null);
-  const [questionsSheetOpen, setQuestionsSheetOpen] = useState(false);
-
-  // Load friends (followers + following) when invite picker opens
+  // Load friends when invite picker opens
   useEffect(() => {
     if (!inviteOpen) return;
-    const uid = session?.user?.id;
+    const uid = myId;
     if (!uid) return;
     setFriendsLoading(true);
     Promise.all([
@@ -514,21 +365,18 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
         ...(followers  ?? []).map((r) => r.follower_id),
       ])].filter((id) => id !== uid);
       if (!ids.length) { setFriends([]); setFriendsLoading(false); return; }
-      const { data: profiles } = await supabase
+      const { data: ps } = await supabase
         .from('profiles')
         .select('id, display_name, first_name, last_name, avatar_url, avatar_config')
         .in('id', ids);
-      setFriends(profiles ?? []);
+      setFriends(ps ?? []);
       setFriendsLoading(false);
     });
   }, [inviteOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function sendFriendInvite(recipientId) {
     setSentInvites((prev) => new Set([...prev, recipientId]));
-    const { error } = await supabase.rpc('send_group_invite', {
-      p_group_id: group.id,
-      p_recipient_id: recipientId,
-    });
+    const { error } = await supabase.rpc('send_group_invite', { p_group_id: group.id, p_recipient_id: recipientId });
     if (error) {
       console.error('[group invite]', error.message);
       setSentInvites((prev) => { const n = new Set(prev); n.delete(recipientId); return n; });
@@ -536,20 +384,16 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   }
 
   useEffect(() => {
-    loadFocus();
-    loadPosts();
+    loadThreads();
     loadMessages();
-    supabase
-      .from('group_members')
-      .select('id', { count: 'exact' })
-      .eq('group_id', group.id)
+    supabase.from('group_members').select('id', { count: 'exact' }).eq('group_id', group.id)
       .then(({ count }) => setMemberCount(count ?? 0));
 
     const sub = supabase
       .channel(`group_messages:${group.id}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'group_messages', filter: `group_id=eq.${group.id}` }, (payload) => {
         const msg = payload.new;
-        if (msg.author_id === session?.user?.id) return;
+        if (msg.author_id === myId) return;
         supabase.from('profiles').select('display_name,avatar_config,avatar_url').eq('id', msg.author_id).single()
           .then(({ data: p }) => {
             setMessages((prev) => [...prev, { ...msg, profiles: p }]);
@@ -561,7 +405,63 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
       })
       .subscribe();
     return () => { supabase.removeChannel(sub); };
-  }, [group.id]);
+  }, [group.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function loadThreads() {
+    const { data } = await supabase
+      .from('group_posts')
+      .select('*, profiles(display_name, avatar_config, avatar_url)')
+      .eq('group_id', group.id)
+      .is('parent_id', null)
+      .order('pinned', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(50);
+    setThreads(data ?? []);
+  }
+
+  async function postThread(e) {
+    e.preventDefault();
+    if (!threadText.trim() && imageDrafts.drafts.length === 0) return;
+    setPosting(true);
+    const image_urls = await imageDrafts.uploadAll(myId);
+    const { data } = await supabase
+      .from('group_posts')
+      .insert({ group_id: group.id, author_id: myId, body: threadText.trim(), image_urls })
+      .select('*, profiles(display_name, avatar_config, avatar_url)')
+      .single();
+    setThreadText('');
+    imageDrafts.clear();
+    setPosting(false);
+    if (data) setThreads((prev) => [{ ...data, nested: [] }, ...prev.filter((t) => !t.pinned)].sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return 0;
+    }));
+    // simpler: just reload
+    loadThreads();
+  }
+
+  async function deleteThread(id) {
+    setThreads((prev) => prev.filter((t) => t.id !== id));
+    await supabase.from('group_posts').delete().eq('id', id);
+  }
+
+  async function pinThread(threadId) {
+    // Optimistic
+    setThreads((prev) => {
+      const updated = prev.map((t) => ({ ...t, pinned: threadId ? t.id === threadId : false }));
+      return [...updated].sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        return new Date(b.created_at) - new Date(a.created_at);
+      });
+    });
+    if (threadId) {
+      await supabase.rpc('pin_group_post', { p_post_id: threadId });
+    } else {
+      await supabase.rpc('unpin_group_posts', { p_group_id: group.id });
+    }
+  }
 
   async function loadMessages() {
     const { data } = await supabase
@@ -583,7 +483,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
     sessionStorage.removeItem(CHAT_DRAFT_KEY);
     const { data: newMsg } = await supabase
       .from('group_messages')
-      .insert({ group_id: group.id, author_id: session.user.id, body })
+      .insert({ group_id: group.id, author_id: myId, body })
       .select()
       .single();
     if (newMsg) {
@@ -600,125 +500,130 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
     supabase.from('group_messages').delete().eq('id', id);
   }
 
-  async function sendAsk(e) {
-    e?.preventDefault();
-    if (!askInput.trim() || askBusy) return;
-    const userMsg = { role: 'user', content: askInput.trim() };
-    setAskMsgs((prev) => [...prev, userMsg]);
-    setAskInput('');
-    setAskBusy(true);
-    const context = focus ? `The group is studying: ${focus.passage}.${focus.pastor_note ? ` Pastor's note: ${focus.pastor_note}` : ''}` : '';
-    const system = `You are a warm, knowledgeable Bible study companion for a small group. ${context} Answer questions about scripture thoughtfully and concisely. Be honest about uncertainty.`;
-    const res = await authedFetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ system, messages: [...askMsgs, userMsg], personType: 'group' }),
-    });
-    if (!res.ok || !res.body) { setAskBusy(false); return; }
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buf = '', full = '';
-    setAskMsgs((prev) => [...prev, { role: 'assistant', content: '' }]);
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buf += decoder.decode(value, { stream: true });
-      const events = buf.split('\n\n'); buf = events.pop() ?? '';
-      for (const raw of events) {
-        const lines = raw.split('\n');
-        const ev = lines.find((l) => l.startsWith('event: '))?.slice(7).trim();
-        const data = lines.find((l) => l.startsWith('data: '))?.slice(6);
-        if (ev === 'text' && data) {
-          try { const d = JSON.parse(data).delta; full += d; setAskMsgs((prev) => { const c = [...prev]; c[c.length - 1] = { role: 'assistant', content: full }; return c; }); } catch {}
-        }
-      }
-    }
-    setAskBusy(false);
-    setTimeout(() => askEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
-  }
-
-  async function loadFocus() {
-    const today = new Date().toISOString().slice(0, 10);
-    const weekStart = new Date();
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-    const { data } = await supabase
-      .from('weekly_focus')
-      .select('*')
-      .eq('group_id', group.id)
-      .gte('week_of', weekStart.toISOString().slice(0, 10))
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-    setFocus(data ?? null);
-  }
-
-  async function loadPosts() {
-    const { data } = await supabase
-      .from('group_posts')
-      .select('*, profiles(display_name, avatar_config, avatar_url)')
-      .eq('group_id', group.id)
-      .is('question_idx', null)   // only general (non-question-thread) posts
-      .order('created_at', { ascending: false })
-      .limit(40);
-    setPosts(data ?? []);
-  }
-
-  async function submitPost(e) {
-    e.preventDefault();
-    if ((!text.trim() && imageDrafts.drafts.length === 0) || !session) return;
-    setSubmitting(true);
-    const image_urls = await imageDrafts.uploadAll(session.user.id);
-    const { data } = await supabase.from('group_posts').insert({
-      group_id: group.id,
-      author_id: session.user.id,
-      focus_id: focus?.id ?? null,
-      body: text.trim(),
-      image_urls,
-    }).select('*, profiles(display_name, avatar_config, avatar_url)').single();
-    setText('');
-    sessionStorage.removeItem(POST_DRAFT_KEY);
-    setSubmitting(false);
-    imageDrafts.clear();
-    if (data) setPosts((prev) => [data, ...prev]);
-  }
-
   return (
     <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', flexDirection: 'column' }}>
       <div style={{ height: 2, background: `linear-gradient(90deg, transparent, ${T.gold}, transparent)` }} />
 
-      {!hideHeader && <header style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid rgba(184,115,58,0.15)', background: T.cream }}>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 13, cursor: 'pointer', padding: 0 }}>
-          ← Back
-        </button>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {group.name}
+      {/* Header */}
+      {!hideHeader && (
+        <header style={{ padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid rgba(184,115,58,0.15)', background: T.cream }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 13, cursor: 'pointer', padding: 0 }}>
+            ← Back
+          </button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 19, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {group.name}
+            </div>
+            <div style={{ fontSize: 11, color: T.inkMuted }}>
+              {memberCount} {memberCount === 1 ? 'member' : 'members'}
+            </div>
           </div>
-          <div style={{ fontSize: 11, color: T.inkMuted }}>
-            {memberCount} {memberCount === 1 ? 'member' : 'members'}{group.tradition ? ` · ${group.tradition}` : ''}
-          </div>
-        </div>
-        <button onClick={() => setInviteOpen(true)} style={{
-          background: 'transparent',
-          border: `1px solid ${T.line}`, color: T.inkSoft,
-          borderRadius: 999, padding: '5px 14px', fontSize: 12, cursor: 'pointer',
-          transition: 'all 0.2s',
-        }}>
-          ↗ Invite
-        </button>
-      </header>}
+          <button
+            onClick={() => setInviteOpen(true)}
+            style={{ background: 'transparent', border: `1px solid ${T.line}`, color: T.inkSoft, borderRadius: 999, padding: '5px 14px', fontSize: 12, cursor: 'pointer' }}
+          >
+            ↗ Invite
+          </button>
+        </header>
+      )}
 
       {/* Tab bar */}
       <div style={{ display: 'flex', borderBottom: '1px solid rgba(184,115,58,0.15)', background: T.cream, flexShrink: 0 }}>
-        {['study', 'chat'].map((t) => (
-          <button key={t} onClick={() => { setTab(t); if (t === 'chat') setTimeout(() => msgEndRef.current?.scrollIntoView(), 100); }}
-            style={{ flex: 1, background: 'none', border: 'none', padding: '12px 0', fontSize: 13, fontWeight: tab === t ? 700 : 500, fontFamily: T.serif, color: tab === t ? T.gold : T.inkMuted, cursor: 'pointer', borderBottom: tab === t ? `2px solid ${T.gold}` : '2px solid transparent', transition: 'all 0.15s' }}>
-            {t === 'study' ? 'Study' : 'Chat'}
+        {[{ id: 'discussion', label: 'Discussion' }, { id: 'chat', label: 'Chat' }].map((t) => (
+          <button
+            key={t.id}
+            onClick={() => { setTab(t.id); if (t.id === 'chat') setTimeout(() => msgEndRef.current?.scrollIntoView(), 100); }}
+            style={{ flex: 1, background: 'none', border: 'none', padding: '12px 0', fontSize: 13, fontWeight: tab === t.id ? 700 : 500, fontFamily: T.serif, color: tab === t.id ? T.gold : T.inkMuted, cursor: 'pointer', borderBottom: tab === t.id ? `2px solid ${T.gold}` : '2px solid transparent', transition: 'all 0.15s' }}
+          >
+            {t.label}
           </button>
         ))}
       </div>
 
-      {/* Chat tab */}
+      {/* ── Discussion tab ── */}
+      {tab === 'discussion' && (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px 80px', background: T.cream }}>
+          <div style={{ maxWidth: 640, margin: '0 auto' }}>
+
+            {/* New thread compose */}
+            <form onSubmit={postThread} style={{ marginBottom: 24 }}>
+              <textarea
+                value={threadText}
+                onChange={(e) => setThreadText(e.target.value)}
+                placeholder="Start a discussion — a question, a verse, something on your heart…"
+                rows={3}
+                style={{
+                  width: '100%', boxSizing: 'border-box', resize: 'none',
+                  background: T.white, border: `1px solid ${T.line}`,
+                  borderRadius: 14, padding: '13px 16px',
+                  fontSize: 14, color: T.ink, fontFamily: T.serif,
+                  outline: 'none', lineHeight: 1.65,
+                }}
+                onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
+                onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
+              />
+              <ImageDraftGrid drafts={imageDrafts.drafts} onRemove={imageDrafts.remove} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, gap: 8 }}>
+                <ImageAttachButton drafts={imageDrafts.drafts} max={imageDrafts.max} fileInputRef={imageDrafts.fileInputRef} onPick={imageDrafts.pick} />
+                <button
+                  type="submit"
+                  disabled={posting || (!threadText.trim() && imageDrafts.drafts.length === 0)}
+                  style={{
+                    background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
+                    padding: '9px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                    opacity: posting || (!threadText.trim() && imageDrafts.drafts.length === 0) ? 0.4 : 1,
+                  }}
+                >
+                  {posting ? 'Posting…' : 'Post'}
+                </button>
+              </div>
+            </form>
+
+            {/* Thread feed */}
+            {threads.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '48px 20px', fontFamily: T.serif, fontSize: 15, color: T.inkMuted, lineHeight: 1.7 }}>
+                No discussions yet.<br />Start one above.
+              </div>
+            )}
+            {threads.map((t) => (
+              <ThreadCard
+                key={t.id}
+                thread={t}
+                groupId={group.id}
+                myId={myId}
+                isPastor={isPastor}
+                onDelete={deleteThread}
+                onPin={pinThread}
+              />
+            ))}
+
+            {/* Leave / Delete */}
+            <div style={{ textAlign: 'center', marginTop: 48 }}>
+              {!isPastor && (
+                <button onClick={onLeave} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer' }}>
+                  Leave this group
+                </button>
+              )}
+              {isPastor && (
+                <button
+                  onClick={async () => {
+                    if (!window.confirm('Delete this group and all its data? This cannot be undone.')) return;
+                    await supabase.from('group_members').delete().eq('group_id', group.id);
+                    await supabase.from('group_posts').delete().eq('group_id', group.id);
+                    await supabase.from('church_groups').delete().eq('id', group.id);
+                    onLeave?.();
+                  }}
+                  style={{ background: 'none', border: 'none', color: '#c0392b', fontSize: 12, cursor: 'pointer', opacity: 0.6 }}
+                >
+                  Delete group
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Chat tab ── */}
       {tab === 'chat' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 8px' }}>
@@ -728,7 +633,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
               </div>
             )}
             {messages.map((m, i) => {
-              const isMe = m.author_id === session?.user?.id;
+              const isMe = m.author_id === myId;
               const name = m.profiles?.display_name ?? 'Member';
               const color = memberColor(m.author_id);
               const showName = !isMe && (i === 0 || messages[i - 1]?.author_id !== m.author_id);
@@ -740,7 +645,16 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
                   <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, flexDirection: isMe ? 'row-reverse' : 'row' }}>
                     <div
                       onClick={() => isMe && setDeletingId(deletingId === m.id ? null : m.id)}
-                      style={{ maxWidth: '78%', background: isMe ? T.gold : T.white, color: isMe ? T.cream : T.ink, borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px', padding: '9px 14px', fontSize: 14, fontFamily: T.serif, lineHeight: 1.55, border: isMe ? 'none' : `1px solid rgba(184,115,58,0.18)`, cursor: isMe ? 'pointer' : 'default' }}>
+                      style={{
+                        maxWidth: '78%',
+                        background: isMe ? T.gold : T.white,
+                        color: isMe ? T.cream : T.ink,
+                        borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                        padding: '9px 14px', fontSize: 14, fontFamily: T.serif, lineHeight: 1.55,
+                        border: isMe ? 'none' : `1px solid rgba(184,115,58,0.18)`,
+                        cursor: isMe ? 'pointer' : 'default',
+                      }}
+                    >
                       {m.body}
                     </div>
                     {isMe && deletingId === m.id && (
@@ -764,204 +678,21 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
               placeholder="Message the group…"
               style={{ flex: 1, background: T.white, border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '10px 16px', fontSize: 14, fontFamily: T.serif, color: T.ink, outline: 'none' }}
             />
-            <button type="submit" disabled={!msgInput.trim() || msgBusy}
-              style={{ width: 36, height: 36, borderRadius: '50%', background: msgInput.trim() ? T.gold : T.line, border: 'none', color: T.cream, fontSize: 16, cursor: msgInput.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s' }}>
+            <button
+              type="submit"
+              disabled={!msgInput.trim() || msgBusy}
+              style={{ width: 36, height: 36, borderRadius: '50%', background: msgInput.trim() ? T.gold : T.line, border: 'none', color: T.cream, fontSize: 16, cursor: msgInput.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s' }}
+            >
               →
             </button>
           </form>
         </div>
       )}
 
-      {tab === 'study' && (() => {
-        const publishedQs = Array.isArray(focus?.questions) && focus.questions.length > 0 ? focus.questions : null;
-        return (
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 100px', background: T.cream }}>
-          <div style={{ maxWidth: 640, margin: '0 auto' }}>
-
-            {/* ── 1. This week's topic ── */}
-            {settingFocus ? (
-              <SetFocusForm groupId={group.id} onSaved={(f) => { setFocus(f); setSettingFocus(false); }} onCancel={() => setSettingFocus(false)} />
-            ) : focus ? (
-              <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 18, padding: '20px 22px', marginBottom: 20 }}>
-                <div style={{ fontSize: 10, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', marginBottom: 8, opacity: 0.75 }}>This week</div>
-                <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em', lineHeight: 1.2, marginBottom: focus.pastor_note ? 10 : 0 }}>
-                  {focus.passage}
-                </div>
-                {focus.pastor_note && (
-                  <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 14, color: T.inkSoft, lineHeight: 1.65, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {stripMd(focus.pastor_note)}
-                  </div>
-                )}
-                {isPastor && (
-                  <div style={{ display: 'flex', alignItems: 'center', marginTop: 14, gap: 10 }}>
-                    <button onClick={() => setSettingFocus(true)} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer', padding: 0 }}>
-                      Edit topic →
-                    </button>
-                    <button
-                      onClick={() => setQuestionsSheetOpen(true)}
-                      style={{
-                        marginLeft: 'auto',
-                        background: publishedQs ? 'transparent' : T.gold,
-                        color: publishedQs ? T.inkSoft : T.cream,
-                        border: publishedQs ? `1px solid ${T.line}` : 'none',
-                        borderRadius: 999, padding: '5px 14px',
-                        fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                      }}
-                    >
-                      {publishedQs ? 'Edit questions →' : 'Set questions →'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div style={{ background: T.parchment, border: `1px dashed ${T.line}`, borderRadius: 18, padding: '28px 22px', marginBottom: 24, textAlign: 'center' }}>
-                {isPastor ? (
-                  <>
-                    <div style={{ fontFamily: T.serif, fontSize: 16, color: T.inkMuted, marginBottom: 14 }}>No topic set for this week yet.</div>
-                    <button onClick={() => setSettingFocus(true)} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '10px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                      Set this week's topic
-                    </button>
-                  </>
-                ) : (
-                  <div style={{ fontFamily: T.serif, fontSize: 15, color: T.inkMuted }}>Your leader hasn't set a topic for this week yet.</div>
-                )}
-              </div>
-            )}
-
-            {/* ── 2. Discussion threads (Reddit-style) ── */}
-            {focus && !settingFocus && publishedQs && (
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 10, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', opacity: 0.8, marginBottom: 14 }}>Discussion</div>
-                {publishedQs.map((q, i) => (
-                  <QuestionThread
-                    key={i}
-                    question={q}
-                    questionIdx={i}
-                    focusId={focus.id}
-                    groupId={group.id}
-                    session={session}
-                    profile={profile}
-                    isPastor={isPastor}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* ── 3. General posts (only shown when no discussion questions) ── */}
-            {(!publishedQs) && !settingFocus && (
-              <>
-                <form onSubmit={submitPost} style={{ marginBottom: 20 }}>
-                  <textarea
-                    value={text}
-                    onChange={(e) => { setText(e.target.value); sessionStorage.setItem(POST_DRAFT_KEY, e.target.value); }}
-                    placeholder={focus ? `Share a reflection on ${focus.passage}…` : 'Share something with the group…'}
-                    rows={3}
-                    style={{ width: '100%', boxSizing: 'border-box', resize: 'none', background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '13px 16px', fontSize: 14, color: T.ink, fontFamily: T.serif, outline: 'none', lineHeight: 1.65 }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = T.gold)}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = T.line)}
-                  />
-                  <ImageDraftGrid drafts={imageDrafts.drafts} onRemove={imageDrafts.remove} />
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, gap: 8 }}>
-                    <ImageAttachButton drafts={imageDrafts.drafts} max={imageDrafts.max} fileInputRef={imageDrafts.fileInputRef} onPick={imageDrafts.pick} />
-                    <button type="submit" disabled={submitting || (!text.trim() && imageDrafts.drafts.length === 0)} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '9px 22px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: submitting || (!text.trim() && imageDrafts.drafts.length === 0) ? 0.5 : 1 }}>Post</button>
-                  </div>
-                </form>
-                {posts.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '40px 20px', fontFamily: T.serif, fontSize: 16, color: T.inkMuted }}>
-                    No reflections yet. Be the first.
-                  </div>
-                )}
-                {posts.map((p) => (
-                  <PostCard key={p.id} post={p} session={session} profile={profile} isPastor={isPastor} />
-                ))}
-              </>
-            )}
-
-            {/* ── 4. Ask AI (always at bottom when focus is set) ── */}
-            {focus && !settingFocus && (
-              <div style={{ marginBottom: 20 }}>
-                {!askOpen ? (
-                  <button onClick={() => setAskOpen(true)} style={{ width: '100%', background: 'rgba(168,85,48,0.07)', border: `1px solid rgba(168,85,48,0.22)`, borderRadius: 14, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', textAlign: 'left' }}>
-                    <KinwoveStar size={18} color={T.gold} />
-                    <div>
-                      <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink, marginBottom: 2 }}>Ask about {focus.passage}</div>
-                      <div style={{ fontSize: 12, color: T.inkMuted }}>Dig deeper with AI — context, cross-references, history</div>
-                    </div>
-                    <span style={{ marginLeft: 'auto', color: T.inkMuted, fontSize: 16 }}>›</span>
-                  </button>
-                ) : (
-                  <div style={{ background: T.white, border: `1px solid rgba(168,85,48,0.22)`, borderRadius: 16, overflow: 'hidden' }}>
-                    <div style={{ padding: '12px 16px', borderBottom: `1px solid rgba(168,85,48,0.15)`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.ink }}>Ask about {focus.passage}</span>
-                      <button onClick={() => setAskOpen(false)} style={{ background: 'none', border: 'none', color: T.inkMuted, cursor: 'pointer', fontSize: 13 }}>✕</button>
-                    </div>
-                    <div style={{ padding: '12px 16px', maxHeight: 280, overflowY: 'auto' }}>
-                      {askMsgs.length === 0 && (
-                        <div style={{ fontFamily: T.serif, fontSize: 13, color: T.inkMuted, paddingBottom: 8 }}>What do you want to understand better about this passage?</div>
-                      )}
-                      {askMsgs.map((m, i) => (
-                        <div key={i} style={{ marginBottom: 10, display: 'flex', flexDirection: 'column', alignItems: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-                          <div style={{ maxWidth: '85%', background: m.role === 'user' ? T.gold : 'rgba(168,85,48,0.07)', color: m.role === 'user' ? T.cream : T.ink, borderRadius: m.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px', padding: '8px 13px', fontSize: 13, fontFamily: T.serif, lineHeight: 1.6 }}>
-                            {m.content || '…'}
-                          </div>
-                        </div>
-                      ))}
-                      <div ref={askEndRef} />
-                    </div>
-                    <form onSubmit={sendAsk} style={{ padding: '10px 12px', borderTop: `1px solid rgba(168,85,48,0.12)`, display: 'flex', gap: 8 }}>
-                      <input value={askInput} onChange={(e) => setAskInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); sendAsk(); } }} placeholder={`Ask about ${focus.passage}…`} style={{ flex: 1, background: 'rgba(168,85,48,0.05)', border: `1px solid rgba(168,85,48,0.2)`, borderRadius: 999, padding: '8px 14px', fontSize: 13, fontFamily: T.serif, color: T.ink, outline: 'none' }} />
-                      <button type="submit" disabled={!askInput.trim() || askBusy} style={{ width: 32, height: 32, borderRadius: '50%', background: askInput.trim() ? T.gold : T.line, border: 'none', color: T.cream, fontSize: 15, cursor: askInput.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>→</button>
-                    </form>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Leave / Delete group */}
-            <div style={{ textAlign: 'center', marginTop: 40 }}>
-              {!isPastor && (
-                <button onClick={onLeave} style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer' }}>
-                  Leave this group
-                </button>
-              )}
-              {isPastor && (
-                <button
-                  onClick={async () => {
-                    if (!window.confirm('Delete this group and all its data? This cannot be undone.')) return;
-                    await supabase.from('group_members').delete().eq('group_id', group.id);
-                    await supabase.from('group_posts').delete().eq('group_id', group.id);
-                    await supabase.from('weekly_focus').delete().eq('group_id', group.id);
-                    await supabase.from('church_groups').delete().eq('id', group.id);
-                    onLeave?.();
-                  }}
-                  style={{ background: 'none', border: 'none', color: '#c0392b', fontSize: 12, cursor: 'pointer', opacity: 0.6 }}
-                >
-                  Delete group
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-        );
-      })()}
-
-
-      {/* ── Questions sheet (pastor only) ───────────────────────────────── */}
-      {questionsSheetOpen && focus && (
-        <QuestionsSheet
-          focus={focus}
-          onClose={() => setQuestionsSheetOpen(false)}
-          onPublished={(qs) => { setFocus((f) => ({ ...f, questions: qs })); }}
-        />
-      )}
-
-      {/* ── Friend invite picker ─────────────────────────────────────────── */}
+      {/* ── Friend invite picker ── */}
       {inviteOpen && !shareOpen && (
         <>
-          <div
-            onClick={() => setInviteOpen(false)}
-            style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(20,12,8,0.52)' }}
-          />
+          <div onClick={() => setInviteOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(20,12,8,0.52)' }} />
           <div style={{
             position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 401,
             background: T.white, borderRadius: '22px 22px 0 0',
@@ -969,7 +700,6 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
             maxHeight: '75dvh', display: 'flex', flexDirection: 'column',
             boxShadow: '0 -8px 40px rgba(0,0,0,0.18)',
           }}>
-            {/* drag handle */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 14 }}>
               <div style={{ width: 40, height: 5, borderRadius: 3, background: '#E0D8CE' }} />
             </div>
@@ -980,7 +710,6 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
               Invite code: <strong style={{ color: T.ink, letterSpacing: 3 }}>{group.invite_code}</strong>
             </div>
 
-            {/* Friends list */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '0 16px' }}>
               {friendsLoading ? (
                 <div style={{ textAlign: 'center', color: T.inkMuted, fontSize: 13, padding: '20px 0' }}>Loading…</div>
@@ -1007,18 +736,8 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
                     const name = f.display_name || [f.first_name, f.last_name].filter(Boolean).join(' ') || 'Friend';
                     const sent = sentInvites.has(f.id);
                     return (
-                      <div key={f.id} style={{
-                        display: 'flex', alignItems: 'center', gap: 12,
-                        padding: '10px 0', borderBottom: `1px solid ${T.line}`,
-                      }}>
-                        {/* Avatar */}
-                        <div style={{
-                          width: 40, height: 40, borderRadius: '50%',
-                          background: memberColor(f.id), color: T.cream,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 15, fontWeight: 700, flexShrink: 0,
-                          overflow: 'hidden',
-                        }}>
+                      <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: `1px solid ${T.line}` }}>
+                        <div style={{ width: 40, height: 40, borderRadius: '50%', background: memberColor(f.id), color: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, flexShrink: 0, overflow: 'hidden' }}>
                           {f.avatar_url
                             ? <img src={f.avatar_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             : name.charAt(0).toUpperCase()}
@@ -1027,15 +746,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
                         <button
                           onClick={() => !sent && sendFriendInvite(f.id)}
                           disabled={sent}
-                          style={{
-                            background: sent ? 'rgba(80,160,80,0.12)' : T.gold,
-                            color: sent ? '#4a9a4a' : T.cream,
-                            border: sent ? '1px solid rgba(80,160,80,0.4)' : 'none',
-                            borderRadius: 999, padding: '7px 16px',
-                            fontSize: 13, fontWeight: 600,
-                            cursor: sent ? 'default' : 'pointer',
-                            transition: 'all 0.2s', flexShrink: 0,
-                          }}
+                          style={{ background: sent ? 'rgba(80,160,80,0.12)' : T.gold, color: sent ? '#4a9a4a' : T.cream, border: sent ? '1px solid rgba(80,160,80,0.4)' : 'none', borderRadius: 999, padding: '7px 16px', fontSize: 13, fontWeight: 600, cursor: sent ? 'default' : 'pointer', transition: 'all 0.2s', flexShrink: 0 }}
                         >
                           {sent ? '✓ Sent' : 'Invite'}
                         </button>
@@ -1046,15 +757,10 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
               )}
             </div>
 
-            {/* Share link button */}
             <div style={{ padding: '16px 16px 0' }}>
               <button
                 onClick={() => setShareOpen(true)}
-                style={{
-                  width: '100%', padding: '13px', background: T.parchment,
-                  border: `1px solid ${T.line}`, borderRadius: 14,
-                  fontSize: 14, fontWeight: 600, color: T.ink, cursor: 'pointer',
-                }}
+                style={{ width: '100%', padding: '13px', background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 14, fontSize: 14, fontWeight: 600, color: T.ink, cursor: 'pointer' }}
               >
                 ↗ Share invite link
               </button>
@@ -1063,7 +769,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
         </>
       )}
 
-      {/* ── External share sheet ─────────────────────────────────────────────── */}
+      {/* ── External share sheet ── */}
       {shareOpen && (
         <ShareSheet
           body={`Join "${group.name}" on kinwove. Use invite code: ${group.invite_code}`}
