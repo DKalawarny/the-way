@@ -370,7 +370,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
 
   // Load ALL kinwove users when invite opens (cached per mount)
   useEffect(() => {
-    if (!inviteOpen || !myId || allUsers.length > 0) return;
+    if (!inviteOpen || !myId) return;
     setUsersLoading(true);
     supabase
       .from('profiles')
