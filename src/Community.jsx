@@ -110,6 +110,26 @@ function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, 
   const [chLoading, setChLoading] = useState(true);
   const [peLoading, setPeLoading] = useState(true);
   const [churchFollows, setChurchFollows] = useState(new Set());
+  const [unreadMap, setUnreadMap] = useState({});
+
+  useEffect(() => {
+    const myId = session?.user?.id;
+    if (!myId || userGroups.length === 0) return;
+    const groupIds = userGroups.map((g) => g.group.id);
+    Promise.all([
+      supabase.from('group_member_seen').select('group_id, last_seen_at').eq('member_id', myId).in('group_id', groupIds),
+      supabase.from('group_posts').select('group_id, created_at').in('group_id', groupIds).neq('author_id', myId).order('created_at', { ascending: false }).limit(200),
+    ]).then(([{ data: seen }, { data: posts }]) => {
+      const seenAt = Object.fromEntries((seen ?? []).map((r) => [r.group_id, r.last_seen_at]));
+      const m = {};
+      groupIds.forEach((gid) => {
+        const lastSeen = seenAt[gid];
+        const latest = posts?.find((p) => p.group_id === gid);
+        if (latest && (!lastSeen || latest.created_at > lastSeen)) m[gid] = true;
+      });
+      setUnreadMap(m);
+    });
+  }, [session?.user?.id, userGroups]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     // Verified churches — exclude user's own church
@@ -193,7 +213,12 @@ function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, 
                   <div style={{ width: 5, flexShrink: 0, background: color }} />
                   <div style={{ flex: 1, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ fontFamily: T.serif, fontSize: 14, fontWeight: 700, color: T.ink }}>{entry.group.name}</div>
-                    <span style={{ fontSize: 16, color: T.inkMuted, opacity: 0.35 }}>›</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {unreadMap[entry.group.id] && (
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#E05B5B', flexShrink: 0 }} />
+                      )}
+                      <span style={{ fontSize: 16, color: T.inkMuted, opacity: 0.35 }}>›</span>
+                    </div>
                   </div>
                 </button>
               );

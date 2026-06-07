@@ -52,7 +52,7 @@ function AvatarStack({ groupId }) {
   );
 }
 
-function CircleCard({ entry, onClick }) {
+function CircleCard({ entry, onClick, hasUnread }) {
   const { group, role } = entry;
   const color = circleColor(group.id);
 
@@ -106,7 +106,12 @@ function CircleCard({ entry, onClick }) {
                 color: color, fontWeight: 700, opacity: 0.85,
               }}>You started this</span>
             )}
-            <span style={{ fontSize: 18, color: T.inkMuted, opacity: 0.35, lineHeight: 1 }}>›</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              {hasUnread && (
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#E05B5B', flexShrink: 0 }} />
+              )}
+              <span style={{ fontSize: 18, color: T.inkMuted, opacity: 0.35, lineHeight: 1 }}>›</span>
+            </div>
           </div>
         </div>
       </div>
@@ -117,6 +122,26 @@ function CircleCard({ entry, onClick }) {
 export default function GroupsHome({ userGroups, session, profile, onOpenGroup, onJoined, onClose, initialGroupCode, onConsumeGroupCode }) {
   const [showSetup, setShowSetup] = useState(!!initialGroupCode);
   const [setupTab, setSetupTab]   = useState(initialGroupCode ? 'join' : 'create');
+  const [unreadMap, setUnreadMap] = useState({});
+
+  useEffect(() => {
+    const myId = session?.user?.id;
+    if (!myId || userGroups.length === 0) return;
+    const groupIds = userGroups.map((g) => g.group.id);
+    Promise.all([
+      supabase.from('group_member_seen').select('group_id, last_seen_at').eq('member_id', myId).in('group_id', groupIds),
+      supabase.from('group_posts').select('group_id, created_at').in('group_id', groupIds).neq('author_id', myId).order('created_at', { ascending: false }).limit(200),
+    ]).then(([{ data: seen }, { data: posts }]) => {
+      const seenAt = Object.fromEntries((seen ?? []).map((r) => [r.group_id, r.last_seen_at]));
+      const m = {};
+      groupIds.forEach((gid) => {
+        const lastSeen = seenAt[gid];
+        const latest = posts?.find((p) => p.group_id === gid);
+        if (latest && (!lastSeen || latest.created_at > lastSeen)) m[gid] = true;
+      });
+      setUnreadMap(m);
+    });
+  }, [session?.user?.id, userGroups]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (initialGroupCode) { setSetupTab('join'); setShowSetup(true); }
@@ -237,6 +262,7 @@ export default function GroupsHome({ userGroups, session, profile, onOpenGroup, 
                 key={entry.group.id}
                 entry={entry}
                 onClick={() => onOpenGroup(entry)}
+                hasUnread={unreadMap[entry.group.id] ?? false}
               />
             ))}
           </>

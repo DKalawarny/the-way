@@ -3573,6 +3573,15 @@ export default function App() {
               setPendingGroupCode(n.data?.invite_code ?? null);
               setStage('groups');
             }
+            else if (n.kind === 'group_post' || n.kind === 'group_reply') {
+              const gId = n.data?.group_id;
+              if (gId) {
+                const entry = userGroups.find((g) => g.group.id === gId);
+                if (entry) { setViewingGroupEntry(entry); }
+                else { setViewingGroupEntry(null); }
+              }
+              setStage('groups');
+            }
             else if (n.target_type === 'church' || n.kind === 'role_assigned') {
               const cId = n.data?.church_id ?? n.target_id;
               if (n.data?.role_key === 'care') {

@@ -360,6 +360,14 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   const msgEndRef   = useRef(null);
   const msgInputRef = useRef(null);
 
+  // Mark this group as seen when opened
+  useEffect(() => {
+    if (!myId || !group?.id) return;
+    supabase.from('group_member_seen')
+      .upsert({ group_id: group.id, member_id: myId, last_seen_at: new Date().toISOString() },
+               { onConflict: 'group_id,member_id' });
+  }, [group.id, myId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Load ALL kinwove users when invite opens (cached per mount)
   useEffect(() => {
     if (!inviteOpen || !myId || allUsers.length > 0) return;
