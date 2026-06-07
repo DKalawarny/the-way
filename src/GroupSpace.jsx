@@ -408,7 +408,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   }, [group.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadThreads() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('group_posts')
       .select('*, profiles(display_name, avatar_config, avatar_url)')
       .eq('group_id', group.id)
@@ -416,6 +416,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
       .order('pinned', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(50);
+    if (error) console.error('[loadThreads]', error.message, error.details, error.hint);
     setThreads(data ?? []);
   }
 
@@ -424,20 +425,18 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
     if (!threadText.trim() && imageDrafts.drafts.length === 0) return;
     setPosting(true);
     const image_urls = await imageDrafts.uploadAll(myId);
-    const { data } = await supabase
+    // Insert separately so a bad select doesn't swallow the insert error
+    const { error: insertErr } = await supabase
       .from('group_posts')
-      .insert({ group_id: group.id, author_id: myId, body: threadText.trim(), image_urls })
-      .select('*, profiles(display_name, avatar_config, avatar_url)')
-      .single();
+      .insert({ group_id: group.id, author_id: myId, body: threadText.trim(), image_urls });
+    if (insertErr) {
+      console.error('[postThread] insert:', insertErr.message, insertErr.details, insertErr.hint);
+      setPosting(false);
+      return;
+    }
     setThreadText('');
     imageDrafts.clear();
     setPosting(false);
-    if (data) setThreads((prev) => [{ ...data, nested: [] }, ...prev.filter((t) => !t.pinned)].sort((a, b) => {
-      if (a.pinned && !b.pinned) return -1;
-      if (!a.pinned && b.pinned) return 1;
-      return 0;
-    }));
-    // simpler: just reload
     loadThreads();
   }
 
