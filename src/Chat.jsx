@@ -1303,7 +1303,7 @@ export default function Chat({
   return (
     <div
       style={{
-        height: panelMode ? 'calc(100vh - 62px)' : undefined,
+        height: panelMode ? 'calc(100vh - 62px - env(safe-area-inset-bottom, 0px))' : undefined,
         minHeight: panelMode ? undefined : '100vh',
         background: C.bg,
         display: 'flex',
@@ -1547,7 +1547,7 @@ export default function Chat({
           boxSizing: 'border-box',
         }}
       >
-        <div style={{ maxWidth: 720, margin: '0 auto' }}>
+        <div style={{ maxWidth: 720, width: '100%', margin: '0 auto', overflow: 'hidden', boxSizing: 'border-box' }}>
           {personType === 'group' && session && (
             activeStudySessionId ? (
               <div style={{ background: 'rgba(34,179,105,0.07)', border: '1px solid rgba(34,179,105,0.22)', borderRadius: 12, padding: '12px 16px', marginBottom: 20 }}>
