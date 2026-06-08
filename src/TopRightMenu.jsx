@@ -44,14 +44,12 @@ export default function TopRightMenu({
 
   const sections = [
     {
-      label: 'Navigate',
+      label: 'Go to',
       items: [
-        onOpenBoard        && { icon: LayoutGrid,  label: 'Your board',         onClick: onOpenBoard },
-        onOpenHistory      && { icon: Clock,        label: 'Chat history',       onClick: onOpenHistory },
-        onFindPeople       && { icon: Users,        label: 'Find people',        onClick: onFindPeople },
-        onFindChurches     && { icon: Search,       label: 'Find a church',      onClick: onFindChurches },
-        onInviteFriends    && { icon: UserPlus,     label: 'Invite friends',     onClick: onInviteFriends },
-        profile?.church_id && onOpenTalkToSomeone && { icon: Phone,    label: 'Ask someone',        onClick: onOpenTalkToSomeone },
+        onOpenBoard     && { icon: LayoutGrid, label: 'Your board',    onClick: onOpenBoard },
+        onFindPeople    && { icon: Users,      label: 'Find people',   onClick: onFindPeople },
+        onFindChurches  && { icon: Search,     label: 'Find a church', onClick: onFindChurches },
+        onInviteFriends && { icon: UserPlus,   label: 'Invite friends', onClick: onInviteFriends },
       ].filter(Boolean),
     },
     {
@@ -68,10 +66,9 @@ export default function TopRightMenu({
     {
       label: 'Account',
       items: [
-        onOpenHelp    && { icon: HelpCircle, label: 'Help & guide',  onClick: onOpenHelp },
-        onEditProfile && { icon: UserCog,    label: 'Edit profile',  onClick: onEditProfile },
-        onSignOut     && { icon: LogOut,     label: 'Sign out',      onClick: onSignOut,       danger: true },
-        onDeleteAccount && { icon: Trash2,   label: 'Delete account', onClick: onDeleteAccount, danger: true },
+        onEditProfile   && { icon: UserCog, label: 'Edit profile',   onClick: onEditProfile },
+        onSignOut       && { icon: LogOut,  label: 'Sign out',       onClick: onSignOut,       danger: true },
+        onDeleteAccount && { icon: Trash2,  label: 'Delete account', onClick: onDeleteAccount, danger: true },
       ].filter(Boolean),
     },
   ].filter((s) => s.items.length > 0);
