@@ -86,6 +86,7 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
   const [selectedPerson, setSelectedPerson] = useState(null);
   const [topic, setTopic] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [message, setMessage] = useState('');
   const [creating, setCreating] = useState(false);
   const [conversationId, setConversationId] = useState(null);
 
@@ -203,6 +204,17 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
       .single();
     setCreating(false);
     if (!error && data) {
+      if (message.trim()) {
+        await supabase.from('care_messages').insert({
+          conversation_id: data.id,
+          sender_id: session.user.id,
+          body: message.trim(),
+          is_safety_flag: false,
+        });
+        await supabase.from('care_conversations')
+          .update({ last_message_at: new Date().toISOString() })
+          .eq('id', data.id);
+      }
       setConversationId(data.id);
     }
   }
@@ -340,6 +352,26 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
                 onPick={pickPerson}
               />
             ))}
+
+            {/* Opening message */}
+            <div style={{ margin: '20px 0 0' }}>
+              <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 8 }}>
+                Your message <span style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 400 }}>(optional)</span>
+              </div>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Share what's on your heart — or just say hi. They'll get back to you."
+                rows={4}
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  border: `1px solid ${T.line}`, borderRadius: 12,
+                  padding: '12px 14px', fontSize: 14.5, lineHeight: 1.6,
+                  fontFamily: T.display, color: T.ink, background: T.white,
+                  resize: 'vertical', outline: 'none',
+                }}
+              />
+            </div>
 
             {/* Anonymous toggle */}
             <label style={{
