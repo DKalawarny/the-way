@@ -1308,6 +1308,8 @@ export default function Chat({
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
+        overflowX: 'hidden',
+        maxWidth: '100vw',
       }}
     >
       <header
@@ -1540,6 +1542,7 @@ export default function Chat({
           overflowY: 'auto',
           padding: panelMode ? '20px 16px 24px' : '28px 20px 80px',
           minHeight: 0,
+          boxSizing: 'border-box',
         }}
       >
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
@@ -1700,6 +1703,8 @@ export default function Chat({
                     fontSize: m.role === 'user' ? 15 : 17,
                     lineHeight: m.role === 'user' ? 1.5 : 1.7,
                     whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    overflowWrap: 'anywhere',
                     overflow: 'hidden',
                   }}
                 >
@@ -1937,6 +1942,7 @@ export default function Chat({
             ? `12px 16px max(14px, env(safe-area-inset-bottom, 14px))`
             : '14px 20px 76px',
           flexShrink: 0,
+          boxSizing: 'border-box',
           display: aiUsage.atLimit && session ? 'none' : undefined,
         }}
       >
