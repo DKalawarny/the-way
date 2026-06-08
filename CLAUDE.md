@@ -5,6 +5,25 @@ this project. Read it first, top to bottom.
 
 ---
 
+## 🚫 GOLDEN RULE — READ THIS BEFORE TOUCHING ANY FILE
+
+**Do not change anything that Daniel did not explicitly ask you to change in this conversation.**
+
+This means:
+- **No "while I'm in here" cleanups.** If Daniel asks to fix a button color, fix only that button. Do not rename variables, reformat JSX, adjust spacing, or touch adjacent code.
+- **No visual "improvements."** Do not adjust padding, font sizes, colors, border radii, shadows, line heights, letter spacing, or layout unless Daniel names that exact property and says to change it.
+- **No refactoring.** Do not extract components, rename props, consolidate styles, or restructure logic unless asked.
+- **No adding comments or removing comments** unless asked.
+- **No dependency updates** unless asked.
+- **No "fixing" things that look wrong to you.** If something looks off but Daniel didn't mention it, leave it. He may have put it there intentionally, or already gone through iterations to land there.
+- **No changing component defaults** — props, fallback values, default styles — unless the change was explicitly requested.
+
+**The rule is: surgical.** Touch only what was named. Nothing else.
+
+If you are editing a file for one reason and you notice something unrelated that looks wrong, mention it in text — do not fix it silently.
+
+---
+
 ## ⚠️ LOCKED — DO NOT CHANGE WITHOUT EXPLICIT INSTRUCTION
 
 **KinwoveStar path:** `M12 1 L13.4 9.6 L22 11 L13.4 12.4 L12 23 L10.6 12.4 L2 11 L10.6 9.6 Z`
