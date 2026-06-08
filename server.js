@@ -50,17 +50,25 @@ const TOKEN_TTL_MS = 5 * 60 * 1000;
 async function verifyToken(token) {
   const cached = tokenCache.get(token);
   if (cached && cached.expires > Date.now()) return cached.userId;
-  if (!SUPABASE_URL || !SUPABASE_ANON) return null;
+  if (!SUPABASE_URL || !SUPABASE_ANON) {
+    console.error('[auth] verifyToken: SUPABASE_URL or SUPABASE_ANON missing');
+    return null;
+  }
   try {
     const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${token}` },
     });
-    if (!r.ok) return null;
+    if (!r.ok) {
+      const body = await r.text().catch(() => '');
+      console.error('[auth] verifyToken: Supabase returned', r.status, body.slice(0, 120));
+      return null;
+    }
     const u = await r.json();
-    if (!u?.id) return null;
+    if (!u?.id) { console.error('[auth] verifyToken: no user id in response'); return null; }
     tokenCache.set(token, { userId: u.id, expires: Date.now() + TOKEN_TTL_MS });
     return u.id;
-  } catch {
+  } catch (e) {
+    console.error('[auth] verifyToken exception:', e.message);
     return null;
   }
 }
@@ -69,7 +77,10 @@ async function attachUser(req) {
   const auth = req.get('authorization') ?? '';
   const m = auth.match(/^Bearer\s+(.+)$/i);
   const token = m?.[1];
-  if (!token) return null;
+  if (!token) {
+    console.log('[auth] attachUser: no Authorization header on', req.method, req.path);
+    return null;
+  }
   return await verifyToken(token);
 }
 
