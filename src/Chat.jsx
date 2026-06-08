@@ -603,7 +603,10 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
         boxShadow: '0 -8px 40px rgba(0,0,0,0.15)', animation: 'slideUp 0.2s ease',
         maxHeight: '90vh', overflowY: 'auto',
       }}>
-        <div style={{ width: 36, height: 4, borderRadius: 2, background: T.line, margin: '0 auto 20px' }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: T.line, margin: '0 auto' }} />
+          <button onClick={onClose} style={{ position: 'absolute', right: 16, top: 16, background: 'none', border: 'none', cursor: 'pointer', color: T.inkMuted, fontSize: 20, lineHeight: 1, padding: 4 }}>×</button>
+        </div>
 
         {session && (
           <div style={{ marginBottom: 16 }}>
