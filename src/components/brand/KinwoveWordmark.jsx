@@ -31,7 +31,6 @@ export const KinwoveWordmark = ({
           width: '0.28em',
           height: '0.28em',
           display: 'block',
-          filter: `drop-shadow(0 0 3px ${starColor}) drop-shadow(0 0 6px ${starColor}88)`,
         }}
         aria-hidden="true"
       >
