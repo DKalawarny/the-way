@@ -1409,24 +1409,6 @@ export default function Chat({
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {/* New conversation — always visible */}
-          <button
-            onClick={() => onNewConversation?.()}
-            title="New conversation"
-            style={{
-              background: panelMode ? 'rgba(255,255,255,0.08)' : C.card,
-              border: `1px solid ${panelMode ? 'rgba(184,115,58,0.35)' : C.border}`,
-              color: panelMode ? 'rgba(253,248,240,0.75)' : C.textSoft,
-              borderRadius: 999, padding: '6px 11px', fontSize: 15,
-              cursor: 'pointer', lineHeight: 1,
-              display: 'flex', alignItems: 'center', gap: 5,
-            }}
-          >
-            <KinwoveStar size={13} style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: 13, fontWeight: 600 }}>New</span>
-          </button>
-
-          {/* ⋮ secondary menu */}
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
@@ -1453,6 +1435,14 @@ export default function Chat({
                 borderRadius: 14, boxShadow: '0 8px 32px rgba(44,24,16,0.18)',
                 overflow: 'hidden', minWidth: 200, zIndex: 200,
               }}>
+                <button onClick={() => { setMenuOpen(false); onNewConversation?.(); }} style={{
+                  width: '100%', textAlign: 'left', background: 'none',
+                  border: 'none', borderBottom: `1px solid ${C.border}`,
+                  padding: '12px 16px', fontSize: 14, color: C.text,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
+                }}>
+                  <KinwoveStar size={15} style={{ flexShrink: 0 }} /><span style={{ fontWeight: 600 }}>New conversation</span>
+                </button>
                 <button onClick={() => { toggleDark(); setMenuOpen(false); }} style={{
                   width: '100%', textAlign: 'left', background: 'none',
                   border: 'none', borderBottom: `1px solid ${C.border}`,
