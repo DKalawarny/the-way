@@ -1547,7 +1547,7 @@ export default function Chat({
           boxSizing: 'border-box',
         }}
       >
-        <div style={{ maxWidth: 720, width: '100%', margin: '0 auto', overflow: 'hidden', boxSizing: 'border-box' }}>
+        <div style={{ maxWidth: 720, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
           {personType === 'group' && session && (
             activeStudySessionId ? (
               <div style={{ background: 'rgba(34,179,105,0.07)', border: '1px solid rgba(34,179,105,0.22)', borderRadius: 12, padding: '12px 16px', marginBottom: 20 }}>
@@ -1682,6 +1682,8 @@ export default function Chat({
                   flexDirection: 'column',
                   alignItems: m.role === 'user' ? 'flex-end' : 'flex-start',
                   borderRadius: 8,
+                  width: '100%',
+                  boxSizing: 'border-box',
                 }}
               >
                 {/* Subtle topic accent before first assistant response */}
