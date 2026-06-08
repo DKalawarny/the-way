@@ -34,7 +34,7 @@ const KIND_COPY = {
   group_reply:               { verb: 'replied to your post in', Icon: null, emoji: '↩' },
 };
 
-function NotificationRow({ n, onClick, onFriendAction, onAvatarClick, onRoleAccepted }) {
+function NotificationRow({ n, onClick, onFriendAction, onAvatarClick, onRoleAccepted, onMarkRead }) {
   const copy = KIND_COPY[n.kind] ?? { verb: n.kind, Icon: null, emoji: <KinwoveStar size={10} /> };
   const actor = n.actor_profile;
 
@@ -98,6 +98,7 @@ function NotificationRow({ n, onClick, onFriendAction, onAvatarClick, onRoleAcce
       .update({ status: action === 'accept' ? 'accepted' : 'declined' })
       .eq('id', n.target_id);
     setFriendState(action === 'accept' ? 'accepted' : 'declined');
+    onMarkRead?.(n);
     // Don't call onFriendAction/loadRecent — it sets loading=true which
     // unmounts and remounts all rows, resetting friendState back to null.
     // The confirmed label stays until the user closes and reopens the panel.
@@ -127,6 +128,7 @@ function NotificationRow({ n, onClick, onFriendAction, onAvatarClick, onRoleAcce
       });
     }
     setRoleState(action === 'accept' ? 'accepted' : 'declined');
+    onMarkRead?.(n);
   }
 
   return (
@@ -341,17 +343,16 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
     onViewProfile?.(actorId);
   }
 
+  async function markRead(n) {
+    if (n.read_at) return;
+    const now = new Date().toISOString();
+    await supabase.from('notifications').update({ read_at: now }).eq('id', n.id);
+    setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read_at: now } : x));
+    setUnreadCount(c => Math.max(0, c - 1));
+  }
+
   async function handleClick(n) {
-    // Mark this notification read if it isn't already
-    if (!n.read_at) {
-      const now = new Date().toISOString();
-      await supabase
-        .from('notifications')
-        .update({ read_at: now })
-        .eq('id', n.id);
-      setNotifs(prev => prev.map(x => x.id === n.id ? { ...x, read_at: now } : x));
-      setUnreadCount(c => Math.max(0, c - 1));
-    }
+    await markRead(n);
     setOpen(false);
     onNavigate?.(n);
   }
@@ -477,13 +478,13 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
                     {newItems.length > 0 && (
                       <>
                         <div style={{ padding: '6px 4px 4px', fontSize: 13, fontWeight: 700, color: T.ink }}>New</div>
-                        {newItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} onAvatarClick={handleAvatarClick} onRoleAccepted={(data) => { onRoleAccepted?.(data); setOpen(false); setTimeout(loadRecent, 700); }} />)}
+                        {newItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onMarkRead={markRead} onFriendAction={loadRecent} onAvatarClick={handleAvatarClick} onRoleAccepted={(data) => { onRoleAccepted?.(data); setOpen(false); setTimeout(loadRecent, 700); }} />)}
                       </>
                     )}
                     {oldItems.length > 0 && (
                       <>
                         <div style={{ padding: newItems.length ? '14px 4px 4px' : '6px 4px 4px', fontSize: 13, fontWeight: 700, color: T.ink }}>Earlier</div>
-                        {oldItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onFriendAction={loadRecent} onAvatarClick={handleAvatarClick} onRoleAccepted={(data) => { onRoleAccepted?.(data); setOpen(false); setTimeout(loadRecent, 700); }} />)}
+                        {oldItems.map(n => <NotificationRow key={n.id} n={n} onClick={handleClick} onMarkRead={markRead} onFriendAction={loadRecent} onAvatarClick={handleAvatarClick} onRoleAccepted={(data) => { onRoleAccepted?.(data); setOpen(false); setTimeout(loadRecent, 700); }} />)}
                       </>
                     )}
                   </>
