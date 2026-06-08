@@ -614,12 +614,14 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
         boxShadow: '0 -8px 40px rgba(0,0,0,0.15)', animation: 'slideUp 0.2s ease',
         maxHeight: '90vh', overflowY: 'auto',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: T.line, margin: '0 auto', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }} />
           <div style={{ flex: 1 }} />
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: T.line }} />
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.inkMuted, fontSize: 22, lineHeight: 1, padding: '0 4px' }}>×</button>
-          </div>
+          <button onClick={onClose} style={{
+            background: T.parchment, border: 'none', borderRadius: 999,
+            cursor: 'pointer', color: T.ink, fontSize: 13, fontWeight: 600,
+            padding: '5px 14px', fontFamily: T.sans,
+          }}>Close</button>
         </div>
 
         {session && (
