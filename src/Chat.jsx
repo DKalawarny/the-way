@@ -531,19 +531,30 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
 
   async function handleContactShare(contact) {
     setSentTo(contact.id);
-    const body = getBody();
     try {
-      if (canNativeShare) {
-        await navigator.share({ title: heading || 'kinwove', text: body });
-      } else {
-        window.open(`sms:?&body=${encodeURIComponent(body)}`);
+      const uid = session.user.id;
+      const sorted = [uid, contact.id].sort();
+      const { data: existing } = await supabase
+        .from('dm_conversations').select('id')
+        .contains('participant_ids', sorted).maybeSingle();
+      let convId = existing?.id;
+      if (!convId) {
+        const { data: created } = await supabase
+          .from('dm_conversations').insert({ participant_ids: sorted })
+          .select('id').single();
+        convId = created?.id;
       }
-    } catch (e) {
-      if (e?.name !== 'AbortError') {
-        window.open(`sms:?&body=${encodeURIComponent(body)}`);
+      if (convId) {
+        await supabase.from('dm_messages').insert({
+          conversation_id: convId,
+          sender_id: uid,
+          body: getBody(),
+        });
       }
+      setTimeout(onClose, 1500);
+    } catch {
+      setSentTo(null);
     }
-    setTimeout(() => setSentTo(null), 2000);
   }
 
   function getAvatarUrl(contact) {
