@@ -1309,7 +1309,7 @@ export default function Chat({
         flexDirection: 'column',
         position: 'relative',
         overflowX: 'hidden',
-        maxWidth: '100vw',
+        width: '100%',
       }}
     >
       <header
@@ -1540,6 +1540,7 @@ export default function Chat({
         style={{
           flex: 1,
           overflowY: 'auto',
+          overflowX: 'hidden',
           padding: panelMode ? '20px 16px 24px' : '28px 20px 80px',
           minHeight: 0,
           boxSizing: 'border-box',
@@ -1731,7 +1732,7 @@ export default function Chat({
                   )}
                 </div>
                 {canSave && (
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6 }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 4, marginTop: 6 }}>
                     <button
                       onClick={handleSave}
                       title={saved ? 'Saved to your board' : 'Save to your board'}
@@ -2030,10 +2031,12 @@ export default function Chat({
         <div
           style={{
             maxWidth: 720,
+            width: '100%',
             margin: '0 auto',
             display: 'flex',
             gap: 8,
             alignItems: 'flex-end',
+            boxSizing: 'border-box',
           }}
         >
           {/* Camera / image attach button */}
