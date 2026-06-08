@@ -19,15 +19,15 @@ import { track } from './analytics.js';
 import { cleanText } from './moderation.js';
 const PostComposer = lazy(() => import('./PostComposer.jsx'));
 
-// Each reaction owns its own register: Love is warm + relational (rose),
+// Each reaction owns its own register: Yes is the casual like (blue-grey),
 // Amen is the sacred one (gold + serif weight), Insightful is the lit
 // thought (amber). Share stays parchment so it reads as utility.
 const REACTIONS = [
   {
-    kind: 'resonates', label: 'Love', emoji: '❤️',
-    activeBg: 'linear-gradient(180deg, #F5D0D6 0%, #E9B5BD 100%)',
-    activeBorder: '#c47a86', activeText: '#7a3c46',
-    activeShadow: '0 2px 6px rgba(196,122,134,0.30)',
+    kind: 'resonates', label: 'Yes', emoji: '👍',
+    activeBg: 'linear-gradient(180deg, #D0DCF5 0%, #B5C9E9 100%)',
+    activeBorder: '#6a86c4', activeText: '#2a3c6a',
+    activeShadow: '0 2px 6px rgba(106,134,196,0.30)',
   },
   {
     kind: 'amen', label: 'Amen', emoji: '🙏',
