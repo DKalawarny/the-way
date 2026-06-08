@@ -1496,10 +1496,7 @@ function AppHeader({ onOpenBible, onVerseClick }) {
         display: 'flex', alignItems: 'center', gap: 9,
         borderRight: '1px solid rgba(232,181,99,0.22)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          <KinwoveStar size={19} color={T.honey} />
-          <span style={{ fontFamily: T.serif, fontWeight: 500, fontSize: 22, lineHeight: 1, letterSpacing: '-0.022em', color: '#f4e9d4', fontVariationSettings: '"opsz" 55' }}>kinwove</span>
-        </div>
+        <KinwoveWordmark size={32} textColor="#f4e9d4" starColor={T.honey} starEm={0.52} />
       </div>
       {/* Verse segment */}
       <button
@@ -1549,9 +1546,8 @@ function MobileHeader({ onOpenBible, onVerseClick }) {
       padding: '0 164px 0 16px', // right: room for 3 FABs (3×44 + 2×8 gaps + 12px edge)
       gap: 12,
     }}>
-      <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 7 }}>
-        <KinwoveStar size={19} color={T.honey} />
-        <span style={{ fontFamily: T.serif, fontWeight: 500, fontSize: 22, lineHeight: 1, letterSpacing: '-0.022em', color: '#f4e9d4', fontVariationSettings: '"opsz" 55' }}>kinwove</span>
+      <div style={{ flexShrink: 0 }}>
+        <KinwoveWordmark size={32} textColor="#f4e9d4" starColor={T.honey} starEm={0.52} />
       </div>
       <button
         onClick={() => onVerseClick ? onVerseClick() : onOpenBible?.(verse.ref)}

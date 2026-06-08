@@ -1156,17 +1156,11 @@ async function sendEmail(to, subject, html) {
   if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text().catch(() => '')}`);
 }
 
-// Kinwove wordmark safe for all email clients including Gmail.
-// Gmail strips position:absolute/relative, so we stack the star above the
-// dotless-ı using display:block spans inside an inline-block container.
-// ✦ (U+2726) is the same 4-pointed star shape as our SVG logo.
-// Email-safe wordmark: two stacked divs — star above word.
-// Avoids display:inline-block tricks that break in Gmail / Outlook.
+// Email logo: app icon image + kinwove wordmark text.
+// <img> is the most reliable cross-client approach (Gmail, Outlook, Apple Mail).
 const KW_LOGO = `
-  <div style="margin-bottom:4px;line-height:1">
-    <span style="font-size:14px;color:#C17B45">&#10022;</span>
-  </div>
-  <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:500;color:#FAF3E2;letter-spacing:0.05em;line-height:1">kinwove</div>
+  <img src="https://www.kinwove.com/icon-192.png" width="56" height="56" alt="kinwove" style="display:block;border-radius:14px;margin-bottom:10px" />
+  <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:500;color:#FAF3E2;letter-spacing:-0.02em;line-height:1">kinwove</div>
 `.trim();
 
 // Shared brand wrapper — keeps all kinwove emails visually consistent.

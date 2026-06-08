@@ -4,6 +4,7 @@ export const KinwoveWordmark = ({
   size = 48,
   starColor = '#A85530',
   textColor = 'currentColor',
+  starEm = 0.28,
 }) => (
   <span
     style={{
@@ -28,8 +29,8 @@ export const KinwoveWordmark = ({
           top: '-0.72em',
           left: '50%',
           transform: 'translateX(-50%)',
-          width: '0.28em',
-          height: '0.28em',
+          width: `${starEm}em`,
+          height: `${starEm}em`,
           display: 'block',
         }}
         aria-hidden="true"
