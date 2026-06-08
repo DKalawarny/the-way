@@ -9,9 +9,11 @@ this project. Read it first, top to bottom.
 
 **KinwoveStar path:** `M12 1 L13.4 9.6 L22 11 L13.4 12.4 L12 23 L10.6 12.4 L2 11 L10.6 9.6 Z`
 **KinwoveStar viewBox:** `0 0 24 24`
-**KinwoveWordmark star container:** `width: '0.28em'`, `height: '0.28em'`, `top: '-0.72em'`
+**KinwoveWordmark star container:** `width: '0.28em'`, `height: '0.28em'`, `top: '-0.72em'` (component defaults — do not change)
+**KinwoveWordmark in AppHeader + MobileHeader (App.jsx):** `size={32} starEm={0.38}` — locked 2026-06-08. Do not change starEm in either header call site.
+**KinwoveWordmark dotless-i:** The wordmark always renders `ı` (U+0131, dotless-i) for the "i" in "kinwove" so the star sits clean above it. Do not replace with a regular `i`.
 
-This star was approved and confirmed correct on 2026-05-26. Do not touch these values for any reason unless Daniel explicitly says "change the star." Do not infer from screenshots, do not "improve" it, do not adjust proportions.
+These values were approved and confirmed correct on 2026-06-08. Do not touch these values for any reason unless Daniel explicitly says "change the star." Do not infer from screenshots, do not "improve" it, do not adjust proportions.
 
 **Star icon rule (locked 2026-05-26):** Never use the `✦` Unicode character as a visible UI icon. All star icons in JSX must use `<KinwoveStar size={N} />` from `src/components/brand/KinwoveStar.jsx`. The `✦` character is only acceptable inside plain strings (email HTML, prompts, non-rendered text). Do not revert this without explicit instruction.
 
