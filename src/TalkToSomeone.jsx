@@ -6,6 +6,45 @@ import { Avatar } from './ProfilePage.jsx';
 import CareConversation from './CareConversation.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
+const SAFETY_PATTERNS = [
+  /\b(suicide|kill myself|end my life|don'?t want to (be alive|live)|wanna die|want to die|self[\s-]?harm|cutting myself|hurt myself)\b/i,
+  /\b(being (abused|hit|beaten)|he hits|she hits|hits me|raped|sexual(ly)? assault|molest)\b/i,
+  /\b(starving myself|throwing up after|purging)\b/i,
+  /\b(hurt (someone|them|him|her|people)|kill (someone|them|him|her|people)|harm (someone|them|him|her|people)|going to (shoot|stab|attack))\b/i,
+];
+function detectSafety(text) {
+  return !!text && SAFETY_PATTERNS.some((p) => p.test(text));
+}
+const CRISIS_RESOURCES = [
+  { label: 'Suicide & Crisis Lifeline (US/Canada)', value: '988' },
+  { label: 'Samaritans (UK)', value: '116 123' },
+  { label: 'International', value: 'findahelpline.com' },
+];
+
+function UserSafetyNotice() {
+  return (
+    <div style={{
+      background: 'rgba(165,63,43,0.06)', border: '1px solid rgba(165,63,43,0.35)',
+      borderRadius: 12, padding: '14px 16px', marginBottom: 12,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <span style={{ fontSize: 16 }}>⚠</span>
+        <strong style={{ fontSize: 13, color: T.error }}>If you or someone else is in immediate danger, please contact emergency services.</strong>
+      </div>
+      <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.6, marginBottom: 10 }}>
+        Your message will be seen by someone who cares. These resources are also available right now:
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {CRISIS_RESOURCES.map((r) => (
+          <div key={r.value} style={{ fontSize: 12.5, color: T.inkSoft }}>
+            <strong style={{ color: T.ink }}>{r.value}</strong> — {r.label}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const SPECIALTY_LABEL = {
   marriage:  'Marriage',
   grief:     'Grief',
@@ -204,17 +243,17 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
       .single();
     setCreating(false);
     if (!error && data) {
-      if (message.trim()) {
-        await supabase.from('care_messages').insert({
-          conversation_id: data.id,
-          sender_id: session.user.id,
-          body: message.trim(),
-          is_safety_flag: false,
-        });
-        await supabase.from('care_conversations')
-          .update({ last_message_at: new Date().toISOString() })
-          .eq('id', data.id);
-      }
+      const body = message.trim();
+      const isSafety = detectSafety(body);
+      await supabase.from('care_messages').insert({
+        conversation_id: data.id,
+        sender_id: session.user.id,
+        body,
+        is_safety_flag: isSafety,
+      });
+      await supabase.from('care_conversations')
+        .update({ last_message_at: new Date().toISOString(), ...(isSafety && { safety_flagged: true }) })
+        .eq('id', data.id);
       setConversationId(data.id);
     }
   }
@@ -231,7 +270,7 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
     );
   }
 
-  const ready = !creating && (routingMode === 'anyone' || (routingMode === 'person' && selectedPerson));
+  const ready = !creating && message.trim().length > 0 && (routingMode === 'anyone' || (routingMode === 'person' && selectedPerson));
 
   return (
     <div style={{ minHeight: '100vh', background: T.cream, padding: '32px 20px 80px', overflowY: 'auto' }}>
@@ -356,19 +395,19 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
             {/* Opening message */}
             <div style={{ margin: '20px 0 0' }}>
               <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 8 }}>
-                Your message <span style={{ textTransform: 'none', letterSpacing: 0, fontWeight: 400 }}>(optional)</span>
+                What would you like to share?
               </div>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Share what's on your heart — or just say hi. They'll get back to you."
-                rows={4}
+                placeholder="Write what's on your mind. This goes directly to the person you reach out to — no one else sees it."
+                rows={5}
                 style={{
                   width: '100%', boxSizing: 'border-box',
-                  border: `1px solid ${T.line}`, borderRadius: 12,
+                  border: `1px solid ${message.trim() ? T.gold : T.line}`, borderRadius: 12,
                   padding: '12px 14px', fontSize: 14.5, lineHeight: 1.6,
                   fontFamily: T.display, color: T.ink, background: T.white,
-                  resize: 'vertical', outline: 'none',
+                  resize: 'vertical', outline: 'none', transition: 'border-color 0.15s',
                 }}
               />
             </div>
@@ -394,6 +433,8 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
                 </div>
               </div>
             </label>
+
+            {detectSafety(message) && <UserSafetyNotice />}
 
             <button
               onClick={handleStart}
