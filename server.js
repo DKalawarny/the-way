@@ -1156,20 +1156,19 @@ async function sendEmail(to, subject, html) {
   if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text().catch(() => '')}`);
 }
 
-// Email-safe wordmark: star above the dotless-ı using nested tables.
-// Gmail/Outlook strip position:absolute so we use table vertical-align instead.
-// ✦ (U+2726) is acceptable in email HTML per brand rules.
+// Email-safe wordmark — matches the sign-in page: large cream serif + star above i.
+// Nested table puts the ✦ star directly above the dotless-ı without CSS positioning.
 const KW_LOGO = `
 <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;line-height:1">
   <tr>
-    <td style="font-family:Georgia,'Times New Roman',serif;font-size:36px;font-weight:500;color:#FAF3E2;letter-spacing:-0.022em;vertical-align:bottom;padding:0">k</td>
+    <td style="font-family:Georgia,'Times New Roman',serif;font-size:58px;font-weight:600;color:#F5EDD8;letter-spacing:-0.025em;vertical-align:bottom;padding:0">k</td>
     <td style="vertical-align:bottom;padding:0">
       <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
-        <tr><td style="text-align:center;padding:0 0 5px 0;line-height:1"><span style="font-size:13px;color:#D4A24A">&#10022;</span></td></tr>
-        <tr><td style="font-family:Georgia,'Times New Roman',serif;font-size:36px;font-weight:500;color:#FAF3E2;letter-spacing:-0.022em;line-height:1;padding:0">&#305;</td></tr>
+        <tr><td style="text-align:center;padding:0 0 8px 0;line-height:1"><span style="font-size:14px;color:#D4A24A">&#10022;</span></td></tr>
+        <tr><td style="font-family:Georgia,'Times New Roman',serif;font-size:58px;font-weight:600;color:#F5EDD8;letter-spacing:-0.025em;line-height:1;padding:0">&#305;</td></tr>
       </table>
     </td>
-    <td style="font-family:Georgia,'Times New Roman',serif;font-size:36px;font-weight:500;color:#FAF3E2;letter-spacing:-0.022em;vertical-align:bottom;padding:0">nwove</td>
+    <td style="font-family:Georgia,'Times New Roman',serif;font-size:58px;font-weight:600;color:#F5EDD8;letter-spacing:-0.025em;vertical-align:bottom;padding:0">nwove</td>
   </tr>
 </table>
 `.trim();
