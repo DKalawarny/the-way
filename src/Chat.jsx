@@ -866,6 +866,7 @@ export default function Chat({
   canDock,
   onToggleDock,
   onNewConversation,
+  onDeleteConversation,
   onSetPersonType,
   seededFromNote,
 }) {
@@ -1408,6 +1409,24 @@ export default function Chat({
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {/* New conversation — always visible */}
+          <button
+            onClick={() => onNewConversation?.()}
+            title="New conversation"
+            style={{
+              background: panelMode ? 'rgba(255,255,255,0.08)' : C.card,
+              border: `1px solid ${panelMode ? 'rgba(184,115,58,0.35)' : C.border}`,
+              color: panelMode ? 'rgba(253,248,240,0.75)' : C.textSoft,
+              borderRadius: 999, padding: '6px 11px', fontSize: 15,
+              cursor: 'pointer', lineHeight: 1,
+              display: 'flex', alignItems: 'center', gap: 5,
+            }}
+          >
+            <KinwoveStar size={13} style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: 13, fontWeight: 600 }}>New</span>
+          </button>
+
+          {/* ⋮ secondary menu */}
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
@@ -1424,9 +1443,7 @@ export default function Chat({
             {menuOpen && (
               <div
                 onClick={() => setMenuOpen(false)}
-                style={{
-                  position: 'fixed', inset: 0, zIndex: 199,
-                }}
+                style={{ position: 'fixed', inset: 0, zIndex: 199 }}
               />
             )}
             {menuOpen && (
@@ -1447,14 +1464,16 @@ export default function Chat({
                     <span>{dark ? 'Light mode' : 'Dark mode'}</span>
                   </span>
                 </button>
-                <button onClick={() => { setMenuOpen(false); onNewConversation?.(); }} style={{
-                  width: '100%', textAlign: 'left', background: 'none',
-                  border: 'none', borderBottom: `1px solid ${C.border}`,
-                  padding: '12px 16px', fontSize: 14, color: C.text,
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
-                }}>
-                  <KinwoveStar size={15} style={{ flexShrink: 0 }} /><span style={{ fontWeight: 600 }}>New conversation</span>
-                </button>
+                {onOpenHistory && (
+                  <button onClick={() => { setMenuOpen(false); onOpenHistory(); }} style={{
+                    width: '100%', textAlign: 'left', background: 'none',
+                    border: 'none', borderBottom: `1px solid ${C.border}`,
+                    padding: '12px 16px', fontSize: 14, color: C.text,
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
+                  }}>
+                    <span style={{ fontSize: 13 }}>◷</span><span>Conversation history</span>
+                  </button>
+                )}
                 {messages.length > 0 && (
                   <button onClick={() => { setMenuOpen(false); setShareContent({ text: formatConversation(messages, conversationTitle), label: 'Share conversation', rawMessages: messages, convTitle: conversationTitle }); }} style={{
                     width: '100%', textAlign: 'left', background: 'none',
@@ -1465,24 +1484,16 @@ export default function Chat({
                     <span style={{ fontSize: 13 }}>↗</span><span>Share conversation</span>
                   </button>
                 )}
-                {onOpenBoard && (
-                  <button onClick={() => { setMenuOpen(false); onOpenBoard(); }} style={{
+                {messages.length > 0 && onDeleteConversation && (
+                  <button onClick={() => { setMenuOpen(false); onDeleteConversation(); }} style={{
                     width: '100%', textAlign: 'left', background: 'none',
-                    border: 'none', borderBottom: `1px solid ${C.border}`,
-                    padding: '12px 16px', fontSize: 14, color: C.text,
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
+                    border: 'none', padding: '12px 16px', fontSize: 14,
+                    color: '#c0392b', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 10,
                   }}>
-                    <span style={{ fontSize: 13 }}>🔖</span><span>Your board</span>
+                    <span style={{ fontSize: 13 }}>🗑</span><span>Delete conversation</span>
                   </button>
                 )}
-                <button onClick={() => { setMenuOpen(false); onOpenHistory(); }} style={{
-                  width: '100%', textAlign: 'left', background: 'none',
-                  border: 'none', padding: '12px 16px', fontSize: 14,
-                  color: C.text, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 10,
-                }}>
-                  <span style={{ fontSize: 13 }}>◷</span><span>Conversation history</span>
-                </button>
               </div>
             )}
           </div>

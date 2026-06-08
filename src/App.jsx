@@ -3310,6 +3310,7 @@ export default function App() {
               onChangeType={() => { closeChatPanel(); setStage('onboarding'); }}
               onSetPersonType={(pt) => setPersonType(pt)}
               onNewConversation={() => { setChatSeededFromNote(false); newConversation(personType ?? profile?.person_type ?? 'curious'); }}
+              onDeleteConversation={currentConvId ? () => { removeConv(currentConvId); setChatSeededFromNote(false); newConversation(personType ?? profile?.person_type ?? 'curious'); } : undefined}
               seededFromNote={chatSeededFromNote}
               notes={notes}
               onAddNote={(n) => addNote({ ...n, convId: currentConvId })}
