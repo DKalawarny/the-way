@@ -15,35 +15,6 @@ const SAFETY_PATTERNS = [
 function detectSafety(text) {
   return !!text && SAFETY_PATTERNS.some((p) => p.test(text));
 }
-const CRISIS_RESOURCES = [
-  { label: 'Suicide & Crisis Lifeline (US/Canada)', value: '988' },
-  { label: 'Samaritans (UK)', value: '116 123' },
-  { label: 'International', value: 'findahelpline.com' },
-];
-
-function UserSafetyNotice() {
-  return (
-    <div style={{
-      background: 'rgba(165,63,43,0.06)', border: '1px solid rgba(165,63,43,0.35)',
-      borderRadius: 12, padding: '14px 16px', marginBottom: 12,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <span style={{ fontSize: 16 }}>⚠</span>
-        <strong style={{ fontSize: 13, color: T.error }}>If you or someone else is in immediate danger, please contact emergency services.</strong>
-      </div>
-      <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.6, marginBottom: 10 }}>
-        Your message will be seen by someone who cares. These resources are also available right now:
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {CRISIS_RESOURCES.map((r) => (
-          <div key={r.value} style={{ fontSize: 12.5, color: T.inkSoft }}>
-            <strong style={{ color: T.ink }}>{r.value}</strong> — {r.label}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 const SPECIALTY_LABEL = {
   marriage:  'Marriage',
@@ -433,8 +404,6 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
                 </div>
               </div>
             </label>
-
-            {detectSafety(message) && <UserSafetyNotice />}
 
             <button
               onClick={handleStart}
