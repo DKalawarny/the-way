@@ -44,7 +44,7 @@ const SECTIONS = [
       },
       {
         q: 'How do I react to a post?',
-        a: 'Use the Amen, Praying, or Love buttons below each post. Tap again to remove your reaction.',
+        a: 'Use the four reaction buttons below each post — 👍 Yes, ❤️ Love, 🙏 Amen, and 💡 Insightful. Tap again to remove your reaction.',
       },
       {
         q: 'How do I comment?',
@@ -61,6 +61,29 @@ const SECTIONS = [
       {
         q: 'Can I post anonymously?',
         a: 'Yes. When composing in the Community tab, toggle the Anonymous option. Your name and avatar won\'t appear on the post.',
+      },
+    ],
+  },
+  {
+    id: 'circles',
+    Icon: Users,
+    title: 'Circles',
+    items: [
+      {
+        q: 'What are Circles?',
+        a: 'Circles are small private groups — for a Bible study, a friend group, or any community you want to keep close. Find them under the Discover tab in your Community feed.',
+      },
+      {
+        q: 'How do I start a Circle?',
+        a: 'Open the Discover tab and tap "Start a circle." Give it a name, pick a colour, and invite people. You\'re the host — you can pin posts, remove members, and manage the group.',
+      },
+      {
+        q: 'How do I join a Circle?',
+        a: 'Someone in the circle can send you an invite notification, or share a join code with you. Tap "Join with code" on the Discover tab and enter the code.',
+      },
+      {
+        q: 'Can I be in more than one Circle?',
+        a: 'Yes — you can be in as many as you like. Each circle has its own discussion thread and chat. A red dot appears on the circle card when there are unread posts.',
       },
     ],
   },
@@ -160,7 +183,7 @@ const SECTIONS = [
       },
       {
         q: 'I\'m a pastor — how do I register my church?',
-        a: 'Open Settings and tap Apply as pastor. Fill in your details and church information. Applications are manually reviewed (usually within 24 hours) to keep the directory trustworthy. You\'ll be notified when approved.',
+        a: 'Tap the ⋮ menu (mobile) or open the sidebar (desktop) and tap Apply as a pastor. Fill in your details and church information. Applications are manually reviewed (usually within 24 hours) to keep the directory trustworthy. You\'ll be notified when approved.',
       },
       {
         q: 'What are church-only posts?',
@@ -206,7 +229,7 @@ const SECTIONS = [
       },
       {
         q: 'Are my conversations with the AI private?',
-        a: 'Yes. Conversations with ✦ Ask are stored to support your ongoing study (viewable in Chat history) but are never shared with other users or visible on your profile.',
+        a: 'Yes. Conversations with ✦ Ask are private to you and are never shared with other users or visible on your profile.',
       },
       {
         q: 'How do I delete my account?',
