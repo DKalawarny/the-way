@@ -1415,9 +1415,13 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
     // Post to server — server creates the invite row, fires the DB trigger, and
     // emails the member via Resend (hello@kinwove.app).
     try {
-      const res = await authedFetch('/api/church/role-invite', {
+      const token = session?.access_token ?? (await supabase.auth.getSession())?.data?.session?.access_token;
+      const res = await fetch('/api/church/role-invite', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
         body: JSON.stringify({ church_id: churchId, user_id, role_key, role_label, message }),
       });
       const json = await res.json().catch(() => ({}));
