@@ -60,7 +60,7 @@ export default function TopRightMenu({
         onApplyAsPastor && !profile?.is_pastor     && { icon: Star,       label: 'Apply as a pastor',  onClick: onApplyAsPastor },
         onOpenPastorAdminQueue    && { icon: ShieldCheck, label: 'Pastor applications', onClick: onOpenPastorAdminQueue },
         onOpenChurchDisputesQueue && { icon: Flag,        label: 'Listing disputes',    onClick: onOpenChurchDisputesQueue },
-        onOpenSponsorAdmin        && { icon: Megaphone,   label: 'Sponsor admin',       onClick: onOpenSponsorAdmin },
+        onOpenSponsorAdmin        && { icon: Megaphone,   label: 'Site analytics',      onClick: onOpenSponsorAdmin },
       ].filter(Boolean),
     },
     {
