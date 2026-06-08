@@ -454,6 +454,9 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
       author_id: session.user.id,
       body: getBody().slice(0, 2000),
       body_data,
+      scope: 'me',
+      visibility: 'public',
+      kind: 'text',
       person_type: profile?.person_type ?? null,
     });
     if (!error) {
