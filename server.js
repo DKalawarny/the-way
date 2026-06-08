@@ -1156,11 +1156,22 @@ async function sendEmail(to, subject, html) {
   if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text().catch(() => '')}`);
 }
 
-// Email logo: app icon image + kinwove wordmark text.
-// <img> is the most reliable cross-client approach (Gmail, Outlook, Apple Mail).
+// Email-safe wordmark: star above the dotless-ı using nested tables.
+// Gmail/Outlook strip position:absolute so we use table vertical-align instead.
+// ✦ (U+2726) is acceptable in email HTML per brand rules.
 const KW_LOGO = `
-  <img src="https://www.kinwove.com/icon-192.png" width="56" height="56" alt="kinwove" style="display:block;border-radius:14px;margin-bottom:10px" />
-  <div style="font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:500;color:#FAF3E2;letter-spacing:-0.02em;line-height:1">kinwove</div>
+<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;line-height:1">
+  <tr>
+    <td style="font-family:Georgia,'Times New Roman',serif;font-size:36px;font-weight:500;color:#FAF3E2;letter-spacing:-0.022em;vertical-align:bottom;padding:0">k</td>
+    <td style="vertical-align:bottom;padding:0">
+      <table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
+        <tr><td style="text-align:center;padding:0 0 5px 0;line-height:1"><span style="font-size:13px;color:#D4A24A">&#10022;</span></td></tr>
+        <tr><td style="font-family:Georgia,'Times New Roman',serif;font-size:36px;font-weight:500;color:#FAF3E2;letter-spacing:-0.022em;line-height:1;padding:0">&#305;</td></tr>
+      </table>
+    </td>
+    <td style="font-family:Georgia,'Times New Roman',serif;font-size:36px;font-weight:500;color:#FAF3E2;letter-spacing:-0.022em;vertical-align:bottom;padding:0">nwove</td>
+  </tr>
+</table>
 `.trim();
 
 // Shared brand wrapper — keeps all kinwove emails visually consistent.
