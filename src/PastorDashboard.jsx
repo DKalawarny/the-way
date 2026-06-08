@@ -748,7 +748,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
             borderRadius: 14, padding: '14px 18px', marginBottom: 14,
           }}>
             <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-              ✦ Top post this week
+              <KinwoveStar size={10} color={T.goldDark} style={{ verticalAlign: 'middle', marginRight: 5 }} /> Top post this week
             </div>
             <div style={{ fontSize: 12, fontWeight: 600, color: T.goldDark, marginBottom: 4 }}>{topPost.author}</div>
             <div style={{ fontFamily: T.serif, fontSize: 14.5, color: T.ink, lineHeight: 1.6, marginBottom: topPost.reactions > 0 ? 8 : 0 }}>

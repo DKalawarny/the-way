@@ -1921,7 +1921,7 @@ useEffect(() => {
           { id: 'posts',      label: '📝 Posts'     },
           { id: 'following',  label: '👥 Following'  },
           { id: 'prayers',    label: '🙏 Prayers'   },
-          { id: 'discover',   label: '✦ Discover'   },
+          { id: 'discover',   label: <><KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 4, flexShrink: 0 }} /> Discover</> },
           { id: 'milestones', label: <><KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 4, flexShrink: 0 }} /> Milestones</> },
         ].map(t => {
           const isActive = feedType === t.id;
@@ -2134,7 +2134,7 @@ useEffect(() => {
                 )}
                 {!loading && !feedError && filtered.length === 0 && (
                   <div style={{ textAlign: 'center', padding: '48px 24px' }}>
-                    <div style={{ fontSize: 38, marginBottom: 14 }}>✦</div>
+                    <div style={{ fontSize: 38, marginBottom: 14 }}><KinwoveStar size={38} color={T.goldDark} /></div>
                     <div style={{ fontFamily: T.serif, fontSize: 19, fontWeight: 600, color: T.ink, marginBottom: 8, lineHeight: 1.25 }}>
                       {!profile?.church_id
                         ? 'Your feed is waiting'
@@ -2158,7 +2158,7 @@ useEffect(() => {
                         onClick={() => setFeedType('discover')}
                         style={{ background: 'none', color: T.goldDark, border: `1.5px solid ${T.gold}`, borderRadius: 999, padding: '11px 22px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
                       >
-                        ✦ Discover
+                        <KinwoveStar size={13} color={T.goldDark} style={{ verticalAlign: 'middle', marginRight: 5 }} /> Discover
                       </button>
                     </div>
                   </div>
