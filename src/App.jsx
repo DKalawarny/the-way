@@ -3478,7 +3478,7 @@ export default function App() {
         />
         </>
       )}
-      {showTopRight && (
+      {showTopRight && (!chatPanelOpen || isDesktop) && (
         <TopRightMenu
           profile={profile}
           hasCareTeamRole={!!(careTeamRecord || pastorChurchId)}
