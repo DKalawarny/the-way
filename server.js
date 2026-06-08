@@ -1887,7 +1887,7 @@ async function getOrCreateSystemAccount() {
       body: JSON.stringify({
         email: SYSTEM_EMAIL,
         email_confirm: true,
-        user_metadata: { display_name: 'The Way', is_system: true },
+        user_metadata: { display_name: 'kinwove', is_system: true },
       }),
     });
     const data = await createR.json();

@@ -93,9 +93,8 @@ class RouteErrorBoundary extends Component {
 import { supabase, authedFetch } from './supabase.js';
 import { getDailyVerse } from './dailyVerse.js';
 import {
-  LayoutGrid, Clock, UserPlus, Phone, Inbox, Building2,
+  LayoutGrid, UserPlus, Inbox, Building2,
   Star, ShieldCheck, Flag, Megaphone, UserCog, LogOut, Trash2, Settings as SettingsIcon,
-  HelpCircle,
 } from 'lucide-react';
 import SwipeableSheet from './SwipeableSheet.jsx';
 import MsgText from './MsgText.jsx';
