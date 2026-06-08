@@ -49,10 +49,16 @@ function renderWithMentions(text, mentions, onViewProfile, onViewChurch) {
 // Matches Community.jsx REACTIONS exactly so all post cards look the same
 const REACTIONS = [
   {
-    id: 'resonates', label: 'Yes', emoji: '👍',
+    id: 'yes', label: 'Yes', emoji: '👍',
     activeBg: 'linear-gradient(180deg, #D0DCF5 0%, #B5C9E9 100%)',
     activeBorder: '#6a86c4', activeText: '#2a3c6a',
     activeShadow: '0 2px 6px rgba(106,134,196,0.30)',
+  },
+  {
+    id: 'resonates', label: 'Love', emoji: '❤️',
+    activeBg: 'linear-gradient(180deg, #F5D0D6 0%, #E9B5BD 100%)',
+    activeBorder: '#c47a86', activeText: '#7a3c46',
+    activeShadow: '0 2px 6px rgba(196,122,134,0.30)',
   },
   {
     id: 'amen', label: 'With you', emoji: '🙏',
