@@ -1256,16 +1256,18 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
   // ── HOME VIEW ────────────────────────────────────────────────────────────────
   if (view === 'home') return (
     <div style={{ minHeight: '100vh', background: C.bg, fontFamily: T.sans, paddingBottom: 'calc(62px + env(safe-area-inset-bottom, 0px))' }}>
-      {/* Header */}
-      <div style={{ position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 20, background: C.bg, borderBottom: `1px solid ${C.border}` }}>
-        <div style={{ padding: '0 164px 0 20px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: C.text, letterSpacing: '-0.012em' }}>Read</span>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {VersionPicker}
-          {DarkToggle}
+      {/* Header — hidden when embedded inside ChurchModeShell (topOffset > 0) */}
+      {topOffset === 0 && (
+        <div style={{ position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 20, background: C.bg, borderBottom: `1px solid ${C.border}` }}>
+          <div style={{ padding: '0 164px 0 20px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: C.text, letterSpacing: '-0.012em' }}>Read</span>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {VersionPicker}
+            {DarkToggle}
+          </div>
+          </div>
         </div>
-        </div>
-      </div>
+      )}
 
       <div style={{ overflowY: 'auto', padding: '24px 20px 100px', maxWidth: 680, margin: '0 auto' }}>
 
@@ -1587,16 +1589,18 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
     const chapters = Array.from({ length: cb.ch }, (_, i) => i + 1);
     return (
       <div style={{ minHeight: '100vh', background: C.bg, fontFamily: T.sans, paddingBottom: 'calc(62px + env(safe-area-inset-bottom, 0px))' }}>
-        {/* Header */}
-        <div style={{ position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 20, background: C.bg, borderBottom: `1px solid ${C.border}` }}>
-          <div style={{ padding: '0 164px 0 20px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button onClick={() => setView('home')} style={{ background: 'none', border: 'none', color: C.verse, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <ArrowLeft size={15} strokeWidth={2} /> Books
-          </button>
-          <span style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: C.text, letterSpacing: '-0.012em' }}>{cb.name}</span>
-          <div style={{ display: 'flex', gap: 8 }}>{DarkToggle}</div>
+        {/* Header — hidden when embedded inside ChurchModeShell (topOffset > 0) */}
+        {topOffset === 0 && (
+          <div style={{ position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 20, background: C.bg, borderBottom: `1px solid ${C.border}` }}>
+            <div style={{ padding: '0 164px 0 20px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <button onClick={() => setView('home')} style={{ background: 'none', border: 'none', color: C.verse, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <ArrowLeft size={15} strokeWidth={2} /> Books
+            </button>
+            <span style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: C.text, letterSpacing: '-0.012em' }}>{cb.name}</span>
+            <div style={{ display: 'flex', gap: 8 }}>{DarkToggle}</div>
+            </div>
           </div>
-        </div>
+        )}
 
         <div style={{ padding: '20px 20px 100px', maxWidth: 680, margin: '0 auto' }}>
           {/* Book progress */}
