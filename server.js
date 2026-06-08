@@ -2311,6 +2311,49 @@ app.post('/api/moderate-image', limitAnon({ capacity: 30, refillPerSec: 30 / 60 
   }
 });
 
+// ── Care message safety screening ────────────────────────────────────────────
+app.post('/api/care/screen-message', requireAuth, limitAuthed({ capacity: 20, refillPerSec: 20 / 60 }), async (req, res) => {
+  const { body } = req.body ?? {};
+  if (!body || typeof body !== 'string' || body.trim().length === 0) {
+    return res.status(400).json({ flagged: false });
+  }
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 5,
+      messages: [{
+        role: 'user',
+        content: `You are a silent safety screener for kinwove, a Christian community app with a pastoral care feature.
+
+A member has written the following message to a care team member. Assess whether it contains any indication of:
+- Suicidal ideation or self-harm (direct or indirect — including phrases like "I don't want to be here anymore", "nobody would miss me", "I have a plan", "I just want it to stop")
+- Intent to harm another person
+- Active abuse or assault
+- Eating disorders or dangerous restriction
+
+Be sensitive to indirect language, metaphors, and implied distress. Err on the side of caution.
+
+Reply with exactly one word: FLAGGED or CLEAR.
+
+Message:
+"""
+${body.slice(0, 2000)}
+"""`,
+      }],
+    });
+
+    const verdict = (msg.content[0]?.text ?? '').trim().toUpperCase();
+    const flagged = verdict.startsWith('FLAGGED');
+    if (flagged) console.log('[care/screen-message] FLAGGED by Haiku');
+    return res.json({ flagged });
+  } catch (e) {
+    // Fail open — don't block sending if Claude is unavailable
+    console.error('[care/screen-message] error (failing open):', e.message);
+    return res.json({ flagged: false });
+  }
+});
+
 // ── Topic analytics (admin read) ─────────────────────────────────────────────
 app.get('/api/admin/topic-stats', requireAdmin, async (req, res) => {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {

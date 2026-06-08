@@ -215,7 +215,20 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
     setCreating(false);
     if (!error && data) {
       const body = message.trim();
-      const isSafety = detectSafety(body);
+
+      // Regex catches obvious phrases instantly; AI screens indirect language
+      let isSafety = detectSafety(body);
+      if (!isSafety) {
+        try {
+          const r = await fetch('/api/care/screen-message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+            body: JSON.stringify({ body }),
+          });
+          if (r.ok) isSafety = (await r.json()).flagged;
+        } catch (_) {}
+      }
+
       await supabase.from('care_messages').insert({
         conversation_id: data.id,
         sender_id: session.user.id,
