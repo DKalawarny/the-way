@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 76" width="360" height="76">
+  <!-- cream serif kinwove -->
+  <text x="0" y="66" font-family="Georgia,'Times New Roman',serif" font-size="68" font-weight="700" fill="#F5EDD8" letter-spacing="-1.5">kinwove</text>
+  <!-- 4-pointed star above the i (i center ~x=50) -->
+  <path fill="#D4A24A" transform="translate(42, 2) scale(0.625)"
+    d="M12 1 L13.4 9.6 L22 11 L13.4 12.4 L12 23 L10.6 12.4 L2 11 L10.6 9.6 Z"/>
+</svg>
