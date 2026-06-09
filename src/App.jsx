@@ -1088,7 +1088,7 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
               style={{ border: `2px solid ${active === 'me' ? T.gold : T.line}` }}
             />
           </span>
-          <span style={labelStyle('me')}>You</span>
+          <span style={labelStyle('me')}>{profile?.display_name?.split(' ')[0] || 'You'}</span>
         </button>
       </div>
     </>
@@ -1738,7 +1738,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
               style={{ border: `2px solid ${active === 'me' ? T.gold : T.line}` }}
             />
           </span>
-          <span style={labelSt('me')}>You</span>
+          <span style={labelSt('me')}>{profile?.display_name?.split(' ')[0] || 'You'}</span>
         </button>
       </nav>
 
