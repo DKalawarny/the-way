@@ -489,7 +489,6 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
     show_flag:          existing?.show_flag ?? false,
     preferred_language: existing?.preferred_language ?? (navigator.language?.split('-')[0] ?? 'en'),
     birthday:           existing?.birthday ?? '',
-    sync_conversations: existing?.sync_conversations ?? false,
   });
 
   const [prevTradition] = useState(existing?.tradition ?? 'Still Discovering');
@@ -755,32 +754,6 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
                   );
                 })}
               </div>
-            </Field>
-
-            <Field label="Sync conversations" hint="Keep your AI chat history across devices">
-              <button
-                type="button"
-                onClick={() => set('sync_conversations', !form.sync_conversations)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                }}
-              >
-                <div style={{
-                  width: 44, height: 26, borderRadius: 13, position: 'relative', flexShrink: 0,
-                  background: form.sync_conversations ? T.gold : T.line,
-                  transition: 'background 0.2s',
-                }}>
-                  <div style={{
-                    position: 'absolute', top: 3, left: form.sync_conversations ? 21 : 3,
-                    width: 20, height: 20, borderRadius: '50%', background: T.white,
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s',
-                  }} />
-                </div>
-                <span style={{ fontSize: 13, color: T.inkSoft }}>
-                  {form.sync_conversations ? 'On — conversations saved to your account' : 'Off — stored locally only'}
-                </span>
-              </button>
             </Field>
 
             {/* ── Save ── */}

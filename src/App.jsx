@@ -1163,7 +1163,7 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
   );
 }
 
-function ConversationHistory({ open, onClose, conversations, onLoad, onDelete, onNew, rightOffset = 0 }) {
+function ConversationHistory({ open, onClose, conversations, onLoad, onDelete, onNew, rightOffset = 0, syncEnabled = false, onToggleSync }) {
   // Escape closes — matches the Board modal pattern. Without this the only way
   // out was the Close button or a backdrop click, which didn't read like a
   // modal you could dismiss the usual way.
@@ -1205,6 +1205,27 @@ function ConversationHistory({ open, onClose, conversations, onLoad, onDelete, o
           <div>
             <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 4 }}>Your history</div>
             <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>Conversations</div>
+            {onToggleSync && (
+              <button
+                type="button"
+                onClick={() => onToggleSync(!syncEnabled)}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', padding: '6px 0 0 0' }}
+              >
+                <div style={{
+                  width: 32, height: 18, borderRadius: 9, position: 'relative', flexShrink: 0,
+                  background: syncEnabled ? T.gold : T.line, transition: 'background 0.2s',
+                }}>
+                  <div style={{
+                    position: 'absolute', top: 2, left: syncEnabled ? 14 : 2,
+                    width: 14, height: 14, borderRadius: '50%', background: T.white,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s',
+                  }} />
+                </div>
+                <span style={{ fontSize: 12, color: T.inkMuted }}>
+                  {syncEnabled ? 'Synced across devices' : 'Sync across devices'}
+                </span>
+              </button>
+            )}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button
@@ -3467,6 +3488,11 @@ export default function App() {
         onDelete={removeConv}
         onNew={() => { setHistoryOpen(false); setStage('onboarding'); }}
         rightOffset={isDocked ? chatPanelWidth : 0}
+        syncEnabled={profile?.sync_conversations ?? false}
+        onToggleSync={session ? async (val) => {
+          await supabase.from('profiles').update({ sync_conversations: val }).eq('id', session.user.id);
+          setProfile((p) => ({ ...p, sync_conversations: val }));
+        } : undefined}
       />
       <InstallPrompt triggerNow={installTrigger} />
       <PastorPrompt
