@@ -44,7 +44,7 @@ function StatCard({ label, value, weekDelta, color }) {
   return (
     <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '18px 20px' }}>
       <div style={{ fontSize: 30, fontWeight: 700, color: color ?? T.ink, fontFamily: T.display, letterSpacing: '-0.02em', lineHeight: 1 }}>
-        {value != null ? Number(value).toLocaleString() : '—'}
+        {value != null ? (typeof value === 'string' ? value : Number(value).toLocaleString()) : '—'}
       </div>
       <div style={{ fontSize: 13, color: T.inkSoft, marginTop: 5 }}>{label}</div>
       {weekDelta != null && Number(weekDelta) > 0 && (
