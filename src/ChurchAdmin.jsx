@@ -1193,7 +1193,9 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
   const [localInviteCode, setLocalInviteCode] = useState(church?.invite_code ?? '');
   const [youthCode,     setYouthCode]     = useState(church?.youth_invite_code ?? '');
   const [youthCodeBusy, setYouthCodeBusy] = useState(false);
-  const [youthCopied,   setYouthCopied]   = useState(false);
+  const [youthCopied,      setYouthCopied]      = useState(false);
+  const [youthLinkCopied,  setYouthLinkCopied]  = useState(false);
+  const [youthEmailCopied, setYouthEmailCopied] = useState(false);
 
   const [removingId, setRemovingId] = useState(null);
   const [scrubPosts, setScrubPosts] = useState(false);
@@ -1633,48 +1635,92 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
       </div>
 
       {/* Youth group invite card */}
-      <div style={{ background: 'rgba(184,115,58,0.06)', border: `1px solid rgba(184,115,58,0.2)`, borderRadius: 14, padding: '18px 20px' }}>
-        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
-          Youth group invite
+      <div style={{
+        background: `linear-gradient(135deg, ${T.parchment} 0%, ${T.parchmentDark} 100%)`,
+        border: `1px solid ${T.line}`, borderRadius: 14, padding: '18px 20px',
+      }}>
+        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center' }}>
+          <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Youth group invite
         </div>
-        <p style={{ fontFamily: T.serif, fontSize: 13, color: T.inkSoft, lineHeight: 1.6, margin: '0 0 12px' }}>
-          A separate invite code for members under 17. Youth accounts are church-scoped only — they can't post to the public community or receive DMs from strangers. They auto-unlock when they turn 17.
-        </p>
-        {youthCode ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 18, fontWeight: 700, letterSpacing: 3, color: T.ink, background: T.white, border: `1px solid ${T.line}`, borderRadius: 8, padding: '5px 12px' }}>
-              {youthCode}
-            </div>
-            <button
-              onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/?join=${youthCode}`).then(() => { setYouthCopied(true); setTimeout(() => setYouthCopied(false), 2500); }); }}
-              style={{ background: T.ink, color: T.cream, border: 'none', borderRadius: 999, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-            >{youthCopied ? '✓ Copied' : 'Copy youth link'}</button>
+        {youthCode ? (() => {
+          const youthJoinUrl = `${window.location.origin}/?join=${youthCode}`;
+          return (
+            <>
+              <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                {/* QR code */}
+                <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 12, padding: 10, flexShrink: 0 }}>
+                  <img src={qrUrl(youthJoinUrl)} alt="Youth join QR code" width={120} height={120} style={{ display: 'block', borderRadius: 4 }} />
+                </div>
+                {/* Right side */}
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <div style={{ fontFamily: 'ui-monospace, SFMono-Regular, monospace', fontSize: 24, fontWeight: 700, letterSpacing: 4, color: T.ink, background: T.white, border: `1px solid ${T.line}`, borderRadius: 10, padding: '6px 14px', display: 'inline-block', marginBottom: 10 }}>
+                    {youthCode}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <button onClick={() => { navigator.clipboard.writeText(youthCode).then(() => { setYouthCopied(true); setTimeout(() => setYouthCopied(false), 2500); }); }} style={{ background: T.ink, color: T.cream, border: 'none', borderRadius: 999, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                      {youthCopied ? '✓ Copied' : 'Copy code'}
+                    </button>
+                    <button onClick={() => { navigator.clipboard.writeText(youthJoinUrl).then(() => { setYouthLinkCopied(true); setTimeout(() => setYouthLinkCopied(false), 2500); }); }} style={{ background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999, padding: '7px 14px', fontSize: 13, color: T.inkSoft, cursor: 'pointer' }}>
+                      {youthLinkCopied ? '✓ Copied' : 'Copy link'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        const churchName = church?.name ?? 'our church';
+                        const template = [
+                          `Subject: Join ${churchName} Youth on kinwove`,
+                          ``,
+                          `Hi!`,
+                          ``,
+                          `You're invited to join the ${churchName} youth group on kinwove — a safe space for young people to explore faith, ask questions, and connect with their church community.`,
+                          ``,
+                          `Join here: ${youthJoinUrl}`,
+                          ``,
+                          `Or open kinwove and enter the code: ${youthCode}`,
+                          ``,
+                          `See you there!`,
+                        ].join('\n');
+                        navigator.clipboard.writeText(template).then(() => { setYouthEmailCopied(true); setTimeout(() => setYouthEmailCopied(false), 2500); });
+                      }}
+                      style={{ background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999, padding: '7px 14px', fontSize: 13, color: T.inkSoft, cursor: 'pointer' }}
+                    >{youthEmailCopied ? '✓ Copied' : '✉️ Copy email template'}</button>
+                    <a href={`sms:?body=Join ${encodeURIComponent(church?.name ?? 'our church')} youth group on kinwove: ${encodeURIComponent(youthJoinUrl)}`} style={{ display: 'inline-block', background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999, padding: '7px 14px', fontSize: 13, color: T.inkSoft, textDecoration: 'none', cursor: 'pointer' }}>💬 Text</a>
+                    <button
+                      onClick={() => {
+                        const w = window.open('', '_blank');
+                        w.document.write(`<!DOCTYPE html><html><head><title>Join ${church?.name ?? 'our church'} Youth on kinwove</title><style>body{font-family:Georgia,serif;background:#FDF8F0;color:#2C1810;margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;}.card{border:2px solid #B8733A;border-radius:18px;padding:48px 56px;max-width:480px;text-align:center;}.eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#B8733A;font-weight:700;margin-bottom:16px;}h1{font-size:28px;font-weight:600;margin:0 0 8px;letter-spacing:-0.5px;}.sub{font-size:15px;color:#5A4733;line-height:1.6;margin-bottom:28px;}.code{font-family:monospace;font-size:36px;font-weight:700;letter-spacing:6px;border:1.5px solid #D9C9A8;border-radius:10px;padding:10px 20px;display:inline-block;margin-bottom:20px;}.url{font-size:13px;color:#8E5528;word-break:break-all;margin-bottom:32px;}img{border-radius:8px;border:1px solid #D9C9A8;}.footer{font-size:11px;color:#A89070;margin-top:32px;letter-spacing:1px;}@media print{body{background:#fff;}.card{border-color:#ccc;}}</style></head><body><div class="card"><div class="eyebrow">kinwove · Youth Group</div><h1>${church?.name ?? 'Our Church'}</h1><p class="sub">Scan the QR code or enter the code below<br>to join the youth group on kinwove.</p><img src="${qrUrl(youthJoinUrl)}" width="200" height="200" /><br><br><div class="code">${youthCode}</div><div class="url">${youthJoinUrl}</div><div class="footer">kinwove.com</div></div></body></html>`);
+                        w.document.close(); w.focus(); setTimeout(() => w.print(), 600);
+                      }}
+                      style={{ background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999, padding: '7px 14px', fontSize: 13, color: T.inkSoft, cursor: 'pointer' }}
+                    >🖨️ Print</button>
+                  </div>
+                  <p style={{ fontFamily: T.serif, fontSize: 12.5, color: T.inkMuted, lineHeight: 1.5, margin: '10px 0 0' }}>
+                    For members under 17 — church-scoped only, auto-unlocks at 17.
+                  </p>
+                </div>
+              </div>
+              <button onClick={async () => { setYouthCodeBusy(true); const res = await fetch('/api/church/youth-invite-code', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` }, body: JSON.stringify({ churchId }) }); const body = await res.json().catch(() => ({})); if (res.ok) { setYouthCode(body.youth_invite_code); showToast('New youth code generated.', 'success'); } else showToast(body.error || "Couldn't rotate code.", 'error'); setYouthCodeBusy(false); }} disabled={youthCodeBusy} style={{ background: 'transparent', color: T.goldDark, border: 'none', padding: 0, marginTop: 10, fontSize: 12, cursor: 'pointer', fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: 3 }}>
+                {youthCodeBusy ? 'Rotating…' : 'Reset code…'}
+              </button>
+            </>
+          );
+        })() : (
+          <>
+            <p style={{ fontFamily: T.serif, fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, margin: '0 0 12px' }}>
+              A separate invite code for members under 17. Youth accounts are church-scoped only and auto-unlock when they turn 17.
+            </p>
             <button
               disabled={youthCodeBusy}
               onClick={async () => {
                 setYouthCodeBusy(true);
                 const res = await fetch('/api/church/youth-invite-code', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` }, body: JSON.stringify({ churchId }) });
                 const body = await res.json().catch(() => ({}));
-                if (res.ok) { setYouthCode(body.youth_invite_code); showToast('New youth code generated.', 'success'); }
-                else showToast(body.error || "Couldn't rotate code.", 'error');
+                if (res.ok) { setYouthCode(body.youth_invite_code); showToast('Youth invite code created.', 'success'); }
+                else showToast(body.error || "Couldn't create code.", 'error');
                 setYouthCodeBusy(false);
               }}
-              style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
-            >{youthCodeBusy ? 'Rotating…' : 'Reset code'}</button>
-          </div>
-        ) : (
-          <button
-            disabled={youthCodeBusy}
-            onClick={async () => {
-              setYouthCodeBusy(true);
-              const res = await fetch('/api/church/youth-invite-code', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` }, body: JSON.stringify({ churchId }) });
-              const body = await res.json().catch(() => ({}));
-              if (res.ok) { setYouthCode(body.youth_invite_code); showToast('Youth invite code created.', 'success'); }
-              else showToast(body.error || "Couldn't create code.", 'error');
-              setYouthCodeBusy(false);
-            }}
-            style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: youthCodeBusy ? 'wait' : 'pointer', opacity: youthCodeBusy ? 0.7 : 1 }}
-          >{youthCodeBusy ? 'Creating…' : 'Create youth group invite →'}</button>
+              style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: youthCodeBusy ? 'wait' : 'pointer', opacity: youthCodeBusy ? 0.7 : 1 }}
+            >{youthCodeBusy ? 'Creating…' : 'Create youth group invite →'}</button>
+          </>
         )}
       </div>
 
