@@ -431,7 +431,7 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
       },
       body: JSON.stringify({
         text: cleaned,
-        model_id: 'eleven_multilingual_v2',
+        model_id: 'eleven_turbo_v2_5',
         voice_settings: {
           stability: 0.50,
           similarity_boost: 0.75,
