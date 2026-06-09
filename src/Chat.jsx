@@ -952,7 +952,7 @@ export default function Chat({
   }
 
   const ttsVoice = profile?.tts_voice ?? 'onyx';
-  const { speakingId, speak: speakMsg, stop: stopSpeech, supported: ttsSupported } = useTextToSpeech({ voice: ttsVoice });
+  const { speakingId, paused: ttsPaused, speak: speakMsg, stop: stopSpeech, pause: pauseSpeech, resume: resumeSpeech, rewind: rewindSpeech, forward: forwardSpeech, supported: ttsSupported } = useTextToSpeech({ voice: ttsVoice });
 
   // ── AI usage limits ────────────────────────────────────────────────────────
   const aiUsage = useAiUsage(session?.user?.id, aiPlan);
@@ -1846,42 +1846,53 @@ export default function Chat({
                       )}
                       {copiedIdx === i ? 'Copied' : 'Copy'}
                     </button>
-                    {ttsSupported && (
+                    {ttsSupported && speakingId !== i && (
                       <button
                         onClick={() => speakMsg(i, m.content)}
-                        title={speakingId === i ? 'Stop reading' : 'Read aloud'}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          padding: '4px 8px',
-                          cursor: 'pointer',
-                          color: speakingId === i ? T.gold : C.muted,
-                          fontSize: 12,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 5,
-                        }}
+                        title="Read aloud"
+                        style={{ background: 'transparent', border: 'none', padding: '4px 8px', cursor: 'pointer', color: C.muted, fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 5 }}
                       >
-                        {speakingId === i ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'flex-end', gap: 2, height: 14 }}>
-                            {[1, 0.5, 0.8, 0.4].map((h, k) => (
-                              <span key={k} style={{
-                                width: 3, borderRadius: 2,
-                                background: T.gold,
-                                height: `${h * 100}%`,
-                                animation: `micPulse 0.8s ease-in-out ${k * 0.15}s infinite alternate`,
-                              }} />
-                            ))}
-                          </span>
-                        ) : (
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-                          </svg>
-                        )}
-                        {speakingId === i ? 'Stop' : 'Listen'}
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                        </svg>
+                        Listen
                       </button>
+                    )}
+                    {ttsSupported && speakingId === i && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                        {/* Waveform */}
+                        <span style={{ display: 'inline-flex', alignItems: 'flex-end', gap: 2, height: 14, marginRight: 4 }}>
+                          {[1, 0.5, 0.8, 0.4].map((h, k) => (
+                            <span key={k} style={{ width: 3, borderRadius: 2, background: T.gold, height: `${h * 100}%`, animation: ttsPaused ? 'none' : `micPulse 0.8s ease-in-out ${k * 0.15}s infinite alternate`, opacity: ttsPaused ? 0.4 : 1 }} />
+                          ))}
+                        </span>
+                        {/* −10s */}
+                        <button onClick={() => rewindSpeech(10)} title="Back 10s" style={{ background: 'transparent', border: 'none', padding: '4px 6px', cursor: 'pointer', color: C.muted, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+                          10
+                        </button>
+                        {/* Pause / Resume */}
+                        <button onClick={() => ttsPaused ? resumeSpeech() : pauseSpeech()} title={ttsPaused ? 'Resume' : 'Pause'} style={{ background: 'transparent', border: 'none', padding: '4px 6px', cursor: 'pointer', color: T.gold, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                          {ttsPaused ? (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill={T.gold} stroke={T.gold} strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                          ) : (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="6" y1="4" x2="6" y2="20"/><line x1="18" y1="4" x2="18" y2="20"/></svg>
+                          )}
+                          {ttsPaused ? 'Resume' : 'Pause'}
+                        </button>
+                        {/* +10s */}
+                        <button onClick={() => forwardSpeech(10)} title="Forward 10s" style={{ background: 'transparent', border: 'none', padding: '4px 6px', cursor: 'pointer', color: C.muted, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-3.5"/></svg>
+                          10
+                        </button>
+                        {/* Stop */}
+                        <button onClick={stopSpeech} title="Stop" style={{ background: 'transparent', border: 'none', padding: '4px 6px', cursor: 'pointer', color: C.muted, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                          Stop
+                        </button>
+                      </span>
                     )}
                   </div>
                 )}

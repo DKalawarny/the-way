@@ -103,13 +103,23 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
   function rewind(seconds = 10) {
     if (audioRef.current) {
       if (audioRef.current._isWebAudio) {
-        // Recreate BufferSource at new offset
         audioRef.current.rewindTo(Math.max(0, audioRef.current.currentTime - seconds));
       } else {
         audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - seconds);
       }
     }
-    // Web Speech API doesn't support seeking — no-op
+  }
+
+  function forward(seconds = 10) {
+    if (audioRef.current) {
+      if (audioRef.current._isWebAudio) {
+        const dur = audioRef.current._node.buffer?.duration ?? Infinity;
+        audioRef.current.rewindTo(Math.min(dur - 0.1, audioRef.current.currentTime + seconds));
+      } else {
+        const dur = isFinite(audioRef.current.duration) ? audioRef.current.duration : Infinity;
+        audioRef.current.currentTime = Math.min(dur, audioRef.current.currentTime + seconds);
+      }
+    }
   }
 
   useEffect(() => {
@@ -356,5 +366,5 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
     window.speechSynthesis.speak(utt);
   }
 
-  return { speakingId, paused, speak, stop, pause, resume, rewind, supported };
+  return { speakingId, paused, speak, stop, pause, resume, rewind, forward, supported };
 }
