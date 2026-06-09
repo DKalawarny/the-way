@@ -422,7 +422,7 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
   console.log(`[tts] profile=${voice} voiceId=${voiceId} len=${cleaned.length}`);
 
   try {
-    const elevenRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
+    const elevenRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
       headers: {
         'xi-api-key': ELEVEN_KEY,
@@ -447,19 +447,11 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
       return res.status(502).json({ error: 'TTS upstream error' });
     }
 
+    const audioBuffer = await elevenRes.arrayBuffer();
     res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Content-Length', audioBuffer.byteLength);
     res.setHeader('Cache-Control', 'no-store');
-    const reader = elevenRes.body.getReader();
-    let aborted = false;
-    req.on('close', () => { aborted = true; reader.cancel().catch(() => {}); });
-    const pump = async () => {
-      while (!aborted) {
-        const { done, value } = await reader.read();
-        if (done) { res.end(); break; }
-        res.write(value);
-      }
-    };
-    pump().catch((e) => { console.error('[kinwove] TTS pipe error:', e); res.end(); });
+    res.end(Buffer.from(audioBuffer));
   } catch (e) {
     safeError(res, e, 'tts');
   }
