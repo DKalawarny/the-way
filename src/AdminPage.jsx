@@ -506,12 +506,67 @@ export default function AdminPage({ onBack }) {
           <div>
             {/* AI quality stats */}
             <SectionTitle>AI quality</SectionTitle>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 32 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 24 }}>
               <RatioCard label="Total conversations" value={Number(s.first_turn_events ?? 0).toLocaleString()} note="unique first turns" />
+              <RatioCard label="Total AI turns" value={Number(s.total_ai_events ?? 0).toLocaleString()} note="questions answered" />
               <RatioCard label="Avg turns / convo" value={s.avg_ai_turns ?? '—'} note="depth of engagement" />
-              <RatioCard label="Cache hit rate" value={`${cacheHitRate}%`} note="served without AI call" />
               <RatioCard label="Thumbs-down rate" value={`${thumbsDownRate}%`} note="last 30 days" color={parseFloat(thumbsDownRate) > 2 ? '#a53f2b' : T.ink} />
             </div>
+
+            {/* Cache efficiency + cost savings */}
+            {(() => {
+              const hits = Number(s.cache_hits ?? 0);
+              const total = Number(s.total_ai_events ?? 0);
+              const live = total - hits;
+              const hitPct = total > 0 ? Math.round((hits / total) * 100) : 0;
+              const livePct = 100 - hitPct;
+              // Cost estimate: ~$0.004 per avoided call (Haiku pricing, typical kinwove prompt ~2500 tok in / 600 tok out)
+              const COST_PER_CALL = 0.004;
+              const saved = (hits * COST_PER_CALL).toFixed(2);
+              return (
+                <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '18px 20px', marginBottom: 32 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: T.inkMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Cache efficiency</div>
+                    <div style={{ fontSize: 12, color: T.inkMuted }}>
+                      Est. <strong style={{ color: '#2e7a48', fontSize: 14 }}>${saved} saved</strong> by reusing cached answers
+                      <span style={{ fontSize: 10, color: T.inkMuted, marginLeft: 4 }}>~$0.004/call</span>
+                    </div>
+                  </div>
+
+                  {/* Split bar */}
+                  <div style={{ height: 28, borderRadius: 8, overflow: 'hidden', display: 'flex', marginBottom: 10 }}>
+                    {hitPct > 0 && (
+                      <div style={{ width: `${hitPct}%`, background: T.gold, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {hitPct >= 12 && <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>{hitPct}%</span>}
+                      </div>
+                    )}
+                    {livePct > 0 && (
+                      <div style={{ width: `${livePct}%`, background: '#8E5528', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {livePct >= 12 && <span style={{ fontSize: 11, fontWeight: 700, color: '#fff' }}>{livePct}%</span>}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Legend */}
+                  <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <div style={{ width: 12, height: 12, borderRadius: 3, background: T.gold, flexShrink: 0 }} />
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: T.ink, fontFamily: T.display }}>{hits.toLocaleString()}</div>
+                        <div style={{ fontSize: 11, color: T.inkMuted }}>Served from cache — no API call</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <div style={{ width: 12, height: 12, borderRadius: 3, background: '#8E5528', flexShrink: 0 }} />
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: T.ink, fontFamily: T.display }}>{live.toLocaleString()}</div>
+                        <div style={{ fontSize: 11, color: T.inkMuted }}>Sent to Claude — billed to Anthropic</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             <SectionTitle>What people are asking about</SectionTitle>
             <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 16 }}>
