@@ -433,9 +433,9 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
         text: cleaned,
         model_id: 'eleven_multilingual_v2',
         voice_settings: {
-          stability: 0.30,
-          similarity_boost: 0.90,
-          style: 0.50,
+          stability: 0.50,
+          similarity_boost: 0.75,
+          style: 0.0,
           use_speaker_boost: true,
         },
       }),
@@ -448,6 +448,7 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
     }
 
     const audioBuffer = await elevenRes.arrayBuffer();
+    console.log(`[tts] eleven content-type=${elevenRes.headers.get('content-type')} bytes=${audioBuffer.byteLength}`);
     res.setHeader('Content-Type', 'audio/mpeg');
     res.setHeader('Content-Length', audioBuffer.byteLength);
     res.setHeader('Cache-Control', 'no-store');
