@@ -1709,6 +1709,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
          'talk-to-someone', 'care-conversation', 'church-admin', 'pastor-dashboard',
          'sermon-composer', 'care-admin', 'sermon-view'].includes(s)) return 'church';
     if (s === 'read') return 'read';
+    if (s === 'journal') return 'journal';
     if (['me', 'walks', 'care-inbox', 'messages', 'dm-conversation', 'app-admin'].includes(s)) return 'me';
     return null;
   };
@@ -1762,7 +1763,6 @@ function SidebarNav({ stage, session, profile, chatOpen,
     onOpenPastorAdminQueue    && { Icon: ShieldCheck, label: 'Pastor applications', onClick: onOpenPastorAdminQueue },
     onOpenChurchDisputesQueue && { Icon: Flag,        label: 'Listing disputes',    onClick: onOpenChurchDisputesQueue },
     onOpenSponsorAdmin        && { Icon: Megaphone,   label: 'Site analytics',      onClick: onOpenSponsorAdmin },
-    onOpenJournal  && { Icon: BookOpen,   label: 'My Notes',         onClick: onOpenJournal },
     onEditProfile  && { Icon: UserCog,    label: 'Edit profile',    onClick: onEditProfile },
     onOpenHelp     && { Icon: HelpCircle, label: 'Help',             onClick: onOpenHelp },
     onOpenReport   && { Icon: Flag,       label: 'Report an issue', onClick: onOpenReport },
@@ -1816,6 +1816,14 @@ function SidebarNav({ stage, session, profile, chatOpen,
           <span style={{ fontSize: 17, flexShrink: 0, width: 20, textAlign: 'center', lineHeight: 1 }}>📖</span>
           <span style={labelSt('read')}>Bible</span>
         </button>
+
+        {/* Notes */}
+        {onOpenJournal && (
+          <button onClick={onOpenJournal} style={itemSt('journal')}>
+            <BookOpen size={17} style={{ flexShrink: 0, width: 20, color: active === 'journal' ? sc('journal') : T.inkSoft }} />
+            <span style={labelSt('journal')}>Notes</span>
+          </button>
+        )}
 
         {/* You */}
         <button data-tour-id="you" onClick={onGoMe} style={itemSt('me')}>
@@ -3113,6 +3121,13 @@ export default function App() {
           session={session}
           onClose={() => goBack('home')}
           onOpenBible={({ book, chapter, verse }) => { setBibleJumpRef(`${book}.${chapter}.${verse}`); setStage('read'); }}
+          onAskVerse={(note) => {
+            const conv = createConv(personType);
+            setCurrentConvId(conv.id);
+            setPrefilledInput(`Tell me about ${note.book_name} ${note.chapter}:${note.verse} — "${note.verse_text?.replace(/^["""]+|["""]+$/g, '').trim()}"`);
+            setChatPanelOpen(true);
+            goBack('home');
+          }}
         />
       )}
       {stage === 'pastor-admin-queue' && session && profile?.is_admin && (
