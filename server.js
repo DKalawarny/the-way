@@ -431,11 +431,11 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
       },
       body: JSON.stringify({
         text: cleaned,
-        model_id: 'eleven_turbo_v2_5',
+        model_id: 'eleven_multilingual_v2',
         voice_settings: {
-          stability: 0.45,
-          similarity_boost: 0.82,
-          style: 0.35,
+          stability: 0.30,
+          similarity_boost: 0.90,
+          style: 0.50,
           use_speaker_boost: true,
         },
       }),
