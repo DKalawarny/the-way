@@ -24,8 +24,8 @@ const SECTIONS = [
         a: 'When you write a post you choose the audience — Public (anyone on kinwove), Church (your church family only), or Only me. You can change this at any time from the ⋯ menu on the post.',
       },
       {
-        q: 'What does ✦ Ask do?',
-        a: 'Ask is kinwove\'s AI — powered by Claude. It answers Scripture questions, explores theology, helps you work through doubt, and never judges where you are in your journey. Tap ✦ Ask in the sidebar or the ⋮ menu on mobile to open it.',
+        q: 'What does Ask do?',
+        a: 'Ask is kinwove\'s AI — powered by Claude. It answers Scripture questions, explores theology, helps you work through doubt, and never judges where you are in your journey. Tap Ask in the sidebar or the ⋮ menu on mobile to open it.',
       },
     ],
   },
@@ -71,19 +71,19 @@ const SECTIONS = [
     items: [
       {
         q: 'What are Circles?',
-        a: 'Circles are small private groups — for a Bible study, a friend group, or any community you want to keep close. Find them under the Discover tab in your Community feed.',
+        a: 'Circles are small private groups — for a Bible study, a friend group, or any community you want to keep close. Open the Groups section from the sidebar (desktop) or the navigation menu (mobile).',
       },
       {
         q: 'How do I start a Circle?',
-        a: 'Open the Discover tab and tap "Start a circle." Give it a name, pick a colour, and invite people. You\'re the host — you can pin posts, remove members, and manage the group.',
+        a: 'Open Groups and tap "Start a circle." Give it a name, and share the join code with people you want to invite. You\'re the host — you can manage the group and its members.',
       },
       {
         q: 'How do I join a Circle?',
-        a: 'Someone in the circle can send you an invite notification, or share a join code with you. Tap "Join with code" on the Discover tab and enter the code.',
+        a: 'Get a join code from someone already in the circle. Open Groups, tap "Join with code," and enter it. You\'ll be added straight away.',
       },
       {
         q: 'Can I be in more than one Circle?',
-        a: 'Yes — you can be in as many as you like. Each circle has its own discussion thread and chat. A red dot appears on the circle card when there are unread posts.',
+        a: 'Yes — you can be in as many as you like. Each circle has its own discussion thread. A dot appears on the circle card when there are new posts since you last visited.',
       },
     ],
   },
@@ -125,7 +125,7 @@ const SECTIONS = [
       },
       {
         q: 'What can the AI help me with in Bible study?',
-        a: 'Tap ✦ Ask and ask anything — explanation of a passage, word study, historical background, theological questions, or just working through doubt. The AI draws on multiple translations and always responds with grace.',
+        a: 'Tap Ask and ask anything — explanation of a passage, word study, historical background, theological questions, or just working through doubt. The AI draws on multiple translations and always responds with grace.',
       },
       {
         q: 'What are Walks?',
@@ -179,11 +179,11 @@ const SECTIONS = [
       },
       {
         q: 'How do I join a church?',
-        a: 'Open the church page and tap Join. Membership is approved by the pastor or admin — once approved, you\'ll see church-only posts in your community feed.',
+        a: 'Open the church page and tap Join. Some churches are open — you\'ll be added immediately. Others require the pastor to approve requests. Either way, once you\'re a member you\'ll see church-only posts in your community feed.',
       },
       {
         q: 'I\'m a pastor — how do I register my church?',
-        a: 'Tap the ⋮ menu (mobile) or open the sidebar (desktop) and tap Apply as a pastor. Fill in your details and church information. Applications are manually reviewed (usually within 24 hours) to keep the directory trustworthy. You\'ll be notified when approved.',
+        a: 'Tap the ⋮ menu (mobile) or open the sidebar (desktop) and tap Apply as a pastor. Fill in your details and church information. You\'ll get access to your pastor dashboard straight away.',
       },
       {
         q: 'What are church-only posts?',
@@ -198,19 +198,19 @@ const SECTIONS = [
     items: [
       {
         q: 'What\'s the difference between Following and Friends?',
-        a: 'Following is one-way — you see their public posts in your feed. Friends is mutual — you both accepted the connection, enabling direct messages and friends-only content.',
+        a: 'Following is one-way — you see their public posts in your feed. Friends is mutual — you both accepted the connection. Manage incoming requests in your profile under the Friends tab.',
       },
       {
         q: 'How do I send a friend request?',
-        a: 'Open someone\'s profile and tap + Friend. They\'ll receive a notification. Accept or decline incoming requests in your profile under the Friends tab.',
+        a: 'Open someone\'s profile and tap + Friend. They\'ll get a notification. You can accept or decline incoming requests from the Friends tab on your profile.',
       },
       {
-        q: 'How do I block someone?',
-        a: 'Open their profile and tap the block button in the action row. Their posts are hidden from your feeds and they can\'t see yours. Unblock at any time from their profile or from your Friends tab.',
+        q: 'How do I follow someone?',
+        a: 'Open their profile and tap Follow. Their public posts will appear in your community feed. You can unfollow at any time from their profile.',
       },
       {
         q: 'How do I send a direct message?',
-        a: 'Open someone\'s profile and tap Message, or tap the messages icon in the top-right corner. Conversations are private between you and the other person.',
+        a: 'Open someone\'s profile and tap Message, or open Messages from the navigation. Conversations are private between you and the other person.',
       },
     ],
   },
@@ -229,7 +229,7 @@ const SECTIONS = [
       },
       {
         q: 'Are my conversations with the AI private?',
-        a: 'Yes. Conversations with ✦ Ask are private to you and are never shared with other users or visible on your profile.',
+        a: 'Yes. Conversations with Ask are private to you and are never shared with other users or visible on your profile.',
       },
       {
         q: 'How do I delete my account?',
