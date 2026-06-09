@@ -163,6 +163,130 @@ function EmptyNote({ children }) {
   );
 }
 
+// ── Insight card ─────────────────────────────────────────────────────────────
+function InsightCard({ type, msg }) {
+  const cfg = {
+    win:  { bg: 'rgba(46,122,72,0.07)',   border: 'rgba(46,122,72,0.22)',   color: '#2e7a48', prefix: '↑ ' },
+    warn: { bg: 'rgba(232,115,26,0.07)',  border: 'rgba(232,115,26,0.25)',  color: '#c06010', prefix: '⚠ ' },
+    tip:  { bg: 'rgba(184,115,58,0.06)',  border: 'rgba(184,115,58,0.18)',  color: T.goldDark, prefix: '→ ' },
+  }[type] ?? { bg: T.parchment, border: T.line, color: T.inkSoft, prefix: '· ' };
+  return (
+    <div style={{ background: cfg.bg, border: `1px solid ${cfg.border}`, borderRadius: 10, padding: '11px 14px', marginBottom: 8, fontSize: 13, color: T.ink, lineHeight: 1.6 }}>
+      <span style={{ color: cfg.color, fontWeight: 700 }}>{cfg.prefix}</span>{msg}
+    </div>
+  );
+}
+
+// ── Insights engine ───────────────────────────────────────────────────────────
+function getInsights(tab, s, dash) {
+  const add = (type, msg) => ({ type, msg });
+  const out = [];
+  const n = (v) => Number(v ?? 0);
+
+  if (tab === 'overview') {
+    const act = n(s.activation_rate);
+    const users = n(s.total_users);
+    const dead = n(s.dead_accounts);
+    const wau = n(s.weekly_active_users);
+    const follows = n(s.avg_follows);
+    const wauPct = users > 0 ? Math.round(wau / users * 100) : 0;
+
+    if (act < 40 && users > 1)
+      out.push(add('warn', `Only ${act}% of users have tried AI. Add a stronger onboarding prompt or push notification pointing directly to the Ask button — it's your core product.`));
+    else if (act >= 80)
+      out.push(add('win', `${act}% activation rate is excellent for an early platform. Shift focus to weekly retention now.`));
+    else if (act >= 50)
+      out.push(add('tip', `${act}% activation is solid. Try surfacing a suggested first question when new users land so they know exactly what to do.`));
+
+    if (wauPct < 20 && users > 3)
+      out.push(add('warn', `Only ${wauPct}% of users came back this week. Before spending on growth, fix retention — a leaky bucket wastes every new signup.`));
+    else if (wauPct >= 50)
+      out.push(add('win', `${wauPct}% weekly return rate — strong sign the core product is sticky. This is the right time to start telling people about kinwove.`));
+
+    if (dead > 2)
+      out.push(add('tip', `${dead} users signed up but never engaged. A short "here's what to ask" welcome email could re-activate a few of them at no cost.`));
+
+    if (follows < 1.5 && users > 3)
+      out.push(add('tip', `Avg ${follows} follows per user — people aren't connecting yet. A "People from your church" suggestion or a weekly email featuring active members could seed the social graph.`));
+
+    if (n(s.total_shared) > 10)
+      out.push(add('win', `${n(s.total_shared)} conversations shared publicly. Each share is a free acquisition channel — make the share button more prominent after every AI answer.`));
+  }
+
+  if (tab === 'ai') {
+    const hits = n(s.cache_hits);
+    const total = n(s.total_ai_events);
+    const hitRate = total > 0 ? Math.round(hits / total * 100) : 0;
+    const avgTurns = n(s.avg_ai_turns);
+    const topics = dash?.topics ?? [];
+    const topTopic = topics[0];
+
+    if (hitRate < 15 && total > 30)
+      out.push(add('tip', `Cache rate is ${hitRate}% — normal at this scale. It compounds naturally. No action needed yet.`));
+    else if (hitRate >= 35)
+      out.push(add('win', `${hitRate}% cache hit rate is strong — you're saving real money and answering faster. This number grows as questions repeat.`));
+
+    if (avgTurns < 1.8 && total > 20)
+      out.push(add('warn', `Avg ${avgTurns} turns per conversation — users ask one thing and leave. Try ending AI responses with a natural follow-up question to keep them in the conversation.`));
+    else if (avgTurns >= 3)
+      out.push(add('win', `Avg ${avgTurns} turns — users are having real back-and-forths with the AI. Screenshot a sample exchange and post it. This is your strongest demo.`));
+
+    if (topTopic)
+      out.push(add('tip', `"${topTopic.topic_slug}" is your most-asked topic (${topTopic.count} questions). Write a blog post, Twitter thread, or YouTube short answering the top question on this topic — it's what your audience actually wants.`));
+  }
+
+  if (tab === 'geo') {
+    const countries = (s.country_dist ?? []);
+    if (countries.length === 0)
+      out.push(add('tip', `No church location data yet. Once pastors register, you'll see exactly where to focus outreach.`));
+    else if (countries.length === 1)
+      out.push(add('tip', `All churches are in ${countries[0]?.country}. To expand, target English-speaking Christian Facebook groups, Reddit (r/Christianity, r/Reformed, etc.), or Instagram hashtags in other countries.`));
+    else
+      out.push(add('tip', `You're in ${countries.length} countries already. Lean into your strongest market first — depth beats breadth at this stage.`));
+  }
+
+  if (tab === 'churches') {
+    const zombies = n(s.zombie_churches);
+    const total = n(s.total_churches);
+    const verified = n(s.verified_churches);
+    const pending = dash?.pendingApps?.length ?? 0;
+
+    if (zombies > 0)
+      out.push(add('warn', `${zombies} church${zombies > 1 ? 'es' : ''} registered with 0 members. Email those pastors directly — a single "how to invite your congregation" tip often re-activates them.`));
+    if (total === 1)
+      out.push(add('tip', `You have 1 church. Focus on making that pastor incredibly successful — their story becomes your best case study for recruiting the next 10.`));
+    if (pending > 0)
+      out.push(add('warn', `${pending} pastor application${pending > 1 ? 's' : ''} waiting. Fast approval (same day) signals to pastors that kinwove is responsive and worth their investment.`));
+    if (total >= 5 && zombies === 0)
+      out.push(add('win', `${total} churches with no inactive ones — healthy growth. Consider reaching out to denominations or church networks to get in front of many pastors at once.`));
+  }
+
+  if (tab === 'content') {
+    const shared = n(s.total_shared);
+    const topQ = dash?.topQuestions?.[0];
+
+    if (topQ)
+      out.push(add('tip', `"${topQ.question_raw?.slice(0, 80)}…" has been asked ${topQ.hit_count}× — turn this into a social post. Questions your users actually ask outperform generic content every time.`));
+    if (shared > 5)
+      out.push(add('win', `${shared} conversations have been shared externally. Every share link is a potential new user. Add a "Copy link" prompt more prominently after every AI response.`));
+    if (shared === 0)
+      out.push(add('tip', `No conversations shared yet. Make sure the share button is visible right after an AI answer — that's the moment of highest satisfaction.`));
+  }
+
+  if (tab === 'operations') {
+    const reports = dash?.userReports?.length ?? 0;
+    const feedback = dash?.recentFeedback?.length ?? 0;
+    if (reports > 0)
+      out.push(add('warn', `${reports} open user report${reports > 1 ? 's' : ''}. Respond fast — early users who get a personal reply become your most loyal advocates.`));
+    if (feedback > 3)
+      out.push(add('warn', `${feedback} AI responses flagged as bad. Review them and adjust the system prompt in src/prompts.js to fix recurring patterns.`));
+    if (reports === 0 && feedback === 0)
+      out.push(add('win', `No open reports or AI flags — all clear. Check back regularly as usage grows.`));
+  }
+
+  return out;
+}
+
 // ── Category badge ────────────────────────────────────────────────────────────
 const REPORT_BADGE = {
   bug:        { label: 'Bug',          bg: 'rgba(165,63,43,0.10)', color: '#a53f2b' },
@@ -436,6 +560,12 @@ export default function AdminPage({ onBack }) {
         {/* ── OVERVIEW ──────────────────────────────────────────────────────── */}
         {tab === 'overview' && !dashLoading && !dashError && dash && (
           <div>
+            {getInsights('overview', s, dash).length > 0 && (
+              <div style={{ marginBottom: 24 }}>
+                <SectionTitle>Insights</SectionTitle>
+                {getInsights('overview', s, dash).map((ins, i) => <InsightCard key={i} {...ins} />)}
+              </div>
+            )}
 
             {/* Health alerts */}
             {hasAlerts && (
@@ -504,6 +634,12 @@ export default function AdminPage({ onBack }) {
         {/* ── AI & TOPICS ───────────────────────────────────────────────────── */}
         {tab === 'ai' && !dashLoading && !dashError && dash && (
           <div>
+            {getInsights('ai', s, dash).length > 0 && (
+              <div style={{ marginBottom: 24 }}>
+                <SectionTitle>Insights</SectionTitle>
+                {getInsights('ai', s, dash).map((ins, i) => <InsightCard key={i} {...ins} />)}
+              </div>
+            )}
             {/* AI quality stats */}
             <SectionTitle>AI quality</SectionTitle>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 24 }}>
@@ -618,6 +754,12 @@ export default function AdminPage({ onBack }) {
         {/* ── GEOGRAPHY ─────────────────────────────────────────────────────── */}
         {tab === 'geo' && !dashLoading && !dashError && dash && (
           <div>
+            {getInsights('geo', s, dash).length > 0 && (
+              <div style={{ marginBottom: 24 }}>
+                <SectionTitle>Insights</SectionTitle>
+                {getInsights('geo', s, dash).map((ins, i) => <InsightCard key={i} {...ins} />)}
+              </div>
+            )}
             <SectionTitle>Countries</SectionTitle>
             <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 16 }}>
               Based on church registrations. Where are your churches — and therefore your congregation users — located?
@@ -651,6 +793,12 @@ export default function AdminPage({ onBack }) {
         {/* ── CHURCHES ──────────────────────────────────────────────────────── */}
         {tab === 'churches' && !dashLoading && !dashError && dash && (
           <div>
+            {getInsights('churches', s, dash).length > 0 && (
+              <div style={{ marginBottom: 24 }}>
+                <SectionTitle>Insights</SectionTitle>
+                {getInsights('churches', s, dash).map((ins, i) => <InsightCard key={i} {...ins} />)}
+              </div>
+            )}
             <SectionTitle>Top churches by member count</SectionTitle>
             {topChurches.length === 0
               ? <EmptyNote>No church data yet.</EmptyNote>
@@ -666,28 +814,17 @@ export default function AdminPage({ onBack }) {
                         <span style={{ fontSize: 13, fontWeight: 700, color: T.goldDark }}>
                           {Number(c.member_count ?? 0).toLocaleString()} members
                         </span>
-                        <span style={{
-                          fontSize: 11, fontWeight: 600,
-                          color: c.status === 'verified' ? '#2e7a48' : T.inkMuted,
-                          background: c.status === 'verified' ? 'rgba(46,122,72,0.1)' : T.parchment,
-                          borderRadius: 999, padding: '2px 8px',
-                          border: `1px solid ${c.status === 'verified' ? 'rgba(46,122,72,0.25)' : T.line}`,
-                        }}>
-                          {c.status ?? 'pending'}
-                        </span>
-                        <button
-                          onClick={() => toggleChurchVerify(c.id, c.status)}
-                          disabled={verifyBusy === c.id}
-                          style={{
-                            fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '3px 10px', cursor: 'pointer',
-                            border: 'none',
-                            background: c.status === 'verified' ? 'rgba(180,60,60,0.08)' : 'rgba(46,122,72,0.10)',
-                            color: c.status === 'verified' ? '#b43c3c' : '#2e7a48',
-                            opacity: verifyBusy === c.id ? 0.5 : 1,
-                          }}
-                        >
-                          {verifyBusy === c.id ? '…' : c.status === 'verified' ? 'Unverify' : 'Verify ✓'}
-                        </button>
+                        {c.status !== 'verified' && (
+                          <span style={{
+                            fontSize: 10, fontWeight: 600,
+                            color: T.inkMuted,
+                            background: T.parchment,
+                            borderRadius: 999, padding: '2px 8px',
+                            border: `1px solid ${T.line}`,
+                          }}>
+                            {c.status ?? 'pending'}
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -737,6 +874,12 @@ export default function AdminPage({ onBack }) {
         {/* ── CONTENT ───────────────────────────────────────────────────────── */}
         {tab === 'content' && !dashLoading && !dashError && dash && (
           <div>
+            {getInsights('content', s, dash).length > 0 && (
+              <div style={{ marginBottom: 24 }}>
+                <SectionTitle>Insights</SectionTitle>
+                {getInsights('content', s, dash).map((ins, i) => <InsightCard key={i} {...ins} />)}
+              </div>
+            )}
             <SectionTitle>Most asked questions (by cache hits)</SectionTitle>
             <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 14 }}>
               Questions asked multiple times — use these for social posts, blog content, or FAQ pages.
@@ -778,6 +921,12 @@ export default function AdminPage({ onBack }) {
         {/* ── OPERATIONS ────────────────────────────────────────────────────── */}
         {tab === 'operations' && !dashLoading && !dashError && dash && (
           <div>
+            {getInsights('operations', s, dash).length > 0 && (
+              <div style={{ marginBottom: 24 }}>
+                <SectionTitle>Insights</SectionTitle>
+                {getInsights('operations', s, dash).map((ins, i) => <InsightCard key={i} {...ins} />)}
+              </div>
+            )}
 
             {/* User Reports */}
             <SectionTitle>User reports {openReports.length > 0 && <span style={{ background: '#a53f2b', color: '#fff', borderRadius: 999, fontSize: 10, padding: '1px 6px', marginLeft: 6, fontWeight: 700 }}>{openReports.length}</span>}</SectionTitle>
