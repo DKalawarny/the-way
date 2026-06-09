@@ -282,7 +282,7 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
               You've used all your AI messages for this month. They reset on your next billing date — or top up now to keep going.
             </div>
             <div style={{ fontSize: 12, color: T.inkMuted, lineHeight: 1.6, maxWidth: 280, marginTop: 8, fontFamily: T.serif, fontStyle: 'italic' }}>
-              Thank you for subscribing — your support keeps kinwove free for everyone else.
+              Thank you for subscribing — your support keeps kinwove open to everyone, no matter where they are or what they can pay.
             </div>
           </div>
 
