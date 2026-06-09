@@ -2724,6 +2724,12 @@ export default function App() {
                 setShowVerseCard(true);
                 // Fire-and-forget: send welcome DM from "kinwove" system account
                 authedFetch('/api/welcome-dm', { method: 'POST' }).catch(() => {});
+                // Open AI chat immediately for new users — they should see Ask first
+                const pt = p.person_type ?? 'curious';
+                const conv = createConv(pt);
+                setCurrentConvId(conv.id);
+                setPersonType(pt);
+                setChatPanelOpen(true);
               }
             }
           }}
