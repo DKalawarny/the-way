@@ -68,6 +68,7 @@ export default function TopRightMenu({
       label: 'Account',
       items: [
         onEditProfile   && { icon: UserCog,       label: 'Edit profile',    onClick: onEditProfile },
+        onOpenHelp      && { icon: HelpCircle,    label: 'Help',            onClick: onOpenHelp },
         onOpenReport    && { icon: AlertTriangle,  label: 'Report an issue', onClick: onOpenReport },
         onSignOut       && { icon: LogOut,         label: 'Sign out',        onClick: onSignOut,       danger: true },
         onDeleteAccount && { icon: Trash2,         label: 'Delete account',  onClick: onDeleteAccount, danger: true },

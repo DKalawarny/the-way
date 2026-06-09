@@ -94,7 +94,7 @@ import { supabase, authedFetch } from './supabase.js';
 import { getDailyVerse } from './dailyVerse.js';
 import {
   LayoutGrid, UserPlus, Inbox, Building2,
-  Star, ShieldCheck, Flag, Megaphone, UserCog, LogOut, Trash2, Settings as SettingsIcon,
+  Star, ShieldCheck, Flag, Megaphone, UserCog, LogOut, Trash2, Settings as SettingsIcon, HelpCircle,
 } from 'lucide-react';
 import SwipeableSheet from './SwipeableSheet.jsx';
 import MsgText from './MsgText.jsx';
@@ -1673,8 +1673,9 @@ function SidebarNav({ stage, session, profile, chatOpen,
     onOpenPastorAdminQueue    && { Icon: ShieldCheck, label: 'Pastor applications', onClick: onOpenPastorAdminQueue },
     onOpenChurchDisputesQueue && { Icon: Flag,        label: 'Listing disputes',    onClick: onOpenChurchDisputesQueue },
     onOpenSponsorAdmin        && { Icon: Megaphone,   label: 'Site analytics',      onClick: onOpenSponsorAdmin },
-    onEditProfile  && { Icon: UserCog, label: 'Edit profile',    onClick: onEditProfile },
-    onOpenReport   && { Icon: Flag,    label: 'Report an issue', onClick: onOpenReport },
+    onEditProfile  && { Icon: UserCog,    label: 'Edit profile',    onClick: onEditProfile },
+    onOpenHelp     && { Icon: HelpCircle, label: 'Help',             onClick: onOpenHelp },
+    onOpenReport   && { Icon: Flag,       label: 'Report an issue', onClick: onOpenReport },
     onSignOut      && { Icon: LogOut,  label: 'Sign out',        onClick: onSignOut,      danger: true },
     onDeleteAccount && { Icon: Trash2, label: 'Delete account',  onClick: onDeleteAccount, danger: true },
   ].filter(Boolean);
