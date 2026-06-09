@@ -1464,6 +1464,9 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
       .select('id, display_name, city, country, tradition, person_type, avatar_config, avatar_url')
       .neq('id', uid)
       .or(conditions.join(','))
+      .neq('is_system_account', true)
+      .not('display_name', 'is', null)
+      .neq('display_name', '')
       .limit(15)
       .then(({ data }) => setSuggestedPeople(data ?? []));
   }, [session?.user?.id, profile?.church_id, profile?.tradition]);
