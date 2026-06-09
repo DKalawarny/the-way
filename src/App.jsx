@@ -917,16 +917,78 @@ function PastorPrompt({ open, onApply, onClose }) {
 const NOTES_KEY = 'kinwove:notes:v1';
 const CONVS_KEY = 'kinwove:convs:v1';
 
-function useConversations() {
+function useConversations(userId = null, syncEnabled = false) {
   const [conversations, setConversations] = useState(() => {
     try { return JSON.parse(localStorage.getItem(CONVS_KEY)) ?? []; }
     catch { return []; }
   });
+  const syncedRef   = useRef(false);
+  const saveTimer   = useRef(null);
 
+  // Always keep localStorage current
   useEffect(() => {
     try { localStorage.setItem(CONVS_KEY, JSON.stringify(conversations.filter((c) => c.messages.length > 0))); }
     catch {}
   }, [conversations]);
+
+  // On first load with sync enabled: merge local + DB
+  useEffect(() => {
+    if (!syncEnabled || !userId || syncedRef.current) return;
+    syncedRef.current = true;
+    (async () => {
+      const { data: dbRows } = await supabase
+        .from('conversations')
+        .select('id, title, person_type, messages, created_at, updated_at')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false });
+      if (!dbRows) return;
+
+      const local = (() => { try { return JSON.parse(localStorage.getItem(CONVS_KEY)) ?? []; } catch { return []; } })()
+        .filter((c) => c.messages.length > 0);
+
+      const dbMap  = {};
+      dbRows.forEach((r) => {
+        dbMap[r.id] = { id: r.id, title: r.title, personType: r.person_type, messages: r.messages, createdAt: new Date(r.created_at).getTime(), updatedAt: new Date(r.updated_at).getTime() };
+      });
+      const localMap = {};
+      local.forEach((c) => { localMap[c.id] = c; });
+
+      const allIds = new Set([...Object.keys(dbMap), ...Object.keys(localMap)]);
+      const merged = [];
+      for (const id of allIds) {
+        const db = dbMap[id]; const loc = localMap[id];
+        if (!loc) merged.push(db);
+        else if (!db) merged.push(loc);
+        else merged.push(loc.updatedAt >= db.updatedAt ? loc : db);
+      }
+      merged.sort((a, b) => b.updatedAt - a.updatedAt);
+      setConversations(merged);
+
+      // Upload anything DB doesn't have or that's newer locally
+      const toUpload = merged.filter((c) => !dbMap[c.id] || c.updatedAt > (dbMap[c.id]?.updatedAt ?? 0));
+      if (toUpload.length > 0) {
+        supabase.from('conversations').upsert(
+          toUpload.map((c) => ({ id: c.id, user_id: userId, title: c.title, person_type: c.personType ?? null, messages: c.messages, updated_at: new Date(c.updatedAt).toISOString() })),
+          { onConflict: 'user_id,id' }
+        ).then(null, () => {});
+      }
+    })();
+  }, [syncEnabled, userId]);
+
+  // Debounced save to DB whenever conversations change (sync users only)
+  useEffect(() => {
+    if (!syncEnabled || !userId || !syncedRef.current) return;
+    const toSave = conversations.filter((c) => c.messages.length > 0);
+    if (!toSave.length) return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      supabase.from('conversations').upsert(
+        toSave.map((c) => ({ id: c.id, user_id: userId, title: c.title, person_type: c.personType ?? null, messages: c.messages, updated_at: new Date(c.updatedAt).toISOString() })),
+        { onConflict: 'user_id,id' }
+      ).then(null, () => {});
+    }, 2000);
+    return () => clearTimeout(saveTimer.current);
+  }, [conversations, syncEnabled, userId]);
 
   const create = (pType) => {
     const conv = {
@@ -952,7 +1014,12 @@ function useConversations() {
     }));
   };
 
-  const remove = (id) => setConversations((prev) => prev.filter((c) => c.id !== id));
+  const remove = (id) => {
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    if (syncEnabled && userId) {
+      supabase.from('conversations').delete().eq('user_id', userId).eq('id', id).then(null, () => {});
+    }
+  };
 
   return { conversations, create, update, remove };
 }
@@ -1870,7 +1937,7 @@ export default function App() {
   const [chatSeededFromNote, setChatSeededFromNote] = useState(false);
   const [prefilledInput, setPrefilledInput] = useState('');
   const { notes, addNote, removeNote } = useNotes();
-  const { conversations, create: createConv, update: updateConv, remove: removeConv } = useConversations();
+  const { conversations, create: createConv, update: updateConv, remove: removeConv } = useConversations(session?.user?.id ?? null, profile?.sync_conversations ?? false);
   const [showTour, setShowTour] = useState(false);
   const [showVerseCard, setShowVerseCard] = useState(false);
   const stageSaveTimerRef = useRef(null);
