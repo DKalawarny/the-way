@@ -2380,6 +2380,56 @@ app.get('/api/admin/topic-stats', requireAdmin, async (req, res) => {
   }
 });
 
+// ── User reports (in-app contact / bug reports) ───────────────────────────────
+app.post('/api/reports', requireAuth, async (req, res) => {
+  try {
+    const { category, subject, body } = req.body ?? {};
+    if (!category || !subject?.trim() || !body?.trim()) {
+      return res.status(400).json({ error: 'category, subject, and body are required' });
+    }
+    const valid = ['bug', 'ai', 'complaint', 'suggestion', 'other'];
+    if (!valid.includes(category)) return res.status(400).json({ error: 'invalid category' });
+
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/user_reports`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({ user_id: req.userId, category, subject: subject.trim(), body: body.trim() }),
+    });
+    if (!r.ok) return res.status(500).json({ error: 'Failed to save report' });
+    res.json({ ok: true });
+  } catch (e) {
+    safeError(res, e, 'user-reports');
+  }
+});
+
+// Admin: resolve or dismiss a report
+app.patch('/api/admin/reports/:id', requireAdmin, async (req, res) => {
+  try {
+    const { status, admin_note } = req.body ?? {};
+    const valid = ['open', 'resolved', 'dismissed'];
+    if (!valid.includes(status)) return res.status(400).json({ error: 'invalid status' });
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/user_reports?id=eq.${req.params.id}`, {
+      method: 'PATCH',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({ status, ...(admin_note != null ? { admin_note } : {}) }),
+    });
+    if (!r.ok) return res.status(500).json({ error: 'Failed to update report' });
+    res.json({ ok: true });
+  } catch (e) {
+    safeError(res, e, 'admin-reports-patch');
+  }
+});
+
 // ── Platform admin dashboard ──────────────────────────────────────────────────
 // Single endpoint that returns everything the AdminPage needs.
 // Calls the get_platform_stats() Supabase RPC for aggregate counts + trends,
@@ -2387,13 +2437,14 @@ app.get('/api/admin/topic-stats', requireAdmin, async (req, res) => {
 // SQL to run in Supabase to create get_platform_stats() — see MEMORY / README.
 app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
   try {
-    const [platformStats, topicRows, topQuestions, recentShared, pendingApps, recentFeedback] = await Promise.all([
+    const [platformStats, topicRows, topQuestions, recentShared, pendingApps, recentFeedback, userReports] = await Promise.all([
       adminRpc('get_platform_stats'),
       adminFetch('topic_counts', 'order=count.desc'),
       adminFetch('qa_cache', 'select=question_raw,hit_count&order=hit_count.desc&limit=15'),
       adminFetch('shared_conversations', 'select=id,title,created_at&order=created_at.desc&limit=15'),
       adminFetch('pastor_applications', 'select=id,full_name,church_name,denomination,city,country,reason,status,created_at&status=eq.pending&order=created_at.desc'),
       adminFetch('ai_feedback', 'select=message_text,created_at&order=created_at.desc&limit=30'),
+      adminFetch('user_reports', 'select=id,category,subject,body,status,admin_note,created_at,profiles!user_id(display_name)&status=eq.open&order=created_at.desc&limit=100'),
     ]);
 
     res.json({
@@ -2403,6 +2454,7 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
       recentShared: Array.isArray(recentShared) ? recentShared : [],
       pendingApps: Array.isArray(pendingApps) ? pendingApps : [],
       recentFeedback: Array.isArray(recentFeedback) ? recentFeedback : [],
+      userReports: Array.isArray(userReports) ? userReports : [],
     });
   } catch (e) {
     safeError(res, e, 'admin-dashboard');

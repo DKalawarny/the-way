@@ -103,6 +103,7 @@ import ProfileSetup from './Profile.jsx';
 import ProfilePage, { Avatar } from './ProfilePage.jsx';
 import GuestQuestion from './GuestQuestion.jsx';
 import TopRightMenu from './TopRightMenu.jsx';
+import ReportModal from './ReportModal.jsx';
 import NotificationsBell from './NotificationsBell.jsx';
 import MessagesButton from './MessagesButton.jsx';
 import FindButton from './FindButton.jsx';
@@ -1588,7 +1589,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
   onOpenTalkToSomeone, onOpenCareInbox, onOpenPastorDashboard,
   onFindChurches, onApplyAsPastor, onOpenPastorAdminQueue,
   onOpenChurchDisputesQueue, onOpenSponsorAdmin,
-  onEditProfile, onSignOut, onDeleteAccount, onOpenHelp,
+  onEditProfile, onSignOut, onDeleteAccount, onOpenHelp, onOpenReport,
 }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const popoverRef = useRef(null);
@@ -1672,9 +1673,10 @@ function SidebarNav({ stage, session, profile, chatOpen,
     onOpenPastorAdminQueue    && { Icon: ShieldCheck, label: 'Pastor applications', onClick: onOpenPastorAdminQueue },
     onOpenChurchDisputesQueue && { Icon: Flag,        label: 'Listing disputes',    onClick: onOpenChurchDisputesQueue },
     onOpenSponsorAdmin        && { Icon: Megaphone,   label: 'Site analytics',      onClick: onOpenSponsorAdmin },
-    onEditProfile  && { Icon: UserCog, label: 'Edit profile',  onClick: onEditProfile },
-    onSignOut      && { Icon: LogOut,  label: 'Sign out',      onClick: onSignOut,      danger: true },
-    onDeleteAccount && { Icon: Trash2, label: 'Delete account', onClick: onDeleteAccount, danger: true },
+    onEditProfile  && { Icon: UserCog, label: 'Edit profile',    onClick: onEditProfile },
+    onOpenReport   && { Icon: Flag,    label: 'Report an issue', onClick: onOpenReport },
+    onSignOut      && { Icon: LogOut,  label: 'Sign out',        onClick: onSignOut,      danger: true },
+    onDeleteAccount && { Icon: Trash2, label: 'Delete account',  onClick: onDeleteAccount, danger: true },
   ].filter(Boolean);
 
   return (
@@ -1859,6 +1861,7 @@ export default function App() {
   const [pendingInvite, setPendingInvite] = useState(null); // invite row from deep link
   const [shareCopied, setShareCopied] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [currentConvId, setCurrentConvId] = useState(null);
   const [chatScrollToMsg, setChatScrollToMsg] = useState(null);
   const [chatSeededFromNote, setChatSeededFromNote] = useState(false);
@@ -3381,6 +3384,7 @@ export default function App() {
         onClose={() => setShowDeleteAccount(false)}
         onDeleted={() => { setShowDeleteAccount(false); setSession(null); setProfile(null); setStage('landing'); }}
       />
+      {reportOpen && <ReportModal onClose={() => setReportOpen(false)} />}
       {peopleSearchOpen && (
         <PeopleSearch
           session={session}
@@ -3450,6 +3454,7 @@ export default function App() {
             onOpenSponsorAdmin={profile?.is_admin ? () => { setViewingUserId(null); setStage('app-admin'); } : undefined}
             onOpenHelp={() => { setViewingUserId(null); setStage('help'); }}
             onEditProfile={() => { setViewingUserId(null); setProfileEditOrigin('me'); setAuthStage('profile-setup'); }}
+            onOpenReport={() => setReportOpen(true)}
             onSignOut={() => { supabase.auth.signOut(); setSession(null); setProfile(null); setStage('landing'); }}
             onDeleteAccount={() => setShowDeleteAccount(true)}
           />
@@ -3498,6 +3503,7 @@ export default function App() {
           onOpenSponsorAdmin={profile?.is_admin ? () => setStage('app-admin') : undefined}
           onOpenHelp={() => setStage('help')}
           onEditProfile={() => { setProfileEditOrigin('me'); setAuthStage('profile-setup'); }}
+          onOpenReport={() => setReportOpen(true)}
           onSignOut={() => { supabase.auth.signOut(); setSession(null); setProfile(null); setStage('landing'); }}
           onDeleteAccount={() => setShowDeleteAccount(true)}
         />

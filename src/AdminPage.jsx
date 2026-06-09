@@ -5,18 +5,25 @@ import SponsoredCard from './SponsoredCard.jsx';
 import { ArrowLeft, Plus, Pencil, Trash2, X, RefreshCw } from 'lucide-react';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
-// ── Mini chart: vertical bar chart ───────────────────────────────────────────
+// ── Bar chart with value labels ───────────────────────────────────────────────
 function BarChart({ data = [], color = T.gold, labelKey = 'week' }) {
   if (!data.length) return <EmptyNote>No data yet — will populate as the platform grows.</EmptyNote>;
-  const max = Math.max(...data.map((d) => Number(d.count ?? 0)), 1);
+  const counts = data.map((d) => Number(d.count ?? 0));
+  const max = Math.max(...counts, 1);
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 72, padding: '0 2px' }}>
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 110, padding: '0 2px' }}>
       {data.map((d, i) => {
-        const h = Math.max((Number(d.count ?? 0) / max) * 64, Number(d.count) > 0 ? 2 : 0);
+        const val = Number(d.count ?? 0);
+        const barH = Math.max((val / max) * 82, val > 0 ? 3 : 0);
         return (
-          <div key={i} title={`${d[labelKey] ?? ''}: ${Number(d.count ?? 0).toLocaleString()}`}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-            <div style={{ width: '100%', background: color, borderRadius: '3px 3px 0 0', height: h }} />
+          <div key={i} title={`${d[labelKey] ?? ''}: ${val.toLocaleString()}`}
+            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end' }}>
+            {val > 0 && (
+              <div style={{ fontSize: 9, color: color, fontWeight: 700, marginBottom: 2, lineHeight: 1, textAlign: 'center' }}>
+                {val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val}
+              </div>
+            )}
+            <div style={{ width: '100%', background: color, borderRadius: '3px 3px 0 0', height: barH }} />
           </div>
         );
       })}
@@ -24,7 +31,7 @@ function BarChart({ data = [], color = T.gold, labelKey = 'week' }) {
   );
 }
 
-// ── Horizontal bar (topics, model dist, etc.) ─────────────────────────────────
+// ── Horizontal bar ────────────────────────────────────────────────────────────
 function HorizBar({ label, count, pct, color = T.gold }) {
   return (
     <div style={{ marginBottom: 11 }}>
@@ -40,7 +47,7 @@ function HorizBar({ label, count, pct, color = T.gold }) {
 }
 
 // ── Big stat card ─────────────────────────────────────────────────────────────
-function StatCard({ label, value, weekDelta, color }) {
+function StatCard({ label, value, weekDelta, color, sub }) {
   return (
     <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '18px 20px' }}>
       <div style={{ fontSize: 30, fontWeight: 700, color: color ?? T.ink, fontFamily: T.display, letterSpacing: '-0.02em', lineHeight: 1 }}>
@@ -48,24 +55,37 @@ function StatCard({ label, value, weekDelta, color }) {
       </div>
       <div style={{ fontSize: 13, color: T.inkSoft, marginTop: 5 }}>{label}</div>
       {weekDelta != null && Number(weekDelta) > 0 && (
-        <div style={{ fontSize: 12, color: T.success, marginTop: 4 }}>↑ {Number(weekDelta).toLocaleString()} this week</div>
+        <div style={{ fontSize: 12, color: '#2e7a48', marginTop: 4 }}>↑ {Number(weekDelta).toLocaleString()} this week</div>
       )}
+      {sub && <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 3 }}>{sub}</div>}
     </div>
   );
 }
 
-// ── Small ratio card ──────────────────────────────────────────────────────────
-function RatioCard({ label, value, note }) {
+// ── Ratio card ────────────────────────────────────────────────────────────────
+function RatioCard({ label, value, note, color }) {
   return (
     <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '16px 18px' }}>
-      <div style={{ fontSize: 22, fontWeight: 700, color: T.ink, fontFamily: T.display, letterSpacing: '-0.02em' }}>{value ?? '—'}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, color: color ?? T.ink, fontFamily: T.display, letterSpacing: '-0.02em' }}>{value ?? '—'}</div>
       <div style={{ fontSize: 12, color: T.inkSoft, marginTop: 4 }}>{label}</div>
       {note && <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 2 }}>{note}</div>}
     </div>
   );
 }
 
-// ── Layout helpers ────────────────────────────────────────────────────────────
+// ── Alert card ────────────────────────────────────────────────────────────────
+function AlertCard({ children, level = 'warn' }) {
+  const bg   = level === 'error' ? 'rgba(165,63,43,0.07)' : 'rgba(232,115,26,0.07)';
+  const bdr  = level === 'error' ? 'rgba(165,63,43,0.25)' : 'rgba(232,115,26,0.3)';
+  const col  = level === 'error' ? '#a53f2b' : '#c06010';
+  return (
+    <div style={{ background: bg, border: `1px solid ${bdr}`, borderRadius: 12, padding: '12px 16px', fontSize: 13, color: col, marginBottom: 10 }}>
+      {children}
+    </div>
+  );
+}
+
+// ── Section title ─────────────────────────────────────────────────────────────
 function SectionTitle({ children, style }) {
   return (
     <div style={{ fontSize: 11, letterSpacing: '0.10em', textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 14, ...style }}>
@@ -88,6 +108,15 @@ function EmptyNote({ children }) {
     <div style={{ color: T.inkMuted, fontStyle: 'italic', fontSize: 14, padding: '16px 0', fontFamily: T.serif }}>{children}</div>
   );
 }
+
+// ── Category badge ────────────────────────────────────────────────────────────
+const REPORT_BADGE = {
+  bug:        { label: 'Bug',          bg: 'rgba(165,63,43,0.10)', color: '#a53f2b' },
+  ai:         { label: 'Wrong AI',     bg: 'rgba(232,115,26,0.10)', color: '#c06010' },
+  complaint:  { label: 'Complaint',    bg: 'rgba(180,100,60,0.10)', color: '#7a4020' },
+  suggestion: { label: 'Suggestion',  bg: 'rgba(46,122,72,0.10)', color: '#2e7a48' },
+  other:      { label: 'Other',        bg: T.parchment, color: T.inkSoft },
+};
 
 // ── Label maps ────────────────────────────────────────────────────────────────
 const TOPIC_LABELS = {
@@ -113,7 +142,6 @@ const PERSON_LABELS = {
   kids: 'For kids', relationships: 'Relationships', 'inter-faith': 'Inter-faith',
 };
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
 const TABS = [
   { id: 'overview',    label: 'Overview' },
   { id: 'ai',         label: 'AI & Topics' },
@@ -124,7 +152,6 @@ const TABS = [
   { id: 'sponsors',   label: 'Sponsors' },
 ];
 
-// ── Sponsor form defaults ─────────────────────────────────────────────────────
 const EMPTY_FORM = {
   sponsor_name: '', title: '', body: '', cta_text: '', cta_url: '',
   emoji: '✦', is_active: false, sort_order: 0,
@@ -133,15 +160,14 @@ const EMPTY_FORM = {
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function AdminPage({ onBack }) {
   const [tab, setTab] = useState('overview');
-  const [verifyBusy, setVerifyBusy] = useState(null); // church id being toggled
-  const [approveBusy, setApproveBusy] = useState(null); // app id being actioned
+  const [verifyBusy, setVerifyBusy] = useState(null);
+  const [approveBusy, setApproveBusy] = useState(null);
+  const [reportBusy, setReportBusy] = useState(null);
 
-  // Dashboard data
   const [dash, setDash] = useState(null);
   const [dashLoading, setDashLoading] = useState(true);
   const [dashError, setDashError] = useState(null);
 
-  // Sponsors
   const [sponsors, setSponsors] = useState([]);
   const [sponsorsLoading, setSponsorsLoading] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
@@ -150,7 +176,6 @@ export default function AdminPage({ onBack }) {
   const [saving, setSaving] = useState(false);
   const [sponsorError, setSponsorError] = useState(null);
 
-  // ── Fetch dashboard ─────────────────────────────────────────────────────
   const fetchDashboard = useCallback(async () => {
     setDashLoading(true);
     setDashError(null);
@@ -171,11 +196,10 @@ export default function AdminPage({ onBack }) {
     }
   }, []);
 
-  // Fetch dashboard once on mount; fetch sponsors when that tab opens
   useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
   useEffect(() => { if (tab === 'sponsors') loadSponsors(); }, [tab]);
 
-  // ── Sponsors CRUD ───────────────────────────────────────────────────────
+  // ── Church verify ───────────────────────────────────────────────────────────
   async function toggleChurchVerify(churchId, currentStatus) {
     setVerifyBusy(churchId);
     const newStatus = currentStatus === 'verified' ? 'self_reported' : 'verified';
@@ -183,29 +207,45 @@ export default function AdminPage({ onBack }) {
     if (!error) {
       setDash((prev) => ({
         ...prev,
-        topChurches: prev.topChurches.map((c) =>
-          c.id === churchId ? { ...c, status: newStatus } : c
-        ),
+        stats: {
+          ...prev.stats,
+          top_churches: (prev.stats?.top_churches ?? []).map((c) =>
+            c.id === churchId ? { ...c, status: newStatus } : c
+          ),
+        },
       }));
     }
     setVerifyBusy(null);
   }
 
+  // ── Pastor app ──────────────────────────────────────────────────────────────
   async function handlePastorApp(appId, approve) {
     setApproveBusy(appId);
     const { error } = await supabase
       .from('pastor_applications')
       .update({ status: approve ? 'approved' : 'declined', reviewed_at: new Date().toISOString() })
       .eq('id', appId);
-    if (!error) {
-      setDash((prev) => ({
-        ...prev,
-        pendingApps: prev.pendingApps.filter((a) => a.id !== appId),
-      }));
-    }
+    if (!error) setDash((prev) => ({ ...prev, pendingApps: prev.pendingApps.filter((a) => a.id !== appId) }));
     setApproveBusy(null);
   }
 
+  // ── Reports ─────────────────────────────────────────────────────────────────
+  async function handleReport(reportId, status) {
+    setReportBusy(reportId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const r = await fetch(`/api/admin/reports/${reportId}`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      if (r.ok) setDash((prev) => ({ ...prev, userReports: (prev.userReports ?? []).filter((rp) => rp.id !== reportId) }));
+    } finally {
+      setReportBusy(null);
+    }
+  }
+
+  // ── Sponsors ────────────────────────────────────────────────────────────────
   async function loadSponsors() {
     setSponsorsLoading(true);
     const { data } = await supabase.from('sponsored_posts').select('*')
@@ -244,13 +284,13 @@ export default function AdminPage({ onBack }) {
   }
 
   function openNew() { setForm(EMPTY_FORM); setEditingId(null); setSponsorError(null); setFormOpen(true); }
-  function openEdit(s) {
-    setForm({ sponsor_name: s.sponsor_name ?? '', title: s.title ?? '', body: s.body ?? '', cta_text: s.cta_text ?? '', cta_url: s.cta_url ?? '', emoji: s.emoji ?? '✦', is_active: s.is_active ?? false, sort_order: s.sort_order ?? 0 });
-    setEditingId(s.id); setSponsorError(null); setFormOpen(true);
+  function openEdit(sp) {
+    setForm({ sponsor_name: sp.sponsor_name ?? '', title: sp.title ?? '', body: sp.body ?? '', cta_text: sp.cta_text ?? '', cta_url: sp.cta_url ?? '', emoji: sp.emoji ?? '✦', is_active: sp.is_active ?? false, sort_order: sp.sort_order ?? 0 });
+    setEditingId(sp.id); setSponsorError(null); setFormOpen(true);
   }
   function closeForm() { setFormOpen(false); setEditingId(null); setForm(EMPTY_FORM); setSponsorError(null); }
 
-  // ── Derived data ────────────────────────────────────────────────────────
+  // ── Derived data ────────────────────────────────────────────────────────────
   const s = dash?.stats ?? {};
 
   const topics = (dash?.topics ?? []).map((t) => ({ ...t, count: Number(t.count ?? 0) }));
@@ -262,6 +302,9 @@ export default function AdminPage({ onBack }) {
 
   const personTypeDist = (s.person_type_dist ?? []).map((p) => ({ ...p, count: Number(p.count ?? 0) }));
   const personTotal = personTypeDist.reduce((sum, p) => sum + p.count, 0);
+
+  const traditionDist = (s.tradition_dist ?? []).map((t) => ({ ...t, count: Number(t.count ?? 0) }));
+  const traditionTotal = traditionDist.reduce((sum, t) => sum + t.count, 0);
 
   const countryDist = (s.country_dist ?? []).map((c) => ({ ...c, count: Number(c.count ?? 0) }));
   const countryTotal = countryDist.reduce((sum, c) => sum + c.count, 0);
@@ -276,11 +319,18 @@ export default function AdminPage({ onBack }) {
   const avgPostsPerUser = Number(s.total_users) > 0
     ? (Number(s.total_posts) / Number(s.total_users)).toFixed(1) : '—';
 
-  // ── Render ──────────────────────────────────────────────────────────────
+  const thumbsDownRate = Number(s.total_ai_events) > 0
+    ? ((Number(s.thumbs_down_count ?? 0) / Number(s.total_ai_events)) * 100).toFixed(2) : '0';
+
+  const hasAlerts = Number(s.dead_accounts) > 0 || Number(s.zombie_churches) > 0 || Number(s.pending_apps) > 0;
+  const openReports = dash?.userReports ?? [];
+  const operationsBadge = (dash?.pendingApps?.length ?? 0) + (dash?.recentFeedback?.length ?? 0) + openReports.length;
+
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: T.cream, fontFamily: T.sans, paddingBottom: 80 }}>
 
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
+      {/* Header */}
       <div style={{ position: 'sticky', top: 0, zIndex: 10, background: T.white, borderBottom: `1px solid ${T.line}`, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.inkSoft, padding: 0, display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
           <ArrowLeft size={16} /> Back
@@ -296,7 +346,7 @@ export default function AdminPage({ onBack }) {
         )}
       </div>
 
-      {/* ── Tabs ────────────────────────────────────────────────────────────── */}
+      {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: `1px solid ${T.line}`, background: T.white, paddingLeft: 4, overflowX: 'auto' }}>
         {TABS.map(({ id, label }) => (
           <button key={id} onClick={() => setTab(id)} style={{
@@ -307,9 +357,9 @@ export default function AdminPage({ onBack }) {
             marginBottom: -1,
           }}>
             {label}
-            {id === 'operations' && (dash?.pendingApps?.length > 0 || dash?.recentFeedback?.length > 0) && (
+            {id === 'operations' && operationsBadge > 0 && (
               <span style={{ marginLeft: 5, background: T.gold, color: '#fff', borderRadius: 999, fontSize: 10, padding: '1px 5px', fontWeight: 700 }}>
-                {(dash.pendingApps?.length ?? 0) + (dash.recentFeedback?.length ?? 0)}
+                {operationsBadge}
               </span>
             )}
           </button>
@@ -318,32 +368,47 @@ export default function AdminPage({ onBack }) {
 
       <div style={{ padding: '24px 20px', maxWidth: 820, margin: '0 auto' }}>
 
-        {/* ── Loading / error ──────────────────────────────────────────────── */}
+        {/* Loading / error */}
         {tab !== 'sponsors' && dashLoading && (
           <div style={{ color: T.inkMuted, textAlign: 'center', padding: 60, fontFamily: T.serif, fontStyle: 'italic' }}>Loading platform data…</div>
         )}
         {tab !== 'sponsors' && !dashLoading && dashError && (
-          <div style={{ background: 'rgba(165,63,43,0.08)', border: `1px solid rgba(165,63,43,0.2)`, borderRadius: 12, padding: '16px 20px', color: T.error, fontSize: 14 }}>
+          <div style={{ background: 'rgba(165,63,43,0.08)', border: `1px solid rgba(165,63,43,0.2)`, borderRadius: 12, padding: '16px 20px', color: '#a53f2b', fontSize: 14 }}>
             {dashError}
-            <button onClick={fetchDashboard} style={{ marginLeft: 12, background: 'none', border: 'none', color: T.goldDark, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>
-              Retry
-            </button>
+            <button onClick={fetchDashboard} style={{ marginLeft: 12, background: 'none', border: 'none', color: T.goldDark, cursor: 'pointer', fontSize: 14, fontWeight: 600 }}>Retry</button>
           </div>
         )}
 
-        {/* ── OVERVIEW ────────────────────────────────────────────────────── */}
+        {/* ── OVERVIEW ──────────────────────────────────────────────────────── */}
         {tab === 'overview' && !dashLoading && !dashError && dash && (
           <div>
+
+            {/* Health alerts */}
+            {hasAlerts && (
+              <div style={{ marginBottom: 24 }}>
+                <SectionTitle>Needs attention</SectionTitle>
+                {Number(s.pending_apps) > 0 && (
+                  <AlertCard level="warn">{Number(s.pending_apps)} pastor application{Number(s.pending_apps) > 1 ? 's' : ''} waiting for review → go to Churches tab</AlertCard>
+                )}
+                {Number(s.dead_accounts) > 0 && (
+                  <AlertCard level="warn">{Number(s.dead_accounts)} user{Number(s.dead_accounts) > 1 ? 's' : ''} signed up but never posted or used AI — onboarding may need work</AlertCard>
+                )}
+                {Number(s.zombie_churches) > 0 && (
+                  <AlertCard level="warn">{Number(s.zombie_churches)} church{Number(s.zombie_churches) > 1 ? 'es' : ''} registered with 0 members — pastor may have dropped off after sign-up</AlertCard>
+                )}
+              </div>
+            )}
+
             <SectionTitle>Platform overview</SectionTitle>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12, marginBottom: 32 }}>
               <StatCard label="Total users" value={s.total_users} weekDelta={s.new_users_week} />
-              <StatCard label="Verified churches" value={s.verified_churches} color={T.goldDark} />
-              <StatCard label="Pending applications" value={s.pending_apps} color={Number(s.pending_apps) > 0 ? '#E8731A' : T.ink} />
+              <StatCard label="Weekly active" value={s.weekly_active_users} sub="used AI last 7 days" />
+              <StatCard label="Activation rate" value={`${s.activation_rate ?? 0}%`} color={Number(s.activation_rate) >= 60 ? '#2e7a48' : Number(s.activation_rate) >= 30 ? T.goldDark : '#a53f2b'} sub="ever used AI" />
               <StatCard label="AI conversations" value={s.first_turn_events} />
-              <StatCard label="Community posts" value={s.total_posts} />
-              <StatCard label="Prayers" value={s.total_prayers} />
+              <StatCard label="Verified churches" value={s.verified_churches} color={T.goldDark} />
+              <StatCard label="Community posts" value={s.total_posts} sub={`${s.posts_this_week ?? 0} this week`} />
+              <StatCard label="Prayers" value={s.total_prayers} sub={`${s.prayers_this_week ?? 0} this week`} />
               <StatCard label="Shared conversations" value={s.total_shared} />
-              <StatCard label="Cache hit rate" value={`${cacheHitRate}%`} />
             </div>
 
             <SectionTitle style={{ marginTop: 8 }}>Growth (last 10 weeks)</SectionTitle>
@@ -368,22 +433,35 @@ export default function AdminPage({ onBack }) {
               </Card>
             </div>
 
-            <SectionTitle>Key ratios</SectionTitle>
+            <SectionTitle>Engagement & health</SectionTitle>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12 }}>
-              <RatioCard label="Cache hit rate" value={`${cacheHitRate}%`} note="answers served from cache" />
-              <RatioCard label="New users (30d)" value={Number(s.new_users_month ?? 0).toLocaleString()} note="joined last 30 days" />
+              <RatioCard label="Profile completion" value={`${s.profile_completion_rate ?? 0}%`} note="tradition + type set" />
+              <RatioCard label="Avg AI turns" value={s.avg_ai_turns ?? '—'} note="turns per conversation" />
+              <RatioCard label="Cache hit rate" value={`${cacheHitRate}%`} note="answers from cache" />
               <RatioCard label="Avg posts/user" value={avgPostsPerUser} note="across all members" />
+              <RatioCard label="Avg follows/user" value={s.avg_follows ?? '—'} note="social graph density" />
+              <RatioCard label="New users (30d)" value={Number(s.new_users_month ?? 0).toLocaleString()} note="joined last 30 days" />
               <RatioCard label="Total churches" value={Number(s.total_churches ?? 0).toLocaleString()} note={`${s.verified_churches ?? 0} verified`} />
+              <RatioCard label="AI feedback (30d)" value={s.thumbs_down_count ?? 0} note="thumbs-down flags" color={Number(s.thumbs_down_count) > 5 ? '#a53f2b' : T.ink} />
             </div>
           </div>
         )}
 
-        {/* ── AI & TOPICS ─────────────────────────────────────────────────── */}
+        {/* ── AI & TOPICS ───────────────────────────────────────────────────── */}
         {tab === 'ai' && !dashLoading && !dashError && dash && (
           <div>
+            {/* AI quality stats */}
+            <SectionTitle>AI quality</SectionTitle>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 32 }}>
+              <RatioCard label="Total conversations" value={Number(s.first_turn_events ?? 0).toLocaleString()} note="unique first turns" />
+              <RatioCard label="Avg turns / convo" value={s.avg_ai_turns ?? '—'} note="depth of engagement" />
+              <RatioCard label="Cache hit rate" value={`${cacheHitRate}%`} note="served without AI call" />
+              <RatioCard label="Thumbs-down rate" value={`${thumbsDownRate}%`} note="last 30 days" color={parseFloat(thumbsDownRate) > 2 ? '#a53f2b' : T.ink} />
+            </div>
+
             <SectionTitle>What people are asking about</SectionTitle>
             <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 16 }}>
-              Keyword-classified from first questions. No question content stored — just category counts.
+              Keyword-classified from first questions. No question content stored — just category counts. Use this for content marketing.
             </div>
             {topicsWithPct.length === 0
               ? <EmptyNote>No topic data yet — starts filling as conversations happen.</EmptyNote>
@@ -395,7 +473,7 @@ export default function AdminPage({ onBack }) {
 
             <div style={{ height: 32 }} />
             <SectionTitle>AI model usage</SectionTitle>
-            <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 16 }}>Which Claude model answered each conversation — indicates plan mix.</div>
+            <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 16 }}>Which Claude model answered — indicates plan mix and cost distribution.</div>
             {modelDist.length === 0
               ? <EmptyNote>No model data yet.</EmptyNote>
               : modelDist.map((m) => {
@@ -406,7 +484,7 @@ export default function AdminPage({ onBack }) {
 
             <div style={{ height: 32 }} />
             <SectionTitle>Person types</SectionTitle>
-            <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 16 }}>How users describe themselves when they start a conversation.</div>
+            <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 16 }}>How users describe their faith journey — shapes messaging and onboarding.</div>
             {personTypeDist.length === 0
               ? <EmptyNote>No person type data yet.</EmptyNote>
               : personTypeDist.map((p) => {
@@ -414,21 +492,31 @@ export default function AdminPage({ onBack }) {
                   return <HorizBar key={p.type} label={PERSON_LABELS[p.type] ?? p.type} count={p.count} pct={pct} color="#6B5344" />;
                 })
             }
+
+            <div style={{ height: 32 }} />
+            <SectionTitle>Traditions</SectionTitle>
+            <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 16 }}>Which Christian traditions are on kinwove — informs which denominations to market toward.</div>
+            {traditionDist.length === 0
+              ? <EmptyNote>No tradition data yet — fills as users complete their profiles.</EmptyNote>
+              : traditionDist.map((t) => {
+                  const pct = traditionTotal > 0 ? Math.round((t.count / traditionTotal) * 100) : 0;
+                  return <HorizBar key={t.type} label={t.type} count={t.count} pct={pct} color={T.gold} />;
+                })
+            }
           </div>
         )}
 
-        {/* ── GEOGRAPHY ───────────────────────────────────────────────────── */}
+        {/* ── GEOGRAPHY ─────────────────────────────────────────────────────── */}
         {tab === 'geo' && !dashLoading && !dashError && dash && (
           <div>
             <SectionTitle>Countries</SectionTitle>
             <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 16 }}>
-              Based on verified church registrations. Shows where your churches — and therefore your congregation users — are located.
-              Anonymous users without a church affiliation aren't included here.
+              Based on church registrations. Where are your churches — and therefore your congregation users — located?
             </div>
             {countryDist.length === 0
               ? (
                 <div style={{ background: T.white, border: `1px dashed ${T.line}`, borderRadius: 14, padding: '28px 20px', textAlign: 'center', color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic' }}>
-                  No church location data yet. As churches are verified, countries will appear here.
+                  No church location data yet. As churches are registered, countries will appear here.
                 </div>
               ) : (
                 <>
@@ -438,8 +526,6 @@ export default function AdminPage({ onBack }) {
                       return <HorizBar key={c.country} label={c.country} count={c.count} pct={pct} color={T.gold} />;
                     })}
                   </div>
-
-                  {/* Country bar chart */}
                   <Card label={`Top ${Math.min(countryDist.length, 10)} countries`}>
                     <BarChart data={countryDist.slice(0, 10)} color={T.gold} labelKey="country" />
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 11, color: T.inkMuted }}>
@@ -453,7 +539,7 @@ export default function AdminPage({ onBack }) {
           </div>
         )}
 
-        {/* ── CHURCHES ────────────────────────────────────────────────────── */}
+        {/* ── CHURCHES ──────────────────────────────────────────────────────── */}
         {tab === 'churches' && !dashLoading && !dashError && dash && (
           <div>
             <SectionTitle>Top churches by member count</SectionTitle>
@@ -473,8 +559,8 @@ export default function AdminPage({ onBack }) {
                         </span>
                         <span style={{
                           fontSize: 11, fontWeight: 600,
-                          color: c.status === 'verified' ? T.success : T.inkMuted,
-                          background: c.status === 'verified' ? T.successBg : T.parchment,
+                          color: c.status === 'verified' ? '#2e7a48' : T.inkMuted,
+                          background: c.status === 'verified' ? 'rgba(46,122,72,0.1)' : T.parchment,
                           borderRadius: 999, padding: '2px 8px',
                           border: `1px solid ${c.status === 'verified' ? 'rgba(46,122,72,0.25)' : T.line}`,
                         }}>
@@ -487,7 +573,7 @@ export default function AdminPage({ onBack }) {
                             fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '3px 10px', cursor: 'pointer',
                             border: 'none',
                             background: c.status === 'verified' ? 'rgba(180,60,60,0.08)' : 'rgba(46,122,72,0.10)',
-                            color: c.status === 'verified' ? '#b43c3c' : T.success,
+                            color: c.status === 'verified' ? '#b43c3c' : '#2e7a48',
                             opacity: verifyBusy === c.id ? 0.5 : 1,
                           }}
                         >
@@ -522,18 +608,12 @@ export default function AdminPage({ onBack }) {
                         Applied {a.created_at ? new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <button
-                          onClick={() => handlePastorApp(a.id, true)}
-                          disabled={approveBusy === a.id}
-                          style={{ background: T.success, color: '#fff', border: 'none', borderRadius: 999, padding: '7px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: approveBusy === a.id ? 0.5 : 1 }}
-                        >
+                        <button onClick={() => handlePastorApp(a.id, true)} disabled={approveBusy === a.id}
+                          style={{ background: '#2e7a48', color: '#fff', border: 'none', borderRadius: 999, padding: '7px 18px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: approveBusy === a.id ? 0.5 : 1 }}>
                           {approveBusy === a.id ? '…' : 'Approve ✓'}
                         </button>
-                        <button
-                          onClick={() => handlePastorApp(a.id, false)}
-                          disabled={approveBusy === a.id}
-                          style={{ background: 'transparent', color: '#b43c3c', border: '1px solid rgba(180,60,60,0.3)', borderRadius: 999, padding: '7px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: approveBusy === a.id ? 0.5 : 1 }}
-                        >
+                        <button onClick={() => handlePastorApp(a.id, false)} disabled={approveBusy === a.id}
+                          style={{ background: 'transparent', color: '#b43c3c', border: '1px solid rgba(180,60,60,0.3)', borderRadius: 999, padding: '7px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: approveBusy === a.id ? 0.5 : 1 }}>
                           Decline
                         </button>
                       </div>
@@ -545,12 +625,12 @@ export default function AdminPage({ onBack }) {
           </div>
         )}
 
-        {/* ── CONTENT ─────────────────────────────────────────────────────── */}
+        {/* ── CONTENT ───────────────────────────────────────────────────────── */}
         {tab === 'content' && !dashLoading && !dashError && dash && (
           <div>
             <SectionTitle>Most asked questions (by cache hits)</SectionTitle>
             <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 14 }}>
-              Questions asked multiple times — useful for FAQ pages, social content, and marketing.
+              Questions asked multiple times — use these for social posts, blog content, or FAQ pages.
             </div>
             {dash.topQuestions.length === 0
               ? <EmptyNote>No cached questions yet — will populate as the same questions get asked repeatedly.</EmptyNote>
@@ -586,15 +666,58 @@ export default function AdminPage({ onBack }) {
           </div>
         )}
 
-        {/* ── OPERATIONS ──────────────────────────────────────────────────── */}
+        {/* ── OPERATIONS ────────────────────────────────────────────────────── */}
         {tab === 'operations' && !dashLoading && !dashError && dash && (
           <div>
+
+            {/* User Reports */}
+            <SectionTitle>User reports {openReports.length > 0 && <span style={{ background: '#a53f2b', color: '#fff', borderRadius: 999, fontSize: 10, padding: '1px 6px', marginLeft: 6, fontWeight: 700 }}>{openReports.length}</span>}</SectionTitle>
+            <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 14 }}>
+              Submitted via "Report an issue" in the app menu. Resolve or dismiss once handled.
+            </div>
+            {openReports.length === 0
+              ? <EmptyNote style={{ marginBottom: 32 }}>No open reports — all clear ✓</EmptyNote>
+              : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 32 }}>
+                  {openReports.map((rp) => {
+                    const badge = REPORT_BADGE[rp.category] ?? REPORT_BADGE.other;
+                    return (
+                      <div key={rp.id} style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 12, padding: '14px 16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, background: badge.bg, color: badge.color, borderRadius: 999, padding: '2px 9px' }}>{badge.label}</span>
+                          {rp.profiles?.display_name && (
+                            <span style={{ fontSize: 12, color: T.inkMuted }}>from {rp.profiles.display_name}</span>
+                          )}
+                          <span style={{ fontSize: 11, color: T.inkMuted, marginLeft: 'auto' }}>
+                            {rp.created_at ? new Date(rp.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                          </span>
+                        </div>
+                        <div style={{ fontWeight: 600, fontSize: 14, color: T.ink, marginBottom: 4 }}>{rp.subject}</div>
+                        <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>{rp.body}</div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button onClick={() => handleReport(rp.id, 'resolved')} disabled={reportBusy === rp.id}
+                            style={{ background: 'rgba(46,122,72,0.1)', color: '#2e7a48', border: '1px solid rgba(46,122,72,0.25)', borderRadius: 999, padding: '5px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: reportBusy === rp.id ? 0.5 : 1 }}>
+                            {reportBusy === rp.id ? '…' : 'Resolve ✓'}
+                          </button>
+                          <button onClick={() => handleReport(rp.id, 'dismissed')} disabled={reportBusy === rp.id}
+                            style={{ background: 'transparent', color: T.inkMuted, border: `1px solid ${T.line}`, borderRadius: 999, padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: reportBusy === rp.id ? 0.5 : 1 }}>
+                            Dismiss
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            }
+
+            {/* AI feedback */}
             <SectionTitle>AI feedback flags</SectionTitle>
             <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 14 }}>
-              AI responses users flagged as inaccurate or unhelpful. Review these to catch edge cases in the prompt.
+              AI responses users flagged as inaccurate or unhelpful. Use these to catch edge cases in the prompt.
             </div>
             {dash.recentFeedback.length === 0
-              ? <EmptyNote>No feedback flagged yet — great sign.</EmptyNote>
+              ? <EmptyNote>No feedback flagged yet.</EmptyNote>
               : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 32 }}>
                   {dash.recentFeedback.map((f, i) => (
@@ -609,6 +732,7 @@ export default function AdminPage({ onBack }) {
               )
             }
 
+            {/* Pending apps (duplicate from Churches for visibility) */}
             {dash.pendingApps.length > 0 && (
               <>
                 <SectionTitle style={{ marginTop: 8 }}>Pending pastor applications</SectionTitle>
@@ -624,21 +748,22 @@ export default function AdminPage({ onBack }) {
                       </div>
                     </div>
                   ))}
+                  <div style={{ fontSize: 12, color: T.inkMuted }}>Go to Churches tab to approve or decline.</div>
                 </div>
               </>
             )}
           </div>
         )}
 
-        {/* ── SPONSORS ────────────────────────────────────────────────────── */}
+        {/* ── SPONSORS ──────────────────────────────────────────────────────── */}
         {tab === 'sponsors' && (
           <div>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, gap: 12 }}>
               <div>
                 <div style={{ fontFamily: T.display, fontSize: 16, fontWeight: 600, color: T.ink }}>Sponsored cards</div>
                 <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 3, lineHeight: 1.5 }}>
-                  {sponsors.filter((s) => s.is_active).length > 0
-                    ? `${sponsors.filter((s) => s.is_active).length} live — shown in feed after every 10 posts (free users only).`
+                  {sponsors.filter((sp) => sp.is_active).length > 0
+                    ? `${sponsors.filter((sp) => sp.is_active).length} live — shown in feed after every 10 posts (free users only).`
                     : 'No live sponsors yet — cards are hidden from the feed until you activate one.'}
                 </div>
               </div>
@@ -651,8 +776,7 @@ export default function AdminPage({ onBack }) {
               <div style={{ color: T.inkMuted, textAlign: 'center', padding: 48, fontFamily: T.serif }}>Loading…</div>
             ) : sponsors.length === 0 ? (
               <div style={{ background: T.white, border: `1px dashed ${T.line}`, borderRadius: 14, padding: '36px 20px', textAlign: 'center', color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic' }}>
-                No sponsors yet.<br />
-                <span style={{ fontSize: 13 }}>Add one above once you've made a deal.</span>
+                No sponsors yet.<br /><span style={{ fontSize: 13 }}>Add one above once you've made a deal.</span>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -672,7 +796,7 @@ export default function AdminPage({ onBack }) {
                       <button onClick={() => openEdit(sp)} title="Edit" style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.inkSoft, padding: 5, display: 'flex', borderRadius: 6 }}>
                         <Pencil size={14} />
                       </button>
-                      <button onClick={() => deleteSponsor(sp.id, sp.sponsor_name)} title="Delete" style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.error, padding: 5, display: 'flex', borderRadius: 6 }}>
+                      <button onClick={() => deleteSponsor(sp.id, sp.sponsor_name)} title="Delete" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#b43c3c', padding: 5, display: 'flex', borderRadius: 6 }}>
                         <Trash2 size={14} />
                       </button>
                     </div>
@@ -684,7 +808,7 @@ export default function AdminPage({ onBack }) {
         )}
       </div>
 
-      {/* ── Sponsor add / edit bottom sheet ─────────────────────────────────── */}
+      {/* Sponsor add / edit sheet */}
       {formOpen && (
         <div onClick={closeForm} style={{ position: 'fixed', inset: 0, background: 'rgba(44,24,16,0.52)', zIndex: 200, display: 'flex', alignItems: 'flex-end' }}>
           <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxHeight: '92vh', overflowY: 'auto', background: T.cream, borderRadius: '20px 20px 0 0', padding: '24px 20px 48px', boxShadow: '0 -8px 40px rgba(0,0,0,0.2)' }}>
@@ -732,7 +856,7 @@ export default function AdminPage({ onBack }) {
             )}
 
             {sponsorError && (
-              <div style={{ background: 'rgba(165,63,43,0.08)', border: '1px solid rgba(165,63,43,0.2)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: T.error, marginBottom: 14 }}>{sponsorError}</div>
+              <div style={{ background: 'rgba(165,63,43,0.08)', border: '1px solid rgba(165,63,43,0.2)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#a53f2b', marginBottom: 14 }}>{sponsorError}</div>
             )}
 
             <button onClick={saveSponsor} disabled={!form.sponsor_name.trim() || saving} style={{ width: '100%', background: T.ink, color: T.cream, border: 'none', borderRadius: 999, padding: '14px 20px', fontSize: 15, fontWeight: 600, cursor: form.sponsor_name.trim() && !saving ? 'pointer' : 'not-allowed', opacity: form.sponsor_name.trim() && !saving ? 1 : 0.45, transition: 'opacity 0.15s' }}>
