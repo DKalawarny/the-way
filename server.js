@@ -384,23 +384,17 @@ async function logTopicCounts(tags) {
   }
 }
 
-// Map profile voice names → actual OpenAI voices.
-const VOICE_MAP = {
-  onyx:    'fable',   // fable = naturally British male
-  nova:    'nova',    // nova = clearly feminine, warm
-  shimmer: 'nova',
+// ElevenLabs voice IDs
+const ELEVEN_VOICES = {
+  onyx:    'nPczCjzI2devNBz1zQrb', // Brian — deep, authoritative, cinematic male
+  nova:    'XB0fDUnXU5powFXDhCwa', // Charlotte — warm, close, companionable female
+  shimmer: 'XB0fDUnXU5powFXDhCwa', // alias → Charlotte
 };
 
-// Voice instructions — kept short and specific for gpt-4o-mini-tts
-const VOICE_INSTRUCTIONS = {
-  fable: 'An elderly, distinguished British man — wise, measured, and deeply calm. Like a grandfather reading aloud. Slow, resonant, and unhurried. Let every sentence land with quiet weight.',
-  nova:  'A warm, gentle woman — soft-spoken, kind, and tender. Speak slowly and quietly, like comforting a friend. Light and feminine, never flat or rushed.',
-};
-
-// ── Text-to-Speech (OpenAI TTS API) ──────────────────────────────────────────
+// ── Text-to-Speech (ElevenLabs) ───────────────────────────────────────────────
 app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 60 }), async (req, res) => {
-  const OPENAI_KEY = process.env.OPENAI_API_KEY;
-  if (!OPENAI_KEY) return res.status(503).json({ error: 'TTS not configured' });
+  const ELEVEN_KEY = process.env.ELEVENLABS_API_KEY;
+  if (!ELEVEN_KEY) return res.status(503).json({ error: 'TTS not configured' });
 
   const { text, voice = 'onyx' } = req.body;
   if (!text || typeof text !== 'string') return res.status(400).json({ error: 'text required' });
@@ -424,35 +418,38 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
     .trim()
     .slice(0, 4096);
 
-  const oaiVoice = VOICE_MAP[voice] ?? voice;
-  const instr    = VOICE_INSTRUCTIONS[oaiVoice];
-  console.log(`[tts] profile=${voice} oaiVoice=${oaiVoice} len=${cleaned.length}`);
+  const voiceId = ELEVEN_VOICES[voice] ?? ELEVEN_VOICES.onyx;
+  console.log(`[tts] profile=${voice} voiceId=${voiceId} len=${cleaned.length}`);
+
   try {
-    const oaiRes = await fetch('https://api.openai.com/v1/audio/speech', {
+    const elevenRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_KEY}`,
+        'xi-api-key': ELEVEN_KEY,
         'Content-Type': 'application/json',
+        'Accept': 'audio/mpeg',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini-tts',
-        input: cleaned,
-        voice: oaiVoice,
-        instructions: instr ?? undefined,
-        response_format: 'mp3',
-        speed: 0.92,               // slightly slower for clarity and warmth
+        text: cleaned,
+        model_id: 'eleven_turbo_v2_5',
+        voice_settings: {
+          stability: 0.45,
+          similarity_boost: 0.82,
+          style: 0.35,
+          use_speaker_boost: true,
+        },
       }),
     });
 
-    if (!oaiRes.ok) {
-      const err = await oaiRes.text();
-      console.error('[kinwove] TTS error:', err);
+    if (!elevenRes.ok) {
+      const err = await elevenRes.text();
+      console.error('[kinwove] ElevenLabs TTS error:', err);
       return res.status(502).json({ error: 'TTS upstream error' });
     }
 
     res.setHeader('Content-Type', 'audio/mpeg');
     res.setHeader('Cache-Control', 'no-store');
-    const reader = oaiRes.body.getReader();
+    const reader = elevenRes.body.getReader();
     let aborted = false;
     req.on('close', () => { aborted = true; reader.cancel().catch(() => {}); });
     const pump = async () => {
