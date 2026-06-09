@@ -386,9 +386,9 @@ async function logTopicCounts(tags) {
 
 // ElevenLabs voice IDs
 const ELEVEN_VOICES = {
-  onyx:    'nPczCjzI2devNBz1zQrb', // Brian — deep, authoritative, cinematic male
-  nova:    'XB0fDUnXU5powFXDhCwa', // Charlotte — warm, close, companionable female
-  shimmer: 'XB0fDUnXU5powFXDhCwa', // alias → Charlotte
+  onyx:    'jfIS2w2yJi0grJZPyEsk', // James — deep, cinematic male
+  nova:    'uIZsnBL0YK1S5j69bAih', // Grace — soft and soothing female
+  shimmer: 'uIZsnBL0YK1S5j69bAih', // alias → Grace
 };
 
 // ── Text-to-Speech (ElevenLabs) ───────────────────────────────────────────────
