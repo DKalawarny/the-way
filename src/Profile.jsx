@@ -523,6 +523,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
       id: user.id, ...formRest,
       display_name: displayName,
       country: countryText,
+      age_range: AGE_RANGES.includes(formRest.age_range) ? formRest.age_range : null,
       ...(existing?.avatar_config ? { avatar_config: existing.avatar_config } : {}),
       ...(isNewHome ? { home_found_at: new Date().toISOString() } : {}),
       updated_at: new Date().toISOString(),
