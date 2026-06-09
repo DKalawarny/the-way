@@ -251,20 +251,12 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
         return;
       }
 
-      const res = await authedFetch('/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice }),
-        signal: abortRef.current.signal,
-      });
+      const canStream = typeof MediaSource !== 'undefined' && MediaSource.isTypeSupported('audio/mpeg');
+      if (!canStream) { fallbackSpeak(id, text); return; }
 
-      if (!res.ok) throw new Error('tts error');
-      if (!abortRef.current) return;
-
-      const blob = await res.blob();
-      if (!abortRef.current) return;
-
-      const url = URL.createObjectURL(blob);
+      const ms = new MediaSource();
+      msRef.current = ms;
+      const url = URL.createObjectURL(ms);
       blobUrl.current = url;
 
       const audio = new Audio(url);
@@ -272,6 +264,31 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
       shapeAudio(audio);
       audio.onended = () => { stopAudio(); setSpeakingId(null); setPaused(false); };
       audio.onerror = () => { stopAudio(); setSpeakingId(null); setPaused(false); };
+
+      ms.addEventListener('sourceopen', async () => {
+        let sb;
+        try { sb = ms.addSourceBuffer('audio/mpeg'); } catch { return; }
+
+        const res = await authedFetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, voice }),
+          signal: abortRef.current?.signal,
+        });
+        if (!res.ok || !abortRef.current) return;
+
+        const reader = res.body.getReader();
+        const pump = async () => {
+          const { done, value } = await reader.read();
+          if (done) { try { if (ms.readyState === 'open') ms.endOfStream(); } catch {} return; }
+          const wait = () => new Promise((r) => sb.updating ? sb.addEventListener('updateend', r, { once: true }) : r());
+          await wait();
+          if (!audioRef.current) return;
+          try { sb.appendBuffer(value); } catch {}
+          sb.addEventListener('updateend', pump, { once: true });
+        };
+        pump();
+      });
 
       await audio.play();
     } catch (e) {

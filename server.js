@@ -447,12 +447,20 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
       return res.status(502).json({ error: 'TTS upstream error' });
     }
 
-    const audioBuffer = await elevenRes.arrayBuffer();
-    console.log(`[tts] eleven content-type=${elevenRes.headers.get('content-type')} bytes=${audioBuffer.byteLength}`);
+    console.log(`[tts] eleven status=${elevenRes.status} content-type=${elevenRes.headers.get('content-type')}`);
     res.setHeader('Content-Type', 'audio/mpeg');
-    res.setHeader('Content-Length', audioBuffer.byteLength);
     res.setHeader('Cache-Control', 'no-store');
-    res.end(Buffer.from(audioBuffer));
+    const reader = elevenRes.body.getReader();
+    let aborted = false;
+    req.on('close', () => { aborted = true; reader.cancel().catch(() => {}); });
+    const pump = async () => {
+      while (!aborted) {
+        const { done, value } = await reader.read();
+        if (done) { res.end(); break; }
+        res.write(value);
+      }
+    };
+    pump().catch((e) => { console.error('[kinwove] TTS pipe error:', e); res.end(); });
   } catch (e) {
     safeError(res, e, 'tts');
   }
