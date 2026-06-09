@@ -192,25 +192,25 @@ function getInsights(tab, s, dash) {
     const wauPct = users > 0 ? Math.round(wau / users * 100) : 0;
 
     if (act < 40 && users > 1)
-      out.push(add('warn', `Only ${act}% of users have tried AI. Add a stronger onboarding prompt or push notification pointing directly to the Ask button — it's your core product.`));
+      out.push(add('warn', `${act}% of users have never touched the Ask tab — and Ask is your entire product. The fix isn't a nudge, it's the first screen: replace the empty state with a pre-filled question like "What does the Bible say about anxiety?" and a glowing Send button. Make the first hit instant. They won't come back to explore; they'll come back to feel what they felt the first time.`));
     else if (act >= 80)
-      out.push(add('win', `${act}% activation rate is excellent for an early platform. Shift focus to weekly retention now.`));
+      out.push(add('win', `${act}% activation — that's exceptional. Most faith apps lose 70% of new users before they ever engage with the core feature. You haven't. Now the job is keeping them. One habit-forming moment per week (a daily question, a weekly reflection prompt) will compound this into long-term retention.`));
     else if (act >= 50)
-      out.push(add('tip', `${act}% activation is solid. Try surfacing a suggested first question when new users land so they know exactly what to do.`));
+      out.push(add('tip', `${act}% activation is above average but there's real money left in closing the gap. The other ${100 - act}% signed up and never asked a question. Add 3 pre-written starter questions on the Ask screen — something faith-specific like "I have doubts, is that normal?", "What does the Bible actually say about hell?", "How do I pray when I don't believe it's working?" Removing the blank-page problem converts browsers into users.`));
 
     if (wauPct < 20 && users > 3)
-      out.push(add('warn', `Only ${wauPct}% of users came back this week. Before spending on growth, fix retention — a leaky bucket wastes every new signup.`));
+      out.push(add('warn', `Only ${wauPct}% of users came back this week. Every dollar you spend on acquisition before fixing this is wasted — you're filling a bucket with a hole in it. Interview 3 users who signed up and went quiet. Their reason is worth more than any analytics dashboard.`));
     else if (wauPct >= 50)
-      out.push(add('win', `${wauPct}% weekly return rate — strong sign the core product is sticky. This is the right time to start telling people about kinwove.`));
+      out.push(add('win', `${wauPct}% of your users came back this week. YouVersion, the most downloaded Bible app ever, built its retention on daily streaks and push notifications — and you're hitting comparable weekly numbers without any of that machinery. This metric is your pitch to pastors. Lead with it.`));
 
     if (dead > 2)
-      out.push(add('tip', `${dead} users signed up but never engaged. A short "here's what to ask" welcome email could re-activate a few of them at no cost.`));
+      out.push(add('tip', `${dead} users signed up and went completely silent. Send one personal email — not a template, a 3-sentence note from you: what kinwove is for, one question to try, and your direct reply address. Founders emailing personally is the one thing no big competitor can copy. Even a 10% re-activation rate on dead accounts is free growth.`));
 
     if (follows < 1.5 && users > 3)
-      out.push(add('tip', `Avg ${follows} follows per user — people aren't connecting yet. A "People from your church" suggestion or a weekly email featuring active members could seed the social graph.`));
+      out.push(add('tip', `Avg ${follows} follows per user — your social graph is empty, and an empty social graph means no reason to come back tomorrow. Christians cluster by church and tradition. After someone's first AI answer, surface: "Here are 3 people from your tradition who are active on kinwove." That one prompt seeds the graph. Community is the moat — AI is the entry point.`));
 
     if (n(s.total_shared) > 10)
-      out.push(add('win', `${n(s.total_shared)} conversations shared publicly. Each share is a free acquisition channel — make the share button more prominent after every AI answer.`));
+      out.push(add('win', `${n(s.total_shared)} conversations shared publicly — those links are your best acquisition asset and they cost nothing. Find the 5 most-shared threads. Screenshot them. Post them on Instagram Reels and TikTok with the caption: "Real questions people are asking God right now." No logo needed. Let the rawness of the questions do the work.`));
   }
 
   if (tab === 'ai') {
@@ -222,43 +222,42 @@ function getInsights(tab, s, dash) {
     const topTopic = topics[0];
 
     if (hitRate < 15 && total > 30)
-      out.push(add('tip', `Cache rate is ${hitRate}% — normal at this scale. It compounds naturally. No action needed yet.`));
+      out.push(add('tip', `Cache rate is ${hitRate}% — low but expected at this scale. Cache hit rate is a density metric: it rises naturally as user volume grows and questions repeat. At 500+ monthly active users you'll start seeing 25–35%. Nothing to optimize here yet; keep growing.`));
     else if (hitRate >= 35)
-      out.push(add('win', `${hitRate}% cache hit rate is strong — you're saving real money and answering faster. This number grows as questions repeat.`));
+      out.push(add('win', `${hitRate}% cache hit rate means more than 1 in 3 questions is answered instantly for free. Export the top 20 cached questions — those are the exact topics your audience cares most about. Turn each into a YouTube Short titled exactly as the question. Christians searching "what does the Bible say about [topic]" will land on you organically.`));
 
     if (avgTurns < 1.8 && total > 20)
-      out.push(add('warn', `Avg ${avgTurns} turns per conversation — users ask one thing and leave. Try ending AI responses with a natural follow-up question to keep them in the conversation.`));
+      out.push(add('warn', `Avg ${avgTurns} turns per conversation — users ask one thing, get an answer, and leave. That's a missed retention moment. The AI response itself should open a door, not close one. End every answer with a natural follow-up: "Want to go deeper on this?" or "There's a related passage that changes how most people read this — want to see it?" Curiosity is the retention engine.`));
     else if (avgTurns >= 3)
-      out.push(add('win', `Avg ${avgTurns} turns — users are having real back-and-forths with the AI. Screenshot a sample exchange and post it. This is your strongest demo.`));
+      out.push(add('win', `Avg ${avgTurns} turns per session — users are having real conversations, not just running searches. This is rare and it's your product's secret weapon. Grab 3 of the longest threads (with permission) and turn them into blog posts. Format: "Here's a 40-minute conversation one kinwove user had about [doubt / grief / forgiveness]." That kind of content ranks and converts.`));
 
     if (topTopic)
-      out.push(add('tip', `"${topTopic.topic_slug}" is your most-asked topic (${topTopic.count} questions). Write a blog post, Twitter thread, or YouTube short answering the top question on this topic — it's what your audience actually wants.`));
+      out.push(add('tip', `"${topTopic.topic_slug}" is your most-asked topic with ${topTopic.count} questions. Go to r/Christianity, r/Reformed, or r/TrueChristian right now and find the top post on that topic. Answer it thoroughly — no promotion, just genuine insight. Put "founder of kinwove" in your username flair. The curious will find their way to you. This is the cheapest distribution channel that exists.`));
   }
 
   if (tab === 'geo') {
     const countries = (s.country_dist ?? []);
     if (countries.length === 0)
-      out.push(add('tip', `No church location data yet. Once pastors register, you'll see exactly where to focus outreach.`));
+      out.push(add('tip', `No church location data yet. Pastors are your distribution channel — one pastor with 400 congregants is worth 400 individual signups and they onboard as a group. Find 3 pastors in your city on Instagram, engage their content genuinely for 2 weeks, then DM. Don't lead with the product. Lead with a real question about their church.`));
     else if (countries.length === 1)
-      out.push(add('tip', `All churches are in ${countries[0]?.country}. To expand, target English-speaking Christian Facebook groups, Reddit (r/Christianity, r/Reformed, etc.), or Instagram hashtags in other countries.`));
+      out.push(add('tip', `All your churches are in ${countries[0]?.country}. Before expanding internationally, go deeper at home — there are thousands of untouched churches in your own country. Target denominational Facebook groups (Baptist, Anglican, Pentecostal, etc.). Each denomination is a pre-built distribution network with shared language and trust. One post in the right group can unlock dozens of pastors.`));
     else
-      out.push(add('tip', `You're in ${countries.length} countries already. Lean into your strongest market first — depth beats breadth at this stage.`));
+      out.push(add('tip', `You're in ${countries.length} countries. Resist the urge to spread marketing effort across all of them. Pick your single strongest market and go deep — host a free online event for pastors there, get 3 testimonials, build a case study. One country with 30 engaged churches is worth more than 5 countries with 2 each. Depth creates word-of-mouth; breadth creates silence.`));
   }
 
   if (tab === 'churches') {
     const zombies = n(s.zombie_churches);
     const total = n(s.total_churches);
-    const verified = n(s.verified_churches);
     const pending = dash?.pendingApps?.length ?? 0;
 
     if (zombies > 0)
-      out.push(add('warn', `${zombies} church${zombies > 1 ? 'es' : ''} registered with 0 members. Email those pastors directly — a single "how to invite your congregation" tip often re-activates them.`));
+      out.push(add('warn', `${zombies} church${zombies > 1 ? 'es' : ''} registered with zero members. Email those pastors directly — subject line: "Quick question about your kinwove page." One sentence in the body offering to jump on a 10-minute call to walk them through the member invite flow. Pastors are busy and they respond to personal, not automated. Getting one zombie church active is worth more than signing up three new ones.`));
     if (total === 1)
-      out.push(add('tip', `You have 1 church. Focus on making that pastor incredibly successful — their story becomes your best case study for recruiting the next 10.`));
+      out.push(add('tip', `One church on the platform. Make that pastor a case study. Ask them for a 2-minute video — what they use kinwove for, what their congregation thinks. That testimonial is your entire pitch to the next 20 pastors. One happy pastor telling another pastor is worth 10,000 impressions of any ad you could run.`));
     if (pending > 0)
-      out.push(add('warn', `${pending} pastor application${pending > 1 ? 's' : ''} waiting. Fast approval (same day) signals to pastors that kinwove is responsive and worth their investment.`));
+      out.push(add('warn', `${pending} pastor application${pending > 1 ? 's' : ''} waiting for review. Same-day approval is a real competitive advantage — most church software treats pastors like IT support tickets. Be the product that responded in hours. They'll remember that when they're recommending tools to other pastors in their network.`));
     if (total >= 5 && zombies === 0)
-      out.push(add('win', `${total} churches with no inactive ones — healthy growth. Consider reaching out to denominations or church networks to get in front of many pastors at once.`));
+      out.push(add('win', `${total} active churches with no dead weight — clean, healthy growth. The next unlock is denominational networks. One email to a regional director or association leader can put you in front of 20–50 pastors at once. Ask your existing pastors which network or association they belong to — that's your warm introduction.`));
   }
 
   if (tab === 'content') {
@@ -266,22 +265,22 @@ function getInsights(tab, s, dash) {
     const topQ = dash?.topQuestions?.[0];
 
     if (topQ)
-      out.push(add('tip', `"${topQ.question_raw?.slice(0, 80)}…" has been asked ${topQ.hit_count}× — turn this into a social post. Questions your users actually ask outperform generic content every time.`));
+      out.push(add('tip', `"${topQ.question_raw?.slice(0, 70)}…" has been asked ${topQ.hit_count}× by real users. That's not a content idea — that's confirmed demand. Post it as a Twitter/X thread, an Instagram carousel, and a YouTube Short this week. Same content, 3 formats, 3 hours of work. Title it exactly as the question — that's the search term. Your most-asked questions are your SEO strategy.`));
     if (shared > 5)
-      out.push(add('win', `${shared} conversations have been shared externally. Every share link is a potential new user. Add a "Copy link" prompt more prominently after every AI response.`));
+      out.push(add('win', `${shared} conversations shared publicly — those are ${shared} landing pages you didn't have to build, each one showing exactly what kinwove does in the most compelling way possible. Make sure every shared link loads fast, looks beautiful, and has a single prominent CTA: "Start your own conversation." That page is your best ad.`));
     if (shared === 0)
-      out.push(add('tip', `No conversations shared yet. Make sure the share button is visible right after an AI answer — that's the moment of highest satisfaction.`));
+      out.push(add('tip', `Nobody has shared a conversation yet. The share moment needs to happen right after the AI finishes responding — that's the peak of satisfaction. Add a one-tap share prompt there: "Know someone wrestling with this question?" Don't bury it in a menu. The moment passes fast.`));
   }
 
   if (tab === 'operations') {
     const reports = dash?.userReports?.length ?? 0;
     const feedback = dash?.recentFeedback?.length ?? 0;
     if (reports > 0)
-      out.push(add('warn', `${reports} open user report${reports > 1 ? 's' : ''}. Respond fast — early users who get a personal reply become your most loyal advocates.`));
+      out.push(add('warn', `${reports} open report${reports > 1 ? 's' : ''} in the queue. Reply to every single one personally within 24 hours — a founder reply turns a frustrated user into a loyal one. They'll screenshot it. They'll tell people. At this stage of the company, support isn't a cost center, it's your retention strategy and your PR.`));
     if (feedback > 3)
-      out.push(add('warn', `${feedback} AI responses flagged as bad. Review them and adjust the system prompt in src/prompts.js to fix recurring patterns.`));
+      out.push(add('warn', `${feedback} AI responses flagged as unhelpful. Don't fix the prompt blindly — read every flagged response first and look for the pattern. It's almost always one or two question types the system prompt doesn't handle well (doubt, grief, denominational edge cases). Fix those specifically in src/prompts.js rather than making the whole prompt more cautious.`));
     if (reports === 0 && feedback === 0)
-      out.push(add('win', `No open reports or AI flags — all clear. Check back regularly as usage grows.`));
+      out.push(add('win', `No open reports, no AI flags. Either the product is working well or users haven't found the report button — worth checking engagement on the ⋮ menu. As usage grows, add a low-friction feedback prompt directly inside the AI conversation: a single thumbs-down tap after each response captures signal before users think to leave.`));
   }
 
   return out;
