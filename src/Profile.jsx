@@ -17,7 +17,7 @@ const RESERVED_NAMES = ['kinwove', 'admin', 'system', 'moderator', 'support', 'h
 const isReservedName = (name) =>
   RESERVED_NAMES.some((r) => name.trim().toLowerCase() === r);
 
-const AGE_RANGES = ['Under 18','18–24','25–34','35–49','50–64','65+'];
+const AGE_RANGES = ['18–24','25–34','35–49','50+'];
 
 const EXPLORING_SINCE = [
   'Just started',
