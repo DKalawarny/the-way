@@ -492,6 +492,8 @@ export default function PostCard({
   const [reportNote, setReportNote] = useState('');
   const [reportBusy, setReportBusy] = useState(false);
   const [reportDone, setReportDone] = useState(false);
+  const [blockBusy,  setBlockBusy]  = useState(false);
+  const [blockedLocally, setBlockedLocally] = useState(false);
 
   // Pinned modal input state (kept here so input stays pinned outside scroll area)
   const [modalText, setModalText]       = useState('');
@@ -853,6 +855,26 @@ export default function PostCard({
                       }}
                     >
                       {canModerate ? 'Remove from church' : 'Delete post'}
+                    </button>
+                  )}
+                  {!isOwn && !canModerate && !!sessionUserId && isPostLike && !item.is_anonymous && (
+                    <button
+                      disabled={blockBusy || blockedLocally}
+                      onClick={async () => {
+                        setMenuOpen(false);
+                        if (blockedLocally || !item.author_id) return;
+                        setBlockBusy(true);
+                        await supabase.from('blocks').insert({ blocker_id: sessionUserId, blocked_id: item.author_id }).then(null, () => {});
+                        setBlockBusy(false);
+                        setBlockedLocally(true);
+                      }}
+                      style={{
+                        width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                        padding: '10px 14px', fontSize: 13, color: T.inkSoft, cursor: 'pointer',
+                        opacity: blockBusy ? 0.5 : 1,
+                      }}
+                    >
+                      🚫 {blockedLocally ? 'User blocked' : `Block ${item.profiles?.display_name?.split(' ')[0] ?? 'user'}`}
                     </button>
                   )}
                   {!isOwn && !canModerate && !!sessionUserId && isPostLike && (

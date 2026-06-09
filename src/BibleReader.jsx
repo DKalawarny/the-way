@@ -5,7 +5,7 @@ import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import PageTour, { isPageTourDone } from './PageTour.jsx';
 import { useSpeechRecognition } from './useSpeechRecognition.js';
 import { useTextToSpeech } from './useTextToSpeech.js';
-import { authedFetch } from './supabase.js';
+import { authedFetch, supabase } from './supabase.js';
 import { verseCountFor } from './bibleVerseCounts.js';
 import { useAiUsage } from './useAiUsage.js';
 import AiLimitWall, { AiUsageWarning } from './AiLimitWall.jsx';
@@ -732,6 +732,11 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const [highlightVerse, setHighlightVerse] = useState(null);
   const [tileVersePickerFor, setTileVersePickerFor] = useState(null); // chapter number whose tile picker is open
   const [pendingVerseScroll, setPendingVerseScroll] = useState(null);
+  const [noteMap,    setNoteMap]    = useState({});   // verseNum → note_text
+  const [noteOpen,   setNoteOpen]   = useState(false);
+  const [noteVerse,  setNoteVerse]  = useState(null);
+  const [noteText,   setNoteText]   = useState('');
+  const [noteSaving, setNoteSaving] = useState(false);
   const [completed, setCompleted] = useState(() => {
     try { return new Set(JSON.parse(localStorage.getItem('rdr_done') ?? '[]')); }
     catch { return new Set(); }
@@ -824,7 +829,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   }, [jumpRef]);
 
   useEffect(() => {
-    if (view === 'reading') loadChapter();
+    if (view === 'reading') { loadChapter(); loadChapterNotes(); }
     setVersePickerOpen(false);
     setHighlightVerse(null);
   }, [bibleId, bookId, chNum, view]);
@@ -978,6 +983,52 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     const next = selectedVerse?.number === v.number ? null : v;
     setSelectedVerse(next);
     if (next) setLastVerse(next);
+  }
+
+  function loadChapterNotes() {
+    if (!session?.user?.id || !bookId || !chNum) return;
+    supabase
+      .from('bible_notes')
+      .select('verse, note_text')
+      .eq('user_id', session.user.id)
+      .eq('book_id', bookId)
+      .eq('chapter', chNum)
+      .then(({ data }) => {
+        const map = {};
+        (data ?? []).forEach((n) => { map[n.verse] = n.note_text; });
+        setNoteMap(map);
+      });
+  }
+
+  function openNote(v) {
+    setNoteVerse(v);
+    setNoteText(noteMap[v.number] ?? '');
+    setNoteOpen(true);
+  }
+
+  async function saveNote() {
+    if (!session?.user?.id || !noteVerse) return;
+    setNoteSaving(true);
+    const payload = {
+      user_id:   session.user.id,
+      book_id:   bookId,
+      book_name: book?.name ?? bookId,
+      chapter:   chNum,
+      verse:     noteVerse.number,
+      verse_text: noteVerse.text ?? null,
+      note_text: noteText,
+      updated_at: new Date().toISOString(),
+    };
+    if (noteText.trim()) {
+      await supabase.from('bible_notes').upsert(payload, { onConflict: 'user_id,book_id,chapter,verse' });
+      setNoteMap((prev) => ({ ...prev, [noteVerse.number]: noteText }));
+    } else {
+      await supabase.from('bible_notes').delete()
+        .eq('user_id', session.user.id).eq('book_id', bookId).eq('chapter', chNum).eq('verse', noteVerse.number);
+      setNoteMap((prev) => { const n = { ...prev }; delete n[noteVerse.number]; return n; });
+    }
+    setNoteSaving(false);
+    setNoteOpen(false);
   }
 
   async function compareVersions(v) {
@@ -2088,8 +2139,16 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                                 {a.label}
                               </button>
                             ))}
+                            {session && (
+                              <button onClick={() => openNote(v)} style={{ background: noteMap[v.number] ? 'rgba(184,115,58,0.18)' : 'transparent', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                {noteMap[v.number] ? '✏ Edit note' : '✏ Note'}
+                              </button>
+                            )}
                           </span>
                         </span>
+                      )}
+                      {!sel && noteMap[v.number] && (
+                        <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: T.gold, verticalAlign: 'middle', marginLeft: 3, flexShrink: 0, opacity: 0.75 }} />
                       )}
                     </span>
                   );
@@ -2204,6 +2263,73 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
           storageKey={BIBLE_READ_TOUR_KEY}
           onClose={() => setShowBibleReadTour(false)}
         />
+      )}
+
+      {/* Note editor modal */}
+      {noteOpen && noteVerse && (
+        <div
+          onClick={() => setNoteOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(44,24,16,0.52)', zIndex: 400, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%', maxWidth: 600,
+              background: T.parchment, borderRadius: '20px 20px 0 0',
+              padding: '22px 20px 40px', boxShadow: '0 -8px 40px rgba(0,0,0,0.2)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div>
+                <div style={{ fontFamily: T.display, fontSize: 13, fontWeight: 700, color: T.gold, letterSpacing: 1, textTransform: 'uppercase' }}>
+                  {book?.name} {chNum}:{noteVerse.number}
+                </div>
+                {noteVerse.text && (
+                  <div style={{ fontFamily: T.serif, fontSize: 13, color: T.inkSoft, fontStyle: 'italic', marginTop: 4, lineHeight: 1.5 }}>
+                    "{noteVerse.text}"
+                  </div>
+                )}
+              </div>
+              <button onClick={() => setNoteOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.inkSoft, fontSize: 22, lineHeight: 1, padding: 4 }}>×</button>
+            </div>
+            <textarea
+              autoFocus
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder="Write your reflection…"
+              rows={5}
+              style={{
+                width: '100%', boxSizing: 'border-box',
+                border: `1px solid ${T.line}`, borderRadius: 12,
+                padding: '12px 14px', fontSize: 15, fontFamily: T.display,
+                color: T.ink, background: T.white, outline: 'none', resize: 'vertical',
+                lineHeight: 1.6,
+              }}
+            />
+            <div style={{ display: 'flex', gap: 10, marginTop: 12, justifyContent: 'flex-end' }}>
+              {noteMap[noteVerse.number] && (
+                <button
+                  onClick={() => { setNoteText(''); setTimeout(saveNote, 0); }}
+                  disabled={noteSaving}
+                  style={{ background: 'none', border: 'none', color: '#A53F2B', fontSize: 13, cursor: 'pointer', padding: '8px 4px' }}
+                >
+                  Delete note
+                </button>
+              )}
+              <button
+                onClick={saveNote}
+                disabled={noteSaving}
+                style={{
+                  background: T.gold, color: T.cream, border: 'none',
+                  borderRadius: 999, padding: '10px 24px', fontSize: 14, fontWeight: 600,
+                  cursor: noteSaving ? 'wait' : 'pointer', opacity: noteSaving ? 0.7 : 1,
+                }}
+              >
+                {noteSaving ? 'Saving…' : 'Save note'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

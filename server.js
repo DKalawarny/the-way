@@ -1392,6 +1392,7 @@ app.get('/api/me/pastor-church', requireAuth, async (req, res) => {
 });
 
 // Look up a church by invite code — service role bypasses RLS so unverified churches work
+// Also checks youth_invite_code — returns { church, isYouth: true } if matched on youth code
 app.get('/api/church/by-invite-code', async (req, res) => {
   const code = (req.query.code ?? '').trim().toUpperCase();
   if (!code) return res.status(400).json({ church: null });
@@ -1402,17 +1403,23 @@ app.get('/api/church/by-invite-code', async (req, res) => {
     'X-Client-Info': 'kinwove-server',
   };
   try {
-    const r = await fetch(
+    // Check regular invite code first
+    const r1 = await fetch(
       `${SUPABASE_URL}/rest/v1/churches?invite_code=eq.${encodeURIComponent(code)}&select=id,name&limit=1`,
       { headers: h }
     );
-    const rows = await r.json();
-    if (!Array.isArray(rows)) {
-      console.error('[invite-code] unexpected response:', JSON.stringify(rows).slice(0, 300));
-      return res.json({ church: null });
-    }
-    const church = rows[0] ?? null;
-    res.json({ church });
+    const rows1 = await r1.json();
+    if (Array.isArray(rows1) && rows1[0]) return res.json({ church: rows1[0], isYouth: false });
+
+    // Fall back to youth invite code
+    const r2 = await fetch(
+      `${SUPABASE_URL}/rest/v1/churches?youth_invite_code=eq.${encodeURIComponent(code)}&select=id,name&limit=1`,
+      { headers: h }
+    );
+    const rows2 = await r2.json();
+    if (Array.isArray(rows2) && rows2[0]) return res.json({ church: rows2[0], isYouth: true });
+
+    res.json({ church: null });
   } catch (err) {
     console.error('[invite-code] fetch error:', err.message);
     res.json({ church: null });
@@ -1441,6 +1448,28 @@ app.post('/api/church/rotate-invite-code', requireAuth, async (req, res) => {
   ).then(r => ({ ok: r.ok, status: r.status })).catch(() => ({ ok: false }));
   if (!updated.ok) return res.status(500).json({ error: 'Failed to save new code' });
   res.json({ invite_code: newCode });
+});
+
+// Generate / rotate a youth group invite code
+app.post('/api/church/youth-invite-code', requireAuth, async (req, res) => {
+  const { churchId } = req.body ?? {};
+  if (!churchId) return res.status(400).json({ error: 'churchId required' });
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'service unavailable' });
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
+  const rows = await fetch(
+    `${SUPABASE_URL}/rest/v1/churches?id=eq.${encodeURIComponent(churchId)}&select=pastor_id&limit=1`,
+    { headers: h }
+  ).then(r => r.json()).catch(() => []);
+  const church = Array.isArray(rows) ? rows[0] : null;
+  if (!church) return res.status(404).json({ error: 'Church not found' });
+  if (church.pastor_id !== req.userId) return res.status(403).json({ error: 'Not your church' });
+  const newCode = 'Y-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+  const updated = await fetch(
+    `${SUPABASE_URL}/rest/v1/churches?id=eq.${encodeURIComponent(churchId)}`,
+    { method: 'PATCH', headers: { ...h, Prefer: 'return=minimal' }, body: JSON.stringify({ youth_invite_code: newCode }) }
+  ).then(r => ({ ok: r.ok })).catch(() => ({ ok: false }));
+  if (!updated.ok) return res.status(500).json({ error: 'Failed to save code' });
+  res.json({ youth_invite_code: newCode });
 });
 
 // Submit / re-submit a pastor application (upsert via service role → bypasses RLS)

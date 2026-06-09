@@ -488,6 +488,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
     })(),
     show_flag:          existing?.show_flag ?? false,
     preferred_language: existing?.preferred_language ?? (navigator.language?.split('-')[0] ?? 'en'),
+    birthday:           existing?.birthday ?? '',
   });
 
   const [prevTradition] = useState(existing?.tradition ?? 'Still Discovering');
@@ -526,6 +527,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
       age_range: AGE_RANGES.includes(formRest.age_range) ? formRest.age_range : null,
       gender: ['Man','Woman','Prefer not to say'].includes(formRest.gender) ? formRest.gender : null,
       exploring_since: ['Just started','A few months','About a year','Several years'].includes(formRest.exploring_since) ? formRest.exploring_since : null,
+      birthday: formRest.birthday || null,
       ...(existing?.avatar_config ? { avatar_config: existing.avatar_config } : {}),
       ...(isNewHome ? { home_found_at: new Date().toISOString() } : {}),
       updated_at: new Date().toISOString(),
@@ -683,6 +685,16 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
                 <option value="">Select…</option>
                 {EXPLORING_SINCE.map((o) => <option key={o}>{o}</option>)}
               </select>
+            </Field>
+
+            <Field label="Date of birth" hint="Optional — used to verify age for youth church accounts">
+              <input
+                type="date"
+                style={sStyle}
+                value={form.birthday}
+                max={new Date().toISOString().split('T')[0]}
+                onChange={(e) => set('birthday', e.target.value)}
+              />
             </Field>
 
             {/* ── Optional ── */}

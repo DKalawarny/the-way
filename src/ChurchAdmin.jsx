@@ -1191,6 +1191,9 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
   // Local invite_code state — self-sourced from DB in loadAll() so it
   // survives tab navigation without depending on the church prop staying fresh.
   const [localInviteCode, setLocalInviteCode] = useState(church?.invite_code ?? '');
+  const [youthCode,     setYouthCode]     = useState(church?.youth_invite_code ?? '');
+  const [youthCodeBusy, setYouthCodeBusy] = useState(false);
+  const [youthCopied,   setYouthCopied]   = useState(false);
 
   const [removingId, setRemovingId] = useState(null);
   const [scrubPosts, setScrubPosts] = useState(false);
@@ -1246,7 +1249,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
       // depending on the church prop staying fresh across remounts.
       supabase
         .from('churches')
-        .select('invite_code')
+        .select('invite_code, youth_invite_code')
         .eq('id', churchId)
         .maybeSingle(),
     ]);
@@ -1255,6 +1258,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
     setMembers(m);
     // Update local invite code from DB — overrides stale prop value on remount.
     if (codeRow?.invite_code != null) setLocalInviteCode(codeRow.invite_code);
+    if (codeRow?.youth_invite_code != null) setYouthCode(codeRow.youth_invite_code);
     setJoinRequests((joinReqRows ?? []).map(r => ({
       ...r, display_name: r.profiles?.display_name ?? 'Member',
       city: r.profiles?.city, country: r.profiles?.country,
@@ -1626,6 +1630,52 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
         }}>
           {code ? 'Reset code…' : 'Generate invite code →'}
         </button>
+      </div>
+
+      {/* Youth group invite card */}
+      <div style={{ background: 'rgba(184,115,58,0.06)', border: `1px solid rgba(184,115,58,0.2)`, borderRadius: 14, padding: '18px 20px' }}>
+        <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 8 }}>
+          Youth group invite
+        </div>
+        <p style={{ fontFamily: T.serif, fontSize: 13, color: T.inkSoft, lineHeight: 1.6, margin: '0 0 12px' }}>
+          A separate invite code for members under 17. Youth accounts are church-scoped only — they can't post to the public community or receive DMs from strangers. They auto-unlock when they turn 17.
+        </p>
+        {youthCode ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 18, fontWeight: 700, letterSpacing: 3, color: T.ink, background: T.white, border: `1px solid ${T.line}`, borderRadius: 8, padding: '5px 12px' }}>
+              {youthCode}
+            </div>
+            <button
+              onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/?join=${youthCode}`).then(() => { setYouthCopied(true); setTimeout(() => setYouthCopied(false), 2500); }); }}
+              style={{ background: T.ink, color: T.cream, border: 'none', borderRadius: 999, padding: '7px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+            >{youthCopied ? '✓ Copied' : 'Copy youth link'}</button>
+            <button
+              disabled={youthCodeBusy}
+              onClick={async () => {
+                setYouthCodeBusy(true);
+                const res = await fetch('/api/church/youth-invite-code', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` }, body: JSON.stringify({ churchId }) });
+                const body = await res.json().catch(() => ({}));
+                if (res.ok) { setYouthCode(body.youth_invite_code); showToast('New youth code generated.', 'success'); }
+                else showToast(body.error || "Couldn't rotate code.", 'error');
+                setYouthCodeBusy(false);
+              }}
+              style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+            >{youthCodeBusy ? 'Rotating…' : 'Reset code'}</button>
+          </div>
+        ) : (
+          <button
+            disabled={youthCodeBusy}
+            onClick={async () => {
+              setYouthCodeBusy(true);
+              const res = await fetch('/api/church/youth-invite-code', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` }, body: JSON.stringify({ churchId }) });
+              const body = await res.json().catch(() => ({}));
+              if (res.ok) { setYouthCode(body.youth_invite_code); showToast('Youth invite code created.', 'success'); }
+              else showToast(body.error || "Couldn't create code.", 'error');
+              setYouthCodeBusy(false);
+            }}
+            style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: youthCodeBusy ? 'wait' : 'pointer', opacity: youthCodeBusy ? 0.7 : 1 }}
+          >{youthCodeBusy ? 'Creating…' : 'Create youth group invite →'}</button>
+        )}
       </div>
 
       {/* Filter chips */}

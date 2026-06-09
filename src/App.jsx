@@ -94,13 +94,14 @@ import { supabase, authedFetch } from './supabase.js';
 import { getDailyVerse } from './dailyVerse.js';
 import {
   LayoutGrid, UserPlus, Inbox, Building2,
-  Star, ShieldCheck, Flag, Megaphone, UserCog, LogOut, Trash2, Settings as SettingsIcon, HelpCircle,
+  Star, ShieldCheck, Flag, Megaphone, UserCog, LogOut, Trash2, Settings as SettingsIcon, HelpCircle, BookOpen,
 } from 'lucide-react';
 import SwipeableSheet from './SwipeableSheet.jsx';
 import MsgText from './MsgText.jsx';
 import Auth from './Auth.jsx';
 import ProfileSetup from './Profile.jsx';
 import ProfilePage, { Avatar } from './ProfilePage.jsx';
+import Journal from './Journal.jsx';
 import GuestQuestion from './GuestQuestion.jsx';
 import TopRightMenu from './TopRightMenu.jsx';
 import ReportModal from './ReportModal.jsx';
@@ -1589,7 +1590,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
   onOpenTalkToSomeone, onOpenCareInbox, onOpenPastorDashboard,
   onFindChurches, onApplyAsPastor, onOpenPastorAdminQueue,
   onOpenChurchDisputesQueue, onOpenSponsorAdmin,
-  onEditProfile, onSignOut, onDeleteAccount, onOpenHelp, onOpenReport,
+  onEditProfile, onSignOut, onDeleteAccount, onOpenHelp, onOpenReport, onOpenJournal,
 }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const popoverRef = useRef(null);
@@ -1673,6 +1674,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
     onOpenPastorAdminQueue    && { Icon: ShieldCheck, label: 'Pastor applications', onClick: onOpenPastorAdminQueue },
     onOpenChurchDisputesQueue && { Icon: Flag,        label: 'Listing disputes',    onClick: onOpenChurchDisputesQueue },
     onOpenSponsorAdmin        && { Icon: Megaphone,   label: 'Site analytics',      onClick: onOpenSponsorAdmin },
+    onOpenJournal  && { Icon: BookOpen,   label: 'My Notes',         onClick: onOpenJournal },
     onEditProfile  && { Icon: UserCog,    label: 'Edit profile',    onClick: onEditProfile },
     onOpenHelp     && { Icon: HelpCircle, label: 'Help',             onClick: onOpenHelp },
     onOpenReport   && { Icon: Flag,       label: 'Report an issue', onClick: onOpenReport },
@@ -2276,7 +2278,7 @@ export default function App() {
     let cancelled = false;
     (async () => {
       const inviteRes = await fetch(`/api/church/by-invite-code?code=${encodeURIComponent(code)}`);
-      const { church: ch } = await inviteRes.json();
+      const { church: ch, isYouth } = await inviteRes.json();
       const lookupErr = !inviteRes.ok ? true : null;
 
       if (cancelled) return;
@@ -2288,9 +2290,12 @@ export default function App() {
         return;
       }
 
+      const profileUpdate = { church_id: ch.id };
+      if (isYouth) profileUpdate.is_youth_sponsored = true;
+
       const { error: updateErr } = await supabase
         .from('profiles')
-        .update({ church_id: ch.id })
+        .update(profileUpdate)
         .eq('id', session.user.id);
 
       if (cancelled) return;
@@ -2420,7 +2425,16 @@ export default function App() {
   }
 
   async function loadProfile(userId) {
-    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    let { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    // Auto-age-out: youth account turns 17 → lift restriction
+    if (data?.is_youth_sponsored && data?.birthday) {
+      const ageMs = Date.now() - new Date(data.birthday).getTime();
+      const ageYears = ageMs / (1000 * 60 * 60 * 24 * 365.25);
+      if (ageYears >= 17) {
+        supabase.from('profiles').update({ is_youth_sponsored: false }).eq('id', userId).then(null, () => {});
+        data = { ...data, is_youth_sponsored: false };
+      }
+    }
     setProfile(data ?? null);
     if (!isTourDone()) setShowTour(true);
     await Promise.all([loadGroup(userId), loadChurchRoles(userId)]);
@@ -3006,6 +3020,13 @@ export default function App() {
           <HelpPage onClose={() => goBack('home')} onOpenTour={() => { goBack('home'); setShowTour(true); }} />
         </Suspense>
       )}
+      {stage === 'journal' && session && (
+        <Journal
+          session={session}
+          onClose={() => goBack('home')}
+          onOpenBible={({ book, chapter, verse }) => { setBibleJumpRef(`${book}.${chapter}.${verse}`); setStage('read'); }}
+        />
+      )}
       {stage === 'pastor-admin-queue' && session && profile?.is_admin && (
         <PastorAdminQueue
           session={session}
@@ -3462,6 +3483,7 @@ export default function App() {
             onOpenHelp={() => { setViewingUserId(null); setStage('help'); }}
             onEditProfile={() => { setViewingUserId(null); setProfileEditOrigin('me'); setAuthStage('profile-setup'); }}
             onOpenReport={() => setReportOpen(true)}
+            onOpenJournal={() => { setViewingUserId(null); setStage('journal'); }}
             onSignOut={() => { supabase.auth.signOut(); setSession(null); setProfile(null); setStage('landing'); }}
             onDeleteAccount={() => setShowDeleteAccount(true)}
           />
