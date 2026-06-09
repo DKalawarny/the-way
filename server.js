@@ -387,8 +387,8 @@ async function logTopicCounts(tags) {
 // ElevenLabs voice IDs
 const ELEVEN_VOICES = {
   onyx:    'jfIS2w2yJi0grJZPyEsk', // James — deep, cinematic male
-  nova:    'uIZsnBL0YK1S5j69bAih', // Grace — soft and soothing female
-  shimmer: 'uIZsnBL0YK1S5j69bAih', // alias → Grace
+  nova:    '6rOxfAnZpbM3VIEhFaeV', // Grace — soft and soothing female
+  shimmer: '6rOxfAnZpbM3VIEhFaeV', // alias → Grace
 };
 
 // ── Text-to-Speech (ElevenLabs) ───────────────────────────────────────────────
