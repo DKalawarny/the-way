@@ -10,23 +10,77 @@ function BarChart({ data = [], color = T.gold, labelKey = 'week' }) {
   if (!data.length) return <EmptyNote>No data yet — will populate as the platform grows.</EmptyNote>;
   const counts = data.map((d) => Number(d.count ?? 0));
   const max = Math.max(...counts, 1);
+  const total = counts.reduce((s, v) => s + v, 0);
+  // Y-axis: pick 4 nice round ticks
+  const rawStep = max / 4;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep || 1)));
+  const step = Math.ceil(rawStep / magnitude) * magnitude || 1;
+  const yMax = step * 4;
+  const ticks = [step * 3, step * 2, step, 0];
+
+  // Format x-axis label: "2026-05-12" → "May 12"
+  function fmtLabel(raw) {
+    if (!raw) return '';
+    try {
+      const d = new Date(raw + 'T00:00:00Z');
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    } catch { return raw.slice(5); }
+  }
+
+  const CHART_H = 140;
+  const BAR_AREA = 100; // px available for bars (leaves room for value label above)
+
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 110, padding: '0 2px' }}>
-      {data.map((d, i) => {
-        const val = Number(d.count ?? 0);
-        const barH = Math.max((val / max) * 82, val > 0 ? 3 : 0);
-        return (
-          <div key={i} title={`${d[labelKey] ?? ''}: ${val.toLocaleString()}`}
-            style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end' }}>
-            {val > 0 && (
-              <div style={{ fontSize: 9, color: color, fontWeight: 700, marginBottom: 2, lineHeight: 1, textAlign: 'center' }}>
-                {val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val}
-              </div>
-            )}
-            <div style={{ width: '100%', background: color, borderRadius: '3px 3px 0 0', height: barH }} />
+    <div>
+      {/* Total */}
+      <div style={{ fontSize: 11, color: T.inkMuted, marginBottom: 6, textAlign: 'right' }}>
+        Total: <strong style={{ color: T.ink }}>{total.toLocaleString()}</strong>
+      </div>
+      <div style={{ display: 'flex', gap: 0 }}>
+        {/* Y-axis */}
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'flex-end', paddingRight: 6, height: CHART_H, flexShrink: 0 }}>
+          {ticks.map((t) => (
+            <div key={t} style={{ fontSize: 9, color: T.inkMuted, lineHeight: 1 }}>
+              {t >= 1000 ? `${(t / 1000).toFixed(1)}k` : t}
+            </div>
+          ))}
+        </div>
+        {/* Chart area */}
+        <div style={{ flex: 1, position: 'relative' }}>
+          {/* Grid lines */}
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', pointerEvents: 'none' }}>
+            {ticks.map((t) => (
+              <div key={t} style={{ borderTop: `1px dashed rgba(26,17,8,0.08)`, width: '100%' }} />
+            ))}
           </div>
-        );
-      })}
+          {/* Bars */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: CHART_H, padding: '0 2px', position: 'relative' }}>
+            {data.map((d, i) => {
+              const val = Number(d.count ?? 0);
+              const barH = Math.max((val / yMax) * BAR_AREA, val > 0 ? 3 : 0);
+              return (
+                <div key={i} title={`${d[labelKey] ?? ''}: ${val.toLocaleString()}`}
+                  style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+                  {val > 0 && (
+                    <div style={{ fontSize: 9, color: color, fontWeight: 700, marginBottom: 2, lineHeight: 1 }}>
+                      {val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val}
+                    </div>
+                  )}
+                  <div style={{ width: '100%', background: color, borderRadius: '3px 3px 0 0', height: barH }} />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      {/* X-axis labels */}
+      <div style={{ display: 'flex', gap: 3, paddingLeft: 28, marginTop: 5 }}>
+        {data.map((d, i) => (
+          <div key={i} style={{ flex: 1, fontSize: 8.5, color: T.inkMuted, textAlign: 'center', lineHeight: 1.2, overflow: 'hidden' }}>
+            {fmtLabel(d[labelKey])}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
