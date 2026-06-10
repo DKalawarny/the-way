@@ -1416,7 +1416,7 @@ app.post('/api/cron/daily-post', async (req, res) => {
 
     // Fetch last 7 posts so Claude can avoid repeating themes/structure
     const recentRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/posts?author_id=eq.${systemId}&order=created_at.desc&limit=30&select=body`,
+      `${SUPABASE_URL}/rest/v1/posts?author_id=eq.${systemId}&order=created_at.desc&limit=60&select=body`,
       { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
     );
     const recentPosts = await recentRes.json();
