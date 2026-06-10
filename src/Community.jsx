@@ -482,7 +482,10 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
               <button onClick={() => onViewProfile?.(post.author_id)} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontWeight: 500, fontSize: 14, color: T.ink, letterSpacing: '-0.005em' }}>
                   {post.profiles?.display_name ?? 'Anonymous'}
-                  {post.profiles?.show_flag && (post.profiles?.flags ?? []).length > 0 && (
+                  {post.profiles?.is_system_account && (
+                    <KinwoveStar size={11} color={T.gold} style={{ flexShrink: 0 }} />
+                  )}
+                  {!post.profiles?.is_system_account && post.profiles?.show_flag && (post.profiles?.flags ?? []).length > 0 && (
                     <span style={{ fontSize: 14, lineHeight: 1 }}>{codeToFlag(post.profiles.flags[0])}</span>
                   )}
                 </div>
@@ -495,7 +498,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                 {churchName && <> · in {churchName}</>}
               </div>
             </div>
-            {currentUserId && !isOwnPost && (
+            {currentUserId && !isOwnPost && !post.profiles?.is_system_account && (
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
                 <button onClick={() => onFollow(post.author_id, isFollowing)} style={{
                   background: isFollowing
@@ -1662,12 +1665,7 @@ useEffect(() => {
     const pMap = {}; (pastors ?? []).forEach((p) => { pMap[p.id] = p; });
     const cMap = {}; (churches ?? []).forEach((c) => { cMap[c.id] = c; });
 
-    // Hide posts from accounts flagged as the kinwove system account.
-    // Filter on is_system_account (not display_name) so real users named
-    // 'kinwove' aren't caught. Safe to query before the DB column exists —
-    // Supabase returns null for unknown columns, which is falsy.
-    const visible = enriched.filter((p) => !p.profiles?.is_system_account);
-    setPosts(visible);
+    setPosts(enriched);
     setSermonItems(sermons);
     setPastorMap(pMap);
     setChurchMap(cMap);

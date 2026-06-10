@@ -1349,6 +1349,147 @@ app.post('/api/cron/nudge-incomplete', async (req, res) => {
   res.json({ sent, total: incomplete.length });
 });
 
+// ── kinwove persona — daily auto-post (cron) ────────────────────────────────
+const PERSONA_PROMPT = `You are the kinwove voice — a warm, honest presence in a Christian community app.
+You post once a day to the community feed. Your audience includes lifelong believers, recent converts,
+skeptics, and people on the fence who don't have a church or Christian friends. Write so all of them
+feel welcome — never assume everyone in the room believes.
+
+Today, choose ONE post type and rotate to avoid feeling repetitive:
+- VERSE + REFLECTION: A verse worth sitting with, then 1–2 sentences on why it matters. Don't over-explain it. Include the reference (e.g. Psalm 46:10).
+- HONEST QUESTION: Ask the community something real and open. Something both believers and skeptics could genuinely answer. Avoid generic devotional questions.
+- GRACE MOMENT: A short, grounded observation about faith, doubt, or being human. No verse required. Something a person on the fence could read and feel seen by.
+
+Rules:
+- 2–4 sentences max. Shorter is almost always better.
+- No hashtags. No em-dashes. Use plain punctuation.
+- Never preachy. Never assumes everyone agrees.
+- Never start with "I" — you are kinwove, a presence, not a person.
+- Today is {DAY}, {DATE}.
+
+Respond ONLY with valid JSON on a single line: {"body":"post text here"}`;
+
+app.post('/api/cron/daily-post', async (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  if (secret && req.headers['x-cron-secret'] !== secret) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+
+  try {
+    const systemId = await getOrCreateSystemAccount();
+    if (!systemId) return res.status(503).json({ error: 'system account unavailable' });
+
+    const now = new Date();
+    const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const date = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const prompt = PERSONA_PROMPT.replace('{DAY}', dayName).replace('{DATE}', date);
+
+    const msg = await client.messages.create({
+      model: 'claude-opus-4-7',
+      max_tokens: 256,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const raw = msg.content?.[0]?.text?.trim() ?? '';
+    let body = '';
+    try {
+      const parsed = JSON.parse(raw);
+      body = (parsed.body ?? '').trim();
+    } catch {
+      const m = raw.match(/\{[^}]*"body"\s*:\s*"((?:[^"\\]|\\.)*)"/s);
+      body = m ? m[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : '';
+    }
+
+    if (!body) {
+      console.error('[daily-post] could not extract body from:', raw);
+      return res.status(500).json({ error: 'generation failed' });
+    }
+
+    const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
+    const postRes = await fetch(`${SUPABASE_URL}/rest/v1/posts`, {
+      method: 'POST',
+      headers: h,
+      body: JSON.stringify({ author_id: systemId, scope: 'me', visibility: 'public', body }),
+    });
+
+    if (!postRes.ok) {
+      const err = await postRes.text();
+      console.error('[daily-post] insert failed:', err);
+      return res.status(500).json({ error: 'insert failed' });
+    }
+
+    console.log(`[daily-post] posted: "${body.slice(0, 60)}…"`);
+    res.json({ ok: true, body });
+  } catch (e) {
+    console.error('[daily-post] error:', e?.message);
+    res.status(500).json({ error: e?.message ?? 'unknown' });
+  }
+});
+
+// ── kinwove persona — admin manual post ────────────────────────────────────
+app.post('/api/admin/kinwove-post', requireAdmin, async (req, res) => {
+  const { body } = req.body ?? {};
+  if (!body || typeof body !== 'string' || !body.trim()) {
+    return res.status(400).json({ error: 'body required' });
+  }
+
+  try {
+    const systemId = await getOrCreateSystemAccount();
+    if (!systemId) return res.status(503).json({ error: 'system account unavailable' });
+
+    const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
+    const postRes = await fetch(`${SUPABASE_URL}/rest/v1/posts`, {
+      method: 'POST',
+      headers: h,
+      body: JSON.stringify({ author_id: systemId, scope: 'me', visibility: 'public', body: body.trim() }),
+    });
+
+    if (!postRes.ok) {
+      const err = await postRes.text();
+      console.error('[kinwove-post] insert failed:', err);
+      return res.status(500).json({ error: 'insert failed' });
+    }
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[kinwove-post] error:', e?.message);
+    res.status(500).json({ error: e?.message ?? 'unknown' });
+  }
+});
+
+// ── kinwove persona — list recent posts (admin) ─────────────────────────────
+app.get('/api/admin/kinwove-posts', requireAdmin, async (req, res) => {
+  try {
+    const systemId = await getOrCreateSystemAccount();
+    if (!systemId) return res.json({ posts: [] });
+
+    const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/posts?author_id=eq.${systemId}&scope=eq.me&order=created_at.desc&limit=20&select=id,body,created_at`,
+      { headers: h },
+    );
+    const posts = r.ok ? await r.json() : [];
+    res.json({ posts });
+  } catch (e) {
+    res.json({ posts: [] });
+  }
+});
+
+// ── kinwove persona — delete post (admin) ───────────────────────────────────
+app.delete('/api/admin/kinwove-post/:id', requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return res.status(400).json({ error: 'invalid id' });
+  try {
+    const systemId = await getOrCreateSystemAccount();
+    const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+    await fetch(`${SUPABASE_URL}/rest/v1/posts?id=eq.${id}&author_id=eq.${systemId}`, { method: 'DELETE', headers: h });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e?.message ?? 'unknown' });
+  }
+});
+
 // ── Church email verification ────────────────────────────────────────────────
 
 const VERIFY_CODE_TTL_MS = 15 * 60 * 1000;

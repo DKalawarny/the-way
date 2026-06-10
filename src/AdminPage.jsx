@@ -327,6 +327,7 @@ const TABS = [
   { id: 'content',    label: 'Content' },
   { id: 'operations', label: 'Operations' },
   { id: 'sponsors',   label: 'Sponsors' },
+  { id: 'voice',      label: '✦ Voice' },
 ];
 
 const EMPTY_FORM = {
@@ -353,6 +354,13 @@ export default function AdminPage({ onBack }) {
   const [saving, setSaving] = useState(false);
   const [sponsorError, setSponsorError] = useState(null);
 
+  const [voicePosts, setVoicePosts] = useState([]);
+  const [voiceLoading, setVoiceLoading] = useState(false);
+  const [voiceDraft, setVoiceDraft] = useState('');
+  const [voicePosting, setVoicePosting] = useState(false);
+  const [voiceError, setVoiceError] = useState(null);
+  const [voiceSuccess, setVoiceSuccess] = useState(false);
+
   const fetchDashboard = useCallback(async () => {
     setDashLoading(true);
     setDashError(null);
@@ -375,6 +383,48 @@ export default function AdminPage({ onBack }) {
 
   useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
   useEffect(() => { if (tab === 'sponsors') loadSponsors(); }, [tab]);
+  useEffect(() => { if (tab === 'voice') loadVoicePosts(); }, [tab]);
+
+  async function loadVoicePosts() {
+    setVoiceLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const r = await fetch('/api/admin/kinwove-posts', { headers: { Authorization: `Bearer ${token}` } });
+      const data = await r.json();
+      setVoicePosts(data.posts ?? []);
+    } catch { setVoicePosts([]); }
+    setVoiceLoading(false);
+  }
+
+  async function postAsKinwove() {
+    if (!voiceDraft.trim() || voicePosting) return;
+    setVoicePosting(true);
+    setVoiceError(null);
+    setVoiceSuccess(false);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const r = await fetch('/api/admin/kinwove-post', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: voiceDraft.trim() }),
+      });
+      if (!r.ok) throw new Error((await r.json()).error ?? 'Failed');
+      setVoiceDraft('');
+      setVoiceSuccess(true);
+      setTimeout(() => setVoiceSuccess(false), 3000);
+      loadVoicePosts();
+    } catch (e) { setVoiceError(e.message); }
+    setVoicePosting(false);
+  }
+
+  async function deleteVoicePost(id) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    await fetch(`/api/admin/kinwove-post/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    setVoicePosts((prev) => prev.filter((p) => p.id !== id));
+  }
 
   // ── Church verify ───────────────────────────────────────────────────────────
   async function toggleChurchVerify(churchId, currentStatus) {
@@ -1120,6 +1170,66 @@ export default function AdminPage({ onBack }) {
               {saving ? 'Saving…' : editingId ? 'Save changes' : 'Add sponsor'}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* ── VOICE ─────────────────────────────────────────────────────────── */}
+      {tab === 'voice' && (
+        <div>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontFamily: T.display, fontSize: 16, fontWeight: 600, color: T.ink, marginBottom: 4 }}>kinwove Voice</div>
+            <div style={{ fontSize: 13, color: T.inkMuted, lineHeight: 1.6 }}>
+              Post to the community feed as kinwove. All members who follow kinwove see this in their feed.
+              Keep it warm, short, and welcoming to people still figuring things out.
+            </div>
+          </div>
+
+          <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: 20, marginBottom: 24 }}>
+            <textarea
+              value={voiceDraft}
+              onChange={(e) => setVoiceDraft(e.target.value)}
+              placeholder="Write something as kinwove… a verse, a question, a grace moment."
+              rows={5}
+              style={{ width: '100%', border: `1px solid ${T.line}`, borderRadius: 10, padding: '12px 14px', fontSize: 15, fontFamily: T.display, lineHeight: 1.6, color: T.ink, background: T.parchment, resize: 'vertical', boxSizing: 'border-box', outline: 'none' }}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
+              <div style={{ fontSize: 13, color: voiceDraft.length > 400 ? '#c05' : T.inkMuted }}>{voiceDraft.length} chars</div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                {voiceSuccess && <span style={{ fontSize: 13, color: '#4a7c59', fontWeight: 600 }}>Posted ✓</span>}
+                {voiceError && <span style={{ fontSize: 13, color: '#a53f2b' }}>{voiceError}</span>}
+                <button
+                  onClick={postAsKinwove}
+                  disabled={!voiceDraft.trim() || voicePosting}
+                  style={{ background: T.ink, color: T.cream, border: 'none', borderRadius: 999, padding: '10px 22px', fontSize: 14, fontWeight: 600, cursor: voiceDraft.trim() && !voicePosting ? 'pointer' : 'not-allowed', opacity: voiceDraft.trim() && !voicePosting ? 1 : 0.45 }}
+                >
+                  {voicePosting ? 'Posting…' : 'Post as kinwove'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.inkSoft, marginBottom: 12 }}>Recent posts</div>
+          {voiceLoading ? (
+            <div style={{ color: T.inkMuted, textAlign: 'center', padding: 32, fontFamily: T.serif }}>Loading…</div>
+          ) : voicePosts.length === 0 ? (
+            <div style={{ background: T.white, border: `1px dashed ${T.line}`, borderRadius: 14, padding: '32px 20px', textAlign: 'center', color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic' }}>
+              No kinwove posts yet.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {voicePosts.map((p) => (
+                <div key={p.id} style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 12, padding: '14px 16px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1, fontSize: 14, color: T.ink, lineHeight: 1.6, fontFamily: T.display }}>{p.body}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                    <div style={{ fontSize: 11, color: T.inkMuted }}>{new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                    <button onClick={() => deleteVoicePost(p.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.inkMuted, padding: 2, display: 'flex', alignItems: 'center' }}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
