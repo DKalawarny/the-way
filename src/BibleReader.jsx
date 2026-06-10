@@ -763,7 +763,8 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const { listening: micListening, toggle: toggleMic, supported: micSupported } =
     useSpeechRecognition((t) => { setChatInput(t); chatInputRef.current?.focus(); });
   const ttsVoice = profile?.tts_voice ?? 'onyx';
-  const { speakingId: rdSpeakingId, speak: rdSpeak, supported: rdTtsSupported } = useTextToSpeech({ voice: ttsVoice });
+  const { speakingId: rdSpeakingId, paused: rdPaused, speak: rdSpeak, stop: rdStop, pause: rdPause, resume: rdResume, rewind: rdRewind, forward: rdForward, supported: rdTtsSupported } = useTextToSpeech({ voice: ttsVoice });
+  const CHAPTER_TTS_ID = `ch:${bookId}:${chNum}`;
   const isDesktop    = winW >= 768;
   const C = dark ? DARK : LIGHT;
   const CC = chatDark ? DARK : LIGHT;
@@ -2060,6 +2061,46 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
 
             {!loading && !error && verses.length > 0 && (
               <>
+                {/* ── Chapter read-aloud controls ─────────────────── */}
+                {rdTtsSupported && (
+                  rdSpeakingId === CHAPTER_TTS_ID ? (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20,
+                      background: C.card, border: `1px solid ${C.border}`,
+                      borderRadius: 999, padding: '8px 14px',
+                    }}>
+                      <button onClick={() => rdRewind(10)} title="Back 10s" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.verse, fontSize: 15, padding: '2px 6px' }}>⏮</button>
+                      <button
+                        onClick={() => rdPaused ? rdResume() : rdPause()}
+                        title={rdPaused ? 'Resume' : 'Pause'}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.verse, fontSize: 15, padding: '2px 6px' }}
+                      >
+                        {rdPaused ? '▶' : '⏸'}
+                      </button>
+                      <button onClick={() => rdForward(10)} title="Skip 10s" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.verse, fontSize: 15, padding: '2px 6px' }}>⏭</button>
+                      <span style={{ fontSize: 12, color: C.muted, flex: 1, marginLeft: 4 }}>
+                        {rdPaused ? 'Paused' : 'Reading…'}
+                      </span>
+                      <button onClick={rdStop} title="Stop" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 13, padding: '2px 6px' }}>✕</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        const text = verses.map((v) => `${v.number}. ${v.text}`).join('  ');
+                        rdSpeak(CHAPTER_TTS_ID, text);
+                      }}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        background: 'none', border: `1px solid ${C.border}`,
+                        borderRadius: 999, padding: '6px 14px', marginBottom: 20,
+                        fontSize: 12.5, fontWeight: 500, color: C.muted, cursor: 'pointer',
+                      }}
+                    >
+                      ▶ Read chapter
+                    </button>
+                  )
+                )}
+
                 <div style={{ marginBottom: 16, position: 'relative' }}>
                   <button
                     onClick={() => setVersePickerOpen((v) => !v)}
