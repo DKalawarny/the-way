@@ -1388,7 +1388,8 @@ Respond ONLY with valid JSON on a single line: {"body":"post text here"}`;
 
 app.post('/api/cron/daily-post', async (req, res) => {
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers['x-cron-secret'] !== secret) {
+  const provided = req.headers['x-cron-secret'] || req.query.secret;
+  if (secret && provided !== secret) {
     return res.status(401).json({ error: 'unauthorized' });
   }
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
