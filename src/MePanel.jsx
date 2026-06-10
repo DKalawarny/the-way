@@ -1171,14 +1171,16 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: 8, paddingBottom: 4 }}>
-                <button onClick={onEditProfile} style={{
-                  background: T.white, color: T.ink,
-                  border: `1.5px solid ${T.ink}`,
-                  borderRadius: 999, padding: '8px 18px',
-                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                }}>Edit profile</button>
-              </div>
+              {!profile?.is_system_account && (
+                <div style={{ display: 'flex', gap: 8, paddingBottom: 4 }}>
+                  <button onClick={onEditProfile} style={{
+                    background: T.white, color: T.ink,
+                    border: `1.5px solid ${T.ink}`,
+                    borderRadius: 999, padding: '8px 18px',
+                    fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  }}>Edit profile</button>
+                </div>
+              )}
             </div>
 
             {/* Name + person type badge */}
@@ -1216,7 +1218,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
               }}>
                 "{profile.what_brought}"
               </div>
-            ) : (
+            ) : !profile?.is_system_account ? (
               <button onClick={onEditProfile} style={{
                 background: 'none', border: `1px dashed ${T.line}`,
                 borderRadius: 10, padding: '10px 14px', width: '100%', textAlign: 'left',
@@ -1224,7 +1226,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
               }}>
                 + Add a bio
               </button>
-            )}
+            ) : null}
 
             {/* Stats — frontispiece-style: display numerals + gold-leaf small caps */}
             <div style={{
@@ -1283,9 +1285,11 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
 
 
         {/* ── Plan & AI usage ──── */}
-        <div style={{ padding: '10px 20px 4px' }}>
-          <PlanLine plan={profile?.plan ?? 'free'} aiUsage={aiUsage} session={session} onUpgrade={onUpgrade} />
-        </div>
+        {!profile?.is_system_account && (
+          <div style={{ padding: '10px 20px 4px' }}>
+            <PlanLine plan={profile?.plan ?? 'free'} aiUsage={aiUsage} session={session} onUpgrade={onUpgrade} />
+          </div>
+        )}
 
         {/* Tabs — 4 tabs, gold accent, hairline anchor */}
         <div style={{
