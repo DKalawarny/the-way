@@ -327,7 +327,7 @@ const TABS = [
   { id: 'content',    label: 'Content' },
   { id: 'operations', label: 'Operations' },
   { id: 'sponsors',   label: 'Sponsors' },
-  { id: 'voice',      label: '✦ Voice' },
+  { id: 'voice',      label: '✦ Posts' },
 ];
 
 const EMPTY_FORM = {
@@ -1177,7 +1177,7 @@ export default function AdminPage({ onBack }) {
       {tab === 'voice' && (
         <div>
           <div style={{ marginBottom: 24 }}>
-            <div style={{ fontFamily: T.display, fontSize: 16, fontWeight: 600, color: T.ink, marginBottom: 4 }}>kinwove Voice</div>
+            <div style={{ fontFamily: T.display, fontSize: 16, fontWeight: 600, color: T.ink, marginBottom: 4 }}>kinwove Posts</div>
             <div style={{ fontSize: 13, color: T.inkMuted, lineHeight: 1.6 }}>
               Post to the community feed as kinwove. All members who follow kinwove see this in their feed.
               Keep it warm, short, and welcoming to people still figuring things out.
