@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Compass, Users, Heart, BookOpen, Building2, UserCheck, Shield, Search, Sparkles } from 'lucide-react';
+import { Compass, Users, Heart, BookOpen, Building2, UserCheck, Shield, Search, Sparkles, Volume2, StickyNote } from 'lucide-react';
 import { T } from './theme.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
@@ -25,7 +25,11 @@ const SECTIONS = [
       },
       {
         q: 'What does Ask do?',
-        a: 'Ask is kinwove\'s AI — powered by Claude. It answers Scripture questions, explores theology, helps you work through doubt, and never judges where you are in your journey. Tap Ask in the sidebar or the ⋮ menu on mobile to open it.',
+        a: 'Ask is kinwove\'s AI — powered by Claude. It answers Scripture questions, explores theology, helps you work through doubt, and never judges where you are in your journey. Tap Ask in the sidebar or the ⋮ menu on mobile to open it. Your conversation history is saved and accessible any time from the Conversations panel inside Ask.',
+      },
+      {
+        q: 'Can I access my Ask conversations on another device?',
+        a: 'Yes — open the Conversations panel inside Ask and turn on "Sync across devices." Your history will be saved to your account and loaded automatically whenever you sign in on any device.',
       },
     ],
   },
@@ -52,7 +56,11 @@ const SECTIONS = [
       },
       {
         q: 'What is the ⋯ menu on a post?',
-        a: 'On your own posts: edit content, change the audience, or delete it. On other people\'s posts: report content that violates community standards.',
+        a: 'On your own posts: edit content, change the audience, or delete it. On other people\'s posts: report the content or block the user. Blocking someone removes their posts from your feed and prevents them from interacting with yours.',
+      },
+      {
+        q: 'How do I block someone?',
+        a: 'Tap ⋯ on any post you didn\'t write and choose Block user. The block takes effect immediately — their content will no longer appear for you. Blocking is silent; they won\'t be notified.',
       },
       {
         q: 'How do I report a post?',
@@ -117,7 +125,19 @@ const SECTIONS = [
     items: [
       {
         q: 'How does the Bible reader work?',
-        a: 'Open the Bible tab to read Scripture with a built-in study interface. The Daily Verse shown in the header is tappable — it opens the reader directly to that passage.',
+        a: 'Open the Bible tab to read Scripture with a built-in study interface. Tap any verse to access explanations, cross-references, original language insights, and more. The Daily Verse shown in the header is tappable — it opens the reader directly to that passage.',
+      },
+      {
+        q: 'Can I listen to a chapter being read aloud?',
+        a: 'Yes. Once a chapter loads, tap "▶ Read chapter" above the verses. The chapter is read in your chosen voice (James or Grace — set in Edit Profile → Preferences). While playing you get full controls: ⏮ back 10 seconds, ⏸ pause, ⏭ skip 10 seconds, and ✕ to stop. Flipping to the next chapter automatically stops the current one and starts reading the new chapter.',
+      },
+      {
+        q: 'Can I start listening from a specific verse?',
+        a: 'Yes — tap any verse in the chapter and choose "▶ Read from here" in the popup. The audio will start from that verse and continue to the end of the chapter. kinwove remembers where you left off, so when you return the button says "Resume from v.X."',
+      },
+      {
+        q: 'How do I change the reading voice?',
+        a: 'Go to Settings → Edit Profile → Preferences and choose between James (deep, unhurried) and Grace (soft, soothing). The change applies everywhere voices are used — Bible read-aloud and AI response playback.',
       },
       {
         q: 'How do I open a passage from a post?',
@@ -130,6 +150,37 @@ const SECTIONS = [
       {
         q: 'What are Walks?',
         a: 'Walks are guided multi-day journeys through a theme or book of the Bible. Open the Bible tab and find Walks to start one at your own pace.',
+      },
+    ],
+  },
+  {
+    id: 'notes',
+    Icon: StickyNote,
+    title: 'Notes',
+    items: [
+      {
+        q: 'How do I take a note on a Bible verse?',
+        a: 'Tap any verse in the Bible reader to open the verse popup, then choose "✏ Note." Write your thought and tap Save. A small gold dot will appear next to that verse so you can see at a glance which verses you\'ve annotated.',
+      },
+      {
+        q: 'Where do I find all my notes?',
+        a: 'Tap Notes in the sidebar nav (between Bible and You on desktop, or via the menu on mobile). Your notes are grouped by book of the Bible in canonical order — Genesis through Revelation.',
+      },
+      {
+        q: 'Can I edit a note after saving it?',
+        a: 'Yes — tap the note text to edit it inline. Make your changes and tap Save. Clearing the text entirely and saving will delete the note.',
+      },
+      {
+        q: 'Can I search my notes?',
+        a: 'Yes — use the search bar at the top of the Notes screen to filter by book name, note text, or the verse text itself.',
+      },
+      {
+        q: 'What does "Ask about this" do on a note?',
+        a: 'Tapping "Ask about this" on any note opens the AI with that verse preloaded as context, so you can dig deeper into exactly what you were reflecting on.',
+      },
+      {
+        q: 'Can I jump from a note back to the verse in the Bible?',
+        a: 'Yes — tap the gold verse reference at the top of any note card (e.g. GENESIS 1:3 ↗) and you\'ll be taken straight to that passage in the Bible reader.',
       },
     ],
   },
@@ -189,6 +240,10 @@ const SECTIONS = [
         q: 'What are church-only posts?',
         a: 'When you set a post audience to Church, only members of your church on kinwove can see it. It\'s a space for your congregation to share within the family.',
       },
+      {
+        q: 'How does the youth invite work?',
+        a: 'Pastors can generate a separate youth invite code from their church dashboard (People tab). Share it with parents or youth group members. When someone joins with the youth code they\'re added to the church as a youth-sponsored member. Accounts automatically graduate to full access when the member turns 17 — no manual steps needed.',
+      },
     ],
   },
   {
@@ -228,8 +283,12 @@ const SECTIONS = [
         a: 'Yes — in Settings → Edit profile, toggle off Allow friend requests. People can still follow you but won\'t be able to send a request.',
       },
       {
+        q: 'How do I block someone?',
+        a: 'Tap ⋯ on any post by the person you want to block and choose Block user. Their content will no longer appear in your feed and they won\'t be able to interact with yours. Blocking is silent — they are not notified.',
+      },
+      {
         q: 'Are my conversations with the AI private?',
-        a: 'Yes. Conversations with Ask are private to you and are never shared with other users or visible on your profile.',
+        a: 'Yes. Conversations with Ask are private to you and are never shared with other users or visible on your profile. By default they are stored locally on your device only. You can optionally turn on "Sync across devices" inside the Conversations panel to save your history to your account.',
       },
       {
         q: 'How do I delete my account?',
