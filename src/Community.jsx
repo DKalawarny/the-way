@@ -117,6 +117,7 @@ function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, 
   const [peLoading, setPeLoading] = useState(true);
   const [churchFollows, setChurchFollows] = useState(new Set());
   const [unreadMap, setUnreadMap] = useState({});
+  const [churchSearch, setChurchSearch] = useState('');
 
   useEffect(() => {
     const myId = session?.user?.id;
@@ -252,15 +253,26 @@ function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, 
 
       {/* Churches to follow */}
       <div style={{ padding: '0 16px', marginBottom: 28 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: T.inkMuted, fontFamily: T.sans, marginBottom: 14 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: T.inkMuted, fontFamily: T.sans, marginBottom: 10 }}>
           Churches
         </div>
+        <input
+          type="text"
+          value={churchSearch}
+          onChange={(e) => setChurchSearch(e.target.value)}
+          placeholder="Search by name, city, or denomination…"
+          style={{ width: '100%', boxSizing: 'border-box', border: `1px solid ${T.line}`, borderRadius: 10, padding: '9px 14px', fontSize: 14, background: T.white, color: T.ink, fontFamily: T.sans, outline: 'none', marginBottom: 12 }}
+        />
         {chLoading && <div style={{ color: T.inkMuted, fontSize: 14, padding: '12px 0' }}>Loading…</div>}
         {!chLoading && churches.length === 0 && (
           <div style={{ color: T.inkMuted, fontSize: 14, lineHeight: 1.6 }}>No verified churches yet — check back soon.</div>
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {churches.map((c) => (
+          {churches.filter((c) => {
+            if (!churchSearch.trim()) return true;
+            const q = churchSearch.toLowerCase();
+            return c.name?.toLowerCase().includes(q) || c.city?.toLowerCase().includes(q) || c.country?.toLowerCase().includes(q) || c.denomination?.toLowerCase().includes(q);
+          }).map((c) => (
             <div key={c.id} style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 44, height: 44, borderRadius: '50%', background: T.parchment, border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0, overflow: 'hidden' }}>
                 {c.avatar_url ? <img src={c.avatar_url} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '⛪'}
@@ -1816,9 +1828,26 @@ useEffect(() => {
     for (const r of sd ?? []) supportCounts[r.prayer_id] = (supportCounts[r.prayer_id] ?? 0) + 1;
     for (const r of ed ?? []) encCounts[r.prayer_id] = (encCounts[r.prayer_id] ?? 0) + 1;
     const myPrayedSet = new Set((myPrayedRows ?? []).map(r => r.prayer_id));
-    setPrayers(data.map(p => ({ ...p, support_count: supportCounts[p.id] ?? 0, enc_count: encCounts[p.id] ?? 0, my_prayed: myPrayedSet.has(p.id) })));
+    const userCity    = (profile?.city    ?? '').toLowerCase().trim();
+    const userCountry = (profile?.country ?? '').toLowerCase().trim();
+    const enriched = data.map(p => ({
+      ...p,
+      support_count: supportCounts[p.id] ?? 0,
+      enc_count: encCounts[p.id] ?? 0,
+      my_prayed: myPrayedSet.has(p.id),
+      _isFriend:     following.has(p.user_id),
+      _sameCity:     userCity    && p.profiles?.city?.toLowerCase().trim()    === userCity,
+      _sameCountry:  userCountry && p.profiles?.country?.toLowerCase().trim() === userCountry,
+    }));
+    enriched.sort((a, b) => {
+      if (a._isFriend    !== b._isFriend)    return a._isFriend    ? -1 : 1;
+      if (a._sameCity    !== b._sameCity)    return a._sameCity    ? -1 : 1;
+      if (a._sameCountry !== b._sameCountry) return a._sameCountry ? -1 : 1;
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+    setPrayers(enriched);
     setPrayersLoading(false);
-  }, [session]);
+  }, [session, following, profile?.city, profile?.country]);
 
   useEffect(() => { if (feedType === 'prayers') loadCommunityPrayers(); }, [feedType, loadCommunityPrayers]);
 
