@@ -1390,7 +1390,15 @@ app.post('/api/cron/daily-post', async (req, res) => {
   const secret = process.env.CRON_SECRET;
   const provided = req.headers['x-cron-secret'] || req.query.secret;
   if (secret && provided !== secret) {
-    return res.status(401).json({ error: 'unauthorized' });
+    // Also allow admin users to trigger via bearer token
+    const userId = await attachUser(req);
+    if (userId && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=is_admin&limit=1`, { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } });
+      const rows = await r.json();
+      if (!rows[0]?.is_admin) return res.status(401).json({ error: 'unauthorized' });
+    } else {
+      return res.status(401).json({ error: 'unauthorized' });
+    }
   }
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
 
