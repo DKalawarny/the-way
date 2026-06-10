@@ -1208,7 +1208,21 @@ export default function AdminPage({ onBack }) {
             </div>
           </div>
 
-          <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.inkSoft, marginBottom: 12 }}>Recent posts</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: T.inkSoft }}>Recent posts</div>
+            <button
+              onClick={async () => {
+                const { data: { session: s } } = await supabase.auth.getSession();
+                const r = await fetch('/api/cron/daily-post', { method: 'POST', headers: { 'x-cron-secret': '', Authorization: `Bearer ${s?.access_token}` } });
+                const d = await r.json();
+                if (d.ok) { loadVoicePosts(); }
+                else { setVoiceError(d.error ?? 'Failed'); }
+              }}
+              style={{ background: 'none', border: `1px solid ${T.line}`, borderRadius: 999, padding: '6px 14px', fontSize: 12, fontWeight: 600, color: T.inkSoft, cursor: 'pointer' }}
+            >
+              Generate today's post
+            </button>
+          </div>
           {voiceLoading ? (
             <div style={{ color: T.inkMuted, textAlign: 'center', padding: 32, fontFamily: T.serif }}>Loading…</div>
           ) : voicePosts.length === 0 ? (
