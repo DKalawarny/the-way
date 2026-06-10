@@ -736,7 +736,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const [noteOpen,   setNoteOpen]   = useState(false);
   const [noteVerse,  setNoteVerse]  = useState(null);
   const [ttsStartVerse, setTtsStartVerse] = useState(null);
-  const [ttsPicker,     setTtsPicker]     = useState(false);
+  const autoStartTts = useRef(false);
   const [noteText,   setNoteText]   = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
   const [completed, setCompleted] = useState(() => {
@@ -768,19 +768,32 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const { speakingId: rdSpeakingId, paused: rdPaused, speak: rdSpeak, stop: rdStop, pause: rdPause, resume: rdResume, rewind: rdRewind, forward: rdForward, supported: rdTtsSupported } = useTextToSpeech({ voice: ttsVoice });
   const CHAPTER_TTS_ID = `ch:${bookId}:${chNum}`;
 
-  // Load saved TTS start verse when chapter changes
+  // When chapter changes: if audio was playing, stop it and flag to auto-start new chapter
   useEffect(() => {
     const saved = localStorage.getItem(`rdr_tts:${bookId}:${chNum}`);
     setTtsStartVerse(saved ? parseInt(saved, 10) : null);
-    setTtsPicker(false);
+    if (rdSpeakingId) {
+      autoStartTts.current = true;
+      rdStop();
+    }
   }, [bookId, chNum]);
+
+  // When verses finish loading: if flagged, auto-start reading from the beginning
+  useEffect(() => {
+    if (!autoStartTts.current || verses.length === 0) return;
+    autoStartTts.current = false;
+    const firstVerse = verses[0]?.number ?? 1;
+    setTtsStartVerse(firstVerse);
+    localStorage.setItem(`rdr_tts:${bookId}:${chNum}`, String(firstVerse));
+    const text = verses.map((v) => v.text).join(' ');
+    rdSpeak(`ch:${bookId}:${chNum}`, text);
+  }, [verses]);
 
   function startReadingFrom(verseNum) {
     const startIdx = verses.findIndex((v) => v.number === verseNum);
     const slice = startIdx >= 0 ? verses.slice(startIdx) : verses;
-    const text = slice.map((v) => `${v.number}. ${v.text}`).join('  ');
+    const text = slice.map((v) => v.text).join(' ');
     setTtsStartVerse(verseNum);
-    setTtsPicker(false);
     setSelectedVerse(null);
     localStorage.setItem(`rdr_tts:${bookId}:${chNum}`, String(verseNum));
     rdSpeak(CHAPTER_TTS_ID, text);
@@ -2085,55 +2098,24 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                 {/* ── Chapter read-aloud controls ─────────────────── */}
                 {rdTtsSupported && (
                   rdSpeakingId === CHAPTER_TTS_ID ? (
-                    <div style={{ marginBottom: 20 }}>
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        background: C.card, border: `1px solid ${C.border}`,
-                        borderRadius: 999, padding: '8px 14px',
-                      }}>
-                        <button onClick={() => rdRewind(10)} title="Back 10s" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.verse, fontSize: 15, padding: '2px 6px' }}>⏮</button>
-                        <button
-                          onClick={() => rdPaused ? rdResume() : rdPause()}
-                          title={rdPaused ? 'Resume' : 'Pause'}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.verse, fontSize: 15, padding: '2px 6px' }}
-                        >
-                          {rdPaused ? '▶' : '⏸'}
-                        </button>
-                        <button onClick={() => rdForward(10)} title="Skip 10s" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.verse, fontSize: 15, padding: '2px 6px' }}>⏭</button>
-                        <button
-                          onClick={() => setTtsPicker((v) => !v)}
-                          title="Jump to verse"
-                          style={{ background: 'none', border: `1px solid ${C.border}`, borderRadius: 999, cursor: 'pointer', color: C.verse, fontSize: 11, fontWeight: 600, padding: '2px 8px' }}
-                        >
-                          {ttsStartVerse ? `v.${ttsStartVerse}` : 'v.1'} ▾
-                        </button>
-                        <span style={{ fontSize: 12, color: C.muted, flex: 1 }}>
-                          {rdPaused ? 'Paused' : 'Reading…'}
-                        </span>
-                        <button onClick={rdStop} title="Stop" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 13, padding: '2px 6px' }}>✕</button>
-                      </div>
-                      {ttsPicker && (
-                        <div style={{
-                          marginTop: 8, padding: 10, borderRadius: 12,
-                          background: C.card, border: `1px solid ${C.border}`,
-                          display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(40px, 1fr))', gap: 6,
-                        }}>
-                          {verses.map((v) => (
-                            <button
-                              key={v.number}
-                              onClick={() => startReadingFrom(v.number)}
-                              style={{
-                                background: ttsStartVerse === v.number ? 'rgba(184,115,58,0.2)' : 'transparent',
-                                border: `1px solid ${ttsStartVerse === v.number ? T.gold : C.cardBorder ?? C.border}`,
-                                borderRadius: 8, padding: '6px 0', fontSize: 13, fontWeight: 600,
-                                color: C.text, cursor: 'pointer',
-                              }}
-                            >
-                              {v.number}
-                            </button>
-                          ))}
-                        </div>
-                      )}
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20,
+                      background: C.card, border: `1px solid ${C.border}`,
+                      borderRadius: 999, padding: '8px 14px',
+                    }}>
+                      <button onClick={() => rdRewind(10)} title="Back 10s" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.verse, fontSize: 15, padding: '2px 6px' }}>⏮</button>
+                      <button
+                        onClick={() => rdPaused ? rdResume() : rdPause()}
+                        title={rdPaused ? 'Resume' : 'Pause'}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.verse, fontSize: 15, padding: '2px 6px' }}
+                      >
+                        {rdPaused ? '▶' : '⏸'}
+                      </button>
+                      <button onClick={() => rdForward(10)} title="Skip 10s" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.verse, fontSize: 15, padding: '2px 6px' }}>⏭</button>
+                      <span style={{ fontSize: 12, color: C.muted, flex: 1, marginLeft: 4 }}>
+                        {rdPaused ? 'Paused' : 'Reading…'}{ttsStartVerse && ttsStartVerse !== verses[0]?.number ? ` from v.${ttsStartVerse}` : ''}
+                      </span>
+                      <button onClick={rdStop} title="Stop" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 13, padding: '2px 6px' }}>✕</button>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
