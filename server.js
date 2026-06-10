@@ -1436,7 +1436,7 @@ app.post('/api/cron/daily-post', async (req, res) => {
     const postRes = await fetch(`${SUPABASE_URL}/rest/v1/posts`, {
       method: 'POST',
       headers: h,
-      body: JSON.stringify({ author_id: systemId, scope: 'me', visibility: 'public', body }),
+      body: JSON.stringify({ author_id: systemId, scope: 'me', visibility: 'public', kind: 'text', body }),
     });
 
     if (!postRes.ok) {
@@ -1468,7 +1468,7 @@ app.post('/api/admin/kinwove-post', requireAdmin, async (req, res) => {
     const postRes = await fetch(`${SUPABASE_URL}/rest/v1/posts`, {
       method: 'POST',
       headers: h,
-      body: JSON.stringify({ author_id: systemId, scope: 'me', visibility: 'public', body: body.trim() }),
+      body: JSON.stringify({ author_id: systemId, scope: 'me', visibility: 'public', kind: 'text', body: body.trim() }),
     });
 
     if (!postRes.ok) {
