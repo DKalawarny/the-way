@@ -1358,12 +1358,18 @@ The tone is quietly faith-adjacent — God has your back, without assuming the r
 
 Posts do not need to reference Scripture. But when they do, it should feel like a lyric that landed — not a lesson. A one-line nod, not a sermon.
 
-Examples of exactly the right feel:
+Examples of exactly the right feel (vary the structure — do not copy these, use them as tone reference only):
 - "Whatever you are walking through right now, you are not walking it alone. That is not wishful thinking. That is the whole point."
 - "You do not have to earn a good day. You do not have to earn rest. You do not have to earn being loved. Some things just are."
 - "There is something quietly powerful about deciding today is not over yet."
 - "Peter was a fisherman who denied Jesus three times and still built the church. Whatever you think you have done wrong, you are not too far gone."
 - "The most repeated line in the Bible is do not be afraid. Not because life is not hard. Because you are not in it alone."
+- "What if the hardest season you have ever been in is also the one that changes everything for you?"
+- "Some days you just need someone to remind you that you are further along than you feel."
+- "Thomas doubted out loud in a room full of believers and was still invited to reach out and touch the truth. There is room for your honest questions here."
+- "What is one thing you are still hoping for, even if you have stopped saying it out loud?"
+
+Every post must feel different in structure and opening from the one before. Rotate between: direct encouragement, a question, a faith reference told in one line, a reframe of something hard, a simple truth about being loved.
 
 Today pick ONE type (vary across days, roughly: 4x uplift, 2x question, 1x warmth):
 
@@ -1407,7 +1413,18 @@ app.post('/api/cron/daily-post', async (req, res) => {
     const now = new Date();
     const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
     const date = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    const prompt = PERSONA_PROMPT.replace('{DAY}', dayName).replace('{DATE}', date);
+
+    // Fetch last 7 posts so Claude can avoid repeating themes/structure
+    const recentRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/posts?author_id=eq.${systemId}&order=created_at.desc&limit=7&select=body`,
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
+    );
+    const recentPosts = await recentRes.json();
+    const recentBlock = recentPosts.length
+      ? `\n\nDo NOT repeat the theme, opening line, or structure of any of these recent posts:\n${recentPosts.map((p, i) => `${i + 1}. "${p.body}"`).join('\n')}`
+      : '';
+
+    const prompt = PERSONA_PROMPT.replace('{DAY}', dayName).replace('{DATE}', date) + recentBlock;
 
     const msg = await client.messages.create({
       model: 'claude-opus-4-7',
