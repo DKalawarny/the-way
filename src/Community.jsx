@@ -138,13 +138,30 @@ function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, 
   }, [session?.user?.id, userGroups]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    // Verified churches — exclude user's own church
+    // Verified churches with member count — exclude user's own church
     supabase.from('churches')
-      .select('id, name, city, country, denomination, verification_status, avatar_url')
+      .select('id, name, city, country, denomination, verification_status, avatar_url, profiles!church_id(count)')
       .eq('verification_status', 'verified')
+      .eq('is_public', true)
       .neq('id', profile?.church_id ?? '00000000-0000-0000-0000-000000000000')
-      .limit(8)
-      .then(({ data }) => { setChurches(data ?? []); setChLoading(false); });
+      .limit(40)
+      .then(({ data }) => {
+        const userCity    = (profile?.city    ?? '').toLowerCase().trim();
+        const userCountry = (profile?.country ?? '').toLowerCase().trim();
+        const enriched = (data ?? []).map((c) => ({
+          ...c,
+          memberCount: c.profiles?.[0]?.count ?? 0,
+          _sameCity:    userCity    && c.city?.toLowerCase().trim()    === userCity,
+          _sameCountry: userCountry && c.country?.toLowerCase().trim() === userCountry,
+        }));
+        enriched.sort((a, b) => {
+          if (a._sameCity !== b._sameCity)    return a._sameCity    ? -1 : 1;
+          if (a._sameCountry !== b._sameCountry) return a._sameCountry ? -1 : 1;
+          return b.memberCount - a.memberCount;
+        });
+        setChurches(enriched);
+        setChLoading(false);
+      });
 
     // Verified pastors / notable people not yet followed
     supabase.from('profiles')
@@ -159,7 +176,7 @@ function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, 
       supabase.from('church_follows').select('church_id').eq('user_id', session.user.id)
         .then(({ data }) => setChurchFollows(new Set(data?.map((r) => r.church_id) ?? [])));
     }
-  }, [session?.user?.id, profile?.church_id]);
+  }, [session?.user?.id, profile?.church_id, profile?.city, profile?.country]);
 
   async function toggleChurchFollow(churchId) {
     if (!session?.user?.id) return;
@@ -236,7 +253,7 @@ function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, 
       {/* Churches to follow */}
       <div style={{ padding: '0 16px', marginBottom: 28 }}>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: T.inkMuted, fontFamily: T.sans, marginBottom: 14 }}>
-          Verified churches
+          Churches
         </div>
         {chLoading && <div style={{ color: T.inkMuted, fontSize: 14, padding: '12px 0' }}>Loading…</div>}
         {!chLoading && churches.length === 0 && (
@@ -249,9 +266,13 @@ function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, 
                 {c.avatar_url ? <img src={c.avatar_url} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '⛪'}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, fontFamily: T.serif, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, fontFamily: T.serif, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
+                  {c._sameCity && <span style={{ fontSize: 10, fontWeight: 700, color: T.gold, background: `${T.gold}18`, border: `1px solid ${T.gold}40`, borderRadius: 999, padding: '1px 7px', whiteSpace: 'nowrap' }}>Near you</span>}
+                </div>
                 <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2 }}>
                   {[c.denomination, [c.city, c.country].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}
+                  {c.memberCount > 0 && <span style={{ marginLeft: 6, color: T.inkMuted }}>· {c.memberCount.toLocaleString()} {c.memberCount === 1 ? 'member' : 'members'}</span>}
                 </div>
               </div>
               <button
