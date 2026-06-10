@@ -21,6 +21,7 @@ const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 export function useTextToSpeech({ voice = 'onyx' } = {}) {
   const [speakingId, setSpeakingId] = useState(null);
   const [paused, setPaused]         = useState(false);
+  const [loadingId, setLoadingId]   = useState(null);
   // audioRef holds either an HTMLAudioElement (desktop) or a Web Audio adapter (iOS)
   const audioRef    = useRef(null);
   const msRef       = useRef(null);   // MediaSource — desktop streaming only
@@ -67,6 +68,7 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     setSpeakingId(null);
     setPaused(false);
+    setLoadingId(null);
   }
 
   function pause() {
@@ -228,6 +230,7 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
       node.start(0, offset);
     };
 
+    setLoadingId(null);
     playFrom(0);
   }
 
@@ -237,6 +240,7 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
     if (speakingId === id) { stop(); return; }
     stop();
     setSpeakingId(id);
+    setLoadingId(id);
     abortRef.current = new AbortController();
 
     // MUST be called synchronously here, before any await, while the user
@@ -291,10 +295,12 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
       });
 
       await audio.play();
+      setLoadingId(null);
     } catch (e) {
       if (e?.name === 'AbortError') return;
       console.warn('[tts] falling back to Web Speech:', e?.message);
       stopAudio();
+      setLoadingId(null);
       fallbackSpeak(id, text);
     }
   }
@@ -356,5 +362,5 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
     window.speechSynthesis.speak(utt);
   }
 
-  return { speakingId, paused, speak, stop, pause, resume, rewind, forward, supported };
+  return { speakingId, loadingId, paused, speak, stop, pause, resume, rewind, forward, supported };
 }

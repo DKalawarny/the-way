@@ -765,7 +765,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const { listening: micListening, toggle: toggleMic, supported: micSupported } =
     useSpeechRecognition((t) => { setChatInput(t); chatInputRef.current?.focus(); });
   const ttsVoice = profile?.tts_voice ?? 'onyx';
-  const { speakingId: rdSpeakingId, paused: rdPaused, speak: rdSpeak, stop: rdStop, pause: rdPause, resume: rdResume, rewind: rdRewind, forward: rdForward, supported: rdTtsSupported } = useTextToSpeech({ voice: ttsVoice });
+  const { speakingId: rdSpeakingId, loadingId: rdLoadingId, paused: rdPaused, speak: rdSpeak, stop: rdStop, pause: rdPause, resume: rdResume, rewind: rdRewind, forward: rdForward, supported: rdTtsSupported } = useTextToSpeech({ voice: ttsVoice });
   const CHAPTER_TTS_ID = `ch:${bookId}:${chNum}`;
 
   // When chapter changes: if audio was playing, stop it and flag to auto-start new chapter
@@ -2097,23 +2097,24 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
               <>
                 {/* ── Chapter read-aloud controls ─────────────────── */}
                 {rdTtsSupported && (
-                  rdSpeakingId === CHAPTER_TTS_ID ? (
+                  (rdSpeakingId === CHAPTER_TTS_ID || rdLoadingId === CHAPTER_TTS_ID) ? (
                     <div style={{
                       display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20,
                       background: C.card, border: `1px solid ${C.border}`,
                       borderRadius: 999, padding: '8px 14px',
                     }}>
-                      <button onClick={() => rdRewind(10)} title="Back 10s" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.verse, fontSize: 15, padding: '2px 6px' }}>⏮</button>
+                      <button onClick={() => rdRewind(10)} title="Back 10s" disabled={!!rdLoadingId} style={{ background: 'none', border: 'none', cursor: rdLoadingId ? 'default' : 'pointer', color: rdLoadingId ? C.muted : C.verse, fontSize: 15, padding: '2px 6px', opacity: rdLoadingId ? 0.4 : 1 }}>⏮</button>
                       <button
                         onClick={() => rdPaused ? rdResume() : rdPause()}
                         title={rdPaused ? 'Resume' : 'Pause'}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.verse, fontSize: 15, padding: '2px 6px' }}
+                        disabled={!!rdLoadingId}
+                        style={{ background: 'none', border: 'none', cursor: rdLoadingId ? 'default' : 'pointer', color: rdLoadingId ? C.muted : C.verse, fontSize: 15, padding: '2px 6px', opacity: rdLoadingId ? 0.4 : 1 }}
                       >
                         {rdPaused ? '▶' : '⏸'}
                       </button>
-                      <button onClick={() => rdForward(10)} title="Skip 10s" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.verse, fontSize: 15, padding: '2px 6px' }}>⏭</button>
-                      <span style={{ fontSize: 12, color: C.muted, flex: 1, marginLeft: 4 }}>
-                        {rdPaused ? 'Paused' : 'Reading…'}{ttsStartVerse && ttsStartVerse !== verses[0]?.number ? ` from v.${ttsStartVerse}` : ''}
+                      <button onClick={() => rdForward(10)} title="Skip 10s" disabled={!!rdLoadingId} style={{ background: 'none', border: 'none', cursor: rdLoadingId ? 'default' : 'pointer', color: rdLoadingId ? C.muted : C.verse, fontSize: 15, padding: '2px 6px', opacity: rdLoadingId ? 0.4 : 1 }}>⏭</button>
+                      <span style={{ fontSize: 12, color: C.muted, flex: 1, marginLeft: 4, fontStyle: rdLoadingId ? 'italic' : 'normal' }}>
+                        {rdLoadingId ? 'Preparing…' : rdPaused ? 'Paused' : 'Reading…'}{!rdLoadingId && ttsStartVerse && ttsStartVerse !== verses[0]?.number ? ` from v.${ttsStartVerse}` : ''}
                       </span>
                       <button onClick={rdStop} title="Stop" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 13, padding: '2px 6px' }}>✕</button>
                     </div>
