@@ -60,7 +60,7 @@ export const PERSON_TYPES = [
     id: 'life',
     emoji: '🧭',
     label: 'Life Questions',
-    description: "Real life questions — purpose, anxiety, money, identity, decisions — answered from scripture.",
+    description: "Real life questions — purpose, anxiety, money, identity, decisions — grounded in scripture.",
   },
 ];
 
