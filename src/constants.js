@@ -56,6 +56,12 @@ export const PERSON_TYPES = [
     label: 'Relationships',
     description: 'Dating, marriage, family, forgiveness — through a faith lens.',
   },
+  {
+    id: 'life',
+    emoji: '🧭',
+    label: 'Life Questions',
+    description: "Real life questions — purpose, anxiety, money, identity, decisions — answered from scripture.",
+  },
 ];
 
 export const INTAKE_QUESTIONS = {
@@ -220,6 +226,13 @@ export const STARTERS = {
     'How do I honour my parents when they\'ve hurt me?',
     'I\'m lonely. What does faith say about that?',
   ],
+  life: [
+    'I don\'t know what I\'m supposed to do with my life.',
+    'What does the Bible say about anxiety and worry?',
+    'How do I make a big decision I\'m not sure about?',
+    'I feel stuck. Is that something faith speaks to?',
+    'What does scripture say about money and how I use it?',
+  ],
 };
 
 export const DEEPER_STARTERS = {
@@ -299,6 +312,13 @@ export const DEEPER_STARTERS = {
     "What does it look like to honour parents who were harmful?",
     "How do Christian theology and psychology think differently about forgiveness?",
     "What does scripture say about loneliness and singleness honestly?",
+  ],
+  life: [
+    "What does Proverbs actually say about wisdom in decision-making?",
+    "How does scripture frame identity — who am I, biblically speaking?",
+    "What does the Bible say about ambition and whether it's okay to want more?",
+    "How do I hold faith and mental health struggles at the same time?",
+    "What does scripture say about contentment when life feels like it's not enough?",
   ],
 };
 
