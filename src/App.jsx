@@ -1982,7 +1982,6 @@ export default function App() {
   const [chatScrollToMsg, setChatScrollToMsg] = useState(null);
   const [chatSeededFromNote, setChatSeededFromNote] = useState(false);
   const [prefilledInput, setPrefilledInput] = useState('');
-  const { notes, addNote, removeNote } = useNotes(session?.user?.id ?? null);
   const [showTour, setShowTour] = useState(false);
   const [showVerseCard, setShowVerseCard] = useState(false);
   const stageSaveTimerRef = useRef(null);
@@ -2007,6 +2006,7 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const { conversations, create: createConv, update: updateConv, remove: removeConv } = useConversations(session?.user?.id ?? null, profile?.sync_conversations ?? false);
+  const { notes, addNote, removeNote } = useNotes(session?.user?.id ?? null);
   // Keep a ref so stage-save effect can access the current session without
   // needing session in its dependency array (would cause double-saves).
   const _setSession = (s) => { sessionRef.current = s; setSession(s); };
