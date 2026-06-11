@@ -1301,21 +1301,23 @@ function ConversationHistory({ open, onClose, conversations, onLoad, onDelete, o
   );
 }
 
-function useNotes() {
-  const [notes, setNotes] = useState(() => {
-    try {
-      const raw = localStorage.getItem(NOTES_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
+function useNotes(userId = null) {
+  const [notes, setNotes] = useState([]);
+  const loadedForRef = useRef(null);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
-    } catch {}
-  }, [notes]);
+    if (!userId) { setNotes([]); loadedForRef.current = null; return; }
+    if (loadedForRef.current === userId) return;
+    loadedForRef.current = userId;
+    try { const raw = localStorage.getItem(`${NOTES_KEY}:${userId}`); setNotes(raw ? JSON.parse(raw) : []); }
+    catch { setNotes([]); }
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    try { localStorage.setItem(`${NOTES_KEY}:${userId}`, JSON.stringify(notes)); }
+    catch {}
+  }, [notes, userId]);
 
   const addNote = (n) => {
     const note = {
@@ -1926,7 +1928,7 @@ export default function App() {
   const [viewingChurchId, setViewingChurchId] = useState(null);
   const [winW, setWinW] = useState(() => window.innerWidth);
   const [journeysOpen, setJourneysOpen] = useState(false);
-  const [journeyProgress, setJourneyProgress] = useState(() => getJourneyProgress());
+  const [journeyProgress, setJourneyProgress] = useState({});
   const [autoSendPrompt, setAutoSendPrompt] = useState(null);
   const [installTrigger, setInstallTrigger] = useState(false);
   const [userGroups, setUserGroups] = useState([]);   // [{ group, role }, ...]
@@ -1980,7 +1982,7 @@ export default function App() {
   const [chatScrollToMsg, setChatScrollToMsg] = useState(null);
   const [chatSeededFromNote, setChatSeededFromNote] = useState(false);
   const [prefilledInput, setPrefilledInput] = useState('');
-  const { notes, addNote, removeNote } = useNotes();
+  const { notes, addNote, removeNote } = useNotes(session?.user?.id ?? null);
   const [showTour, setShowTour] = useState(false);
   const [showVerseCard, setShowVerseCard] = useState(false);
   const stageSaveTimerRef = useRef(null);
@@ -2025,6 +2027,11 @@ export default function App() {
   // On first profile load: if the user still has the default 'en' but their
   // browser is in another language, silently adopt the browser language so AI
   // features and the lang attribute both reflect where they actually are.
+  useEffect(() => {
+    const uid = session?.user?.id ?? null;
+    setJourneyProgress(getJourneyProgress(uid));
+  }, [session?.user?.id]);
+
   useEffect(() => {
     if (!profile?.id || !session?.user?.id) return;
     const detected = navigator.language?.split('-')[0] ?? 'en';
@@ -2680,7 +2687,7 @@ export default function App() {
   }
 
   function startJourneyStep(journey, stepIndex, prompt) {
-    const newProgress = advanceJourneyProgress(journey.id, stepIndex);
+    const newProgress = advanceJourneyProgress(journey.id, stepIndex, session?.user?.id ?? null);
     setJourneyProgress(newProgress);
     setJourneysOpen(false);
     const pt = journey.personType;

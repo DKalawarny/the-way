@@ -707,6 +707,8 @@ const BIBLE_READ_TOUR_STEPS = [
 ];
 
 export default function BibleReader({ session, profile, homeKey = 0, onClose, onOpenChat, jumpRef, topOffset = 0 }) {
+  const uid = session?.user?.id ?? 'guest';
+
   // ── Navigation state ────────────────────────────────────────────────────────
   const [view, setView]         = useState('home');      // 'home' | 'chapters' | 'reading'
   const [chapBook, setChapBook] = useState(ALL_BOOKS[0]); // book shown in chapters view
@@ -746,7 +748,8 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const [noteText,   setNoteText]   = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
   const [completed, setCompleted] = useState(() => {
-    try { return new Set(JSON.parse(localStorage.getItem('rdr_done') ?? '[]')); }
+    const _uid = session?.user?.id ?? 'guest';
+    try { return new Set(JSON.parse(localStorage.getItem(`rdr_done:${_uid}`) ?? '[]')); }
     catch { return new Set(); }
   });
   const [newBadge, setNewBadge] = useState(null); // badge just earned → show toast
@@ -840,7 +843,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
       [...completed].filter((k) => !bookIds.some((id) => k.startsWith(`${bibleId}:${id}:`)))
     );
     setCompleted(newCompleted);
-    localStorage.setItem('rdr_done', JSON.stringify([...newCompleted]));
+    localStorage.setItem(`rdr_done:${uid}`, JSON.stringify([...newCompleted]));
     // Nullify refs so toasts can re-fire when books are re-completed
     prevBookDoneRef.current = null;
     prevEarnedRef.current   = null;
@@ -885,26 +888,26 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
 
   // Load persisted chat + last verse whenever chapter changes; auto-open if history exists
   useEffect(() => {
-    const chatKey  = `rdr_chat_${bibleId}:${bookId}:${chNum}`;
-    const verseKey = `rdr_verse_${bibleId}:${bookId}:${chNum}`;
+    const chatKey  = `rdr_chat_${uid}:${bibleId}:${bookId}:${chNum}`;
+    const verseKey = `rdr_verse_${uid}:${bibleId}:${bookId}:${chNum}`;
     try {
       const saved = JSON.parse(localStorage.getItem(chatKey) ?? '[]');
       setChatMsgs(saved);
       if (saved.length > 0) setChatOpen(true);
     } catch { setChatMsgs([]); }
     try { setLastVerse(JSON.parse(localStorage.getItem(verseKey) ?? 'null')); } catch { setLastVerse(null); }
-  }, [bibleId, bookId, chNum]);
+  }, [bibleId, bookId, chNum, uid]);
 
   // Save chat whenever messages change
   useEffect(() => {
     if (chatMsgs.length === 0) return;
-    localStorage.setItem(`rdr_chat_${bibleId}:${bookId}:${chNum}`, JSON.stringify(chatMsgs));
+    localStorage.setItem(`rdr_chat_${uid}:${bibleId}:${bookId}:${chNum}`, JSON.stringify(chatMsgs));
   }, [chatMsgs]);
 
   // Save last verse whenever it changes
   useEffect(() => {
     if (!lastVerse) return;
-    localStorage.setItem(`rdr_verse_${bibleId}:${bookId}:${chNum}`, JSON.stringify(lastVerse));
+    localStorage.setItem(`rdr_verse_${uid}:${bibleId}:${bookId}:${chNum}`, JSON.stringify(lastVerse));
   }, [lastVerse]);
 
   useEffect(() => {
@@ -998,7 +1001,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     if (completed.has(key)) { goChapter(chNum + 1); return; }
     const next = new Set([...completed, key]);
     setCompleted(next);
-    localStorage.setItem('rdr_done', JSON.stringify([...next]));
+    localStorage.setItem(`rdr_done:${uid}`, JSON.stringify([...next]));
 
     // Detect book completion synchronously — before goChapter() batches a bookId change.
     // bookDoneMap doesn't include `key` yet, so prevDone+1 = new total for this book.

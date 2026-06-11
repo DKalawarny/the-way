@@ -138,18 +138,19 @@ export const JOURNEYS = [
 ];
 
 const PROGRESS_KEY = 'kinwove:journey_progress';
+const progressKey  = (uid) => uid ? `${PROGRESS_KEY}:${uid}` : PROGRESS_KEY;
 
-export function getJourneyProgress() {
+export function getJourneyProgress(userId = null) {
   try {
-    return JSON.parse(localStorage.getItem(PROGRESS_KEY) ?? '{}');
+    return JSON.parse(localStorage.getItem(progressKey(userId)) ?? '{}');
   } catch {
     return {};
   }
 }
 
-export function advanceJourneyProgress(journeyId, completedStepIndex) {
-  const progress = getJourneyProgress();
+export function advanceJourneyProgress(journeyId, completedStepIndex, userId = null) {
+  const progress = getJourneyProgress(userId);
   progress[journeyId] = Math.max(progress[journeyId] ?? 0, completedStepIndex + 1);
-  localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+  localStorage.setItem(progressKey(userId), JSON.stringify(progress));
   return progress;
 }
