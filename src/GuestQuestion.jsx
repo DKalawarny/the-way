@@ -140,6 +140,7 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
     const q = (question ?? input).trim();
     if (!q || busy || maxReached) return;
     setInput('');
+    setTimeout(() => taRef.current?.focus(), 0);
 
     const userMsg = { role: 'user', content: q };
     const nextMessages = [...messages, userMsg];
@@ -474,7 +475,7 @@ function InputRow({ value, onChange, onSend, taRef, placeholder, tall, autoFocus
           background: 'rgba(255,255,255,0.05)',
           border: '1.5px solid rgba(184,115,58,0.25)',
           borderRadius: 14, padding: tall ? '16px 18px' : '14px 100px 14px 18px',
-          fontSize: tall ? 16 : 15, fontFamily: T.serif,
+          fontSize: 16, fontFamily: T.serif,
           color: T.cream, outline: 'none', resize: 'none',
           lineHeight: 1.55, transition: 'border-color 0.15s',
           paddingRight: tall ? 18 : 100,

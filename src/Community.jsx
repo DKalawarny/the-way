@@ -489,6 +489,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
     if (!replyText.trim() || submitting) return;
     const text = replyText.trim();
     setReplyText('');
+    setTimeout(() => replyInputRef.current?.focus(), 0);
     setSubmitting(true);
     setLocalReplies(prev => [...prev, { id: `tmp-${Date.now()}`, body: text, created_at: new Date().toISOString(), profiles: { display_name: userProfile?.display_name ?? 'You', avatar_config: userProfile?.avatar_config ?? null } }]);
     await onReplySubmit(post.id, text);
@@ -965,7 +966,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                         placeholder="Write a comment…"
                         autoFocus
                         onFocus={(e) => { setTimeout(() => e.target.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 350); }}
-                        style={{ width: '100%', border: 'none', outline: 'none', fontFamily: T.serif, fontSize: 14, color: T.ink, background: 'transparent' }}
+                        style={{ width: '100%', border: 'none', outline: 'none', fontFamily: T.serif, fontSize: 16, color: T.ink, background: 'transparent' }}
                       />
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', marginTop: 6, paddingLeft: 2, gap: 2 }}>

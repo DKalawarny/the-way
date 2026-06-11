@@ -3394,7 +3394,7 @@ export default function App() {
             position: 'fixed',
             top: isDesktop && showNav ? HEADER_H : 0,
             right: 0,
-            height: isDesktop && showNav ? `calc(100vh - ${HEADER_H}px)` : 'calc(100vh - 62px)',
+            height: isDesktop && showNav ? `calc(100vh - ${HEADER_H}px)` : 'calc(100vh - 62px - env(safe-area-inset-bottom, 0px))',
             width: Math.min(chatPanelWidth, winW - (isDesktop && showNav ? SIDEBAR_W : 0)),
             zIndex: isDocked ? 101 : 150,
             transform: chatPanelOpen ? 'translateX(0)' : 'translateX(100%)',

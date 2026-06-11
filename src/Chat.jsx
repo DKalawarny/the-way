@@ -1206,6 +1206,7 @@ export default function Chat({
     setInput('');
     setError(null);
     setSuggestions([]);
+    setTimeout(() => taRef.current?.focus(), 0);
 
     // Capture and clear the attached image before state updates
     const img = attachedImg;
@@ -1327,7 +1328,7 @@ export default function Chat({
   return (
     <div
       style={{
-        height: panelMode ? 'calc(100vh - 62px - env(safe-area-inset-bottom, 0px))' : undefined,
+        height: panelMode ? '100%' : undefined,
         minHeight: panelMode ? undefined : '100vh',
         background: C.bg,
         display: 'flex',
@@ -2117,7 +2118,7 @@ export default function Chat({
               border: `1px solid ${C.border}`,
               borderRadius: 18,
               padding: '12px 16px',
-              fontSize: 15,
+              fontSize: 16,
               lineHeight: 1.5,
               background: C.inputBg,
               color: C.text,
