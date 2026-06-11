@@ -1023,7 +1023,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   async function submitSearch() {
     const q = searchVal.trim();
     if (!q) return;
-    // Try as a reference first (e.g. "John 3:16")
+    // Try as a direct reference first (e.g. "John 3:16")
     const parsed = parseRef(q);
     if (parsed) {
       setBookId(parsed.bookId);
@@ -1035,14 +1035,47 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
       setSearchResults(null);
       return;
     }
-    // Otherwise do a phrase/text search
+    // Otherwise use Claude to identify the verse from a phrase/paraphrase
     setSearchBusy(true);
     setSearchResults(null);
     try {
-      const res = await fetch(`/api/bible/${bibleId}/search?query=${encodeURIComponent(q)}`);
-      const json = await res.json();
-      const verses = json?.data?.verses ?? [];
-      setSearchResults(verses);
+      const res = await authedFetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: `You are a Bible verse finder. The user will describe a verse or passage they remember — possibly paraphrased, partially recalled, or with some wrong words. Identify the most likely Bible verse(s) and return ONLY a valid JSON array. Each item: {"ref": "Book Chapter:Verse", "text": "the actual verse text"}. Return up to 5 matches, best first. If nothing matches, return []. No explanation, no markdown, just the JSON array.`,
+          messages: [{ role: 'user', content: q }],
+          personType: 'curious',
+        }),
+      });
+      let raw = '';
+      if (res.ok && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const events = buf.split('\n\n');
+          buf = events.pop() ?? '';
+          for (const e of events) {
+            const lines = e.split('\n');
+            const ev = lines.find((l) => l.startsWith('event: '))?.slice(7).trim();
+            const data = lines.find((l) => l.startsWith('data: '))?.slice(6);
+            if (ev === 'text' && data) {
+              try { raw += JSON.parse(data).delta; } catch {}
+            }
+          }
+        }
+      }
+      try {
+        const match = raw.match(/\[[\s\S]*\]/);
+        const verses = match ? JSON.parse(match[0]) : [];
+        setSearchResults(Array.isArray(verses) ? verses : []);
+      } catch {
+        setSearchResults([]);
+      }
     } catch {
       setSearchResults([]);
     }
@@ -1386,6 +1419,46 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
     </div>
   ) : null;
 
+  // ── Shared search panel (rendered in all views) ──────────────────────────────
+  const SearchPanel = searchOpen ? (
+    <div style={{ borderBottom: `1px solid ${C.border}`, background: C.bg, position: 'sticky', top: 52, zIndex: 25 }}>
+      <div style={{ padding: '8px 16px 10px', display: 'flex', gap: 8, alignItems: 'center' }}>
+        <input
+          ref={searchRef}
+          value={searchVal}
+          onChange={(e) => { setSearchVal(e.target.value); setSearchResults(null); }}
+          onKeyDown={(e) => { if (e.key === 'Enter') submitSearch(); if (e.key === 'Escape') { setSearchOpen(false); setSearchVal(''); setSearchResults(null); } }}
+          placeholder="Search — describe a verse or type a reference like John 3:16"
+          style={{ flex: 1, background: C.inputBg, border: `1.5px solid ${C.border}`, borderRadius: 10, padding: '9px 14px', fontSize: 14, fontFamily: T.sans, color: C.text, outline: 'none', transition: 'border-color 0.15s' }}
+          onFocus={(e) => (e.currentTarget.style.borderColor = C.verse)}
+          onBlur={(e) => (e.currentTarget.style.borderColor = C.border)}
+        />
+        <button onClick={submitSearch} disabled={searchBusy} style={{ background: C.verse, color: T.cream, border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', opacity: searchBusy ? 0.6 : 1 }}>{searchBusy ? '…' : 'Search'}</button>
+        <button onClick={() => { setSearchOpen(false); setSearchVal(''); setSearchResults(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, display: 'flex', alignItems: 'center', padding: 4 }}><X size={16} strokeWidth={2} /></button>
+      </div>
+      {searchResults !== null && (
+        <div style={{ maxHeight: 340, overflowY: 'auto', borderTop: `1px solid ${C.border}` }}>
+          {searchBusy ? (
+            <div style={{ padding: '16px 20px', fontSize: 13, color: C.muted }}>Finding verses…</div>
+          ) : searchResults.length === 0 ? (
+            <div style={{ padding: '16px 20px', fontSize: 13, color: C.muted }}>No verses found — try different words.</div>
+          ) : searchResults.map((v) => {
+            const ref = v.ref ?? v.reference ?? '';
+            const text = (v.text ?? '').replace(/<[^>]+>/g, '').trim();
+            return (
+              <button key={ref} onClick={() => jumpToSearchResult(ref)} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid ${C.border}`, padding: '12px 20px', cursor: 'pointer', display: 'block', transition: 'background 0.12s' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = C.inputBg)}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.verse, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>{ref}</div>
+                <div style={{ fontSize: 13, color: C.text, fontFamily: T.serif, lineHeight: 1.55 }}>{text}</div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  ) : null;
+
   // ── HOME VIEW ────────────────────────────────────────────────────────────────
   if (view === 'home') return (
     <div style={{ minHeight: '100vh', background: C.bg, fontFamily: T.sans, paddingBottom: 'calc(62px + env(safe-area-inset-bottom, 0px))' }}>
@@ -1397,10 +1470,13 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {VersionPicker}
             {DarkToggle}
+            <button onClick={() => { setSearchOpen((o) => { if (!o) setTimeout(() => searchRef.current?.focus(), 50); return !o; }); setSearchVal(''); setSearchResults(null); }} style={{ width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', background: searchOpen ? C.inputBg : 'none', border: `1px solid ${searchOpen ? C.border : 'transparent'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.muted, transition: 'all 0.15s', WebkitTapHighlightColor: 'transparent' }} title="Search verses"><Search size={15} strokeWidth={2} /></button>
           </div>
           </div>
         </div>
       )}
+
+      {SearchPanel}
 
       <div style={{ overflowY: 'auto', padding: '24px 20px 100px', maxWidth: 680, margin: '0 auto' }}>
 
@@ -1730,10 +1806,15 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
               <ArrowLeft size={15} strokeWidth={2} /> Books
             </button>
             <span style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: C.text, letterSpacing: '-0.012em' }}>{cb.name}</span>
-            <div style={{ display: 'flex', gap: 8 }}>{DarkToggle}</div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              {DarkToggle}
+              <button onClick={() => { setSearchOpen((o) => { if (!o) setTimeout(() => searchRef.current?.focus(), 50); return !o; }); setSearchVal(''); setSearchResults(null); }} style={{ width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', background: searchOpen ? C.inputBg : 'none', border: `1px solid ${searchOpen ? C.border : 'transparent'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.muted, transition: 'all 0.15s', WebkitTapHighlightColor: 'transparent' }} title="Search verses"><Search size={15} strokeWidth={2} /></button>
+            </div>
             </div>
           </div>
         )}
+
+        {SearchPanel}
 
         <div style={{ padding: '20px 20px 100px', maxWidth: 680, margin: '0 auto' }}>
           {/* Book progress */}
@@ -2127,68 +2208,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
         </div>
       </div>
 
-      {/* Search panel — slides in below header */}
-      {searchOpen && (
-        <div style={{ borderBottom: `1px solid ${C.border}`, background: C.bg }}>
-          {/* Input row */}
-          <div style={{ padding: '8px 16px 10px', display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input
-              ref={searchRef}
-              value={searchVal}
-              onChange={(e) => { setSearchVal(e.target.value); setSearchErr(false); setSearchResults(null); }}
-              onKeyDown={(e) => { if (e.key === 'Enter') submitSearch(); if (e.key === 'Escape') { setSearchOpen(false); setSearchVal(''); setSearchResults(null); } }}
-              placeholder="Search phrase or go to verse — e.g. John 3:16"
-              style={{
-                flex: 1, background: C.inputBg, border: `1.5px solid ${C.border}`,
-                borderRadius: 10, padding: '9px 14px', fontSize: 14, fontFamily: T.sans,
-                color: C.text, outline: 'none', transition: 'border-color 0.15s',
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = C.verse)}
-              onBlur={(e) => (e.currentTarget.style.borderColor = C.border)}
-            />
-            <button
-              onClick={submitSearch}
-              disabled={searchBusy}
-              style={{ background: C.verse, color: T.cream, border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', opacity: searchBusy ? 0.6 : 1 }}
-            >{searchBusy ? '…' : 'Search'}</button>
-            <button
-              onClick={() => { setSearchOpen(false); setSearchVal(''); setSearchResults(null); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, display: 'flex', alignItems: 'center', padding: 4 }}
-            ><X size={16} strokeWidth={2} /></button>
-          </div>
-
-          {/* Results */}
-          {searchResults !== null && (
-            <div style={{ maxHeight: 320, overflowY: 'auto', borderTop: `1px solid ${C.border}` }}>
-              {searchResults.length === 0 ? (
-                <div style={{ padding: '16px 20px', fontSize: 13, color: C.muted, fontFamily: T.sans }}>No results found.</div>
-              ) : (
-                searchResults.map((v) => {
-                  const ref = v.reference ?? v.id ?? '';
-                  const text = (v.text ?? '').replace(/<[^>]+>/g, '').trim();
-                  return (
-                    <button
-                      key={v.id}
-                      onClick={() => jumpToSearchResult(ref)}
-                      style={{
-                        width: '100%', textAlign: 'left', background: 'none',
-                        border: 'none', borderBottom: `1px solid ${C.border}`,
-                        padding: '12px 20px', cursor: 'pointer', display: 'block',
-                        transition: 'background 0.12s',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = C.inputBg)}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-                    >
-                      <div style={{ fontSize: 11, fontWeight: 700, color: C.verse, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>{ref}</div>
-                      <div style={{ fontSize: 13, color: C.text, fontFamily: T.serif, lineHeight: 1.55 }}>{text}</div>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      {SearchPanel}
 
       {/* Body */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
