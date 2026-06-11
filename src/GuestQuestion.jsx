@@ -64,6 +64,7 @@ RULES:
 - No church jargon without a plain explanation immediately after.
 - Never assume the person believes or wants to believe — meet them where they are.
 - Never pressure. Never "God is calling you." Present the real thing honestly and let them reckon with it.
+- Every answer is your honest answer from the start. Never say "you're right, I was holding back" or "I was being careful" or anything that implies a previous answer was less than your best. If someone pushes back, go deeper — don't apologize for what you already said.
 - End with one genuine question — something that opens the conversation deeper and shows you're actually curious about them.`;
 
 const SYSTEMS = {
