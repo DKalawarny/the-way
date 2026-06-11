@@ -916,20 +916,35 @@ function PastorPrompt({ open, onApply, onClose }) {
 
 const NOTES_KEY = 'kinwove:notes:v1';
 const CONVS_KEY = 'kinwove:convs:v1';
+const convsKey  = (uid) => `${CONVS_KEY}:${uid}`;
 
 function useConversations(userId = null, syncEnabled = false) {
-  const [conversations, setConversations] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(CONVS_KEY)) ?? []; }
-    catch { return []; }
-  });
-  const syncedRef   = useRef(false);
-  const saveTimer   = useRef(null);
+  const [conversations, setConversations] = useState([]);
+  const loadedForRef = useRef(null);
+  const syncedRef    = useRef(false);
+  const saveTimer    = useRef(null);
 
-  // Always keep localStorage current
+  // Load user-scoped conversations when userId is first known or changes
   useEffect(() => {
-    try { localStorage.setItem(CONVS_KEY, JSON.stringify(conversations.filter((c) => c.messages.length > 0))); }
+    if (!userId) {
+      setConversations([]);
+      loadedForRef.current = null;
+      syncedRef.current = false;
+      return;
+    }
+    if (loadedForRef.current === userId) return;
+    loadedForRef.current = userId;
+    syncedRef.current = false;
+    try { setConversations(JSON.parse(localStorage.getItem(convsKey(userId))) ?? []); }
+    catch { setConversations([]); }
+  }, [userId]);
+
+  // Always keep user-scoped localStorage current
+  useEffect(() => {
+    if (!userId) return;
+    try { localStorage.setItem(convsKey(userId), JSON.stringify(conversations.filter((c) => c.messages.length > 0))); }
     catch {}
-  }, [conversations]);
+  }, [conversations, userId]);
 
   // On first load with sync enabled: merge local + DB
   useEffect(() => {
@@ -943,7 +958,7 @@ function useConversations(userId = null, syncEnabled = false) {
         .order('updated_at', { ascending: false });
       if (!dbRows) return;
 
-      const local = (() => { try { return JSON.parse(localStorage.getItem(CONVS_KEY)) ?? []; } catch { return []; } })()
+      const local = (() => { try { return JSON.parse(localStorage.getItem(convsKey(userId))) ?? []; } catch { return []; } })()
         .filter((c) => c.messages.length > 0);
 
       const dbMap  = {};
