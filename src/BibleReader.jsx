@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, X, Search } from 'lucide-react';
 import { T } from './theme.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import PageTour, { isPageTourDone } from './PageTour.jsx';
@@ -737,6 +737,10 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const [noteVerse,  setNoteVerse]  = useState(null);
   const [ttsStartVerse, setTtsStartVerse] = useState(null);
   const autoStartTts = useRef(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchVal,  setSearchVal]  = useState('');
+  const [searchErr,  setSearchErr]  = useState(false);
+  const searchRef = useRef(null);
   const [noteText,   setNoteText]   = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
   const [completed, setCompleted] = useState(() => {
@@ -1012,6 +1016,21 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     setBookId(b.id); setChNum(n);
     setPendingVerseScroll(verseNum);
     setView('reading');
+  }
+
+  function submitSearch() {
+    const parsed = parseRef(searchVal.trim());
+    if (!parsed) {
+      setSearchErr(true);
+      setTimeout(() => setSearchErr(false), 1000);
+      return;
+    }
+    setBookId(parsed.bookId);
+    setChNum(parsed.chapter);
+    if (parsed.verse != null) setPendingVerseScroll(parsed.verse);
+    setView('reading');
+    setSearchOpen(false);
+    setSearchVal('');
   }
 
   function tapVerse(v) {
@@ -2056,6 +2075,11 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
               {VERSIONS.find((v) => v.id === bibleId)?.abbr}
             </span>
           )}
+          <button
+            onClick={() => { setSearchOpen((o) => { if (!o) setTimeout(() => searchRef.current?.focus(), 50); return !o; }); setSearchVal(''); setSearchErr(false); }}
+            style={{ width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', background: searchOpen ? C.inputBg : 'none', border: `1px solid ${searchOpen ? C.border : 'transparent'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.muted, transition: 'all 0.15s', WebkitTapHighlightColor: 'transparent' }}
+            title="Go to verse"
+          ><Search size={15} strokeWidth={2} /></button>
           {DarkToggle}
           <button
             data-tour-id="bible-ai-chat"
@@ -2074,6 +2098,35 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
           ><KinwoveStar size={15} /></button>
         </div>
       </div>
+
+      {/* Search bar — slides in below header */}
+      {searchOpen && (
+        <div style={{ padding: '8px 16px 10px', borderBottom: `1px solid ${C.border}`, background: C.bg, display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input
+            ref={searchRef}
+            value={searchVal}
+            onChange={(e) => { setSearchVal(e.target.value); setSearchErr(false); }}
+            onKeyDown={(e) => { if (e.key === 'Enter') submitSearch(); if (e.key === 'Escape') { setSearchOpen(false); setSearchVal(''); } }}
+            placeholder="Go to verse — e.g. John 3:16"
+            style={{
+              flex: 1, background: C.inputBg, border: `1.5px solid ${searchErr ? '#c0392b' : C.border}`,
+              borderRadius: 10, padding: '9px 14px', fontSize: 14, fontFamily: T.sans,
+              color: C.text, outline: 'none', transition: 'border-color 0.15s',
+              animation: searchErr ? 'shake 0.4s ease' : 'none',
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = searchErr ? '#c0392b' : C.verse)}
+            onBlur={(e) => (e.currentTarget.style.borderColor = searchErr ? '#c0392b' : C.border)}
+          />
+          <button
+            onClick={submitSearch}
+            style={{ background: C.verse, color: T.cream, border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >Go</button>
+          <button
+            onClick={() => { setSearchOpen(false); setSearchVal(''); }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, display: 'flex', alignItems: 'center', padding: 4 }}
+          ><X size={16} strokeWidth={2} /></button>
+        </div>
+      )}
 
       {/* Body */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
