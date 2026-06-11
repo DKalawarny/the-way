@@ -535,6 +535,24 @@ app.get('/api/bible/:bibleId/verses/:verseId', optionalAuth, limitEither({ capac
   }
 });
 
+app.get('/api/bible/:bibleId/search', optionalAuth, limitEither({ capacity: 30, refillPerSec: 0.5 }, { capacity: 10, refillPerSec: 10 / 60 }), async (req, res) => {
+  const { bibleId } = req.params;
+  const { query } = req.query;
+  if (!query || !query.trim()) return res.status(400).json({ error: 'query required' });
+  try {
+    const params = new URLSearchParams({ query: query.trim(), limit: 12 });
+    const upstream = await fetch(
+      `https://rest.api.bible/v1/bibles/${bibleId}/search?${params}`,
+      { headers: { 'api-key': process.env.BIBLE_API_KEY ?? '' } }
+    );
+    if (!upstream.ok) return res.status(upstream.status >= 500 ? 502 : upstream.status).json({ error: 'bible upstream error' });
+    const json = await upstream.json();
+    res.json(json);
+  } catch (e) {
+    safeError(res, e, 'bible search');
+  }
+});
+
 app.post('/api/chat', optionalAuth, limitEither(
   { capacity: 12, refillPerSec: 12 / 60 },     // authed: 12/min sustained
   { capacity: 4,  refillPerSec: 4 / 600 },     // anon (GuestQuestion): 4 per 10 min
