@@ -272,7 +272,6 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
             {upgrading === 'premium' ? 'Redirecting\u2026' : 'Upgrade now \u2192'}
           </button>
 
-          <PromoCodeInput onSuccess={() => window.location.reload()} />
         </>
       ) : (
         // ── Paid user hit monthly cap — offer top-up ─────────────────────────
