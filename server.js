@@ -658,7 +658,7 @@ app.post('/api/chat', optionalAuth, limitEither(
     if (['premium_plus', 'church_base', 'church_pro'].includes(plan)) {
       // Full range: Haiku → Sonnet → Opus based on complexity
       model = (isDeepTheology || isVeryLong)
-        ? 'claude-opus-4-7'
+        ? 'claude-opus-4-8'
         : (isDeep || isLongConversation)
           ? 'claude-sonnet-4-6'
           : 'claude-haiku-4-5-20251001';
@@ -1445,7 +1445,7 @@ app.post('/api/cron/daily-post', async (req, res) => {
     const prompt = PERSONA_PROMPT.replace('{DAY}', dayName).replace('{DATE}', date) + recentBlock;
 
     const msg = await client.messages.create({
-      model: 'claude-opus-4-7',
+      model: 'claude-opus-4-8',
       max_tokens: 256,
       messages: [{ role: 'user', content: prompt }],
     });
