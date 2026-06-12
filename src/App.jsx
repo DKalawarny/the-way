@@ -939,12 +939,16 @@ function useConversations(userId = null, syncEnabled = false) {
     catch { setConversations([]); }
   }, [userId]);
 
-  // Always keep user-scoped localStorage current
+  // Always keep user-scoped localStorage current.
+  // userId intentionally omitted from deps — when userId changes the save must NOT fire
+  // with stale conversations from the previous user; it fires on the next render once
+  // conversations has been updated for the new userId.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!userId) return;
     try { localStorage.setItem(convsKey(userId), JSON.stringify(conversations.filter((c) => c.messages.length > 0))); }
     catch {}
-  }, [conversations, userId]);
+  }, [conversations]);
 
   // On first load with sync enabled: merge local + DB
   useEffect(() => {
@@ -1313,11 +1317,12 @@ function useNotes(userId = null) {
     catch { setNotes([]); }
   }, [userId]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!userId) return;
     try { localStorage.setItem(`${NOTES_KEY}:${userId}`, JSON.stringify(notes)); }
     catch {}
-  }, [notes, userId]);
+  }, [notes]);
 
   const addNote = (n) => {
     const note = {
