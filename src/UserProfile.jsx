@@ -298,7 +298,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
               />
             </div>
 
-            {session && session.user.id !== userId && (
+            {session && session.user.id !== userId && !profile?.is_system_account && (
               <div style={{ display: 'flex', gap: 8, paddingBottom: 4, alignItems: 'center' }}>
 
                 {/* ── Friend request ── primary pill */}
