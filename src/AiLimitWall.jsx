@@ -58,7 +58,7 @@ export function PromoCodeInput({ onSuccess }) {
           value={code}
           onChange={e => setCode(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleRedeem()}
-          placeholder="KINWOVE-FRIENDS"
+          placeholder="Enter promo code"
           autoFocus
           style={{
             flex: 1, padding: '10px 12px', borderRadius: 8,
@@ -272,6 +272,7 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
             {upgrading === 'premium' ? 'Redirecting\u2026' : 'Upgrade now \u2192'}
           </button>
 
+          <PromoCodeInput onSuccess={() => window.location.reload()} />
         </>
       ) : (
         // ── Paid user hit monthly cap — offer top-up ─────────────────────────
