@@ -105,6 +105,16 @@ function hostnameOf(website) {
   } catch { return null; }
 }
 
+const EDITABLE_FIELDS = [
+  { key: 'name',                 label: 'Church name' },
+  { key: 'denomination',         label: 'Denomination' },
+  { key: 'city',                 label: 'City' },
+  { key: 'country',              label: 'Country' },
+  { key: 'website',              label: 'Website' },
+  { key: 'verification_status',  label: 'Verification status' },
+  { key: 'verification_notes',   label: 'Verification notes' },
+];
+
 export default function PastorAdminQueue({ session, profile, onClose }) {
   const [rows, setRows]       = useState([]);
   const [profMap, setProfMap] = useState({});
@@ -228,6 +238,7 @@ export default function PastorAdminQueue({ session, profile, onClose }) {
                 key={app.id}
                 app={app}
                 applicantProfile={profMap[app.user_id]}
+                session={session}
                 onCopyApprove={() => copy(APPROVE_SQL(app), 'Approve SQL')}
                 onCopyReject={(notes) => copy(REJECT_SQL(app, notes), 'Reject SQL')}
               />
@@ -250,9 +261,47 @@ export default function PastorAdminQueue({ session, profile, onClose }) {
   );
 }
 
-function ApplicationCard({ app, applicantProfile, onCopyApprove, onCopyReject }) {
+function ApplicationCard({ app, applicantProfile, session, onCopyApprove, onCopyReject }) {
   const [showRejectInput, setShowRejectInput] = useState(false);
   const [rejectNotes, setRejectNotes]         = useState('');
+  const [showEdit, setShowEdit]               = useState(false);
+  const [church, setChurch]                   = useState(null);
+  const [editForm, setEditForm]               = useState({});
+  const [saving, setSaving]                   = useState(false);
+  const [editMsg, setEditMsg]                 = useState(null);
+
+  async function openEdit() {
+    setShowEdit(true);
+    if (church) return;
+    try {
+      const r = await fetch(`/api/admin/church?pastor_id=${app.user_id}`, {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      if (!r.ok) { setEditMsg('Could not load church record.'); return; }
+      const data = await r.json();
+      setChurch(data);
+      const form = {};
+      EDITABLE_FIELDS.forEach(({ key }) => { form[key] = data[key] ?? ''; });
+      setEditForm(form);
+    } catch { setEditMsg('Error loading church.'); }
+  }
+
+  async function saveEdit() {
+    setSaving(true);
+    setEditMsg(null);
+    try {
+      const r = await fetch(`/api/admin/church/${church.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify(editForm),
+      });
+      if (!r.ok) { setEditMsg('Save failed.'); setSaving(false); return; }
+      setChurch({ ...church, ...editForm });
+      setEditMsg('Saved.');
+      setTimeout(() => setEditMsg(null), 2000);
+    } catch { setEditMsg('Save failed.'); }
+    setSaving(false);
+  }
 
   const host = hostnameOf(app.website);
   const reg  = REG_LOOKUPS[app.registration_country] ?? REG_LOOKUPS.OTHER;
@@ -422,15 +471,77 @@ function ApplicationCard({ app, applicantProfile, onCopyApprove, onCopyReject })
         </div>
       )}
       {app.status === 'approved' && (
-        <div style={{ borderTop: `1px solid ${T.line}`, paddingTop: 12, marginTop: 4, fontSize: 13, color: T.inkSoft }}>
-          <span style={{ color: T.inkMuted, fontWeight: 600 }}>
-            {app.auto_approved_at ? 'Auto-approved' : 'Approved'}:
-          </span>{' '}
-          <span style={{ fontFamily: T.serif }}>
-            {relativeTime(app.auto_approved_at ?? app.reviewed_at ?? app.created_at)}
-            {app.auto_approved_at && app.verification_method ? ` via ${app.verification_method}` : ''}
-          </span>
-          {' — church is live on kinwove'}
+        <div style={{ borderTop: `1px solid ${T.line}`, paddingTop: 12, marginTop: 4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+            <span style={{ fontSize: 13, color: T.inkSoft }}>
+              <span style={{ color: T.inkMuted, fontWeight: 600 }}>
+                {app.auto_approved_at ? 'Auto-approved' : 'Approved'}:
+              </span>{' '}
+              <span style={{ fontFamily: T.serif }}>
+                {relativeTime(app.auto_approved_at ?? app.reviewed_at ?? app.created_at)}
+                {app.auto_approved_at && app.verification_method ? ` via ${app.verification_method}` : ''}
+              </span>
+              {' — church is live on kinwove'}
+            </span>
+            <button
+              onClick={showEdit ? () => setShowEdit(false) : openEdit}
+              style={{
+                background: 'transparent', border: `1px solid ${T.line}`,
+                borderRadius: 999, padding: '5px 14px', fontSize: 12.5,
+                color: T.inkSoft, cursor: 'pointer',
+              }}
+            >
+              {showEdit ? 'Close' : '✏ Edit church'}
+            </button>
+          </div>
+
+          {showEdit && (
+            <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {church === null && !editMsg && (
+                <div style={{ fontSize: 13, color: T.inkMuted, fontStyle: 'italic' }}>Loading…</div>
+              )}
+              {editMsg && !church && (
+                <div style={{ fontSize: 13, color: '#9A3A3A' }}>{editMsg}</div>
+              )}
+              {church && (
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+                    {EDITABLE_FIELDS.map(({ key, label }) => (
+                      <div key={key}>
+                        <div style={{ fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 600, marginBottom: 4 }}>
+                          {label}
+                        </div>
+                        <input
+                          value={editForm[key] ?? ''}
+                          onChange={(e) => setEditForm((f) => ({ ...f, [key]: e.target.value }))}
+                          style={{
+                            width: '100%', border: `1px solid ${T.line}`, borderRadius: 8,
+                            padding: '8px 10px', fontSize: 13.5, fontFamily: T.serif,
+                            background: T.cream, color: T.ink, outline: 'none',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                    <button
+                      onClick={saveEdit}
+                      disabled={saving}
+                      style={{
+                        background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+                        padding: '9px 20px', fontSize: 13, fontWeight: 600,
+                        cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1,
+                      }}
+                    >
+                      {saving ? 'Saving…' : 'Save changes'}
+                    </button>
+                    {editMsg && <span style={{ fontSize: 13, color: editMsg === 'Saved.' ? T.goldDark : '#9A3A3A' }}>{editMsg}</span>}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
     </article>

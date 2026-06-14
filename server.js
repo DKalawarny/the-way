@@ -2733,6 +2733,47 @@ app.patch('/api/admin/reports/:id', requireAdmin, async (req, res) => {
   }
 });
 
+// ── Admin church lookup + edit ────────────────────────────────────────────────
+app.get('/api/admin/church', requireAdmin, async (req, res) => {
+  const { pastor_id } = req.query;
+  if (!pastor_id) return res.status(400).json({ error: 'pastor_id required' });
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/churches?pastor_id=eq.${pastor_id}&limit=1`,
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } },
+    );
+    const rows = await r.json();
+    if (!rows?.[0]) return res.status(404).json({ error: 'not found' });
+    res.json(rows[0]);
+  } catch (e) { safeError(res, e, 'admin-church-get'); }
+});
+
+app.patch('/api/admin/church/:churchId', requireAdmin, async (req, res) => {
+  const allowed = ['name', 'denomination', 'city', 'country', 'website', 'verification_status', 'verification_notes', 'is_public'];
+  const updates = {};
+  for (const key of allowed) {
+    if (Object.prototype.hasOwnProperty.call(req.body ?? {}, key)) updates[key] = req.body[key];
+  }
+  if (!Object.keys(updates).length) return res.status(400).json({ error: 'nothing to update' });
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/churches?id=eq.${req.params.churchId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          apikey: SUPABASE_SERVICE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify(updates),
+      },
+    );
+    if (!r.ok) return res.status(500).json({ error: 'update failed' });
+    res.json({ ok: true });
+  } catch (e) { safeError(res, e, 'admin-church-patch'); }
+});
+
 // ── Platform admin dashboard ──────────────────────────────────────────────────
 // Single endpoint that returns everything the AdminPage needs.
 // Calls the get_platform_stats() Supabase RPC for aggregate counts + trends,
