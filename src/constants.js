@@ -328,7 +328,6 @@ export const PREMIUM_FEATURES = [
   'Historical Texts library (Enoch, Jubilees, Jasher and more)',
   'Save and export study notes',
   'Deep-dive mode with original-language notes',
-  'Ad-free reading',
 ];
 
 export const ADS = [

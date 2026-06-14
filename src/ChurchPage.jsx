@@ -1418,7 +1418,7 @@ export default function ChurchPage({
                     {[
                       { icon: '🎙', title: "Sunday's sermon, all week", body: "Daily questions, discussion, and notes tied to what your pastor preached." },
                       { icon: '🙏', title: "Prayer together", body: "Pray with your church between Sundays. Anonymous when you need it to be." },
-                      { icon: '🔒', title: "A quiet space", body: "No algorithms, no ads, no strangers. Just your church." },
+                      { icon: '🔒', title: "A quiet space", body: "No algorithms, no strangers. Just your church." },
                     ].map((row, i) => (
                       <div key={row.title} style={{
                         display: 'flex', gap: 14, alignItems: 'flex-start',
