@@ -1401,16 +1401,17 @@ export default function ChurchPage({
                 with no preview of what membership actually unlocks. */}
             {!isMember && !isPastor && (
               <div style={{
-                background: T.parchment,
-                border: `1px solid rgba(184,115,58,0.20)`,
-                borderRadius: 16,
+                background: T.white,
+                border: `1px solid rgba(184,115,58,0.18)`,
+                borderRadius: 18,
                 overflow: 'hidden',
-                marginBottom: 16,
+                marginBottom: 14,
+                boxShadow: '0 2px 12px rgba(184,115,58,0.06)',
               }}>
                 {/* Gold accent bar */}
-                <div style={{ height: 3, background: `linear-gradient(90deg, transparent 0%, ${T.gold} 40%, ${T.goldLight} 70%, transparent 100%)` }} />
-                <div style={{ padding: '16px 20px 18px' }}>
-                  <div style={{ fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 14 }}>
+                <div style={{ height: 3, background: `linear-gradient(90deg, transparent 0%, ${T.gold} 35%, ${T.goldLight} 65%, transparent 100%)` }} />
+                <div style={{ padding: '18px 22px 22px' }}>
+                  <div style={{ fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 18 }}>
                     What's inside
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -1420,20 +1421,21 @@ export default function ChurchPage({
                       { icon: '🔒', title: "A quiet space", body: "No algorithms, no ads, no strangers. Just your church." },
                     ].map((row, i) => (
                       <div key={row.title} style={{
-                        display: 'flex', gap: 13, alignItems: 'flex-start',
-                        paddingTop: i === 0 ? 0 : 12,
-                        marginTop: i === 0 ? 0 : 12,
-                        borderTop: i === 0 ? 'none' : `1px solid rgba(184,115,58,0.13)`,
+                        display: 'flex', gap: 14, alignItems: 'flex-start',
+                        paddingTop: i === 0 ? 0 : 14,
+                        marginTop: i === 0 ? 0 : 14,
+                        borderTop: i === 0 ? 'none' : `1px solid rgba(184,115,58,0.10)`,
                       }}>
                         <div style={{
-                          width: 32, height: 32, borderRadius: 10, flexShrink: 0,
-                          background: 'rgba(255,255,255,0.70)',
+                          width: 36, height: 36, borderRadius: 11, flexShrink: 0,
+                          background: 'rgba(184,115,58,0.08)',
+                          border: '1px solid rgba(184,115,58,0.15)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 15,
+                          fontSize: 16,
                         }}>{row.icon}</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontFamily: T.serif, fontSize: 14.5, fontWeight: 600, color: T.ink, lineHeight: 1.3 }}>{row.title}</div>
-                          <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.55, marginTop: 2 }}>{row.body}</div>
+                        <div style={{ flex: 1, minWidth: 0, paddingTop: 1 }}>
+                          <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 600, color: T.ink, lineHeight: 1.3 }}>{row.title}</div>
+                          <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, marginTop: 3 }}>{row.body}</div>
                         </div>
                       </div>
                     ))}
@@ -1614,21 +1616,26 @@ export default function ChurchPage({
                 them as a member and land them on the congregation hub. */}
             {!session && onRequestJoin && (
               <div style={{
-                background: T.parchment, border: `1px solid ${T.goldLight}`,
-                borderRadius: 14, padding: '18px 20px', marginBottom: 18,
+                background: `linear-gradient(145deg, ${T.parchment} 0%, #f0e6cb 100%)`,
+                border: `1px solid rgba(184,115,58,0.25)`,
+                borderRadius: 18, padding: '22px 22px 20px', marginBottom: 18,
+                boxShadow: '0 2px 12px rgba(184,115,58,0.08)',
               }}>
-                {/* Lighter framing — the value pitch already lives in What's
-                    inside above. This card just makes the action effortless. */}
-                <div style={{ fontFamily: T.serif, fontSize: 14.5, color: T.inkSoft, lineHeight: 1.65, marginBottom: 14 }}>
-                  Sign up to join {church.name} — takes about a minute.
+                <div style={{ fontFamily: T.serif, fontSize: 16, color: T.ink, lineHeight: 1.6, marginBottom: 6, fontWeight: 600 }}>
+                  Join {church.name}
+                </div>
+                <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, marginBottom: 18 }}>
+                  Free to join. Takes about a minute.
                 </div>
                 <button
                   onClick={onRequestJoin}
                   style={{
                     width: '100%',
                     background: T.ink, color: T.cream, border: 'none',
-                    borderRadius: 999, padding: '13px 20px',
+                    borderRadius: 999, padding: '14px 20px',
                     fontSize: 15, fontWeight: 600, cursor: 'pointer',
+                    letterSpacing: '-0.01em',
+                    boxShadow: '0 2px 8px rgba(26,17,8,0.18)',
                   }}
                 >
                   Sign up &amp; join this church →
@@ -1666,35 +1673,41 @@ export default function ChurchPage({
             {/* Pinned post — visitor-facing only. Pastor edits this in Pastor settings. */}
             {church.pinned_post && (
               <div style={{
-                background: '#1e1208',
-                borderRadius: 16, padding: '20px 22px', marginBottom: 16,
+                background: 'linear-gradient(145deg, #1e1208 0%, #261608 100%)',
+                borderRadius: 18, padding: '22px 24px', marginBottom: 16,
                 overflow: 'hidden', position: 'relative',
+                boxShadow: '0 4px 20px rgba(26,17,8,0.22)',
+                border: '1px solid rgba(184,115,58,0.12)',
               }}>
-                {/* Subtle warm glow */}
+                {/* Warm corner glow */}
                 <div style={{
-                  position: 'absolute', top: -30, right: -30, width: 120, height: 120,
-                  borderRadius: '50%', background: 'rgba(184,115,58,0.12)', pointerEvents: 'none',
+                  position: 'absolute', top: -40, right: -40, width: 160, height: 160,
+                  borderRadius: '50%', background: 'rgba(184,115,58,0.10)', pointerEvents: 'none',
                 }} />
                 <div style={{
-                  display: 'flex', alignItems: 'center', gap: 7,
-                  fontSize: 10.5, letterSpacing: '0.12em', textTransform: 'uppercase',
-                  color: T.goldLight, fontWeight: 700, marginBottom: 14, opacity: 0.8,
+                  position: 'absolute', bottom: -60, left: -20, width: 140, height: 140,
+                  borderRadius: '50%', background: 'rgba(184,115,58,0.05)', pointerEvents: 'none',
+                }} />
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 7, position: 'relative',
+                  fontSize: 10.5, letterSpacing: '0.14em', textTransform: 'uppercase',
+                  color: T.honey, fontWeight: 700, marginBottom: 16, opacity: 0.9,
                 }}>
-                  <KinwoveStar size={10} color={T.goldLight} />
+                  <KinwoveStar size={10} color={T.honey} />
                   A note from the pastor
                 </div>
                 <div style={{
-                  fontFamily: T.serif, fontSize: 16, color: T.cream,
-                  lineHeight: 1.75, whiteSpace: 'pre-wrap',
-                  fontStyle: 'italic', letterSpacing: '-0.01em',
+                  fontFamily: T.serif, fontSize: 16.5, color: 'rgba(253,248,240,0.92)',
+                  lineHeight: 1.8, whiteSpace: 'pre-wrap',
+                  fontStyle: 'italic', letterSpacing: '-0.01em', position: 'relative',
                 }}>
                   {church.pinned_post}
                 </div>
                 {church.pastor?.display_name && (
                   <div style={{
-                    marginTop: 14, fontSize: 12.5, color: 'rgba(253,248,240,0.55)',
-                    fontWeight: 600, paddingTop: 12,
-                    borderTop: `1px solid rgba(253,248,240,0.10)`,
+                    marginTop: 16, fontSize: 13, color: 'rgba(253,248,240,0.45)',
+                    fontWeight: 600, paddingTop: 14, position: 'relative',
+                    borderTop: `1px solid rgba(253,248,240,0.08)`,
                   }}>
                     — {church.pastor.display_name}
                   </div>
