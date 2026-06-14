@@ -119,7 +119,7 @@ export function UpgradeWall({ onBack }) {
     { icon: '✍️', text: 'AI sermon composer — draft a full sermon in minutes' },
     { icon: '🤝', text: 'Care team — follow up personally with your flock' },
     { icon: '🗺️', text: 'Custom discipleship journeys & walk announcements' },
-    { icon: '👥', text: 'Unlimited church members & congregation feed' },
+    { icon: '👥', text: 'Full congregation access & feed' },
   ];
 
   return (

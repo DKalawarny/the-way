@@ -9,7 +9,7 @@ const PLANS = [
     period: 'CAD / month',
     limit: '200 AI messages / month',
     features: [
-      'Unlimited Bible reading & notes',
+      'Full Bible reading & notes',
       '200 AI faith conversations / month',
       'Full sermon discussion threads',
       'Prayer wall & walks',
@@ -102,7 +102,7 @@ export default function UpgradeModal({ session, onClose }) {
             Unlock more of kinwove
           </div>
           <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.6 }}>
-            Deeper conversations, no weekly limits.
+            Deeper conversations and higher weekly limits.
           </div>
         </div>
 
@@ -186,8 +186,10 @@ export default function UpgradeModal({ session, onClose }) {
           </div>
         )}
 
-        <div style={{ textAlign: 'center', fontSize: 12, color: T.inkMuted }}>
+        <div style={{ textAlign: 'center', fontSize: 12, color: T.inkMuted, lineHeight: 1.6 }}>
           Secure payment via Stripe · Cancel anytime
+          <br />
+          <span style={{ fontStyle: 'italic' }}>Your plan helps keep kinwove free for those who can't afford it.</span>
         </div>
 
         <button
