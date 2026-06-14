@@ -333,27 +333,29 @@ function ApplicationCard({ app, applicantProfile, onCopyApprove, onCopyReject })
         </div>
       )}
 
-      {/* Investigation links */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-        {app.website && (
-          <LinkBtn href={app.website.match(/^https?:\/\//) ? app.website : `https://${app.website}`}>
-            🌐 Visit website
+      {/* Investigation links — only useful while vetting */}
+      {app.status === 'pending' && (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+          {app.website && (
+            <LinkBtn href={app.website.match(/^https?:\/\//) ? app.website : `https://${app.website}`}>
+              🌐 Visit website
+            </LinkBtn>
+          )}
+          {host && (
+            <LinkBtn href={`https://${host}/staff`}>👤 /staff page</LinkBtn>
+          )}
+          {host && (
+            <LinkBtn href={`https://${host}/about`}>ℹ /about page</LinkBtn>
+          )}
+          {host && (
+            <LinkBtn href={`https://www.whois.com/whois/${host}`}>🔎 Whois</LinkBtn>
+          )}
+          <LinkBtn href={reg.url}>📋 {reg.label}</LinkBtn>
+          <LinkBtn href={`mailto:?subject=Your%20application%20for%20${encodeURIComponent(app.church_name)}&body=Hi%20${encodeURIComponent(app.full_name.split(' ')[0])}%2C%0A%0A`}>
+            ✉ Email pastor
           </LinkBtn>
-        )}
-        {host && (
-          <LinkBtn href={`https://${host}/staff`}>👤 /staff page</LinkBtn>
-        )}
-        {host && (
-          <LinkBtn href={`https://${host}/about`}>ℹ /about page</LinkBtn>
-        )}
-        {host && (
-          <LinkBtn href={`https://www.whois.com/whois/${host}`}>🔎 Whois</LinkBtn>
-        )}
-        <LinkBtn href={reg.url}>📋 {reg.label}</LinkBtn>
-        <LinkBtn href={`mailto:?subject=Your%20application%20for%20${encodeURIComponent(app.church_name)}&body=Hi%20${encodeURIComponent(app.full_name.split(' ')[0])}%2C%0A%0A`}>
-          ✉ Email pastor
-        </LinkBtn>
-      </div>
+        </div>
+      )}
 
       {/* Action row — only on pending */}
       {app.status === 'pending' && (
@@ -419,10 +421,16 @@ function ApplicationCard({ app, applicantProfile, onCopyApprove, onCopyReject })
           <span style={{ fontFamily: T.serif, fontStyle: 'italic' }}>{app.notes}</span>
         </div>
       )}
-      {app.status === 'approved' && app.auto_approved_at && (
+      {app.status === 'approved' && (
         <div style={{ borderTop: `1px solid ${T.line}`, paddingTop: 12, marginTop: 4, fontSize: 13, color: T.inkSoft }}>
-          <span style={{ color: T.inkMuted, fontWeight: 600 }}>Auto-approved:</span>{' '}
-          <span style={{ fontFamily: T.serif }}>{relativeTime(app.auto_approved_at)} via {app.verification_method ?? 'auto'}</span>
+          <span style={{ color: T.inkMuted, fontWeight: 600 }}>
+            {app.auto_approved_at ? 'Auto-approved' : 'Approved'}:
+          </span>{' '}
+          <span style={{ fontFamily: T.serif }}>
+            {relativeTime(app.auto_approved_at ?? app.reviewed_at ?? app.created_at)}
+            {app.auto_approved_at && app.verification_method ? ` via ${app.verification_method}` : ''}
+          </span>
+          {' — church is live on kinwove'}
         </div>
       )}
     </article>
