@@ -1916,11 +1916,11 @@ export default function Chat({
             }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: T.goldDark, marginBottom: 3 }}>
-                  Unlock unlimited, deeper answers
+                  Unlock deeper answers
                 </div>
                 <div style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.5 }}>
                   {aiPlan === 'free'
-                    ? 'Upgrade for longer responses, more questions, and no weekly limits — $6.99 CAD/mo.'
+                    ? 'Upgrade for longer responses and higher weekly limits — $6.99 CAD/mo.'
                     : 'Go further with priority responses and higher limits — $13.99 CAD/mo.'}
                 </div>
               </div>

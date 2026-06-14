@@ -323,7 +323,7 @@ export const DEEPER_STARTERS = {
 };
 
 export const PREMIUM_FEATURES = [
-  'Unlimited conversations',
+  'More conversations per week',
   'Full Extended Canon access (Ethiopian Bible, Apocrypha)',
   'Historical Texts library (Enoch, Jubilees, Jasher and more)',
   'Save and export study notes',
