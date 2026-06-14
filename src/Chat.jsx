@@ -1923,6 +1923,9 @@ export default function Chat({
                     ? 'Upgrade for longer responses and higher weekly limits — $6.99 CAD/mo.'
                     : 'Go further with priority responses and higher limits — $13.99 CAD/mo.'}
                 </div>
+                <div style={{ fontSize: 11.5, color: T.inkMuted, lineHeight: 1.5, marginTop: 5 }}>
+                  Your plan helps keep kinwove free for those who can't afford it.
+                </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
                 <button

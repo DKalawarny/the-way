@@ -194,10 +194,19 @@ export function UpgradeWall({ onBack }) {
             fontSize: 15,
             color: 'rgba(253,248,240,0.55)',
             lineHeight: 1.7,
-            margin: 0,
+            margin: '0 0 14px',
           }}>
             Your 5-week trial is up — but the people depending on your tools aren't going anywhere.
             Upgrade to keep your dashboard, care team, sermon tools, and congregation running.
+          </p>
+          <p style={{
+            fontFamily: "'Lora', Georgia, serif",
+            fontSize: 13,
+            color: 'rgba(253,248,240,0.35)',
+            lineHeight: 1.6,
+            margin: 0,
+          }}>
+            Your subscription also helps keep kinwove free for individuals and churches who can't afford it.
           </p>
         </div>
 
