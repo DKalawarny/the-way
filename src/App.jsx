@@ -2787,6 +2787,13 @@ export default function App() {
       if (conv && conv.messages.length === 0) {
         removeConv(currentConvId);
         setCurrentConvId(null);
+      } else if (conv && conv.messages.length >= 6 && session?.access_token) {
+        // Fire-and-forget: update AI memory profile after a meaningful conversation
+        fetch('/api/ai/update-memory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ messages: conv.messages }),
+        }).catch(() => {});
       }
     }
     setChatPanelOpen(false);

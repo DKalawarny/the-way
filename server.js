@@ -643,6 +643,21 @@ app.post('/api/chat', optionalAuth, limitEither(
   const urlContext = await resolveUrlContext(lastUserMsg).catch(() => '');
   const hasUrlContext = urlContext.length > 0;
 
+  // Fetch AI memory for this user (what we know about them from past conversations)
+  let memoryContext = '';
+  if (req.userId && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+    try {
+      const mr = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}&select=ai_memory&limit=1`,
+        { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
+      );
+      const [mp] = await mr.json();
+      if (mp?.ai_memory) {
+        memoryContext = `\n\n── WHO THIS PERSON IS ──\n${mp.ai_memory}\n\nLet this quietly shape your tone and approach from the first message. Do not reference it directly, do not say you remember them — just respond as someone who already understands where they are coming from.`;
+      }
+    } catch {}
+  }
+
   try {
     // Model routing — tier controls ceiling, complexity controls selection within tier.
     // Free: Haiku only. Individual: Haiku|Sonnet. Pro: Haiku|Sonnet|Opus.
@@ -677,7 +692,7 @@ app.post('/api/chat', optionalAuth, limitEither(
     const stream = client.messages.stream({
       model,
       max_tokens: 2048,
-      system: system + urlContext,
+      system: system + urlContext + memoryContext,
       messages: trimmed,
     });
     req.on('close', () => stream.controller?.abort?.());
@@ -1487,6 +1502,67 @@ app.post('/api/cron/daily-post', async (req, res) => {
 });
 
 // ── kinwove persona — admin manual post ────────────────────────────────────
+// ── AI memory: update user profile after a conversation ─────────────────────
+app.post('/api/ai/update-memory', requireAuth, async (req, res) => {
+  const { messages } = req.body ?? {};
+  if (!Array.isArray(messages) || messages.length < 6) return res.json({ ok: true });
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.json({ ok: true });
+
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
+
+  try {
+    // Fetch existing memory
+    const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}&select=ai_memory&limit=1`, { headers: h });
+    const [profile] = await pr.json();
+    const existing = profile?.ai_memory ?? '';
+
+    // Build conversation text — cap at last 30 messages, text only
+    const convoText = messages.slice(-30)
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => {
+        const text = typeof m.content === 'string' ? m.content : (Array.isArray(m.content) ? m.content.filter(b => b.type === 'text').map(b => b.text).join(' ') : '');
+        return `${m.role === 'user' ? 'Person' : 'AI'}: ${text.slice(0, 500)}`;
+      })
+      .join('\n');
+
+    const resp = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 300,
+      messages: [{
+        role: 'user',
+        content: `You are building a brief memory profile so an AI faith companion can understand a person across multiple conversations.
+
+Based on the conversation below, write a concise profile (under 150 words, third person) capturing:
+- Their background and relationship to faith or religion
+- What they are genuinely wrestling with or curious about
+- How they tend to engage (emotionally, intellectually, open, skeptical, resistant, etc.)
+- Any meaningful things they have revealed about themselves
+
+Only include what is clearly evident. Do not infer beyond what is shown.${existing ? `\n\nExisting profile to update (keep what is still true, add what is new):\n${existing}` : ''}
+
+Conversation:
+${convoText}
+
+Write only the updated profile. No preamble, no labels.`,
+      }],
+    });
+
+    const memory = resp.content?.[0]?.text?.trim() ?? '';
+    if (!memory) return res.json({ ok: true });
+
+    await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}`, {
+      method: 'PATCH',
+      headers: { ...h, Prefer: 'return=minimal' },
+      body: JSON.stringify({ ai_memory: memory }),
+    });
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[ai/update-memory]', e?.message);
+    res.json({ ok: true }); // never fail visibly — memory is background
+  }
+});
+
 app.post('/api/admin/kinwove-post', requireAdmin, async (req, res) => {
   const { body } = req.body ?? {};
   if (!body || typeof body !== 'string' || !body.trim()) {
