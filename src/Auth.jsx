@@ -63,6 +63,7 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
 
   async function handleDevLogin() {
     setLoading(true);
@@ -204,7 +205,21 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
             <div style={{ color: T.error, fontSize: 13, marginBottom: 10 }}>{error}</div>
           )}
 
-          <button type="submit" style={btn} disabled={loading}>
+          {mode === 'signup' && (
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 14, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={ageConfirmed}
+                onChange={(e) => setAgeConfirmed(e.target.checked)}
+                style={{ marginTop: 3, accentColor: T.gold, width: 16, height: 16, flexShrink: 0 }}
+              />
+              <span style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.5 }}>
+                I am 13 or older. Under 13? Your church can add you through the youth program.
+              </span>
+            </label>
+          )}
+
+          <button type="submit" style={{ ...btn, opacity: loading || (mode === 'signup' && !ageConfirmed) ? 0.6 : 1, cursor: loading || (mode === 'signup' && !ageConfirmed) ? 'not-allowed' : 'pointer' }} disabled={loading || (mode === 'signup' && !ageConfirmed)}>
             {loading ? 'One moment…' : mode === 'signin' ? 'Sign in' : 'Create account'}
           </button>
         </form>
@@ -251,7 +266,7 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
 
         <div style={{ marginTop: 20, fontSize: 12, color: T.inkMuted, textAlign: 'center', lineHeight: 1.5 }}>
           By joining you agree to keep this space safe and honest.
-          <br />No real name required. Location is city-level only.
+          <br />kinwove is for users 13 and older. No real name required.
         </div>
       </div>
     </div>
