@@ -2370,6 +2370,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
   // Scholar's Desk split layout
   const [isWide, setIsWide] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 900);
   const [mobileDeskPanel, setMobileDeskPanel] = useState(null); // null | 'bible' | 'notes'
+  const [notesRefreshKey, setNotesRefreshKey] = useState(0);
   const [deskWidth, setDeskWidth] = useState(() => {
     const saved = localStorage.getItem('kw_desk_width');
     return saved ? Math.max(280, Math.min(700, parseInt(saved, 10))) : 480;
@@ -2474,6 +2475,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
                 churchPlan={plan ?? 'church_base'}
                 onOpenDesk={isWide ? null : setMobileDeskPanel}
                 inSplit={isWide}
+                onNoteSaved={() => setNotesRefreshKey(k => k + 1)}
               />
             </div>
 
@@ -2482,7 +2484,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
               <>
                 <DividerHandle onMouseDown={onDeskDragStart} />
                 <Suspense fallback={null}>
-                  <DeskPanel session={session} profile={profile} churchId={churchId} width={deskWidth} />
+                  <DeskPanel session={session} profile={profile} churchId={churchId} width={deskWidth} refreshKey={notesRefreshKey} />
                 </Suspense>
               </>
             )}
@@ -2509,6 +2511,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
                       isMobile
                       initialTab={mobileDeskPanel}
                       onClose={() => setMobileDeskPanel(null)}
+                      refreshKey={notesRefreshKey}
                     />
                   </Suspense>
                 </div>

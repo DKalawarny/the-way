@@ -73,7 +73,7 @@ function printAllNotes(notes) {
 }
 
 // ── Notes section ─────────────────────────────────────────────────────────────
-function NotesSection({ session, churchId }) {
+function NotesSection({ session, churchId, refreshKey = 0 }) {
   const userId = session?.user?.id;
   const [notes, setNotes]         = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -98,7 +98,7 @@ function NotesSection({ session, churchId }) {
     supabase.from('church_notes')
       .select('*').eq('church_id', churchId).order('updated_at', { ascending: false })
       .then(({ data }) => { setNotes(data ?? []); setLoading(false); }, () => setLoading(false));
-  }, [churchId]);
+  }, [churchId, refreshKey]);
 
   // Populate contentEditable when entering edit mode
   useEffect(() => {
@@ -404,7 +404,7 @@ function NotesSection({ session, churchId }) {
 // matches DeskPanel content area: calc(100vh-130px) minus ~58px tab bar.
 const BIBLE_TOP_OFFSET = 126;
 
-export default function DeskPanel({ session, profile, churchId, onClose, isMobile, initialTab, width = 480 }) {
+export default function DeskPanel({ session, profile, churchId, onClose, isMobile, initialTab, width = 480, refreshKey = 0 }) {
   const [activeTab, setActiveTab] = useState(initialTab ?? 'bible');
 
   // Plan-enriched profile for BibleReader
@@ -473,7 +473,7 @@ export default function DeskPanel({ session, profile, churchId, onClose, isMobil
             </div>
           </Suspense>
         )}
-        {activeTab === 'notes' && <NotesSection session={session} churchId={churchId} />}
+        {activeTab === 'notes' && <NotesSection session={session} churchId={churchId} refreshKey={refreshKey} />}
       </div>
     </div>
   );

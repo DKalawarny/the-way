@@ -318,7 +318,7 @@ function HistoryModal({ open, onClose, conversations, onLoad, onDelete, onNew })
 }
 
 // ── Main component ───────────────────────────────────────────────────────────
-export default function ChurchAiChat({ session, profile, churchId, churchPlan, onOpenDesk, inSplit }) {
+export default function ChurchAiChat({ session, profile, churchId, churchPlan, onOpenDesk, inSplit, onNoteSaved }) {
   const userId  = session?.user?.id;
   const plan    = churchPlan ?? 'church_base';
   const ttsVoice = profile?.tts_voice ?? 'onyx';
@@ -523,7 +523,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
       church_id: churchId, author_id: userId,
       title, body, source: researchMode ? 'research' : 'ask',
     });
-    if (!error) setSavedToNoteIdx((prev) => ({ ...prev, [assistantIdx]: true }));
+    if (!error) { setSavedToNoteIdx((prev) => ({ ...prev, [assistantIdx]: true })); onNoteSaved?.(); }
   }
 
   // ── Flag ──────────────────────────────────────────────────────────────────
