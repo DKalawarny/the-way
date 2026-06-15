@@ -66,13 +66,27 @@ Deno.serve(async (req) => {
       .update({ uses: promo.uses + 1 })
       .eq('id', promo.id);
 
-    // Upgrade profile — only if not already on an active paid subscription.
+    const now = new Date();
     const alreadyPaid = profile?.stripe_subscription_id || profile?.plan === 'premium_plus';
-    if (!alreadyPaid) {
+    if (alreadyPaid) {
+      // Paid user: add 200 bonus messages to this month's topup instead of changing plan
+      const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const { data: usageRow } = await supabase
+        .from('ai_usage').select('topup').eq('user_id', user_id).eq('period', period).maybeSingle();
+      if (usageRow) {
+        await supabase.from('ai_usage')
+          .update({ topup: (usageRow.topup ?? 0) + 200 })
+          .eq('user_id', user_id).eq('period', period);
+      } else {
+        await supabase.from('ai_usage').insert({ user_id, period, count: 0, topup: 200 });
+      }
+      await supabase.from('profiles').update({ promo_redeemed_at: now.toISOString() }).eq('id', user_id);
+    } else {
+      // Free user: upgrade plan for N months
       await supabase.from('profiles').update({
         plan:               promo.plan,
         gift_expires_at:    expiresAt.toISOString(),
-        promo_redeemed_at:  new Date().toISOString(),
+        promo_redeemed_at:  now.toISOString(),
       }).eq('id', user_id);
     }
 
