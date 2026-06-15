@@ -575,9 +575,14 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
 
         {/* ── Header ── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10, borderBottom: `1px solid ${C.border}`, marginBottom: 4, flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <KinwoveStar size={15} />
-            <span style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 600, color: C.text, letterSpacing: '-0.01em' }}>Pastoral AI</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, marginRight: 8 }}>
+            <KinwoveStar size={15} style={{ flexShrink: 0 }} />
+            <input
+              value={convTitle === 'New conversation' ? '' : convTitle}
+              onChange={e => setConvTitle(e.target.value || 'New conversation')}
+              placeholder="Name this session…"
+              style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: 15, fontFamily: T.serif, fontWeight: 600, color: C.text, letterSpacing: '-0.01em', padding: 0, flex: 1, minWidth: 0 }}
+            />
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -726,16 +731,6 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
             </div>
           );
         })()}
-
-        {/* ── Conversation title ── */}
-        <div style={{ flexShrink: 0, marginBottom: 8 }}>
-          <input
-            value={convTitle === 'New conversation' ? '' : convTitle}
-            onChange={e => setConvTitle(e.target.value || 'New conversation')}
-            placeholder="Name this session…"
-            style={{ display: 'block', width: '100%', background: 'rgba(26,17,8,0.03)', border: `1px solid rgba(26,17,8,0.14)`, borderRadius: 8, outline: 'none', fontSize: 14, fontFamily: T.serif, fontWeight: 600, color: C.text, letterSpacing: '-0.01em', padding: '8px 12px', boxSizing: 'border-box' }}
-          />
-        </div>
 
         {/* ── Messages ── */}
         <div
