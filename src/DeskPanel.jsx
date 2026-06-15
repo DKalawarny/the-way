@@ -404,25 +404,6 @@ function NotesSection({ session, churchId, refreshKey = 0 }) {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, gap: 6, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 11, color: T.inkMuted, opacity: 0.65 }}>{dateStr}</span>
                   <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
-                    {seriesEditId === note.id ? (
-                      <input
-                        autoFocus
-                        value={seriesInput}
-                        onChange={e => setSeriesInput(e.target.value)}
-                        onBlur={() => quickSetSeries(note.id)}
-                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); quickSetSeries(note.id); } if (e.key === 'Escape') setSeriesEditId(null); }}
-                        list="series-list"
-                        placeholder="Series name…"
-                        style={{ fontSize: 11, border: '1px solid rgba(184,115,58,0.4)', borderRadius: 6, padding: '2px 7px', outline: 'none', background: '#FFF8E4', color: T.ink, width: 120 }}
-                      />
-                    ) : (
-                      <button
-                        onClick={() => { setSeriesEditId(note.id); setSeriesInput(note.series || ''); }}
-                        title={note.series ? 'Change series' : 'Add to a series'}
-                        style={{ background: 'none', border: `1px solid ${note.series ? 'rgba(184,115,58,0.4)' : 'rgba(26,17,8,0.12)'}`, borderRadius: 99, padding: '2px 8px', fontSize: 10, fontWeight: 600, color: note.series ? T.gold : T.inkMuted, cursor: 'pointer', letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>
-                        {note.series || '+ Series'}
-                      </button>
-                    )}
                     <button onClick={() => startEdit(note)}
                       style={{ background: 'none', border: `1px solid rgba(26,17,8,0.14)`, borderRadius: 8, padding: '3px 10px', fontSize: 11, color: T.inkSoft, cursor: 'pointer', fontWeight: 500 }}>
                       Edit
