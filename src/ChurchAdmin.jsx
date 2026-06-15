@@ -2347,6 +2347,11 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
   // settings" lands on Settings, not Overview). Falls back to overview.
   const VALID_TABS = ['overview', 'people', 'ask', 'bible', 'sermons', 'notes', 'settings'];
   const [tab, setTab] = useState(initialTab && VALID_TABS.includes(initialTab) ? initialTab : 'overview');
+  useEffect(() => {
+    const fullBleed = tab === 'ask' || tab === 'bible';
+    document.body.style.overflow = fullBleed ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [tab]);
   const [church, setChurch] = useState(null);
   const [showPastorTour, setShowPastorTour] = useState(false);
   // Wait for church data to load before measuring — the sticky nav includes the
