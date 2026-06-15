@@ -533,6 +533,36 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
                     Switch mode
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                    {/* Sermon Research — full-width hero card */}
+                    {(() => {
+                      const active = researchMode;
+                      return (
+                        <button
+                          onClick={() => setMode('__research__')}
+                          onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = active ? 'rgba(184,115,58,0.14)' : 'rgba(184,115,58,0.08)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = active ? 'rgba(184,115,58,0.10)' : 'rgba(184,115,58,0.04)'; }}
+                          style={{
+                            gridColumn: '1 / -1',
+                            textAlign: 'left', cursor: 'pointer',
+                            background: active ? 'rgba(184,115,58,0.10)' : 'rgba(184,115,58,0.04)',
+                            border: `1.5px solid ${active ? T.gold : 'rgba(184,115,58,0.30)'}`,
+                            borderRadius: 12, padding: '14px 14px',
+                            transition: 'background 0.12s', position: 'relative',
+                            display: 'flex', alignItems: 'center', gap: 14,
+                          }}
+                        >
+                          {active && <span style={{ position: 'absolute', top: 10, right: 12, fontSize: 10, color: T.goldDark, fontWeight: 700 }}>✓</span>}
+                          <div style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>📚</div>
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: active ? T.goldDark : T.ink }}>Sermon Research</span>
+                              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: T.gold, background: 'rgba(184,115,58,0.12)', borderRadius: 999, padding: '2px 7px' }}>For pastors</span>
+                            </div>
+                            <div style={{ fontSize: 11, color: T.inkMuted, lineHeight: 1.45 }}>Original languages · named scholars · where traditions disagree · preaching angles</div>
+                          </div>
+                        </button>
+                      );
+                    })()}
                     {PERSON_TYPES.map((pt) => {
                       const active = !researchMode && pt.id === personType;
                       return (
@@ -556,29 +586,6 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
                         </button>
                       );
                     })}
-                    {/* Research card */}
-                    {(() => {
-                      const active = researchMode;
-                      return (
-                        <button
-                          onClick={() => setMode('__research__')}
-                          onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'rgba(184,115,58,0.06)'; }}
-                          onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = T.parchment; }}
-                          style={{
-                            textAlign: 'left', cursor: 'pointer',
-                            background: active ? 'rgba(184,115,58,0.10)' : T.parchment,
-                            border: `1.5px solid ${active ? T.gold : 'transparent'}`,
-                            borderRadius: 12, padding: '10px 10px',
-                            transition: 'background 0.12s', position: 'relative',
-                          }}
-                        >
-                          {active && <span style={{ position: 'absolute', top: 7, right: 9, fontSize: 10, color: T.goldDark, fontWeight: 700 }}>✓</span>}
-                          <div style={{ fontSize: 20, marginBottom: 5, lineHeight: 1 }}>📚</div>
-                          <div style={{ fontSize: 12.5, fontWeight: 700, color: active ? T.goldDark : T.ink, marginBottom: 3 }}>Sermon Research</div>
-                          <div style={{ fontSize: 10.5, color: T.inkMuted, lineHeight: 1.45 }}>Calvin, Wesley, N.T. Wright, Church Fathers — named scholars, not a blend.</div>
-                        </button>
-                      );
-                    })()}
                   </div>
                 </div>
               )}

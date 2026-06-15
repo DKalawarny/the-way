@@ -315,6 +315,8 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
           <div style={{ fontSize: 12, color: T.inkMuted, textAlign: 'center' }}>
             Messages reset automatically each month.
           </div>
+
+          <PromoCodeInput onSuccess={() => window.location.reload()} />
         </>
       )}
     </div>
