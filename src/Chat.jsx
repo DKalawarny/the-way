@@ -1682,7 +1682,8 @@ export default function Chat({
               if (!canSave || saved || !session?.user?.id) return;
               const prev = messages[i - 1];
               const question = prev?.role === 'user' ? prev.content : '';
-              const title = question.slice(0, 70) || m.content.slice(0, 70);
+              const verseMatch = question.match(/^Tell me about (.+? \d+:\d+)/);
+              const title = verseMatch ? verseMatch[1] : (question.slice(0, 70) || m.content.slice(0, 70));
               const body = question ? `Q: ${question}\n\n${m.content}` : m.content;
               const { error } = await supabase.from('user_notes').insert({
                 user_id: session.user.id, title, body, source: 'ask',

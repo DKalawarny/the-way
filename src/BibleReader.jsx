@@ -2017,7 +2017,8 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                       if (rdSavedIdx[i] || !session?.user?.id) return;
                       const prevMsg = chatMsgs[i - 1];
                       const question = prevMsg?.role === 'user' ? prevMsg.content : '';
-                      const title = question.slice(0, 70) || m.content.slice(0, 70);
+                      const verseMatch = question.match(/^Tell me about (.+? \d+:\d+)/);
+                      const title = verseMatch ? verseMatch[1] : (question.slice(0, 70) || m.content.slice(0, 70));
                       const body = question ? `Q: ${question}\n\n${m.content}` : m.content;
                       const { error } = await supabase.from('user_notes').insert({
                         user_id: session.user.id, title, body, source: 'bible',
