@@ -2200,7 +2200,7 @@ function NotesPanel({ session, churchId }) {
 
   function sourceLabel(source) {
     if (source === 'research') return '📚 Research';
-    if (source === 'ask') return '💬 Ask';
+    if (source === 'ask') return '💬 Study';
     return null;
   }
 
@@ -2267,7 +2267,7 @@ function NotesPanel({ session, churchId }) {
         <div style={{ textAlign: 'center', padding: '60px 0', color: T.inkMuted }}>
           <div style={{ fontSize: 36, marginBottom: 12 }}>📝</div>
           <div style={{ fontSize: 15, fontWeight: 600, color: T.ink, marginBottom: 6 }}>No notes yet</div>
-          <div style={{ fontSize: 13 }}>Write one above, or save an AI response from Ask.</div>
+          <div style={{ fontSize: 13 }}>Write one above, or save an AI response from Study.</div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

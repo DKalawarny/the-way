@@ -4,7 +4,7 @@ import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 const TABS = [
   { id: 'overview', label: 'Overview', emoji: <KinwoveStar size={13} /> },
   { id: 'people',   label: 'People',   emoji: '👥' },
-  { id: 'ask',      label: 'Ask',      emoji: '💬' },
+  { id: 'ask',      label: 'Study',    emoji: '💬' },
   { id: 'bible',    label: 'Bible',    emoji: '📖' },
   { id: 'sermons',  label: 'Sermons',  emoji: '🎙' },
   { id: 'notes',    label: 'Notes',    emoji: '📝' },
