@@ -331,7 +331,7 @@ function NotesSection({ session, churchId, refreshKey = 0 }) {
                     style={{ width: '100%', minHeight: 180, fontSize: 14, fontFamily: T.display, color: T.ink, outline: 'none', lineHeight: 1.75, boxSizing: 'border-box' }}
                   />
                   {/* Action bar */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 14, flexWrap: 'wrap' }}>
+                  <div style={{ display: showDonePrompt ? 'none' : 'flex', alignItems: 'center', gap: 6, marginTop: 14, flexWrap: 'wrap' }}>
                     <button onClick={() => saveEdit(note.id)} disabled={saveState === 'saving'}
                       style={{ ...btnBase, background: T.ink, color: T.cream, opacity: saveState === 'saving' ? 0.7 : 1 }}>
                       {saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? '✓ Saved' : 'Save'}
