@@ -217,7 +217,7 @@ function NotesSection({ session, churchId, refreshKey = 0 }) {
         <button
           onClick={() => { setShowForm(v => !v); setEditingId(null); }}
           style={{ background: showForm ? T.ink : 'transparent', color: showForm ? T.cream : T.inkMuted, border: `1px solid ${showForm ? T.ink : 'rgba(26,17,8,0.14)'}`, borderRadius: 999, padding: '4px 11px', fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}
-        >{showForm ? 'Cancel' : '+ New'}</button>
+        >{showForm ? 'Cancel' : 'Notes'}</button>
       </div>
 
       {/* Quick-create form (plain text — immediately opens rich editor on create) */}

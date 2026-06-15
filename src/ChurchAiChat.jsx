@@ -425,7 +425,8 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
   useEffect(() => {
     if (messages.length === 0) return;
     const firstUser = messages.find((m) => m.role === 'user')?.content ?? '';
-    const title = firstUser ? firstUser.slice(0, 70) + (firstUser.length > 70 ? '…' : '') : convTitle;
+    const hasCustomTitle = convTitle !== 'New conversation';
+    const title = hasCustomTitle ? convTitle : (firstUser ? firstUser.slice(0, 70) + (firstUser.length > 70 ? '…' : '') : convTitle);
     setConvTitle(title);
     const updated = { id: convId, title, messages, updatedAt: Date.now() };
     setHistory((prev) => {
@@ -723,6 +724,16 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
           );
         })()}
 
+        {/* ── Conversation title ── */}
+        <div style={{ flexShrink: 0, marginBottom: 8 }}>
+          <input
+            value={convTitle === 'New conversation' ? '' : convTitle}
+            onChange={e => setConvTitle(e.target.value || 'New conversation')}
+            placeholder="Name this session…"
+            style={{ display: 'block', width: '100%', background: 'rgba(26,17,8,0.03)', border: `1px solid rgba(26,17,8,0.14)`, borderRadius: 8, outline: 'none', fontSize: 14, fontFamily: T.serif, fontWeight: 600, color: C.text, letterSpacing: '-0.01em', padding: '8px 12px', boxSizing: 'border-box' }}
+          />
+        </div>
+
         {/* ── Messages ── */}
         <div
           ref={scrollRef}
@@ -734,7 +745,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
               <div style={{ marginBottom: 10 }}><KinwoveStar size={22} /></div>
               {researchMode ? (
                 <>
-                  <div style={{ fontFamily: T.serif, fontSize: 17, fontWeight: 500, color: C.text, marginBottom: 6, letterSpacing: '-0.01em' }}>📚 Sermon Research</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.muted, marginBottom: 12 }}>📚 Sermon Research</div>
                   <div style={{ fontSize: 13, color: C.soft, lineHeight: 1.6, maxWidth: 380, margin: '0 auto 6px' }}>
                     Multi-source commentary briefs — Calvin, Wesley, N.T. Wright, Church Fathers, and more.
                   </div>
@@ -749,7 +760,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
                 </>
               ) : (
                 <>
-                  <div style={{ fontFamily: T.serif, fontSize: 17, fontWeight: 500, color: C.text, marginBottom: 6, letterSpacing: '-0.01em' }}>Pastoral AI</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.muted, marginBottom: 12 }}>Pastoral AI</div>
                   <div style={{ fontSize: 13, color: C.soft, lineHeight: 1.6, maxWidth: 340, margin: '0 auto 24px' }}>Theology, sermon prep, pastoral care, exegesis — ask anything.</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 440, margin: '0 auto', textAlign: 'left' }}>
                     {STARTERS.map((s) => (
