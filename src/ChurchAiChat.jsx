@@ -544,7 +544,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
 
   // ── Conversation management ───────────────────────────────────────────────
   function newConversation() {
-    setMessages([]); setInput(''); setError(null); setSavedIdx({}); setSaveError(null); setFlaggedMsgs(new Set());
+    setMessages([]); setInput(''); setError(null); setSavedIdx({}); setSavedToNoteIdx({}); setSaveError(null); setFlaggedMsgs(new Set());
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     setConvId(id); setConvTitle('New conversation');
   }
