@@ -2347,11 +2347,6 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
   // settings" lands on Settings, not Overview). Falls back to overview.
   const VALID_TABS = ['overview', 'people', 'ask', 'bible', 'sermons', 'notes', 'settings'];
   const [tab, setTab] = useState(initialTab && VALID_TABS.includes(initialTab) ? initialTab : 'overview');
-  useEffect(() => {
-    const fullBleed = tab === 'ask' || tab === 'bible';
-    document.body.style.overflow = fullBleed ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
-  }, [tab]);
   const [church, setChurch] = useState(null);
   const [showPastorTour, setShowPastorTour] = useState(false);
   // Wait for church data to load before measuring — the sticky nav includes the
@@ -2470,7 +2465,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
           />
         )}
         {tab === 'ask' && (
-          <div style={{ display: 'flex', height: 'calc(100vh - 130px)', overflow: 'hidden', position: 'relative', alignItems: 'stretch' }}>
+          <div style={{ display: 'flex', height: '100%', overflow: 'hidden', position: 'relative', alignItems: 'stretch' }}>
             {/* Chat — takes remaining width */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <ChurchAiChat

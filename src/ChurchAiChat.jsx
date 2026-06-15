@@ -571,7 +571,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
       <BoardModal open={boardOpen} onClose={() => setBoardOpen(false)} churchId={churchId} onReopenInAsk={reopenInAsk} />
       <HistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} conversations={history} onLoad={loadConversation} onDelete={deleteConversation} onNew={newConversation} />
 
-      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)', minHeight: 400, overflow: 'hidden', background: C.bg, color: C.text, transition: 'background 0.2s, color 0.2s', borderRadius: inSplit ? 0 : 8, padding: inSplit ? '12px 16px' : '12px 20px', position: 'relative' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden', background: C.bg, color: C.text, transition: 'background 0.2s, color 0.2s', borderRadius: inSplit ? 0 : 8, padding: inSplit ? '12px 16px' : '12px 20px', position: 'relative' }}>
 
         {/* ── Header ── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10, borderBottom: `1px solid ${C.border}`, marginBottom: 4, flexShrink: 0 }}>

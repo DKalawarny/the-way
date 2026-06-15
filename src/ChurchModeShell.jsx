@@ -53,8 +53,9 @@ export default function ChurchModeShell({
   const isVisitorView = currentSubpage === 'public';
 
   return (
-    <div style={{ minHeight: '100vh', background: T.cream }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: T.cream }}>
       <div style={{
+        flexShrink: 0,
         position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 20,
         background: '#1e1208',
         borderBottom: 'none',
@@ -119,8 +120,8 @@ export default function ChurchModeShell({
 
       {/* Public/visitor view renders full-bleed — ChurchPage owns its own layout */}
       {isVisitorView || fullBleed
-        ? <div style={{ paddingBottom: fullBleed ? 0 : 80 }}>{children}</div>
-        : <div style={{ maxWidth: bodyMaxWidth, margin: '0 auto', padding: '20px 20px 80px' }}>{children}</div>
+        ? <div style={{ flex: 1, overflow: fullBleed ? 'hidden' : 'auto', paddingBottom: fullBleed ? 0 : 80 }}>{children}</div>
+        : <div style={{ flex: 1, overflowY: 'auto', maxWidth: bodyMaxWidth, margin: '0 auto', padding: '20px 20px 80px', width: '100%', boxSizing: 'border-box' }}>{children}</div>
       }
     </div>
   );
