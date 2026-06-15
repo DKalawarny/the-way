@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Download, Copy, Check, QrCode } from 'lucide-react';
 import { supabase, resizeImageToDataUrl, authedFetch } from './supabase.js';
 import { moderateImage } from './moderation.js';
@@ -17,6 +17,7 @@ const PastorDashboard = lazy(() => import('./PastorDashboard.jsx'));
 const SermonComposer  = lazy(() => import('./SermonComposer.jsx'));
 const ChurchAiChat    = lazy(() => import('./ChurchAiChat.jsx'));
 const BibleReader     = lazy(() => import('./BibleReader.jsx'));
+const DeskPanel       = lazy(() => import('./DeskPanel.jsx'));
 
 function qrUrl(url) {
   return `https://quickchart.io/qr?text=${encodeURIComponent(url)}&size=320&margin=2&dark=2C1810&light=FDF8F0`;
@@ -2344,6 +2345,16 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
   // highest-stakes moment, sharing with the congregation Sunday morning).
   // The consuming panel calls clearPendingAction() after firing it.
   const [pendingAction, setPendingAction] = useState(null);
+
+  // Scholar's Desk split layout
+  const [isWide, setIsWide] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 900);
+  const [mobileDeskPanel, setMobileDeskPanel] = useState(null); // null | 'bible' | 'notes'
+  useEffect(() => {
+    function onResize() { setIsWide(window.innerWidth >= 900); }
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   function gotoSettings(action) {
     if (action) setPendingAction(action);
     setTab('settings');
@@ -2411,12 +2422,52 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
           />
         )}
         {tab === 'ask' && (
-          <ChurchAiChat
-            session={session}
-            profile={profile}
-            churchId={churchId}
-            churchPlan={plan ?? 'church_base'}
-          />
+          <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
+            {/* Chat — takes remaining width */}
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+              <ChurchAiChat
+                session={session}
+                profile={profile}
+                churchId={churchId}
+                churchPlan={plan ?? 'church_base'}
+                onOpenDesk={isWide ? null : setMobileDeskPanel}
+              />
+            </div>
+
+            {/* Desktop: Scholar's Desk panel */}
+            {isWide && (
+              <Suspense fallback={null}>
+                <DeskPanel session={session} churchId={churchId} />
+              </Suspense>
+            )}
+
+            {/* Mobile: bottom drawer */}
+            {!isWide && mobileDeskPanel && (
+              <>
+                {/* Backdrop */}
+                <div
+                  onClick={() => setMobileDeskPanel(null)}
+                  style={{ position: 'fixed', inset: 0, background: 'rgba(26,17,8,0.35)', zIndex: 200 }}
+                />
+                {/* Drawer */}
+                <div style={{
+                  position: 'fixed', bottom: 0, left: 0, right: 0,
+                  height: '65vh', zIndex: 201,
+                  boxShadow: '0 -8px 40px rgba(26,17,8,0.18)',
+                }}>
+                  <Suspense fallback={null}>
+                    <DeskPanel
+                      session={session}
+                      churchId={churchId}
+                      isMobile
+                      initialTab={mobileDeskPanel}
+                      onClose={() => setMobileDeskPanel(null)}
+                    />
+                  </Suspense>
+                </div>
+              </>
+            )}
+          </div>
         )}
         {tab === 'bible' && (
           <BibleReader

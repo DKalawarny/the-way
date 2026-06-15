@@ -318,7 +318,7 @@ function HistoryModal({ open, onClose, conversations, onLoad, onDelete, onNew })
 }
 
 // ── Main component ───────────────────────────────────────────────────────────
-export default function ChurchAiChat({ session, profile, churchId, churchPlan }) {
+export default function ChurchAiChat({ session, profile, churchId, churchPlan, onOpenDesk }) {
   const userId  = session?.user?.id;
   const plan    = churchPlan ?? 'church_base';
   const ttsVoice = profile?.tts_voice ?? 'onyx';
@@ -940,6 +940,19 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
           <AiLimitWall plan={plan} panelMode onTopupSuccess={() => aiUsage.refreshAfterTopup()} />
         ) : (
           <div style={{ borderTop: `1px solid ${C.border}`, padding: '12px 0 0', flexShrink: 0 }}>
+            {/* Mobile: floating desk buttons above input */}
+            {onOpenDesk && (
+              <div style={{ display: 'flex', gap: 7, marginBottom: 10, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => onOpenDesk('bible')}
+                  style={{ background: 'rgba(184,115,58,0.10)', border: `1px solid rgba(184,115,58,0.28)`, borderRadius: 999, padding: '5px 13px', fontSize: 12, fontWeight: 600, color: T.gold, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
+                >📖 Bible</button>
+                <button
+                  onClick={() => onOpenDesk('notes')}
+                  style={{ background: 'rgba(184,115,58,0.10)', border: `1px solid rgba(184,115,58,0.28)`, borderRadius: 999, padding: '5px 13px', fontSize: 12, fontWeight: 600, color: T.gold, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}
+                >📝 Notes</button>
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
               <textarea
                 ref={inputRef}
