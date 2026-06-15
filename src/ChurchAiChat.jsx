@@ -321,7 +321,8 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
   const [error, setError]         = useState(null);
 
   // Action bar state
-  const [savedIdx, setSavedIdx]   = useState({});   // { [msgIdx]: true } — saved to board
+  const [savedIdx, setSavedIdx]         = useState({});   // { [msgIdx]: true } — saved to board
+  const [savedToNoteIdx, setSavedToNoteIdx] = useState({});
   const [saveError, setSaveError] = useState(null);
   const [copiedIdx, setCopiedIdx] = useState(null);
   const [flaggedMsgs, setFlaggedMsgs] = useState(new Set());
@@ -426,6 +427,21 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
     });
     if (err) { console.error('saveToBoard:', err); setSaveError(err.message || 'Could not save.'); }
     else setSavedIdx((prev) => ({ ...prev, [assistantIdx]: true }));
+  }
+
+  // ── Save to notes ─────────────────────────────────────────────────────────
+  async function saveToNotes(assistantIdx) {
+    if (!churchId || !userId) return;
+    const question = messages.slice(0, assistantIdx).reverse().find((m) => m.role === 'user')?.content ?? '';
+    const answer   = messages[assistantIdx]?.content ?? '';
+    if (!answer) return;
+    const title = question.slice(0, 70) || answer.slice(0, 70);
+    const body  = question ? `Q: ${question}\n\n${answer}` : answer;
+    const { error } = await supabase.from('church_notes').insert({
+      church_id: churchId, author_id: userId,
+      title, body, source: researchMode ? 'research' : 'ask',
+    });
+    if (!error) setSavedToNoteIdx((prev) => ({ ...prev, [assistantIdx]: true }));
   }
 
   // ── Flag ──────────────────────────────────────────────────────────────────
@@ -666,6 +682,17 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
                           >
                             <BookmarkIcon filled={saved} size={13} />
                             {saved ? 'Saved' : 'Save'}
+                          </ActionBtn>
+                        )}
+
+                        {/* Save to notes */}
+                        {churchId && (
+                          <ActionBtn
+                            onClick={() => saveToNotes(i)}
+                            title={savedToNoteIdx[i] ? 'Saved to Notes' : 'Save to Notes'}
+                            active={savedToNoteIdx[i]}
+                          >
+                            📝 {savedToNoteIdx[i] ? 'Noted' : 'Note'}
                           </ActionBtn>
                         )}
 

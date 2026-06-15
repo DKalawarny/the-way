@@ -2120,10 +2120,210 @@ const PASTOR_TOUR_STEPS = [
   },
 ];
 
+// ── NotesPanel ───────────────────────────────────────────────────────────────
+function NotesPanel({ session, churchId }) {
+  const userId = session?.user?.id;
+  const [notes, setNotes]               = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [showForm, setShowForm]         = useState(false);
+  const [formTitle, setFormTitle]       = useState('');
+  const [formBody, setFormBody]         = useState('');
+  const [saving, setSaving]             = useState(false);
+  const [expandedId, setExpandedId]     = useState(null);
+  const [editState, setEditState]       = useState({}); // { [id]: { title, body } }
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [saveErr, setSaveErr]           = useState(null);
+
+  useEffect(() => {
+    if (!churchId) return;
+    supabase.from('church_notes')
+      .select('*').eq('church_id', churchId).order('updated_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (!error) setNotes(data ?? []);
+        setLoading(false);
+      }, () => setLoading(false));
+  }, [churchId]);
+
+  async function createNote() {
+    if (!formBody.trim() || !churchId || !userId) return;
+    setSaving(true); setSaveErr(null);
+    const { data, error } = await supabase.from('church_notes').insert({
+      church_id: churchId, author_id: userId,
+      title: formTitle.trim(), body: formBody.trim(),
+    }).select().single();
+    setSaving(false);
+    if (error) { setSaveErr(error.message || 'Could not save.'); return; }
+    setNotes((prev) => [data, ...prev]);
+    setFormTitle(''); setFormBody(''); setShowForm(false);
+  }
+
+  async function updateNote(id) {
+    const e = editState[id];
+    if (!e?.body?.trim()) return;
+    const { data, error } = await supabase.from('church_notes')
+      .update({ title: e.title?.trim() ?? '', body: e.body.trim(), updated_at: new Date().toISOString() })
+      .eq('id', id).select().single();
+    if (error) return;
+    setNotes((prev) => prev.map((n) => n.id === id ? data : n));
+    setExpandedId(null);
+    setEditState((prev) => { const copy = { ...prev }; delete copy[id]; return copy; });
+  }
+
+  async function deleteNote(id) {
+    await supabase.from('church_notes').delete().eq('id', id);
+    setNotes((prev) => prev.filter((n) => n.id !== id));
+    setConfirmDelete(null);
+    if (expandedId === id) setExpandedId(null);
+  }
+
+  function sourceLabel(source) {
+    if (source === 'research') return '📚 Research';
+    if (source === 'ask') return '💬 Ask';
+    return null;
+  }
+
+  function preview(note) {
+    return (note.title || note.body.slice(0, 60)) + (note.body.length > 60 && !note.title ? '…' : '');
+  }
+
+  return (
+    <div style={{ padding: '24px 20px', maxWidth: 680, margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div>
+          <div style={{ fontFamily: T.serif, fontSize: 22, color: T.ink, fontWeight: 600 }}>Notes</div>
+          <div style={{ fontSize: 13, color: T.inkMuted, marginTop: 2 }}>Private to your leadership team</div>
+        </div>
+        <button
+          onClick={() => { setShowForm((v) => !v); setSaveErr(null); }}
+          style={{ background: T.ink, color: T.cream, border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+        >
+          {showForm ? 'Cancel' : 'New note'}
+        </button>
+      </div>
+
+      {/* New note form */}
+      {showForm && (
+        <div style={{ background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 14, padding: 16, marginBottom: 20 }}>
+          <input
+            value={formTitle}
+            onChange={(e) => setFormTitle(e.target.value)}
+            placeholder="Title (optional)"
+            style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 15, fontFamily: T.serif, color: T.ink, marginBottom: 8, outline: 'none', boxSizing: 'border-box' }}
+          />
+          <textarea
+            autoFocus
+            value={formBody}
+            onChange={(e) => setFormBody(e.target.value)}
+            placeholder="Write your note…"
+            rows={5}
+            style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 15, fontFamily: T.display, color: T.ink, resize: 'vertical', outline: 'none', lineHeight: 1.55, boxSizing: 'border-box' }}
+          />
+          {saveErr && <div style={{ fontSize: 12, color: '#c05050', marginBottom: 8 }}>{saveErr}</div>}
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <button
+              onClick={createNote}
+              disabled={saving || !formBody.trim()}
+              style={{ background: T.ink, color: T.cream, border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 13, fontWeight: 600, cursor: saving || !formBody.trim() ? 'default' : 'pointer', opacity: saving || !formBody.trim() ? 0.5 : 1 }}
+            >
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+            <button
+              onClick={() => { setShowForm(false); setFormTitle(''); setFormBody(''); setSaveErr(null); }}
+              style={{ background: 'transparent', color: T.inkMuted, border: `1px solid ${T.line}`, borderRadius: 8, padding: '7px 16px', fontSize: 13, cursor: 'pointer' }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Notes list */}
+      {loading ? (
+        <div style={{ color: T.inkMuted, fontSize: 14, textAlign: 'center', padding: '40px 0' }}>Loading…</div>
+      ) : notes.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px 0', color: T.inkMuted }}>
+          <div style={{ fontSize: 36, marginBottom: 12 }}>📝</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: T.ink, marginBottom: 6 }}>No notes yet</div>
+          <div style={{ fontSize: 13 }}>Write one above, or save an AI response from Ask.</div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {notes.map((note) => {
+            const isOpen = expandedId === note.id;
+            const edit   = editState[note.id] ?? { title: note.title, body: note.body };
+            const label  = sourceLabel(note.source);
+            const dateStr = new Date(note.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+            return (
+              <div key={note.id} style={{ background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 14, padding: 16 }}>
+                {!isOpen ? (
+                  // Collapsed
+                  <div onClick={() => { setExpandedId(note.id); setEditState((prev) => ({ ...prev, [note.id]: { title: note.title, body: note.body } })); }} style={{ cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                      <div style={{ fontFamily: T.serif, fontSize: 15, fontWeight: 600, color: T.ink }}>{preview(note)}</div>
+                      {label && <span style={{ fontSize: 11, color: T.inkMuted, background: 'rgba(26,17,8,0.06)', borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap', flexShrink: 0 }}>{label}</span>}
+                    </div>
+                    {note.title && <div style={{ fontSize: 13, color: T.inkMuted, marginTop: 4, lineHeight: 1.4 }}>{note.body.slice(0, 100)}{note.body.length > 100 ? '…' : ''}</div>}
+                    <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 6 }}>{dateStr}</div>
+                  </div>
+                ) : (
+                  // Expanded + editable
+                  <div>
+                    <input
+                      value={edit.title}
+                      onChange={(e) => setEditState((prev) => ({ ...prev, [note.id]: { ...edit, title: e.target.value } }))}
+                      placeholder="Title (optional)"
+                      style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 15, fontFamily: T.serif, fontWeight: 600, color: T.ink, marginBottom: 8, outline: 'none', boxSizing: 'border-box' }}
+                    />
+                    <textarea
+                      autoFocus
+                      value={edit.body}
+                      onChange={(e) => setEditState((prev) => ({ ...prev, [note.id]: { ...edit, body: e.target.value } }))}
+                      rows={6}
+                      style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 14, fontFamily: T.display, color: T.ink, resize: 'vertical', outline: 'none', lineHeight: 1.55, boxSizing: 'border-box' }}
+                    />
+                    <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => updateNote(note.id)}
+                        style={{ background: T.ink, color: T.cream, border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                      >Save</button>
+                      <button
+                        onClick={() => { setExpandedId(null); setEditState((prev) => { const c = { ...prev }; delete c[note.id]; return c; }); }}
+                        style={{ background: 'transparent', color: T.inkMuted, border: `1px solid ${T.line}`, borderRadius: 8, padding: '7px 16px', fontSize: 13, cursor: 'pointer' }}
+                      >Cancel</button>
+                      {confirmDelete === note.id ? (
+                        <>
+                          <button
+                            onClick={() => deleteNote(note.id)}
+                            style={{ background: 'transparent', color: '#c05050', border: '1px solid #c05050', borderRadius: 8, padding: '7px 16px', fontSize: 13, cursor: 'pointer' }}
+                          >Delete forever</button>
+                          <button
+                            onClick={() => setConfirmDelete(null)}
+                            style={{ background: 'transparent', color: T.inkMuted, border: `1px solid ${T.line}`, borderRadius: 8, padding: '7px 16px', fontSize: 13, cursor: 'pointer' }}
+                          >Keep it</button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDelete(note.id)}
+                          style={{ background: 'transparent', color: T.inkMuted, border: `1px solid ${T.line}`, borderRadius: 8, padding: '7px 16px', fontSize: 13, cursor: 'pointer', marginLeft: 'auto' }}
+                        >Delete</button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ChurchAdmin({ session, profile, churchId, onBack, onOpenChurchPage, onOpenChurchHub, onOpenSermon, initialTab }) {
   // Allow deep-links into a specific tab (e.g. ChurchPage's "Edit in Pastor
   // settings" lands on Settings, not Overview). Falls back to overview.
-  const VALID_TABS = ['overview', 'people', 'ask', 'bible', 'sermons', 'settings'];
+  const VALID_TABS = ['overview', 'people', 'ask', 'bible', 'sermons', 'notes', 'settings'];
   const [tab, setTab] = useState(initialTab && VALID_TABS.includes(initialTab) ? initialTab : 'overview');
   const [church, setChurch] = useState(null);
   const [showPastorTour, setShowPastorTour] = useState(false);
@@ -2235,6 +2435,9 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
             userPlan={plan ?? 'free'}
             onBack={() => { setComposerSermonId(null); setTab('overview'); }}
           />
+        )}
+        {tab === 'notes' && (
+          <NotesPanel session={session} churchId={churchId} />
         )}
         {tab === 'settings' && (
           <SettingsPanel

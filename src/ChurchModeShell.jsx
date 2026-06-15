@@ -7,6 +7,7 @@ const TABS = [
   { id: 'ask',      label: 'Ask',      emoji: '💬' },
   { id: 'bible',    label: 'Bible',    emoji: '📖' },
   { id: 'sermons',  label: 'Sermons',  emoji: '🎙' },
+  { id: 'notes',    label: 'Notes',    emoji: '📝' },
   { id: 'settings', label: 'Settings', emoji: '⚙' },
 ];
 
