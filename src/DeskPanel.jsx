@@ -364,10 +364,10 @@ function NotesSection({ session, churchId, refreshKey = 0 }) {
                   {/* Unsaved-changes prompt */}
                   {showDonePrompt && (
                     <div style={{ background: 'rgba(184,115,58,0.08)', border: '1px solid rgba(184,115,58,0.25)', borderRadius: 10, padding: '10px 12px', marginTop: 10 }}>
-                      <div style={{ fontSize: 13, fontFamily: T.serif, fontWeight: 600, color: T.ink, marginBottom: 8 }}>Save before closing?</div>
+                      <div style={{ fontSize: 13, fontFamily: T.serif, fontWeight: 600, color: T.ink, marginBottom: 8 }}>You have unsaved changes</div>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button onClick={() => saveAndClose(note.id)}
-                          style={{ ...btnBase, background: T.ink, color: T.cream }}>Save &amp; close</button>
+                          style={{ ...btnBase, background: T.ink, color: T.cream }}>Save</button>
                         <button onClick={() => {
                             setEditTitle(note.title || '');
                             setEditSeries(note.series || '');
@@ -375,9 +375,9 @@ function NotesSection({ session, churchId, refreshKey = 0 }) {
                             setIsDirty(false);
                             setShowDonePrompt(false);
                           }}
-                          style={{ ...btnBase, background: 'transparent', color: '#A53F2B', border: '1px solid rgba(165,63,43,0.4)', fontWeight: 500 }}>Discard</button>
+                          style={{ ...btnBase, background: 'transparent', color: '#A53F2B', border: '1px solid rgba(165,63,43,0.4)', fontWeight: 500 }}>Discard changes</button>
                         <button onClick={() => setShowDonePrompt(false)}
-                          style={{ ...btnBase, background: 'transparent', color: T.inkMuted, border: `1px solid rgba(26,17,8,0.14)`, fontWeight: 500 }}>Cancel</button>
+                          style={{ ...btnBase, background: 'transparent', color: T.inkMuted, border: `1px solid rgba(26,17,8,0.14)`, fontWeight: 500 }}>Keep editing</button>
                       </div>
                     </div>
                   )}
