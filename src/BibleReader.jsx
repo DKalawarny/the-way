@@ -1098,6 +1098,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   }
 
   function tapVerse(v) {
+    if (window.getSelection()?.toString().trim()) return;
     const next = selectedVerse?.number === v.number ? null : v;
     setSelectedVerse(next);
     if (next) setLastVerse(next);
