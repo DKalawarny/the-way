@@ -272,7 +272,7 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
             {upgrading === 'premium' ? 'Redirecting\u2026' : 'Upgrade now \u2192'}
           </button>
 
-          <PromoCodeInput onSuccess={() => window.location.reload()} />
+          <PromoCodeInput onSuccess={onTopupSuccess ?? (() => window.location.reload())} />
         </>
       ) : (
         // ── Paid user hit monthly cap — offer top-up ─────────────────────────
@@ -299,7 +299,7 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
             </div>
           </div>
 
-          <PromoCodeInput onSuccess={() => window.location.reload()} />
+          <PromoCodeInput onSuccess={onTopupSuccess ?? (() => window.location.reload())} />
 
           <button
             onClick={handleTopup}
