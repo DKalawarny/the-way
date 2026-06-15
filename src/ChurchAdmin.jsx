@@ -2387,7 +2387,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
       onOpenChurchPage={onOpenChurchPage}
       onOpenChurchHub={onOpenChurchHub}
       currentSubpage={null}
-      fullBleed={tab === 'bible'}
+      fullBleed={tab === 'bible' || tab === 'ask'}
     >
       {trialExpired && (
         <UpgradeWall onBack={onBack} />
@@ -2422,7 +2422,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
           />
         )}
         {tab === 'ask' && (
-          <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative', alignItems: 'stretch' }}>
+          <div style={{ display: 'flex', height: 'calc(100vh - 130px)', overflow: 'hidden', position: 'relative', alignItems: 'stretch' }}>
             {/* Chat — takes remaining width */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <ChurchAiChat

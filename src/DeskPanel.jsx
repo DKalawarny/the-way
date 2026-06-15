@@ -130,10 +130,12 @@ function NotesSection({ session, churchId }) {
 }
 
 // ── DeskPanel ─────────────────────────────────────────────────────────────────
-// topOffset accounts for ChurchModeShell shell header (145px) + DeskPanel tab bar (~58px).
-// BibleReader's formula: height = calc(100vh - (62 + topOffset)). The 62 is its own
-// internal constant. We inject 203 so BibleReader fills the panel content area.
-const BIBLE_TOP_OFFSET = 203;
+// BibleReader's formula: height = calc(100vh - (62 + topOffset)).
+// The home view uses minHeight:100vh and ignores topOffset — we wrap it in a
+// scrollable div so BibleReader can expand freely while DeskPanel clips it.
+// For the reading view, topOffset=126 makes height = calc(100vh-188px) which
+// matches DeskPanel content area: calc(100vh-130px) minus ~58px tab bar.
+const BIBLE_TOP_OFFSET = 126;
 
 export default function DeskPanel({ session, profile, churchId, onClose, isMobile, initialTab }) {
   const [activeTab, setActiveTab] = useState(initialTab ?? 'bible');
@@ -145,7 +147,7 @@ export default function DeskPanel({ session, profile, churchId, onClose, isMobil
     <div style={{
       width: isMobile ? '100%' : 360,
       flexShrink: 0,
-      height: '100%',
+      height: isMobile ? '100%' : 'calc(100vh - 130px)',
       background: `linear-gradient(180deg, #FAF6EA 0%, ${T.parchment} 100%)`,
       borderLeft: isMobile ? 'none' : `1px solid rgba(184,115,58,0.20)`,
       display: 'flex',
@@ -191,12 +193,16 @@ export default function DeskPanel({ session, profile, churchId, onClose, isMobil
               Loading Bible…
             </div>
           }>
-            <BibleReader
-              session={session}
-              profile={bibleProfile}
-              topOffset={BIBLE_TOP_OFFSET}
-              compact
-            />
+            {/* Scrollable wrapper: BibleReader home view uses minHeight:100vh so it
+                needs a scroll container here instead of clipping the page. Reading
+                view sets its own fixed height so the wrapper stays put. */}
+            <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+              <BibleReader
+                session={session}
+                profile={bibleProfile}
+                topOffset={BIBLE_TOP_OFFSET}
+              />
+            </div>
           </Suspense>
         )}
         {activeTab === 'notes' && <NotesSection session={session} churchId={churchId} />}
