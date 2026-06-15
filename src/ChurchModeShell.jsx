@@ -53,7 +53,7 @@ export default function ChurchModeShell({
   const isVisitorView = currentSubpage === 'public';
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: T.cream }}>
+    <div style={{ height: 'calc(100vh - var(--global-header-h, 0px))', display: 'flex', flexDirection: 'column', background: T.cream }}>
       <div style={{
         flexShrink: 0,
         position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 20,
