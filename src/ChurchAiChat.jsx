@@ -368,6 +368,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
 
   async function clearResearchMemory() {
     setResearchMemory(null);
+    newConversation();
     await authedFetch('/api/research/clear-memory', { method: 'POST' });
   }
 
