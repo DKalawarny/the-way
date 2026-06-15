@@ -341,7 +341,7 @@ function NotesSection({ session, churchId, refreshKey = 0 }) {
                       style={{ ...btnBase, background: 'transparent', color: T.inkMuted, border: `1px solid rgba(26,17,8,0.14)` }}>
                       🖨 Print
                     </button>
-                    <button onClick={() => { if (isDirty) setShowDonePrompt(true); else setEditingId(null); }}
+                    <button onClick={() => { if (isDirty) saveAndClose(note.id); else setEditingId(null); }}
                       style={{ ...btnBase, background: 'transparent', color: T.inkMuted, border: `1px solid rgba(26,17,8,0.14)` }}>
                       Done
                     </button>
