@@ -1678,19 +1678,16 @@ export default function Chat({
             const canSave =
               isAssistant && !isStreaming && m.content.length > 0 && !(isLast && busy);
             const saved = savedIdx.has(i);
-            const handleSave = () => {
-              if (!canSave || saved) return;
+            const handleSave = async () => {
+              if (!canSave || saved || !session?.user?.id) return;
               const prev = messages[i - 1];
-              const question = prev?.role === 'user' ? prev.content : '(no question)';
-              const personDef = PERSON_TYPES.find((p) => p.id === personType);
-              onAddNote({
-                question,
-                answer: m.content,
-                personType,
-                personLabel: personDef ? `${personDef.emoji} ${personDef.label}` : '',
-                msgIdx: i,
+              const question = prev?.role === 'user' ? prev.content : '';
+              const title = question.slice(0, 70) || m.content.slice(0, 70);
+              const body = question ? `Q: ${question}\n\n${m.content}` : m.content;
+              const { error } = await supabase.from('user_notes').insert({
+                user_id: session.user.id, title, body, source: 'ask',
               });
-              setSavedIdx((s) => new Set(s).add(i));
+              if (!error) setSavedIdx((s) => new Set(s).add(i));
             };
             // Topic accent: detect from the preceding user question (first AI response only per topic)
             const precedingUserMsg = isAssistant && i > 0 && messages[i - 1]?.role === 'user'

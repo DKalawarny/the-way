@@ -729,6 +729,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const [chatInput,     setChatInput]     = useState('');
   const [chatBusy,     setChatBusy]     = useState(false);
   const [rdCopiedIdx,  setRdCopiedIdx]  = useState(null);
+  const [rdSavedIdx,   setRdSavedIdx]   = useState({});
   const [showVersions, setShowVersions] = useState(false);
   const [versePickerOpen, setVersePickerOpen] = useState(false);
   const [highlightVerse, setHighlightVerse] = useState(null);
@@ -2004,6 +2005,30 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
               {/* Action row for assistant messages */}
               {isAssistant && !isStreaming && m.content ? (
                 <div style={{ paddingLeft: 2, marginTop: 5, display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <button
+                    onClick={async () => {
+                      if (rdSavedIdx[i] || !session?.user?.id) return;
+                      const prevMsg = chatMsgs[i - 1];
+                      const question = prevMsg?.role === 'user' ? prevMsg.content : '';
+                      const title = question.slice(0, 70) || m.content.slice(0, 70);
+                      const body = question ? `Q: ${question}\n\n${m.content}` : m.content;
+                      const { error } = await supabase.from('user_notes').insert({
+                        user_id: session.user.id, title, body, source: 'bible',
+                      });
+                      if (!error) setRdSavedIdx((prev) => ({ ...prev, [i]: true }));
+                    }}
+                    title={rdSavedIdx[i] ? 'Saved to Notes' : 'Save to Notes'}
+                    style={{
+                      background: 'transparent', border: 'none', padding: '2px 6px',
+                      cursor: rdSavedIdx[i] ? 'default' : 'pointer',
+                      display: 'inline-flex', alignItems: 'center', gap: 5,
+                      color: rdSavedIdx[i] ? CC.verse : CC.muted, fontSize: 11,
+                      transition: 'color 0.2s',
+                    }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill={rdSavedIdx[i] ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                    {rdSavedIdx[i] ? 'Noted' : 'Note'}
+                  </button>
                   <button
                     onClick={async () => {
                       try {
