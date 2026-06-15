@@ -299,6 +299,8 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
             </div>
           </div>
 
+          <PromoCodeInput onSuccess={() => window.location.reload()} />
+
           <button
             onClick={handleTopup}
             disabled={!!upgrading}
@@ -311,12 +313,6 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
           >
             {upgrading === 'topup' ? 'Redirecting\u2026' : `Top up ${TOPUP_PRICE} \u2192 ${TOPUP_MESSAGES} messages`}
           </button>
-
-          <div style={{ fontSize: 12, color: T.inkMuted, textAlign: 'center' }}>
-            Messages reset automatically each month.
-          </div>
-
-          <PromoCodeInput onSuccess={() => window.location.reload()} />
         </>
       )}
     </div>
