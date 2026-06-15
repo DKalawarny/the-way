@@ -145,7 +145,7 @@ export default function DeskPanel({ session, profile, churchId, onClose, isMobil
 
   return (
     <div style={{
-      width: isMobile ? '100%' : 360,
+      width: isMobile ? '100%' : 480,
       flexShrink: 0,
       height: isMobile ? '100%' : 'calc(100vh - 130px)',
       background: `linear-gradient(180deg, #FAF6EA 0%, ${T.parchment} 100%)`,

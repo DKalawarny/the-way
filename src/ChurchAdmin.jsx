@@ -2431,6 +2431,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
                 churchId={churchId}
                 churchPlan={plan ?? 'church_base'}
                 onOpenDesk={isWide ? null : setMobileDeskPanel}
+                inSplit={isWide}
               />
             </div>
 
