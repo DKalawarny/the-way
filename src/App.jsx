@@ -614,6 +614,39 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
               </div>
             ))}
           </div>
+          {/* ── Sermon research callout ── */}
+          <div style={{
+            maxWidth: 680, margin: '0 auto 40px',
+            padding: '32px 36px',
+            background: 'rgba(184,115,58,0.06)',
+            border: '1px solid rgba(184,115,58,0.28)',
+            borderRadius: 20,
+            textAlign: 'left',
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            {/* Subtle warm glow */}
+            <div style={{ position: 'absolute', top: -40, right: -40, width: 160, height: 160, borderRadius: '50%', background: 'rgba(184,115,58,0.07)', pointerEvents: 'none' }} />
+
+            <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.8, marginBottom: 14 }}>Sermon research</div>
+            <h3 style={{ fontFamily: T.serif, fontSize: 'clamp(20px, 2.6vw, 26px)', color: T.cream, fontWeight: 600, margin: '0 0 14px', letterSpacing: '-0.018em', lineHeight: 1.2 }}>
+              Hours of commentary research.<br />In one brief.
+            </h3>
+            <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.75, margin: '0 0 24px', maxWidth: 520 }}>
+              Ask about any passage and kinwove surfaces what Calvin, Wesley, N.T. Wright, Chrysostom, and the modern academic commentaries actually say — original language first, then where scholars agree, where they split, and what that means for how you preach it.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 0 }}>
+              {[
+                '📜 Original Greek & Hebrew — word-level',
+                '📚 Named scholars, not a blended summary',
+                '⚖️ Where traditions genuinely disagree',
+                '🎙 Preaching angles — you decide which one',
+              ].map((p) => (
+                <div key={p} style={{ fontSize: 12.5, color: DIMLO, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 999, padding: '6px 14px', lineHeight: 1.4 }}>{p}</div>
+              ))}
+            </div>
+          </div>
+
           <button onClick={onPastorIntent}
             style={{ background: 'transparent', color: T.gold, border: `1px solid ${T.gold}`, borderRadius: 999, padding: '13px 32px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
             onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(184,115,58,0.12)')}
