@@ -568,10 +568,10 @@ app.post('/api/chat', optionalAuth, limitEither(
   const VALID_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
   for (const m of messages) {
     if (typeof m?.content === 'string') {
-      if (m.content.length > 32000) return res.status(413).json({ error: 'message too long' });
+      if (m.content.length > 200000) return res.status(413).json({ error: 'message too long' });
     } else if (Array.isArray(m?.content)) {
       for (const block of m.content) {
-        if (block.type === 'text' && block.text?.length > 32000) return res.status(413).json({ error: 'message too long' });
+        if (block.type === 'text' && block.text?.length > 200000) return res.status(413).json({ error: 'message too long' });
         if (block.type === 'image') {
           if (!VALID_IMAGE_TYPES.has(block.source?.media_type)) return res.status(400).json({ error: 'unsupported image type' });
           // base64 of a 5 MB image ≈ 6.8 MB — reject anything larger
