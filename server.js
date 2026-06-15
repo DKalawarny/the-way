@@ -554,8 +554,8 @@ app.get('/api/bible/:bibleId/search', optionalAuth, limitEither({ capacity: 30, 
 });
 
 app.post('/api/chat', optionalAuth, limitEither(
-  { capacity: 12, refillPerSec: 12 / 60 },     // authed: 12/min sustained
-  { capacity: 4,  refillPerSec: 4 / 600 },     // anon (GuestQuestion): 4 per 10 min
+  { capacity: 12, refillPerSec: 12 / 60 },      // authed: 12/min sustained
+  { capacity: 2,  refillPerSec: 2 / 86400 },    // anon (GuestQuestion): 2 per day per IP
 ), async (req, res) => {
   const { system, messages, personType, seekingContext } = req.body ?? {};
 

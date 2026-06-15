@@ -4,6 +4,26 @@ import { authedFetch } from './supabase.js';
 import ShareSheet from './ShareSheet.jsx';
 
 const MAX_EXCHANGES = 2;
+const STORAGE_KEY = 'kinwove:guest-exchanges';
+
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+}
+
+function loadStoredCount() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return 0;
+    const { count, date } = JSON.parse(raw);
+    return date === getTodayKey() ? (count ?? 0) : 0;
+  } catch { return 0; }
+}
+
+function saveStoredCount(count) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ count, date: getTodayKey() }));
+  } catch {}
+}
 
 const EXAMPLE_QUESTIONS = [
   "If God is real, why do innocent people suffer?",
@@ -112,12 +132,14 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
   const [denom, setDenom] = useState(null);
   const [showShare, setShowShare] = useState(false);
   const [shareContent, setShareContent] = useState({ q: '', a: '' });
+  const [storedCount] = useState(() => loadStoredCount());
   const taRef = useRef(null);
   const bottomRef = useRef(null);
 
-  const exchangeCount = messages.filter((m) => m.role === 'user').length;
+  const liveExchanges = messages.filter((m) => m.role === 'user').length;
+  const exchangeCount = Math.max(liveExchanges, storedCount);
   const maxReached = exchangeCount >= MAX_EXCHANGES && !busy;
-  const hasMessages = messages.length > 0;
+  const hasMessages = messages.length > 0 || (storedCount >= MAX_EXCHANGES);
 
   function getSystem() {
     if (landingMode) return LANDING_SYSTEM;
@@ -161,6 +183,13 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
           personType: level,
         }),
       });
+      if (res.status === 429) {
+        // Hit the server-side daily IP cap — treat as max reached
+        saveStoredCount(MAX_EXCHANGES);
+        setMessages((prev) => prev.filter((_, i) => i !== assistantIdx));
+        setBusy(false);
+        return;
+      }
       if (!res.ok || !res.body) throw new Error('Network error');
 
       const reader = res.body.getReader();
@@ -197,6 +226,7 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
       if (accumulated) {
         setShareContent({ q, a: accumulated });
         try { localStorage.setItem('kinwove:pendingConv', JSON.stringify({ q, a: accumulated, ts: Date.now() })); } catch {}
+        saveStoredCount(nextMessages.filter((m) => m.role === 'user').length);
       }
     } catch {
       setMessages((prev) => prev.map((m, i) =>
@@ -214,7 +244,7 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
     <div style={{ width: '100%' }}>
 
       {/* ── Starter chips + input (no messages yet) ── */}
-      {showStarters && (
+      {showStarters && storedCount < MAX_EXCHANGES && (
         <>
           {landingMode ? (
             <>
@@ -326,8 +356,41 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
         </>
       )}
 
+      {/* ── Signup gate for returning visitors who already used their questions ── */}
+      {!hasMessages && storedCount >= MAX_EXCHANGES && (
+        <div style={{
+          animation: 'fadeUp 0.4s ease both',
+          background: 'rgba(184,115,58,0.08)',
+          border: '1px solid rgba(184,115,58,0.3)',
+          borderRadius: 20,
+          padding: '28px 28px 24px',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontFamily: T.serif, fontSize: 22, color: T.cream, fontWeight: 600, letterSpacing: '-0.015em', lineHeight: 1.2, marginBottom: 10 }}>
+            You're asking the right questions.
+          </div>
+          <div style={{ fontSize: 13.5, color: 'rgba(253,248,240,0.6)', lineHeight: 1.65, marginBottom: 6 }}>
+            Join free to keep this conversation going, go deeper in scripture,<br />and connect with people on the same road.
+          </div>
+          <div style={{ fontSize: 12, color: 'rgba(253,248,240,0.3)', marginBottom: 22 }}>
+            No credit card. Takes 30 seconds.
+          </div>
+          <button
+            onClick={onSignUp}
+            style={{
+              background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
+              color: T.cream, border: 'none', borderRadius: 999,
+              padding: '13px 32px', fontSize: 14, fontWeight: 600,
+              cursor: 'pointer', boxShadow: '0 4px 20px rgba(184,115,58,0.4)',
+            }}
+          >
+            Join free — keep going →
+          </button>
+        </div>
+      )}
+
       {/* ── Conversation thread ── */}
-      {hasMessages && (
+      {messages.length > 0 && (
         <div style={{ animation: 'fadeIn 0.3s ease' }}>
           <div style={{
             background: 'rgba(255,255,255,0.04)',
