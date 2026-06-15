@@ -344,7 +344,9 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => {
+    if (messages.length > 0) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   // Persist conversation to localStorage
   useEffect(() => {
@@ -365,7 +367,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
   async function send(text) {
     const prompt = (text ?? input).trim();
     if (!prompt || busy || aiUsage.atLimit) return;
-    setInput(''); setError(null);
+    setInput(''); setError(null); setTimeout(() => inputRef.current?.focus(), 0);
     const next = [...messages, { role: 'user', content: prompt }];
     setMessages(next);
     setBusy(true);
@@ -400,7 +402,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
         }
       }
     } catch (e) { setError(e.message || 'Something went wrong.');
-    } finally { setBusy(false); if (assistantContent) aiUsage.increment(); }
+    } finally { setBusy(false); if (assistantContent) aiUsage.increment(); inputRef.current?.focus(); }
   }
 
   // ── Save to board ─────────────────────────────────────────────────────────
