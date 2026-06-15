@@ -87,6 +87,8 @@ function NotesSection({ session, churchId }) {
   const [editInitBody, setEditInitBody]     = useState('');
   const [saveState, setSaveState]           = useState('idle');
   const [confirmDelete, setConfirmDelete]   = useState(null);
+  const [isDirty, setIsDirty]              = useState(false);
+  const [showDonePrompt, setShowDonePrompt] = useState(false);
   const editorRef = useRef(null);
 
   useEffect(() => {
@@ -100,6 +102,8 @@ function NotesSection({ session, churchId }) {
   useEffect(() => {
     if (!editingId || !editorRef.current) return;
     editorRef.current.innerHTML = toEditorHtml(editInitBody);
+    setIsDirty(false);
+    setShowDonePrompt(false);
     editorRef.current.focus();
     // move cursor to end
     const range = document.createRange();
@@ -125,6 +129,8 @@ function NotesSection({ session, churchId }) {
     setEditTitle(data.title || '');
     setEditingId(data.id);
     setSaveState('idle');
+    setIsDirty(false);
+    setShowDonePrompt(false);
   }
 
   function startEdit(note) {
@@ -132,6 +138,8 @@ function NotesSection({ session, churchId }) {
     setEditTitle(note.title || '');
     setSaveState('idle');
     setConfirmDelete(null);
+    setIsDirty(false);
+    setShowDonePrompt(false);
     setEditingId(note.id);
   }
 
@@ -143,8 +151,15 @@ function NotesSection({ session, churchId }) {
     const { error } = await supabase.from('church_notes').update(updates).eq('id', noteId);
     if (error) { setSaveState('error'); return; }
     setNotes(prev => prev.map(n => n.id === noteId ? { ...n, ...updates } : n));
+    setIsDirty(false);
     setSaveState('saved');
     setTimeout(() => setSaveState('idle'), 2000);
+  }
+
+  async function saveAndClose(noteId) {
+    await saveEdit(noteId);
+    setEditingId(null);
+    setShowDonePrompt(false);
   }
 
   async function deleteNote(noteId) {
@@ -229,7 +244,6 @@ function NotesSection({ session, churchId }) {
           {notes.map(note => {
             const isEditing = editingId === note.id;
             const dateStr = new Date(note.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-            const badge = note.source === 'research' ? '📚' : note.source === 'ask' ? '💬' : null;
             const preview = stripHtml(note.body);
 
             if (isEditing) {
@@ -237,7 +251,7 @@ function NotesSection({ session, churchId }) {
                 <div key={note.id} style={{ background: '#FFFDF5', border: `1.5px solid rgba(184,115,58,0.35)`, borderRadius: 12, padding: '14px 14px 12px', boxShadow: '0 4px 20px rgba(26,17,8,0.10)' }}>
                   {/* Title */}
                   <input
-                    value={editTitle} onChange={e => setEditTitle(e.target.value)}
+                    value={editTitle} onChange={e => { setEditTitle(e.target.value); setIsDirty(true); setShowDonePrompt(false); }}
                     placeholder="Title…"
                     style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 16, fontFamily: T.serif, fontWeight: 600, color: T.ink, outline: 'none', marginBottom: 8, boxSizing: 'border-box', letterSpacing: '-0.01em' }}
                   />
@@ -257,6 +271,7 @@ function NotesSection({ session, churchId }) {
                     ref={editorRef}
                     contentEditable
                     suppressContentEditableWarning
+                    onInput={() => { setIsDirty(true); setShowDonePrompt(false); }}
                     onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) { e.preventDefault(); saveEdit(note.id); } }}
                     style={{ width: '100%', minHeight: 180, fontSize: 14, fontFamily: T.display, color: T.ink, outline: 'none', lineHeight: 1.75, boxSizing: 'border-box' }}
                   />
@@ -271,7 +286,7 @@ function NotesSection({ session, churchId }) {
                       style={{ ...btnBase, background: 'transparent', color: T.inkMuted, border: `1px solid rgba(26,17,8,0.14)` }}>
                       🖨 Print
                     </button>
-                    <button onClick={() => setEditingId(null)}
+                    <button onClick={() => { if (isDirty) setShowDonePrompt(true); else setEditingId(null); }}
                       style={{ ...btnBase, background: 'transparent', color: T.inkMuted, border: `1px solid rgba(26,17,8,0.14)` }}>
                       Done
                     </button>
@@ -291,7 +306,21 @@ function NotesSection({ session, churchId }) {
                     )}
                   </div>
                   {saveState === 'error' && <div style={{ fontSize: 11, color: '#A53F2B', marginTop: 6 }}>Could not save — check your connection.</div>}
-                  <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 8, opacity: 0.55 }}>⌘↵ to save</div>
+                  {/* Unsaved-changes prompt */}
+                  {showDonePrompt && (
+                    <div style={{ background: 'rgba(184,115,58,0.08)', border: '1px solid rgba(184,115,58,0.25)', borderRadius: 10, padding: '10px 12px', marginTop: 10 }}>
+                      <div style={{ fontSize: 13, fontFamily: T.serif, fontWeight: 600, color: T.ink, marginBottom: 8 }}>Save before closing?</div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => saveAndClose(note.id)}
+                          style={{ ...btnBase, background: T.ink, color: T.cream }}>Save &amp; close</button>
+                        <button onClick={() => { setEditingId(null); setShowDonePrompt(false); setIsDirty(false); }}
+                          style={{ ...btnBase, background: 'transparent', color: '#A53F2B', border: '1px solid rgba(165,63,43,0.4)', fontWeight: 500 }}>Discard</button>
+                        <button onClick={() => setShowDonePrompt(false)}
+                          style={{ ...btnBase, background: 'transparent', color: T.inkMuted, border: `1px solid rgba(26,17,8,0.14)`, fontWeight: 500 }}>Cancel</button>
+                      </div>
+                    </div>
+                  )}
+                  {!showDonePrompt && <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 8, opacity: 0.55 }}>⌘↵ to save</div>}
                 </div>
               );
             }
@@ -304,7 +333,6 @@ function NotesSection({ session, churchId }) {
                     {note.title || preview.slice(0, 55) + (preview.length > 55 ? '…' : '')}
                   </span>
                   <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                    {badge && <span style={{ fontSize: 11, opacity: 0.55 }}>{badge}</span>}
                     <button onClick={e => { e.stopPropagation(); printNote(note); }}
                       title="Print" style={{ background: 'none', border: 'none', fontSize: 12, cursor: 'pointer', color: T.inkMuted, opacity: 0.6, padding: '0 2px', lineHeight: 1 }}>🖨</button>
                   </div>
