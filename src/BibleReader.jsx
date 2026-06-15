@@ -1129,23 +1129,30 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   async function saveNote() {
     if (!session?.user?.id || !noteVerse) return;
     setNoteSaving(true);
-    const payload = {
-      user_id:   session.user.id,
-      book_id:   bookId,
-      book_name: book?.name ?? bookId,
-      chapter:   chNum,
-      verse:     noteVerse.number,
-      verse_text: noteVerse.text ?? null,
-      note_text: noteText,
-      updated_at: new Date().toISOString(),
-    };
+    const verseRef = `${book?.name ?? bookId} ${chNum}:${noteVerse.number}`;
     if (noteText.trim()) {
+      // Save verse + reflection to bible_notes
+      const payload = {
+        user_id:   session.user.id,
+        book_id:   bookId,
+        book_name: book?.name ?? bookId,
+        chapter:   chNum,
+        verse:     noteVerse.number,
+        verse_text: noteVerse.text ?? null,
+        note_text: noteText,
+        updated_at: new Date().toISOString(),
+      };
       await supabase.from('bible_notes').upsert(payload, { onConflict: 'user_id,book_id,chapter,verse' });
       setNoteMap((prev) => ({ ...prev, [noteVerse.number]: noteText }));
     } else {
-      await supabase.from('bible_notes').delete()
-        .eq('user_id', session.user.id).eq('book_id', bookId).eq('chapter', chNum).eq('verse', noteVerse.number);
-      setNoteMap((prev) => { const n = { ...prev }; delete n[noteVerse.number]; return n; });
+      // No reflection — bookmark the verse to user_notes
+      const verseText = noteVerse.text?.replace(/^["""]+|["""]+$/g, '').trim() ?? '';
+      await supabase.from('user_notes').insert({
+        user_id: session.user.id,
+        title: verseRef,
+        body: verseText ? `"${verseText}"` : verseRef,
+        source: 'verse',
+      });
     }
     setNoteSaving(false);
     setNoteOpen(false);
@@ -2570,15 +2577,15 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
               )}
               <button
                 onClick={saveNote}
-                disabled={noteSaving || !noteText.trim()}
+                disabled={noteSaving}
                 style={{
                   background: T.gold, color: T.cream, border: 'none',
                   borderRadius: 999, padding: '10px 24px', fontSize: 14, fontWeight: 600,
-                  cursor: noteSaving || !noteText.trim() ? 'not-allowed' : 'pointer',
-                  opacity: noteSaving || !noteText.trim() ? 0.45 : 1,
+                  cursor: noteSaving ? 'wait' : 'pointer',
+                  opacity: noteSaving ? 0.7 : 1,
                 }}
               >
-                {noteSaving ? 'Saving…' : 'Save note'}
+                {noteSaving ? 'Saving…' : noteText.trim() ? 'Save note' : 'Save verse'}
               </button>
             </div>
           </div>

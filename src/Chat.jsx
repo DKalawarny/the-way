@@ -1760,7 +1760,7 @@ export default function Chat({
                   <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 4, marginTop: 6 }}>
                     <button
                       onClick={handleSave}
-                      title={saved ? 'Saved to your board' : 'Save to your board'}
+                      title={saved ? 'Saved to Notes' : 'Save to Notes'}
                       disabled={saved}
                       style={{
                         background: 'transparent',
@@ -1775,7 +1775,7 @@ export default function Chat({
                       }}
                     >
                       <BookmarkIcon filled={saved} size={14} />
-                      {saved ? 'Saved' : 'Save'}
+                      {saved ? 'Noted' : 'Note'}
                     </button>
                     <button
                       onClick={() => setShareContent({ text: m.content, label: 'Share this response', rawMessages: [{ role: 'assistant', content: m.content }] })}

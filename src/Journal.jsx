@@ -43,6 +43,7 @@ function cleanVerse(text) {
 function sourceLabel(source) {
   if (source === 'ask') return 'Ask';
   if (source === 'bible') return 'Bible chat';
+  if (source === 'verse') return 'Verse';
   return 'Note';
 }
 
