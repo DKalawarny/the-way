@@ -128,13 +128,6 @@ function NotesSection({ session, churchId }) {
     if (error) return;
     setNotes(prev => [data, ...prev]);
     setFormTitle(''); setFormBody(''); setFormSeries(''); setShowForm(false);
-    setEditInitBody(data.body || '');
-    setEditTitle(data.title || '');
-    setEditSeries(data.series || '');
-    setEditingId(data.id);
-    setSaveState('idle');
-    setIsDirty(false);
-    setShowDonePrompt(false);
   }
 
   function startEdit(note) {
