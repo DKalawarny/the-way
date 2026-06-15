@@ -515,10 +515,12 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
   // ── Save to notes ─────────────────────────────────────────────────────────
   async function saveToNotes(assistantIdx) {
     if (!churchId || !userId) return;
+    if (savedToNoteIdx[assistantIdx]) return;
     const question = messages.slice(0, assistantIdx).reverse().find((m) => m.role === 'user')?.content ?? '';
     const answer   = messages[assistantIdx]?.content ?? '';
     if (!answer) return;
-    const title = question.slice(0, 70) || answer.slice(0, 70);
+    const sessionTitle = convTitle !== 'New conversation' ? convTitle : '';
+    const title = sessionTitle || question.slice(0, 70) || answer.slice(0, 70);
     const body  = question ? `Q: ${question}\n\n${answer}` : answer;
     const { error } = await supabase.from('church_notes').insert({
       church_id: churchId, author_id: userId,
