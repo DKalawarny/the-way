@@ -95,11 +95,13 @@ function UserNoteCard({ note, onDelete, onSave }) {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           marginBottom: 8,
         }}>
-          <span style={{
-            fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase',
-            color: T.goldDark,
-          }}>
-            {sourceLabel(note.source)} · {relDate(note.created_at)}
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: T.goldDark }}>
+              {sourceLabel(note.source)}
+            </span>
+            <span style={{ fontSize: 11, color: T.inkMuted }}>
+              {relDate(note.created_at)}
+            </span>
           </span>
           <div style={{ display: 'flex', gap: 6 }}>
             {!isAiSave && !editing && (
@@ -217,20 +219,24 @@ function NoteCard({ note, onOpenBible, onAskVerse, onSave, onDelete }) {
       background: T.white, border: `1px solid ${T.line}`,
       borderRadius: 14, overflow: 'hidden',
     }}>
-      {/* Verse ref — tappable → jump to Bible */}
-      <button
-        onClick={() => onOpenBible?.({ book: note.book_id, chapter: note.chapter, verse: note.verse })}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          background: 'none', border: 'none', cursor: 'pointer',
-          padding: '14px 16px 0',
-          fontFamily: T.display, fontSize: 11, fontWeight: 700,
-          color: T.gold, letterSpacing: 1, textTransform: 'uppercase',
-        }}
-      >
-        {note.book_name} {note.chapter}:{note.verse}
-        <span style={{ fontSize: 10, color: T.inkMuted, fontWeight: 400, letterSpacing: 0 }}>↗</span>
-      </button>
+      {/* Verse ref + date */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px 0' }}>
+        <button
+          onClick={() => onOpenBible?.({ book: note.book_id, chapter: note.chapter, verse: note.verse })}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+            fontFamily: T.display, fontSize: 11, fontWeight: 700,
+            color: T.gold, letterSpacing: 1, textTransform: 'uppercase',
+          }}
+        >
+          {note.book_name} {note.chapter}:{note.verse}
+          <span style={{ fontSize: 10, color: T.inkMuted, fontWeight: 400, letterSpacing: 0 }}>↗</span>
+        </button>
+        <span style={{ fontSize: 11, color: T.inkMuted, flexShrink: 0 }}>
+          {relDate(note.updated_at ?? note.created_at)}
+        </span>
+      </div>
 
       {/* Verse text — truncated unless expanded */}
       {verseClean && (
@@ -288,8 +294,6 @@ function NoteCard({ note, onOpenBible, onAskVerse, onSave, onDelete }) {
         {/* Action row */}
         {!editing && (
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 10, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 11, color: T.inkMuted }}>{relDate(note.updated_at ?? note.created_at)}</span>
-            <span style={{ fontSize: 11, color: T.line }}>·</span>
             <button onClick={() => setEditing(true)} style={{
               background: 'none', border: 'none', cursor: 'pointer', color: T.inkMuted, fontSize: 12, padding: 0,
             }}>Edit</button>
