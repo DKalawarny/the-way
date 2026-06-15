@@ -61,6 +61,9 @@ Show the key contested verse(s) in ESV, NIV, KJV, NASB, and NLT side by side. Fl
 ── THE CENTRAL CLAIM ──
 One sentence. What is this text asserting — in the author's own terms? Not what to preach. The exegetical idea: the timeless theological claim the passage makes, stated as a complete thought. This is the anchor everything else hangs on.
 
+── CULTURAL & HISTORICAL BACKGROUND ──
+What does a 21st-century reader not know that a first-century reader knew instinctively? Cover the world behind the text: the city, the social structures, the economic realities, the political context, the religious landscape. What did this passage's original audience hear that we miss? Draw on the IVP Bible Background Commentary (Keener), Josephus, Philo, Greco-Roman sources, and archaeology where relevant. This is what makes the text's claims land with their original weight.
+
 ── ORIGINAL LANGUAGE ──
 The key Greek or Hebrew words that unlock this passage. For each: original script, transliteration, pronunciation, Strong's number, full semantic range, translation comparison, verbal voice/tense/mood where it changes the meaning, and why this specific word matters for understanding what the author intended.
 
@@ -347,6 +350,27 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
   const [copiedIdx, setCopiedIdx] = useState(null);
   const [flaggedMsgs, setFlaggedMsgs] = useState(new Set());
 
+  // Series memory
+  const [researchMemory, setResearchMemory] = useState(null); // raw text from DB
+
+  useEffect(() => {
+    if (!userId) return;
+    supabase.from('profiles').select('research_memory').eq('id', userId).single()
+      .then(({ data }) => { if (data?.research_memory) setResearchMemory(data.research_memory); }, () => {});
+  }, [userId]);
+
+  function parseMemory(mem) {
+    if (!mem) return null;
+    const series   = (mem.match(/^SERIES:\s*(.+)/m) ?? [])[1]?.trim() ?? null;
+    const sessions = parseInt((mem.match(/^SESSIONS:\s*(\d+)/m) ?? [])[1] ?? '0', 10);
+    return series ? { series, sessions } : null;
+  }
+
+  async function clearResearchMemory() {
+    setResearchMemory(null);
+    await authedFetch('/api/research/clear-memory', { method: 'POST' });
+  }
+
   // Mode
   const [personType, setPersonType]     = useState(() => localStorage.getItem(`church_ask_mode_${userId}`) ?? 'deeper');
   const [modePickerOpen, setModePickerOpen] = useState(false);
@@ -422,7 +446,10 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
     setBusy(true);
     let assistantContent = '';
     try {
-      const system = researchMode ? RESEARCH_SYSTEM : PASTORAL_SYSTEM + (PER_TYPE[personType] ?? '');
+      const researchSystem = researchMemory
+        ? `${RESEARCH_SYSTEM}\n\n── YOUR SERIES CONTEXT ──\nThe pastor is mid-series. Use this to connect dots across weeks — reference established terms and decisions naturally, as a colleague who was in the room. Do not announce that you have memory.\n${researchMemory}`
+        : RESEARCH_SYSTEM;
+      const system = researchMode ? researchSystem : PASTORAL_SYSTEM + (PER_TYPE[personType] ?? '');
       const res = await authedFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -451,7 +478,21 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
         }
       }
     } catch (e) { setError(e.message || 'Something went wrong.');
-    } finally { setBusy(false); if (assistantContent) aiUsage.increment(); inputRef.current?.focus(); }
+    } finally {
+      setBusy(false);
+      if (assistantContent) {
+        aiUsage.increment();
+        if (researchMode) {
+          const allMsgs = [...next, { role: 'assistant', content: assistantContent }];
+          authedFetch('/api/research/update-memory', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: allMsgs }),
+          }).then(r => r.json()).then(d => { if (d.memory) setResearchMemory(d.memory); }).catch(() => {});
+        }
+      }
+      inputRef.current?.focus();
+    }
   }
 
   // ── Save to board ─────────────────────────────────────────────────────────
@@ -660,6 +701,27 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
           </div>
           </div>{/* end right-side flex group */}
         </div>
+
+        {/* ── Series memory banner ── */}
+        {researchMode && (() => {
+          const mem = parseMemory(researchMemory);
+          if (!mem) return null;
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(184,115,58,0.07)', border: `1px solid rgba(184,115,58,0.20)`, borderRadius: 8, padding: '7px 12px', marginBottom: 8, flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 13 }}>📚</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: T.goldDark }}>{mem.series}</span>
+                <span style={{ fontSize: 11, color: T.inkMuted }}>· {mem.sessions} session{mem.sessions !== 1 ? 's' : ''}</span>
+              </div>
+              <button
+                onClick={clearResearchMemory}
+                style={{ background: 'none', border: 'none', fontSize: 11, color: T.inkMuted, cursor: 'pointer', padding: '2px 6px', borderRadius: 6, textDecoration: 'underline' }}
+              >
+                New series
+              </button>
+            </div>
+          );
+        })()}
 
         {/* ── Messages ── */}
         <div

@@ -1563,6 +1563,81 @@ Write only the updated profile. No preamble, no labels.`,
   }
 });
 
+// ── Research memory: update series context after a research session ───────────
+app.post('/api/research/update-memory', requireAuth, async (req, res) => {
+  const { messages } = req.body ?? {};
+  if (!Array.isArray(messages) || messages.length < 2) return res.json({ ok: true });
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.json({ ok: true });
+
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
+  const today = new Date().toISOString().slice(0, 10);
+
+  try {
+    const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}&select=research_memory&limit=1`, { headers: h });
+    const [profile] = await pr.json();
+    const existing = profile?.research_memory ?? '';
+
+    const convoText = messages.slice(-20)
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .map(m => `${m.role === 'user' ? 'Pastor' : 'Research AI'}: ${(m.content ?? '').slice(0, 600)}`)
+      .join('\n');
+
+    // Parse existing session count
+    const existingSessions = parseInt((existing.match(/^SESSIONS:\s*(\d+)/m) ?? [])[1] ?? '0', 10);
+
+    const resp = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 350,
+      messages: [{
+        role: 'user',
+        content: `You are maintaining a running research log for a pastor's sermon series. Based on the conversation below, update the research memory. Output ONLY in this exact format with no other text:
+
+SERIES: [the book or topic being studied, e.g. "Colossians" or "Sermon on the Mount"]
+SESSIONS: ${existingSessions + 1}
+LAST: ${today}
+CONTEXT: [2-4 sentences: what passages have been researched, what key terms or interpretive frameworks have been established, where the series is in the text, any significant scholarly positions the pastor is tracking. Under 200 words. Only what is clearly evident.]
+
+If this conversation is about a completely different book or topic than the existing series, start fresh with SESSIONS: 1.
+${existing ? `\nExisting memory:\n${existing}` : '\nNo existing memory — first session.'}
+
+Conversation:
+${convoText}`,
+      }],
+    });
+
+    const memory = resp.content?.[0]?.text?.trim() ?? '';
+    if (!memory) return res.json({ ok: true });
+
+    await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}`, {
+      method: 'PATCH',
+      headers: { ...h, Prefer: 'return=minimal' },
+      body: JSON.stringify({ research_memory: memory }),
+    });
+
+    res.json({ ok: true, memory });
+  } catch (e) {
+    console.error('[research/update-memory]', e?.message);
+    res.json({ ok: true });
+  }
+});
+
+// ── Research memory: clear series ─────────────────────────────────────────────
+app.post('/api/research/clear-memory', requireAuth, async (req, res) => {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.json({ ok: true });
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}`, {
+      method: 'PATCH',
+      headers: { ...h, Prefer: 'return=minimal' },
+      body: JSON.stringify({ research_memory: null }),
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[research/clear-memory]', e?.message);
+    res.json({ ok: true });
+  }
+});
+
 app.post('/api/admin/kinwove-post', requireAdmin, async (req, res) => {
   const { body } = req.body ?? {};
   if (!body || typeof body !== 'string' || !body.trim()) {
