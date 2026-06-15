@@ -118,10 +118,12 @@ export default function ChurchModeShell({
       </div>
 
       {/* Public/visitor view renders full-bleed — ChurchPage owns its own layout */}
-      {isVisitorView || fullBleed
-        ? <div style={{ minHeight: 0, overflow: fullBleed ? 'hidden' : 'auto', paddingBottom: fullBleed ? 0 : 80 }}>{children}</div>
-        : <div style={{ overflowY: 'auto', maxWidth: bodyMaxWidth, margin: '0 auto', padding: '20px 20px 80px', width: '100%', boxSizing: 'border-box' }}>{children}</div>
-      }
+      <div style={{ minHeight: 0, overflow: fullBleed ? 'hidden' : 'auto', paddingBottom: (!fullBleed && isVisitorView) ? 80 : 0 }}>
+        {isVisitorView || fullBleed
+          ? children
+          : <div style={{ maxWidth: bodyMaxWidth, margin: '0 auto', padding: '20px 20px 80px', width: '100%', boxSizing: 'border-box' }}>{children}</div>
+        }
+      </div>
     </div>
   );
 }
