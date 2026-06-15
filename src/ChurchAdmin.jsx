@@ -19,6 +19,27 @@ const ChurchAiChat    = lazy(() => import('./ChurchAiChat.jsx'));
 const BibleReader     = lazy(() => import('./BibleReader.jsx'));
 const DeskPanel       = lazy(() => import('./DeskPanel.jsx'));
 
+function DividerHandle({ onMouseDown }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onMouseDown={onMouseDown}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: 6, flexShrink: 0, cursor: 'col-resize', zIndex: 10,
+        background: hovered ? 'rgba(184,115,58,0.22)' : 'transparent',
+        transition: 'background 0.15s',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}
+    >
+      {hovered && (
+        <div style={{ width: 2, height: 40, borderRadius: 99, background: 'rgba(184,115,58,0.6)' }} />
+      )}
+    </div>
+  );
+}
+
 function qrUrl(url) {
   return `https://quickchart.io/qr?text=${encodeURIComponent(url)}&size=320&margin=2&dark=2C1810&light=FDF8F0`;
 }
@@ -2349,11 +2370,32 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
   // Scholar's Desk split layout
   const [isWide, setIsWide] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 900);
   const [mobileDeskPanel, setMobileDeskPanel] = useState(null); // null | 'bible' | 'notes'
+  const [deskWidth, setDeskWidth] = useState(() => {
+    const saved = localStorage.getItem('kw_desk_width');
+    return saved ? Math.max(280, Math.min(700, parseInt(saved, 10))) : 480;
+  });
   useEffect(() => {
     function onResize() { setIsWide(window.innerWidth >= 900); }
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
+
+  function onDeskDragStart(e) {
+    const startX = e.clientX;
+    const startWidth = deskWidth;
+    function onMove(ev) {
+      const w = Math.max(280, Math.min(700, startWidth + (startX - ev.clientX)));
+      setDeskWidth(w);
+      localStorage.setItem('kw_desk_width', String(w));
+    }
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    e.preventDefault();
+  }
 
   function gotoSettings(action) {
     if (action) setPendingAction(action);
@@ -2435,11 +2477,14 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
               />
             </div>
 
-            {/* Desktop: Scholar's Desk panel */}
+            {/* Desktop: drag handle + Scholar's Desk panel */}
             {isWide && (
-              <Suspense fallback={null}>
-                <DeskPanel session={session} profile={profile} churchId={churchId} />
-              </Suspense>
+              <>
+                <DividerHandle onMouseDown={onDeskDragStart} />
+                <Suspense fallback={null}>
+                  <DeskPanel session={session} profile={profile} churchId={churchId} width={deskWidth} />
+                </Suspense>
+              </>
             )}
 
             {/* Mobile: bottom drawer */}

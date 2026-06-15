@@ -137,7 +137,7 @@ function NotesSection({ session, churchId }) {
 // matches DeskPanel content area: calc(100vh-130px) minus ~58px tab bar.
 const BIBLE_TOP_OFFSET = 126;
 
-export default function DeskPanel({ session, profile, churchId, onClose, isMobile, initialTab }) {
+export default function DeskPanel({ session, profile, churchId, onClose, isMobile, initialTab, width = 480 }) {
   const [activeTab, setActiveTab] = useState(initialTab ?? 'bible');
 
   // Plan-enriched profile for BibleReader
@@ -145,7 +145,7 @@ export default function DeskPanel({ session, profile, churchId, onClose, isMobil
 
   return (
     <div style={{
-      width: isMobile ? '100%' : 480,
+      width: isMobile ? '100%' : width,
       flexShrink: 0,
       height: isMobile ? '100%' : 'calc(100vh - 130px)',
       background: `linear-gradient(180deg, #FAF6EA 0%, ${T.parchment} 100%)`,
@@ -156,37 +156,38 @@ export default function DeskPanel({ session, profile, churchId, onClose, isMobil
       borderRadius: isMobile ? '20px 20px 0 0' : 0,
       position: 'relative',
     }}>
-      {/* Tab bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px 0', flexShrink: 0, position: 'relative', zIndex: 1 }}>
+      {/* Locked tab bar — sticky so it never scrolls away */}
+      <div style={{ flexShrink: 0, position: 'sticky', top: 0, zIndex: 10, background: '#FAF6EA' }}>
         {isMobile && (
-          <div style={{ width: 36, height: 4, background: 'rgba(26,17,8,0.14)', borderRadius: 99, position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)' }} />
+          <div style={{ width: 36, height: 4, background: 'rgba(26,17,8,0.14)', borderRadius: 99, margin: '8px auto 0' }} />
         )}
-        <div style={{ display: 'flex', gap: 5, marginTop: isMobile ? 14 : 0 }}>
-          {[{ id: 'bible', label: '📖 Bible' }, { id: 'notes', label: '📝 Notes' }].map(t => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              style={{
-                background: activeTab === t.id ? T.ink : 'transparent',
-                color: activeTab === t.id ? T.cream : T.inkMuted,
-                border: `1px solid ${activeTab === t.id ? T.ink : 'rgba(26,17,8,0.14)'}`,
-                borderRadius: 999, padding: '5px 14px',
-                fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
-            >{t.label}</button>
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: isMobile ? '10px 16px 0' : '12px 16px 0' }}>
+          <div style={{ display: 'flex', gap: 5 }}>
+            {[{ id: 'bible', emoji: '📖' }, { id: 'notes', emoji: '📝' }].map(t => (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                title={t.id === 'bible' ? 'Bible' : 'Notes'}
+                style={{
+                  background: activeTab === t.id ? T.ink : 'transparent',
+                  color: activeTab === t.id ? T.cream : T.inkMuted,
+                  border: `1px solid ${activeTab === t.id ? T.ink : 'rgba(26,17,8,0.14)'}`,
+                  borderRadius: 999, width: 36, height: 32,
+                  fontSize: 15, cursor: 'pointer',
+                  transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >{t.emoji}</button>
+            ))}
+          </div>
+          {onClose && (
+            <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, color: T.inkMuted, cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>×</button>
+          )}
         </div>
-        {onClose && (
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, color: T.inkMuted, cursor: 'pointer', padding: '0 2px', lineHeight: 1, marginTop: isMobile ? 14 : 0 }}>×</button>
-        )}
+        <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(184,115,58,0.30), transparent)', margin: '10px 0 0' }} />
       </div>
 
-      {/* Gold hairline */}
-      <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(184,115,58,0.30), transparent)', margin: '10px 0 0', flexShrink: 0, position: 'relative', zIndex: 1 }} />
-
       {/* Content */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', zIndex: 1 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {activeTab === 'bible' && (
           <Suspense fallback={
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.inkMuted, fontSize: 13, fontStyle: 'italic' }}>
