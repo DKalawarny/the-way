@@ -2570,11 +2570,12 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
               )}
               <button
                 onClick={saveNote}
-                disabled={noteSaving}
+                disabled={noteSaving || !noteText.trim()}
                 style={{
                   background: T.gold, color: T.cream, border: 'none',
                   borderRadius: 999, padding: '10px 24px', fontSize: 14, fontWeight: 600,
-                  cursor: noteSaving ? 'wait' : 'pointer', opacity: noteSaving ? 0.7 : 1,
+                  cursor: noteSaving || !noteText.trim() ? 'not-allowed' : 'pointer',
+                  opacity: noteSaving || !noteText.trim() ? 0.45 : 1,
                 }}
               >
                 {noteSaving ? 'Saving…' : 'Save note'}
