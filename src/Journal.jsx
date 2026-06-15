@@ -47,7 +47,7 @@ function sourceLabel(source) {
   return 'Note';
 }
 
-function UserNoteCard({ note, onDelete, onSave }) {
+function UserNoteCard({ note, onDelete, onSave, onContinueChat }) {
   const [expanded,  setExpanded]  = useState(false);
   const [editing,   setEditing]   = useState(false);
   const [draftBody, setDraftBody] = useState(note.body ?? '');
@@ -174,6 +174,20 @@ function UserNoteCard({ note, onDelete, onSave }) {
             </div>
             {!expanded && note.body?.length > 300 && (
               <div style={{ fontSize: 12, color: T.gold, marginTop: 4 }}>Tap to read more</div>
+            )}
+            {isAiSave && expanded && onContinueChat && (
+              <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${T.line}` }}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); onContinueChat(note.body); }}
+                  style={{
+                    background: T.ink, color: T.cream, border: 'none',
+                    borderRadius: 999, padding: '7px 16px', fontSize: 13,
+                    fontWeight: 500, cursor: 'pointer',
+                  }}
+                >
+                  Continue chat →
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -338,7 +352,7 @@ function NoteCard({ note, onOpenBible, onAskVerse, onSave, onDelete }) {
   );
 }
 
-export default function Journal({ session, onClose, onOpenBible, onAskVerse }) {
+export default function Journal({ session, onClose, onOpenBible, onAskVerse, onContinueChat }) {
   const [verseNotes, setVerseNotes] = useState([]);
   const [userNotes,  setUserNotes]  = useState([]);
   const [loading,    setLoading]    = useState(true);
@@ -567,6 +581,7 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse }) {
                       note={note}
                       onDelete={(id) => setUserNotes((prev) => prev.filter((n) => n.id !== id))}
                       onSave={(id, body, title) => setUserNotes((prev) => prev.map((n) => n.id === id ? { ...n, body, title, updated_at: new Date().toISOString() } : n))}
+                      onContinueChat={onContinueChat}
                     />
                   ))}
                 </div>
@@ -600,6 +615,7 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse }) {
                       note={bm}
                       onDelete={(id) => setUserNotes((prev) => prev.filter((n) => n.id !== id))}
                       onSave={(id, body, title) => setUserNotes((prev) => prev.map((n) => n.id === id ? { ...n, body, title, updated_at: new Date().toISOString() } : n))}
+                      onContinueChat={onContinueChat}
                     />
                   ))}
                 </div>

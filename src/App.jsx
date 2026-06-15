@@ -3198,6 +3198,14 @@ export default function App() {
             setChatPanelOpen(true);
             goBack('home');
           }}
+          onContinueChat={(noteBody) => {
+            const question = noteBody?.match(/^Q:\s*(.+?)(?:\n\n[\s\S]*)?$/s)?.[1]?.trim() ?? noteBody?.slice(0, 200) ?? '';
+            const conv = createConv(personType);
+            setCurrentConvId(conv.id);
+            setPrefilledInput(question);
+            setChatPanelOpen(true);
+            goBack('home');
+          }}
         />
       )}
       {stage === 'pastor-admin-queue' && session && profile?.is_admin && (
