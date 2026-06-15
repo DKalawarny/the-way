@@ -39,12 +39,57 @@ const PASTORAL_SYSTEM = `You are a theological assistant for Christian church le
 • Never fabricate or misquote a verse. If uncertain of a reference, say so.
 • No filler openers. No sycophancy. Just good, grounded theology.`;
 
+const RESEARCH_SYSTEM = `You are a theological research assistant helping a pastor or elder prepare for preaching and teaching. Your job is not to give one synthesized answer — it is to lay out the scholarly landscape so the pastor can think and decide for themselves.
+
+Structure every response as a research brief using these sections:
+
+── CONTEXT ──
+What is happening in the passage or topic? Key background, authorship, audience, and setting in 2–4 sentences. Note any significant manuscript variants.
+
+── ORIGINAL LANGUAGE ──
+The key Greek or Hebrew word(s) at stake. Give the word in its original script, transliteration, pronunciation, and full semantic range. Explain how different Bible translations (ESV, NIV, KJV, NASB, NLT) render it and why those choices matter. Reference Strong's number where helpful.
+
+── WHAT THE SCHOLARS SAY ──
+Present 4–6 named perspectives. For each: name the scholar or source, their tradition, their specific reading, and the reasoning behind it. Let each voice speak distinctly — do not blend them into a false consensus. Draw from:
+• Reformed/Calvinist — Calvin's Commentaries, Matthew Henry, Wayne Grudem, D.A. Carson, John Piper, R.C. Sproul
+• Wesleyan/Arminian — John Wesley's Explanatory Notes, Adam Clarke, Thomas Oden
+• Anglican/Evangelical — John Stott, N.T. Wright, F.F. Bruce, I. Howard Marshall, Alister McGrath
+• Early Church Fathers — Chrysostom, Augustine, Origen, Jerome, Irenaeus (especially powerful for showing pre-modern consensus)
+• Academic Commentaries — Word Biblical Commentary, NICNT/NICOT, IVP Bible Background Commentary, Expositor's Bible Commentary
+• Catholic tradition — Aquinas, Jerome, modern Catholic exegesis where it adds meaningful perspective
+Select the voices most relevant to the passage — not every tradition needs to appear in every answer.
+
+── WHERE SCHOLARS DISAGREE ──
+Name the fault lines plainly. What is actually contested? Reformed vs Arminian, literal vs figurative, historical-critical vs canonical, complementarian vs egalitarian — name the positions and explain what drives the disagreement. Show where faithful, orthodox scholars land differently and why.
+
+── PREACHING ANGLES ──
+2–3 angles a pastor could take, each grounded in a different reading above. These are options, not recommendations — the pastor decides. Each angle in 2 sentences.
+
+── GO DEEPER ──
+2–3 specific commentaries or books worth pulling for this passage or topic. Give the exact title, author, and one sentence on what makes it worth reading.
+
+STANDARDS:
+• Always cite by name. Never say "some scholars think" — say who.
+• Every scripture reference: Book Chapter:Verse.
+• If uncertain of a specific quote, paraphrase and note it.
+• Do not hide complexity or manufacture certainty where real debate exists.
+• No filler openers. No sycophancy. Get to the substance in the first line.`;
+
 const STARTERS = [
   'What does the Greek word "charis" (grace) actually mean in its New Testament context?',
   'How do I preach on lament without losing hope?',
   'Walk me through Romans 8:28 — what does "all things work together" really promise?',
   'What should I know about pastoral care for someone leaving the faith?',
   'How did the early church understand communion — what do the church fathers say?',
+];
+
+const RESEARCH_STARTERS = [
+  'Walk me through John 3:16 — what do the major commentators say?',
+  'Research Romans 9 — how do Reformed and Arminian scholars read it differently?',
+  'What does "hesed" mean in the Psalms? Original Hebrew + commentary perspectives.',
+  'Survey what the early church fathers said about the resurrection accounts.',
+  'What\'s the scholarly debate around 1 Corinthians 14:34 — women in the church?',
+  'Break down Ephesians 2:8-9 — faith, grace, works — where do scholars land?',
 ];
 
 // ── Tiny shared icons ────────────────────────────────────────────────────────
@@ -256,8 +301,10 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
   const ttsVoice = profile?.tts_voice ?? 'onyx';
 
   const [dark, setDark] = useState(() => localStorage.getItem('church_ask_dark') === '1');
+  const [researchMode, setResearchMode] = useState(() => localStorage.getItem('church_ask_research') === '1');
   const C = dark ? DARK : LIGHT;
   function toggleDark() { setDark((d) => { localStorage.setItem('church_ask_dark', d ? '0' : '1'); return !d; }); }
+  function toggleResearch() { setResearchMode((v) => { const next = !v; localStorage.setItem('church_ask_research', next ? '1' : '0'); return next; }); }
 
   const aiUsage = useAiUsage(userId, plan);
   const { speakingId, paused: ttsPaused, speak: speakMsg, stop: stopTts, pause: pauseTts, resume: resumeTts, rewind: rewindTts, supported: ttsSupported } = useTextToSpeech({ voice: ttsVoice });
@@ -324,7 +371,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
     setBusy(true);
     let assistantContent = '';
     try {
-      const system = PASTORAL_SYSTEM + (PER_TYPE[personType] ?? '');
+      const system = researchMode ? RESEARCH_SYSTEM : PASTORAL_SYSTEM + (PER_TYPE[personType] ?? '');
       const res = await authedFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -423,8 +470,27 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {/* ── Switch Mode button ── */}
-            <div style={{ position: 'relative' }}>
+
+            {/* ── Research mode toggle ── */}
+            <button
+              onClick={() => { toggleResearch(); newConversation(); }}
+              title={researchMode ? 'Switch to pastoral mode' : 'Switch to sermon research mode — multi-source commentary briefs'}
+              style={{
+                background: researchMode ? 'rgba(184,115,58,0.15)' : C.card,
+                border: `1.5px solid ${researchMode ? T.gold : C.border}`,
+                borderRadius: 999, padding: '4px 12px',
+                fontSize: 12, fontWeight: researchMode ? 700 : 400,
+                color: researchMode ? T.goldDark : C.soft,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
+                transition: 'all 0.15s',
+              }}
+            >
+              📚 {researchMode ? 'Research' : 'Research'}
+              {researchMode && <span style={{ fontSize: 9, color: T.gold, marginLeft: 1 }}>●</span>}
+            </button>
+
+            {/* ── Switch Mode button — hidden in research mode ── */}
+            {!researchMode && <div style={{ position: 'relative' }}>
               {(() => {
                 const person = PERSON_TYPES.find((p) => p.id === personType);
                 return (
@@ -486,7 +552,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
                   </div>
                 </div>
               )}
-            </div>
+            </div>}
 
           <div style={{ position: 'relative' }}>
             <button onClick={() => setMenuOpen((v) => !v)} style={{ background: menuOpen ? 'rgba(184,115,58,0.18)' : 'transparent', border: `1px solid ${menuOpen ? T.gold : C.border}`, color: C.soft, borderRadius: 999, padding: '5px 11px', fontSize: 16, cursor: 'pointer', lineHeight: 1 }}>⋮</button>
@@ -522,13 +588,32 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
           {isEmpty && !aiUsage.atLimit && (
             <div style={{ textAlign: 'center', padding: '24px 0 32px' }}>
               <div style={{ marginBottom: 10 }}><KinwoveStar size={22} /></div>
-              <div style={{ fontFamily: T.serif, fontSize: 17, fontWeight: 500, color: C.text, marginBottom: 6, letterSpacing: '-0.01em' }}>Pastoral AI</div>
-              <div style={{ fontSize: 13, color: C.soft, lineHeight: 1.6, maxWidth: 340, margin: '0 auto 24px' }}>Theology, sermon prep, pastoral care, exegesis — ask anything.</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 440, margin: '0 auto', textAlign: 'left' }}>
-                {STARTERS.map((s) => (
-                  <button key={s} onClick={() => send(s)} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: C.soft, cursor: 'pointer', textAlign: 'left', lineHeight: 1.45, fontFamily: T.serif, fontStyle: 'italic' }}>{s}</button>
-                ))}
-              </div>
+              {researchMode ? (
+                <>
+                  <div style={{ fontFamily: T.serif, fontSize: 17, fontWeight: 500, color: C.text, marginBottom: 6, letterSpacing: '-0.01em' }}>📚 Sermon Research</div>
+                  <div style={{ fontSize: 13, color: C.soft, lineHeight: 1.6, maxWidth: 380, margin: '0 auto 6px' }}>
+                    Multi-source commentary briefs — Calvin, Wesley, N.T. Wright, Church Fathers, and more.
+                  </div>
+                  <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, maxWidth: 360, margin: '0 auto 24px' }}>
+                    Every response shows what different scholars say and where they disagree — so you can come to your own conclusion.
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 480, margin: '0 auto', textAlign: 'left' }}>
+                    {RESEARCH_STARTERS.map((s) => (
+                      <button key={s} onClick={() => send(s)} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: C.soft, cursor: 'pointer', textAlign: 'left', lineHeight: 1.45, fontFamily: T.serif, fontStyle: 'italic' }}>{s}</button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontFamily: T.serif, fontSize: 17, fontWeight: 500, color: C.text, marginBottom: 6, letterSpacing: '-0.01em' }}>Pastoral AI</div>
+                  <div style={{ fontSize: 13, color: C.soft, lineHeight: 1.6, maxWidth: 340, margin: '0 auto 24px' }}>Theology, sermon prep, pastoral care, exegesis — ask anything.</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 440, margin: '0 auto', textAlign: 'left' }}>
+                    {STARTERS.map((s) => (
+                      <button key={s} onClick={() => send(s)} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: C.soft, cursor: 'pointer', textAlign: 'left', lineHeight: 1.45, fontFamily: T.serif, fontStyle: 'italic' }}>{s}</button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -691,7 +776,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-                placeholder="Ask a theological question…"
+                placeholder={researchMode ? 'Enter a passage or topic to research…' : 'Ask a theological question…'}
                 rows={2}
                 style={{ flex: 1, padding: '10px 14px', borderRadius: 12, border: `1px solid ${C.border}`, fontSize: 14, fontFamily: T.sans ?? 'inherit', background: C.inputBg, color: C.text, outline: 'none', resize: 'none', lineHeight: 1.5 }}
               />
