@@ -341,7 +341,7 @@ function NotesSection({ session, churchId, refreshKey = 0 }) {
                       style={{ ...btnBase, background: 'transparent', color: T.inkMuted, border: `1px solid rgba(26,17,8,0.14)` }}>
                       🖨 Print
                     </button>
-                    <button onClick={() => { if (isDirty) saveAndClose(note.id); else setEditingId(null); }}
+                    <button onClick={() => { if (isDirty) setShowDonePrompt(true); else setEditingId(null); }}
                       style={{ ...btnBase, background: 'transparent', color: T.inkMuted, border: `1px solid rgba(26,17,8,0.14)` }}>
                       Done
                     </button>
@@ -368,7 +368,13 @@ function NotesSection({ session, churchId, refreshKey = 0 }) {
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button onClick={() => saveAndClose(note.id)}
                           style={{ ...btnBase, background: T.ink, color: T.cream }}>Save &amp; close</button>
-                        <button onClick={() => { setEditingId(null); setShowDonePrompt(false); setIsDirty(false); }}
+                        <button onClick={() => {
+                            setEditTitle(note.title || '');
+                            setEditSeries(note.series || '');
+                            if (editorRef.current) editorRef.current.innerHTML = toEditorHtml(editInitBody);
+                            setIsDirty(false);
+                            setShowDonePrompt(false);
+                          }}
                           style={{ ...btnBase, background: 'transparent', color: '#A53F2B', border: '1px solid rgba(165,63,43,0.4)', fontWeight: 500 }}>Discard</button>
                         <button onClick={() => setShowDonePrompt(false)}
                           style={{ ...btnBase, background: 'transparent', color: T.inkMuted, border: `1px solid rgba(26,17,8,0.14)`, fontWeight: 500 }}>Cancel</button>
