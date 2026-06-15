@@ -53,7 +53,7 @@ export default function ChurchModeShell({
   const isVisitorView = currentSubpage === 'public';
 
   return (
-    <div style={{ minHeight: '100vh', background: T.cream }}>
+    <div style={{ height: '100vh', overflow: fullBleed ? 'hidden' : 'auto', background: T.cream }}>
       <div style={{
         position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 20,
         background: '#1e1208',
