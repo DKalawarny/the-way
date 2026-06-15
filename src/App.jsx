@@ -3196,7 +3196,6 @@ export default function App() {
             setCurrentConvId(conv.id);
             setPrefilledInput(`Tell me about ${note.book_name} ${note.chapter}:${note.verse} — "${note.verse_text?.replace(/^["""]+|["""]+$/g, '').trim()}"`);
             setChatPanelOpen(true);
-            setStage('home');
           }}
           onContinueChat={(noteBody) => {
             const question = noteBody?.match(/^Q:\s*(.+?)(?:\n\n[\s\S]*)?$/s)?.[1]?.trim() ?? noteBody?.slice(0, 200) ?? '';
@@ -3204,7 +3203,6 @@ export default function App() {
             setCurrentConvId(conv.id);
             setPrefilledInput(question);
             setChatPanelOpen(true);
-            setStage('home');
           }}
         />
       )}
