@@ -1,19 +1,93 @@
-import { lazy, Suspense, useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 import { T } from './theme.js';
 import { supabase } from './supabase.js';
 
 const BibleReader = lazy(() => import('./BibleReader.jsx'));
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function stripHtml(html) {
+  return (html || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function toEditorHtml(raw) {
+  if (!raw) return '';
+  if (/<[a-z]/i.test(raw)) return raw; // already HTML (rich text)
+  return raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// ── Print a single note in a clean new window ─────────────────────────────────
+function printNote(note) {
+  const w = window.open('', '_blank', 'width=820,height=700');
+  const date = new Date(note.updated_at ?? Date.now()).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  const bodyHtml = toEditorHtml(note.body);
+  const titleHtml = (note.title || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${note.title || 'Note'}</title><style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Newsreader','Georgia',serif;max-width:680px;margin:48px auto;padding:0 32px;color:#1A1108;line-height:1.7;font-size:17px}
+    h1.title{font-family:'Fraunces','Georgia',serif;font-size:28px;font-weight:600;letter-spacing:-0.02em;margin-bottom:6px;line-height:1.2}
+    h2{font-family:'Fraunces','Georgia',serif;font-size:20px;font-weight:600;margin:20px 0 6px;line-height:1.3}
+    h3{font-family:'Fraunces','Georgia',serif;font-size:16px;font-weight:600;margin:16px 0 4px}
+    .meta{color:#9C7B5E;font-size:12px;margin-bottom:32px;letter-spacing:0.02em}
+    .body{font-size:16px;line-height:1.75}
+    .body ul{padding-left:1.4em;margin:8px 0}.body li{margin-bottom:3px}
+    .footer{margin-top:48px;padding-top:14px;border-top:1px solid rgba(26,17,8,0.1);color:#9C7B5E;font-size:11px;display:flex;justify-content:space-between}
+    @media print{body{margin:24px auto}@page{margin:1.5cm}}
+  </style></head><body>
+    ${titleHtml ? `<h1 class="title">${titleHtml}</h1>` : ''}
+    <div class="meta">${date}</div>
+    <div class="body">${bodyHtml}</div>
+    <div class="footer"><span>kinwove · kinwove.com</span><span>Printed ${new Date().toLocaleDateString()}</span></div>
+  </body></html>`);
+  w.document.close(); w.focus(); setTimeout(() => w.print(), 400);
+}
+
+function printAllNotes(notes) {
+  const w = window.open('', '_blank', 'width=820,height=700');
+  const blocks = notes.map(n => {
+    const date = new Date(n.updated_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    const bodyHtml = toEditorHtml(n.body);
+    const titleHtml = (n.title || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<div class="note">${titleHtml ? `<h2>${titleHtml}</h2>` : ''}<div class="meta">${date}</div><div class="body">${bodyHtml}</div></div>`;
+  }).join('');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>All Notes</title><style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600&family=Newsreader:opsz,wght@6..72,400&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Newsreader','Georgia',serif;max-width:680px;margin:48px auto;padding:0 32px;color:#1A1108}
+    .label{font-family:'Fraunces',serif;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#9C7B5E;margin-bottom:32px}
+    .note{margin-bottom:48px;padding-bottom:40px;border-bottom:1px solid rgba(26,17,8,0.1)}
+    .note:last-child{border-bottom:none}
+    h2{font-family:'Fraunces','Georgia',serif;font-size:21px;font-weight:600;letter-spacing:-0.01em;margin-bottom:4px}
+    h3{font-family:'Fraunces','Georgia',serif;font-size:16px;font-weight:600;margin:14px 0 4px}
+    .meta{color:#9C7B5E;font-size:11px;margin-bottom:16px}
+    .body{font-size:15px;line-height:1.75}
+    .body ul{padding-left:1.4em;margin:8px 0}.body li{margin-bottom:3px}
+    .footer{margin-top:40px;padding-top:14px;border-top:1px solid rgba(26,17,8,0.1);color:#9C7B5E;font-size:11px;display:flex;justify-content:space-between}
+    @media print{body{margin:24px auto}@page{margin:1.5cm}.note{page-break-inside:avoid}}
+  </style></head><body>
+    <div class="label">Research Notes · kinwove</div>
+    ${blocks}
+    <div class="footer"><span>kinwove.com</span><span>Printed ${new Date().toLocaleDateString()}</span></div>
+  </body></html>`);
+  w.document.close(); w.focus(); setTimeout(() => w.print(), 400);
+}
+
 // ── Notes section ─────────────────────────────────────────────────────────────
 function NotesSection({ session, churchId }) {
   const userId = session?.user?.id;
-  const [notes, setNotes]       = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [notes, setNotes]         = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [showForm, setShowForm]   = useState(false);
   const [formTitle, setFormTitle] = useState('');
-  const [formBody, setFormBody] = useState('');
-  const [saving, setSaving]     = useState(false);
-  const [expandedId, setExpandedId] = useState(null);
+  const [formBody, setFormBody]   = useState('');
+  const [creating, setCreating]   = useState(false);
+
+  const [editingId, setEditingId]           = useState(null);
+  const [editTitle, setEditTitle]           = useState('');
+  const [editInitBody, setEditInitBody]     = useState('');
+  const [saveState, setSaveState]           = useState('idle');
+  const [confirmDelete, setConfirmDelete]   = useState(null);
+  const editorRef = useRef(null);
 
   useEffect(() => {
     if (!churchId) return;
@@ -22,104 +96,229 @@ function NotesSection({ session, churchId }) {
       .then(({ data }) => { setNotes(data ?? []); setLoading(false); }, () => setLoading(false));
   }, [churchId]);
 
+  // Populate contentEditable when entering edit mode
+  useEffect(() => {
+    if (!editingId || !editorRef.current) return;
+    editorRef.current.innerHTML = toEditorHtml(editInitBody);
+    editorRef.current.focus();
+    // move cursor to end
+    const range = document.createRange();
+    const sel = window.getSelection();
+    range.selectNodeContents(editorRef.current);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }, [editingId]);
+
   async function createNote() {
     if (!formBody.trim() || !churchId || !userId) return;
-    setSaving(true);
+    setCreating(true);
     const { data, error } = await supabase.from('church_notes').insert({
       church_id: churchId, author_id: userId,
       title: formTitle.trim(), body: formBody.trim(),
     }).select().single();
-    setSaving(false);
+    setCreating(false);
     if (error) return;
     setNotes(prev => [data, ...prev]);
     setFormTitle(''); setFormBody(''); setShowForm(false);
+    setEditInitBody(data.body || '');
+    setEditTitle(data.title || '');
+    setEditingId(data.id);
+    setSaveState('idle');
+  }
+
+  function startEdit(note) {
+    setEditInitBody(note.body || '');
+    setEditTitle(note.title || '');
+    setSaveState('idle');
+    setConfirmDelete(null);
+    setEditingId(note.id);
+  }
+
+  async function saveEdit(noteId) {
+    if (!noteId || !editorRef.current) return;
+    setSaveState('saving');
+    const html = editorRef.current.innerHTML;
+    const updates = { title: editTitle.trim(), body: html, updated_at: new Date().toISOString() };
+    const { error } = await supabase.from('church_notes').update(updates).eq('id', noteId);
+    if (error) { setSaveState('error'); return; }
+    setNotes(prev => prev.map(n => n.id === noteId ? { ...n, ...updates } : n));
+    setSaveState('saved');
+    setTimeout(() => setSaveState('idle'), 2000);
+  }
+
+  async function deleteNote(noteId) {
+    await supabase.from('church_notes').delete().eq('id', noteId);
+    setNotes(prev => prev.filter(n => n.id !== noteId));
+    setEditingId(null); setConfirmDelete(null);
+  }
+
+  function fmt(cmd, value) {
+    document.execCommand('styleWithCSS', false, true);
+    document.execCommand(cmd, false, value ?? null);
+    editorRef.current?.focus();
+  }
+
+  const btnBase = { border: 'none', borderRadius: 8, padding: '6px 13px', fontSize: 12, fontWeight: 600, cursor: 'pointer' };
+
+  function TBtn({ label, title, cmd, val, style: s = {} }) {
+    return (
+      <button
+        title={title}
+        onMouseDown={e => { e.preventDefault(); fmt(cmd, val); }}
+        style={{ background: 'none', border: '1px solid rgba(26,17,8,0.13)', borderRadius: 5, minWidth: 26, height: 24, fontSize: 12, cursor: 'pointer', color: T.ink, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0 5px', ...s }}
+      >{label}</button>
+    );
   }
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '0 16px 24px' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '0 14px 24px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 10px', flexShrink: 0 }}>
-        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: T.inkMuted }}>Your Notes</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '12px 0 10px', flexShrink: 0 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: T.inkMuted, flex: 1 }}>Notes</span>
+        {notes.length > 1 && (
+          <button onClick={() => printAllNotes(notes)} title="Print all notes"
+            style={{ background: 'none', border: `1px solid rgba(26,17,8,0.14)`, borderRadius: 8, padding: '3px 9px', fontSize: 11, color: T.inkMuted, cursor: 'pointer' }}>
+            🖨 All
+          </button>
+        )}
         <button
-          onClick={() => setShowForm(v => !v)}
+          onClick={() => { setShowForm(v => !v); setEditingId(null); }}
           style={{ background: showForm ? T.ink : 'transparent', color: showForm ? T.cream : T.inkMuted, border: `1px solid ${showForm ? T.ink : 'rgba(26,17,8,0.14)'}`, borderRadius: 999, padding: '4px 11px', fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}
-        >
-          {showForm ? 'Cancel' : '+ New'}
-        </button>
+        >{showForm ? 'Cancel' : '+ New'}</button>
       </div>
 
-      {/* New note form */}
+      {/* Quick-create form (plain text — immediately opens rich editor on create) */}
       {showForm && (
         <div style={{ background: 'linear-gradient(160deg,#FFFCF0,#FFF8E4)', border: `1px solid rgba(184,115,58,0.22)`, borderRadius: 12, padding: '12px 14px', marginBottom: 10, boxShadow: '0 2px 8px rgba(184,115,58,0.08)', flexShrink: 0 }}>
           <input
             value={formTitle} onChange={e => setFormTitle(e.target.value)}
             placeholder="Title (optional)"
-            style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 13, fontFamily: T.serif, fontWeight: 600, color: T.ink, outline: 'none', marginBottom: 6, boxSizing: 'border-box' }}
+            style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 14, fontFamily: T.serif, fontWeight: 600, color: T.ink, outline: 'none', marginBottom: 8, boxSizing: 'border-box' }}
           />
           <textarea
             autoFocus value={formBody} onChange={e => setFormBody(e.target.value)}
-            placeholder="Write your note…" rows={4}
-            style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 13, fontFamily: T.display, color: T.ink, resize: 'none', outline: 'none', lineHeight: 1.6, boxSizing: 'border-box' }}
+            onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) { e.preventDefault(); createNote(); } }}
+            placeholder="Start writing…" rows={4}
+            style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 14, fontFamily: T.display, color: T.ink, resize: 'none', outline: 'none', lineHeight: 1.65, boxSizing: 'border-box' }}
           />
-          <button
-            onClick={createNote} disabled={saving || !formBody.trim()}
-            style={{ background: T.ink, color: T.cream, border: 'none', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, cursor: saving || !formBody.trim() ? 'default' : 'pointer', opacity: saving || !formBody.trim() ? 0.5 : 1, marginTop: 6 }}
-          >
-            {saving ? 'Saving…' : 'Save note'}
-          </button>
+          <div style={{ display: 'flex', gap: 7, marginTop: 8, alignItems: 'center' }}>
+            <button onClick={createNote} disabled={creating || !formBody.trim()}
+              style={{ ...btnBase, background: T.ink, color: T.cream, opacity: creating || !formBody.trim() ? 0.5 : 1 }}>
+              {creating ? 'Creating…' : 'Create note'}
+            </button>
+            <span style={{ fontSize: 11, color: T.inkMuted }}>⌘↵</span>
+          </div>
         </div>
       )}
 
-      {loading && (
-        <div style={{ fontSize: 13, color: T.inkMuted, textAlign: 'center', padding: '32px 0', fontStyle: 'italic' }}>Loading…</div>
-      )}
+      {loading && <div style={{ fontSize: 13, color: T.inkMuted, textAlign: 'center', padding: '32px 0', fontStyle: 'italic' }}>Loading…</div>}
 
       {!loading && notes.length === 0 && !showForm && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: T.inkMuted, padding: '20px 0' }}>
           <div style={{ fontSize: 38, marginBottom: 14, opacity: 0.6 }}>📝</div>
-          <div style={{ fontFamily: T.serif, fontSize: 16, fontWeight: 600, color: T.ink, marginBottom: 6 }}>Your research notes</div>
+          <div style={{ fontFamily: T.serif, fontSize: 16, fontWeight: 600, color: T.ink, marginBottom: 6 }}>Your sermon notes</div>
           <div style={{ fontSize: 12, lineHeight: 1.7, maxWidth: 200, color: T.inkMuted }}>
-            Jot ideas here, or save responses directly from the research chat.
+            Write here, or save AI responses directly from the research chat.
           </div>
         </div>
       )}
 
       {notes.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {notes.map(note => {
-            const isOpen = expandedId === note.id;
+            const isEditing = editingId === note.id;
             const dateStr = new Date(note.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
             const badge = note.source === 'research' ? '📚' : note.source === 'ask' ? '💬' : null;
-            return (
-              <div
-                key={note.id}
-                onClick={() => setExpandedId(isOpen ? null : note.id)}
-                style={{
-                  background: 'linear-gradient(160deg,#FFFCF2 0%,#FFF8E8 100%)',
-                  border: `1px solid rgba(184,115,58,0.15)`,
-                  borderRadius: 10, padding: '10px 13px',
-                  cursor: 'pointer',
-                  boxShadow: isOpen ? '0 3px 14px rgba(26,17,8,0.08)' : '0 1px 4px rgba(26,17,8,0.04)',
-                  transition: 'box-shadow 0.15s',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
-                  <span style={{ fontFamily: T.serif, fontSize: 13, fontWeight: 600, color: T.ink, lineHeight: 1.35 }}>
-                    {note.title || note.body.slice(0, 50) + (note.body.length > 50 ? '…' : '')}
-                  </span>
-                  {badge && <span style={{ fontSize: 12, flexShrink: 0, opacity: 0.65 }}>{badge}</span>}
+            const preview = stripHtml(note.body);
+
+            if (isEditing) {
+              return (
+                <div key={note.id} style={{ background: '#FFFDF5', border: `1.5px solid rgba(184,115,58,0.35)`, borderRadius: 12, padding: '14px 14px 12px', boxShadow: '0 4px 20px rgba(26,17,8,0.10)' }}>
+                  {/* Title */}
+                  <input
+                    value={editTitle} onChange={e => setEditTitle(e.target.value)}
+                    placeholder="Title…"
+                    style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 16, fontFamily: T.serif, fontWeight: 600, color: T.ink, outline: 'none', marginBottom: 8, boxSizing: 'border-box', letterSpacing: '-0.01em' }}
+                  />
+                  {/* Rich toolbar */}
+                  <div style={{ display: 'flex', gap: 3, alignItems: 'center', paddingBottom: 8, borderBottom: '1px solid rgba(26,17,8,0.08)', marginBottom: 10, flexWrap: 'wrap' }}>
+                    <TBtn label="B" title="Bold (⌘B)" cmd="bold" style={{ fontWeight: 700 }} />
+                    <TBtn label="I" title="Italic (⌘I)" cmd="italic" style={{ fontStyle: 'italic' }} />
+                    <TBtn label="U" title="Underline (⌘U)" cmd="underline" style={{ textDecoration: 'underline' }} />
+                    <div style={{ width: 1, height: 16, background: 'rgba(26,17,8,0.15)', margin: '0 2px' }} />
+                    <TBtn label="H2" title="Heading" cmd="formatBlock" val="h2" />
+                    <TBtn label="¶" title="Normal paragraph" cmd="formatBlock" val="p" />
+                    <div style={{ width: 1, height: 16, background: 'rgba(26,17,8,0.15)', margin: '0 2px' }} />
+                    <TBtn label="•" title="Bullet list" cmd="insertUnorderedList" />
+                  </div>
+                  {/* contentEditable body */}
+                  <div
+                    ref={editorRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) { e.preventDefault(); saveEdit(note.id); } }}
+                    style={{ width: '100%', minHeight: 180, fontSize: 14, fontFamily: T.display, color: T.ink, outline: 'none', lineHeight: 1.75, boxSizing: 'border-box' }}
+                  />
+                  {/* Action bar */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 14, flexWrap: 'wrap' }}>
+                    <button onClick={() => saveEdit(note.id)} disabled={saveState === 'saving'}
+                      style={{ ...btnBase, background: T.ink, color: T.cream, opacity: saveState === 'saving' ? 0.7 : 1 }}>
+                      {saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? '✓ Saved' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => printNote({ ...note, title: editTitle, body: editorRef.current?.innerHTML ?? note.body })}
+                      style={{ ...btnBase, background: 'transparent', color: T.inkMuted, border: `1px solid rgba(26,17,8,0.14)` }}>
+                      🖨 Print
+                    </button>
+                    <button onClick={() => setEditingId(null)}
+                      style={{ ...btnBase, background: 'transparent', color: T.inkMuted, border: `1px solid rgba(26,17,8,0.14)` }}>
+                      Done
+                    </button>
+                    <div style={{ flex: 1 }} />
+                    {confirmDelete === note.id ? (
+                      <>
+                        <button onClick={() => deleteNote(note.id)}
+                          style={{ ...btnBase, background: 'transparent', color: '#A53F2B', border: '1px solid #A53F2B', fontSize: 11 }}>Delete</button>
+                        <button onClick={() => setConfirmDelete(null)}
+                          style={{ ...btnBase, background: 'transparent', color: T.inkMuted, border: `1px solid rgba(26,17,8,0.14)`, fontSize: 11 }}>Keep</button>
+                      </>
+                    ) : (
+                      <button onClick={() => setConfirmDelete(note.id)}
+                        style={{ background: 'none', border: 'none', color: T.inkMuted, fontSize: 11, cursor: 'pointer', opacity: 0.55 }}>
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                  {saveState === 'error' && <div style={{ fontSize: 11, color: '#A53F2B', marginTop: 6 }}>Could not save — check your connection.</div>}
+                  <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 8, opacity: 0.55 }}>⌘↵ to save</div>
                 </div>
-                {!isOpen && note.title && (
-                  <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 3, lineHeight: 1.4 }}>
-                    {note.body.slice(0, 75)}{note.body.length > 75 ? '…' : ''}
+              );
+            }
+
+            // ── View mode ──
+            return (
+              <div key={note.id} style={{ background: 'linear-gradient(160deg,#FFFCF2 0%,#FFF8E8 100%)', border: `1px solid rgba(184,115,58,0.15)`, borderRadius: 10, padding: '10px 13px', boxShadow: '0 1px 4px rgba(26,17,8,0.04)' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
+                  <span style={{ fontFamily: T.serif, fontSize: 13, fontWeight: 600, color: T.ink, lineHeight: 1.35, flex: 1 }}>
+                    {note.title || preview.slice(0, 55) + (preview.length > 55 ? '…' : '')}
+                  </span>
+                  <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                    {badge && <span style={{ fontSize: 11, opacity: 0.55 }}>{badge}</span>}
+                    <button onClick={e => { e.stopPropagation(); printNote(note); }}
+                      title="Print" style={{ background: 'none', border: 'none', fontSize: 12, cursor: 'pointer', color: T.inkMuted, opacity: 0.6, padding: '0 2px', lineHeight: 1 }}>🖨</button>
                   </div>
-                )}
-                {isOpen && (
-                  <div style={{ fontSize: 13, color: T.inkSoft, marginTop: 7, lineHeight: 1.65, fontFamily: T.display, whiteSpace: 'pre-wrap' }}>
-                    {note.body}
-                  </div>
-                )}
-                <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 6, opacity: 0.7 }}>{dateStr}</div>
+                </div>
+                <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 4, lineHeight: 1.4 }}>
+                  {preview.slice(0, 90)}{preview.length > 90 ? '…' : ''}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                  <span style={{ fontSize: 11, color: T.inkMuted, opacity: 0.65 }}>{dateStr}</span>
+                  <button onClick={() => startEdit(note)}
+                    style={{ background: 'none', border: `1px solid rgba(26,17,8,0.14)`, borderRadius: 8, padding: '3px 10px', fontSize: 11, color: T.inkSoft, cursor: 'pointer', fontWeight: 500 }}>
+                    Edit
+                  </button>
+                </div>
               </div>
             );
           })}
