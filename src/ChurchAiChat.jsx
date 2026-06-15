@@ -946,7 +946,9 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
 
         {/* ── Input ── */}
         {aiUsage.atLimit ? (
-          <AiLimitWall plan={plan} panelMode onTopupSuccess={() => aiUsage.refreshAfterTopup()} />
+          <div style={{ overflowY: 'auto', flexShrink: 0, maxHeight: '70%' }}>
+            <AiLimitWall plan={plan} panelMode onTopupSuccess={() => aiUsage.refreshAfterTopup()} />
+          </div>
         ) : (
           <div style={{ borderTop: `1px solid ${C.border}`, padding: '12px 0 0', flexShrink: 0 }}>
             {/* Mobile: floating desk buttons above input */}
