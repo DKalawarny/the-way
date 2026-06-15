@@ -84,11 +84,13 @@ function NotesSection({ session, churchId }) {
 
   const [editingId, setEditingId]           = useState(null);
   const [editTitle, setEditTitle]           = useState('');
+  const [editSeries, setEditSeries]         = useState('');
   const [editInitBody, setEditInitBody]     = useState('');
   const [saveState, setSaveState]           = useState('idle');
   const [confirmDelete, setConfirmDelete]   = useState(null);
   const [isDirty, setIsDirty]              = useState(false);
   const [showDonePrompt, setShowDonePrompt] = useState(false);
+  const [formSeries, setFormSeries]         = useState('');
   const editorRef = useRef(null);
 
   useEffect(() => {
@@ -120,13 +122,15 @@ function NotesSection({ session, churchId }) {
     const { data, error } = await supabase.from('church_notes').insert({
       church_id: churchId, author_id: userId,
       title: formTitle.trim(), body: formBody.trim(),
+      series: formSeries.trim() || null,
     }).select().single();
     setCreating(false);
     if (error) return;
     setNotes(prev => [data, ...prev]);
-    setFormTitle(''); setFormBody(''); setShowForm(false);
+    setFormTitle(''); setFormBody(''); setFormSeries(''); setShowForm(false);
     setEditInitBody(data.body || '');
     setEditTitle(data.title || '');
+    setEditSeries(data.series || '');
     setEditingId(data.id);
     setSaveState('idle');
     setIsDirty(false);
@@ -136,6 +140,7 @@ function NotesSection({ session, churchId }) {
   function startEdit(note) {
     setEditInitBody(note.body || '');
     setEditTitle(note.title || '');
+    setEditSeries(note.series || '');
     setSaveState('idle');
     setConfirmDelete(null);
     setIsDirty(false);
@@ -147,7 +152,7 @@ function NotesSection({ session, churchId }) {
     if (!noteId || !editorRef.current) return;
     setSaveState('saving');
     const html = editorRef.current.innerHTML;
-    const updates = { title: editTitle.trim(), body: html, updated_at: new Date().toISOString() };
+    const updates = { title: editTitle.trim(), body: html, series: editSeries.trim() || null, updated_at: new Date().toISOString() };
     const { error } = await supabase.from('church_notes').update(updates).eq('id', noteId);
     if (error) { setSaveState('error'); return; }
     setNotes(prev => prev.map(n => n.id === noteId ? { ...n, ...updates } : n));
@@ -217,6 +222,12 @@ function NotesSection({ session, churchId }) {
             placeholder="Start writing…" rows={4}
             style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 14, fontFamily: T.display, color: T.ink, resize: 'none', outline: 'none', lineHeight: 1.65, boxSizing: 'border-box' }}
           />
+          <input
+            value={formSeries} onChange={e => setFormSeries(e.target.value)}
+            placeholder="Series (optional — e.g. Romans, Christmas 2026)"
+            list="series-list"
+            style={{ width: '100%', border: 'none', borderTop: '1px solid rgba(26,17,8,0.08)', background: 'transparent', fontSize: 12, color: T.inkSoft, outline: 'none', padding: '7px 0 0', marginTop: 6, boxSizing: 'border-box' }}
+          />
           <div style={{ display: 'flex', gap: 7, marginTop: 8, alignItems: 'center' }}>
             <button onClick={createNote} disabled={creating || !formBody.trim()}
               style={{ ...btnBase, background: T.ink, color: T.cream, opacity: creating || !formBody.trim() ? 0.5 : 1 }}>
@@ -239,9 +250,34 @@ function NotesSection({ session, churchId }) {
         </div>
       )}
 
-      {notes.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {notes.map(note => {
+      {notes.length > 0 && (() => {
+        // Derive sorted series list + group notes
+        const allSeries = [...new Set(notes.map(n => n.series?.trim()).filter(Boolean))].sort();
+        const grouped = {};
+        notes.forEach(n => {
+          const key = n.series?.trim() || '';
+          (grouped[key] = grouped[key] ?? []).push(n);
+        });
+        const keys = [...allSeries, '']; // named series first, unsorted last
+        const hasAnySeries = allSeries.length > 0;
+
+        return (
+        <>
+          <datalist id="series-list">{allSeries.map(s => <option key={s} value={s} />)}</datalist>
+          {keys.map(key => {
+            const group = grouped[key];
+            if (!group?.length) return null;
+            return (
+              <div key={key || '__unsorted'} style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: key ? 18 : 0 }}>
+                {(key || hasAnySeries) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: key ? 4 : 0 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: key ? T.gold : T.inkMuted, whiteSpace: 'nowrap' }}>
+                      {key || 'Unsorted'}
+                    </span>
+                    <div style={{ flex: 1, height: 1, background: key ? `rgba(184,115,58,0.25)` : 'rgba(26,17,8,0.08)' }} />
+                  </div>
+                )}
+                {group.map(note => {
             const isEditing = editingId === note.id;
             const dateStr = new Date(note.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
             const preview = stripHtml(note.body);
@@ -253,7 +289,14 @@ function NotesSection({ session, churchId }) {
                   <input
                     value={editTitle} onChange={e => { setEditTitle(e.target.value); setIsDirty(true); setShowDonePrompt(false); }}
                     placeholder="Title…"
-                    style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 16, fontFamily: T.serif, fontWeight: 600, color: T.ink, outline: 'none', marginBottom: 8, boxSizing: 'border-box', letterSpacing: '-0.01em' }}
+                    style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 16, fontFamily: T.serif, fontWeight: 600, color: T.ink, outline: 'none', marginBottom: 6, boxSizing: 'border-box', letterSpacing: '-0.01em' }}
+                  />
+                  {/* Series */}
+                  <input
+                    value={editSeries} onChange={e => { setEditSeries(e.target.value); setIsDirty(true); setShowDonePrompt(false); }}
+                    placeholder="Series…"
+                    list="series-list"
+                    style={{ width: '100%', border: 'none', background: 'transparent', fontSize: 12, color: T.inkSoft, outline: 'none', marginBottom: 10, boxSizing: 'border-box' }}
                   />
                   {/* Rich toolbar */}
                   <div style={{ display: 'flex', gap: 3, alignItems: 'center', paddingBottom: 8, borderBottom: '1px solid rgba(26,17,8,0.08)', marginBottom: 10, flexWrap: 'wrap' }}>
@@ -349,9 +392,13 @@ function NotesSection({ session, churchId }) {
                 </div>
               </div>
             );
+                })}
+              </div>
+            );
           })}
-        </div>
-      )}
+        </>
+        );
+      })()}
     </div>
   );
 }
