@@ -116,13 +116,6 @@ const RESEARCH_STARTERS = [
 ];
 
 // ── Tiny shared icons ────────────────────────────────────────────────────────
-function BookmarkIcon({ filled, size = 13 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? T.gold : 'none'} stroke={filled ? T.gold : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-    </svg>
-  );
-}
 function ShareIcon({ size = 13 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -192,79 +185,6 @@ const DARK = {
 function convKey(userId, churchId) { return `church-pastoral-convs-${userId ?? 'anon'}-${churchId ?? 'x'}`; }
 function readConvs(userId, churchId) { try { return JSON.parse(localStorage.getItem(convKey(userId, churchId))) ?? []; } catch { return []; } }
 function writeConvs(userId, churchId, convs) { try { localStorage.setItem(convKey(userId, churchId), JSON.stringify(convs)); } catch {} }
-
-// ── Board modal ──────────────────────────────────────────────────────────────
-function BoardModal({ open, onClose, churchId, onReopenInAsk }) {
-  const [posts, setPosts]     = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (!open || !churchId) return;
-    setLoading(true);
-    supabase.from('posts').select('id, body, body_data, created_at')
-      .eq('scope', 'church').eq('scope_id', churchId)
-      .contains('body_data', { saved_from_ask: true })
-      .order('created_at', { ascending: false }).limit(30)
-      .then(({ data }) => { setPosts(data ?? []); setLoading(false); });
-  }, [open, churchId]);
-
-  useEffect(() => {
-    if (!open) return;
-    const h = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', h);
-    return () => window.removeEventListener('keydown', h);
-  }, [open, onClose]);
-
-  if (!open) return null;
-
-  async function remove(postId) {
-    await supabase.from('posts').delete().eq('id', postId);
-    setPosts((p) => p.filter((x) => x.id !== postId));
-  }
-
-  return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(44,24,16,0.55)', zIndex: 300, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '20px 16px', overflowY: 'auto', animation: 'fadeIn 0.15s ease' }}>
-      <div onClick={(e) => e.stopPropagation()} className="fade-up" style={{ background: T.parchment, borderRadius: 18, maxWidth: 680, width: '100%', margin: '40px 0', border: `1px solid ${T.line}`, boxShadow: '0 20px 60px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
-        <div style={{ padding: '18px 20px', borderBottom: `1px solid ${T.line}`, background: T.cream, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 3 }}>Church feed</div>
-            <div style={{ fontFamily: T.serif, fontSize: 22, color: T.ink, fontWeight: 600, letterSpacing: '-0.018em' }}>
-              {loading ? 'Your board' : posts.length === 0 ? 'Nothing saved yet' : `📌 ${posts.length} saved ${posts.length === 1 ? 'post' : 'posts'}`}
-            </div>
-          </div>
-          <button onClick={onClose} style={{ background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999, padding: '8px 14px', fontSize: 13, color: T.inkSoft, cursor: 'pointer' }}>Close</button>
-        </div>
-        {loading && <div style={{ padding: 40, textAlign: 'center', color: T.inkSoft, fontSize: 13 }}>Loading…</div>}
-        {!loading && posts.length === 0 && (
-          <div style={{ padding: '48px 32px', textAlign: 'center', color: T.inkMuted, fontFamily: T.serif, fontSize: 16, lineHeight: 1.6 }}>
-            Nothing saved yet.<br /><span style={{ fontSize: 14 }}>Hit "📌 Save to board" below any AI response.</span>
-          </div>
-        )}
-        {posts.map((p) => {
-          const q = p.body_data?.question ?? '';
-          const answer = p.body.replace(/^\*\*Q:.*?\*\*\n\n/, '');
-          return (
-            <div key={p.id} onClick={() => { onReopenInAsk({ question: q, answer }); onClose(); }}
-              style={{ padding: '16px 20px', borderBottom: `1px solid ${T.line}`, cursor: 'pointer', background: T.white }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = T.parchment)}
-              onMouseLeave={(e) => (e.currentTarget.style.background = T.white)}
-            >
-              {q && <div style={{ fontFamily: T.serif, fontSize: 14, fontWeight: 700, color: T.ink, marginBottom: 6 }}>{q.length > 120 ? q.slice(0, 120) + '…' : q}</div>}
-              <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.55, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{answer}</div>
-              <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 11, color: T.inkMuted }}>
-                  {new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  <span style={{ color: T.goldDark, marginLeft: 8 }}>Tap to reopen →</span>
-                </span>
-                <button onClick={(e) => { e.stopPropagation(); remove(p.id); }} style={{ background: 'none', border: 'none', fontSize: 12, color: T.inkMuted, cursor: 'pointer', padding: '2px 4px' }}>Remove</button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 // ── History modal ────────────────────────────────────────────────────────────
 function HistoryModal({ open, onClose, conversations, onLoad, onDelete, onNew }) {
@@ -344,7 +264,6 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
   const [error, setError]         = useState(null);
 
   // Action bar state
-  const [savedIdx, setSavedIdx]         = useState({});   // { [msgIdx]: true } — saved to board
   const [savedToNoteIdx, setSavedToNoteIdx] = useState({});
   const [saveError, setSaveError] = useState(null);
   const [copiedIdx, setCopiedIdx] = useState(null);
@@ -391,7 +310,6 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
 
   // UI
   const [menuOpen, setMenuOpen]       = useState(false);
-  const [boardOpen, setBoardOpen]     = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
 
   const bottomRef    = useRef(null);
@@ -497,22 +415,6 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
     }
   }
 
-  // ── Save to board ─────────────────────────────────────────────────────────
-  async function saveToBoard(assistantIdx) {
-    if (!churchId || !userId) return;
-    setSaveError(null);
-    const question = messages.slice(0, assistantIdx).reverse().find((m) => m.role === 'user')?.content ?? '';
-    const answer   = messages[assistantIdx]?.content ?? '';
-    if (!answer) return;
-    const body = question ? `**Q: ${question}**\n\n${answer}` : answer;
-    const { error: err } = await supabase.from('posts').insert({
-      author_id: userId, kind: 'text', scope: 'church', scope_id: churchId,
-      visibility: 'public', body, body_data: { saved_from_ask: true, question },
-    });
-    if (err) { console.error('saveToBoard:', err); setSaveError(err.message || 'Could not save.'); }
-    else setSavedIdx((prev) => ({ ...prev, [assistantIdx]: true }));
-  }
-
   // ── Save to notes ─────────────────────────────────────────────────────────
   async function saveToNotes(assistantIdx) {
     if (!churchId || !userId) return;
@@ -544,31 +446,21 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
 
   // ── Conversation management ───────────────────────────────────────────────
   function newConversation() {
-    setMessages([]); setInput(''); setError(null); setSavedIdx({}); setSavedToNoteIdx({}); setSaveError(null); setFlaggedMsgs(new Set());
+    setMessages([]); setInput(''); setError(null); setSavedToNoteIdx({}); setSaveError(null); setFlaggedMsgs(new Set());
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     setConvId(id); setConvTitle('New conversation');
   }
   function loadConversation(conv) {
     setConvId(conv.id); setConvTitle(conv.title);
-    setMessages(conv.messages); setSavedIdx({}); setSaveError(null); setError(null); setFlaggedMsgs(new Set());
+    setMessages(conv.messages); setSaveError(null); setError(null); setFlaggedMsgs(new Set());
   }
   function deleteConversation(id) {
     setHistory((prev) => { const next = prev.filter((c) => c.id !== id); writeConvs(userId, churchId, next); return next; });
   }
-  function reopenInAsk({ question, answer }) {
-    const msgs = [];
-    if (question) msgs.push({ role: 'user', content: question });
-    if (answer)   msgs.push({ role: 'assistant', content: answer });
-    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    setConvId(id); setConvTitle(question || 'Saved answer');
-    setMessages(msgs); setSavedIdx({}); setSaveError(null); setError(null); setFlaggedMsgs(new Set());
-  }
-
   const isEmpty = messages.length === 0;
 
   return (
     <>
-      <BoardModal open={boardOpen} onClose={() => setBoardOpen(false)} churchId={churchId} onReopenInAsk={reopenInAsk} />
       <HistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} conversations={history} onLoad={loadConversation} onDelete={deleteConversation} onNew={newConversation} />
 
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden', background: C.bg, color: C.text, transition: 'background 0.2s, color 0.2s', borderRadius: inSplit ? 0 : 8, padding: inSplit ? '12px 16px' : '12px 20px', position: 'relative' }}>
@@ -697,11 +589,6 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
                 <button onClick={() => { newConversation(); setMenuOpen(false); }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid ${C.border}`, padding: '13px 16px', fontSize: 14, color: C.text, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ fontSize: 16, lineHeight: 1 }}>+</span><span style={{ fontWeight: 700 }}>New conversation</span>
                 </button>
-                {churchId && (
-                  <button onClick={() => { setBoardOpen(true); setMenuOpen(false); }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', borderBottom: `1px solid ${C.border}`, padding: '13px 16px', fontSize: 14, color: C.text, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ fontSize: 15 }}>📌</span><span>Your board</span>
-                  </button>
-                )}
                 <button onClick={() => { setHistoryOpen(true); setMenuOpen(false); }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '13px 16px', fontSize: 14, color: C.text, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
                   <span style={{ fontSize: 15 }}>◷</span><span>Conversation history</span>
                 </button>
@@ -775,8 +662,6 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
             const isStreaming  = isAssistant && m.content === '' && busy;
             const isLast       = i === messages.length - 1;
             const canAct       = isAssistant && !isStreaming && m.content.length > 0 && !(isLast && busy);
-            const saved        = !!savedIdx[i];
-
             return (
               <div key={i} style={{ marginBottom: 20, display: 'flex', flexDirection: 'column', alignItems: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
                 {m.role === 'user' ? (
@@ -795,18 +680,6 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
                     {/* ── Action bar ── */}
                     {canAct && (
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 2, marginTop: 8, flexWrap: 'wrap' }}>
-
-                        {/* Save to board */}
-                        {churchId && (
-                          <ActionBtn
-                            onClick={() => saveToBoard(i)}
-                            title={saved ? 'Saved to board' : 'Save to board'}
-                            active={saved}
-                          >
-                            <BookmarkIcon filled={saved} size={13} />
-                            {saved ? 'Saved' : 'Save'}
-                          </ActionBtn>
-                        )}
 
                         {/* Save to notes */}
                         {churchId && (
