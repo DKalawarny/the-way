@@ -48,6 +48,7 @@ function sourceLabel(source) {
 }
 
 function UserNoteCard({ note, onDelete, onSave }) {
+  const [expanded,  setExpanded]  = useState(false);
   const [editing,   setEditing]   = useState(false);
   const [draftBody, setDraftBody] = useState(note.body ?? '');
   const [draftTitle, setDraftTitle] = useState(note.title ?? '');
@@ -158,7 +159,7 @@ function UserNoteCard({ note, onDelete, onSave }) {
             </div>
           </>
         ) : (
-          <>
+          <div onClick={() => !editing && setExpanded((v) => !v)} style={{ cursor: 'pointer' }}>
             {note.title && (
               <div style={{ fontFamily: T.serif, fontSize: 14, fontWeight: 600, color: T.ink, marginBottom: 6 }}>
                 {note.title}
@@ -167,11 +168,14 @@ function UserNoteCard({ note, onDelete, onSave }) {
             <div style={{
               fontFamily: T.display, fontSize: 14, color: T.inkSoft,
               lineHeight: 1.6, whiteSpace: 'pre-wrap',
-              display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+              ...(expanded ? {} : { display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical', overflow: 'hidden' }),
             }}>
               {note.body}
             </div>
-          </>
+            {!expanded && note.body?.length > 300 && (
+              <div style={{ fontSize: 12, color: T.gold, marginTop: 4 }}>Tap to read more</div>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -286,7 +290,14 @@ function NoteCard({ note, onOpenBible, onAskVerse, onSave, onDelete }) {
             </div>
           </>
         ) : (
-          <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+          <div
+            onClick={() => setExpanded((v) => !v)}
+            style={{
+              fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.65,
+              whiteSpace: 'pre-wrap', cursor: 'pointer',
+              ...(expanded ? {} : { display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden' }),
+            }}
+          >
             {note.note_text}
           </div>
         )}
