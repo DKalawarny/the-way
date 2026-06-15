@@ -53,10 +53,9 @@ export default function ChurchModeShell({
   const isVisitorView = currentSubpage === 'public';
 
   return (
-    <div style={{ height: 'calc(100vh - var(--global-header-h, 0px))', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: T.cream }}>
+    <div style={{ height: 'calc(100vh - var(--global-header-h, 0px))', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden', background: T.cream }}>
       <div style={{
-        flexShrink: 0,
-        position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 20,
+        zIndex: 20,
         background: '#1e1208',
         borderBottom: 'none',
         padding: '14px 20px 0',
@@ -120,8 +119,8 @@ export default function ChurchModeShell({
 
       {/* Public/visitor view renders full-bleed — ChurchPage owns its own layout */}
       {isVisitorView || fullBleed
-        ? <div style={{ flex: 1, minHeight: 0, overflow: fullBleed ? 'hidden' : 'auto', paddingBottom: fullBleed ? 0 : 80 }}>{children}</div>
-        : <div style={{ flex: 1, overflowY: 'auto', maxWidth: bodyMaxWidth, margin: '0 auto', padding: '20px 20px 80px', width: '100%', boxSizing: 'border-box' }}>{children}</div>
+        ? <div style={{ minHeight: 0, overflow: fullBleed ? 'hidden' : 'auto', paddingBottom: fullBleed ? 0 : 80 }}>{children}</div>
+        : <div style={{ overflowY: 'auto', maxWidth: bodyMaxWidth, margin: '0 auto', padding: '20px 20px 80px', width: '100%', boxSizing: 'border-box' }}>{children}</div>
       }
     </div>
   );
