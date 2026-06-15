@@ -331,8 +331,15 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
   const [modePickerOpen, setModePickerOpen] = useState(false);
 
   function setMode(id) {
-    setPersonType(id);
-    localStorage.setItem(`church_ask_mode_${userId}`, id);
+    if (id === '__research__') {
+      setResearchMode(true);
+      localStorage.setItem('church_ask_research', '1');
+      newConversation();
+    } else {
+      setPersonType(id);
+      localStorage.setItem(`church_ask_mode_${userId}`, id);
+      if (researchMode) { setResearchMode(false); localStorage.setItem('church_ask_research', '0'); newConversation(); }
+    }
     setModePickerOpen(false);
   }
 
@@ -473,28 +480,10 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
 
-            {/* ── Research mode toggle ── */}
-            <button
-              onClick={() => { toggleResearch(); newConversation(); }}
-              title={researchMode ? 'Switch to pastoral mode' : 'Switch to sermon research mode — multi-source commentary briefs'}
-              style={{
-                background: researchMode ? 'rgba(184,115,58,0.15)' : C.card,
-                border: `1.5px solid ${researchMode ? T.gold : C.border}`,
-                borderRadius: 999, padding: '4px 12px',
-                fontSize: 12, fontWeight: researchMode ? 700 : 400,
-                color: researchMode ? T.goldDark : C.soft,
-                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5,
-                transition: 'all 0.15s',
-              }}
-            >
-              📚 {researchMode ? 'Research' : 'Research'}
-              {researchMode && <span style={{ fontSize: 9, color: T.gold, marginLeft: 1 }}>●</span>}
-            </button>
-
-            {/* ── Switch Mode button — hidden in research mode ── */}
-            {!researchMode && <div style={{ position: 'relative' }}>
+            {/* ── Switch Mode button ── */}
+            <div style={{ position: 'relative' }}>
               {(() => {
-                const person = PERSON_TYPES.find((p) => p.id === personType);
+                const person = researchMode ? { emoji: '📚', label: 'Research' } : PERSON_TYPES.find((p) => p.id === personType);
                 return (
                   <button
                     onClick={() => setModePickerOpen((v) => !v)}
@@ -529,7 +518,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                     {PERSON_TYPES.map((pt) => {
-                      const active = pt.id === personType;
+                      const active = !researchMode && pt.id === personType;
                       return (
                         <button
                           key={pt.id}
@@ -551,10 +540,33 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
                         </button>
                       );
                     })}
+                    {/* Research card */}
+                    {(() => {
+                      const active = researchMode;
+                      return (
+                        <button
+                          onClick={() => setMode('__research__')}
+                          onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'rgba(184,115,58,0.06)'; }}
+                          onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = T.parchment; }}
+                          style={{
+                            textAlign: 'left', cursor: 'pointer',
+                            background: active ? 'rgba(184,115,58,0.10)' : T.parchment,
+                            border: `1.5px solid ${active ? T.gold : 'transparent'}`,
+                            borderRadius: 12, padding: '10px 10px',
+                            transition: 'background 0.12s', position: 'relative',
+                          }}
+                        >
+                          {active && <span style={{ position: 'absolute', top: 7, right: 9, fontSize: 10, color: T.goldDark, fontWeight: 700 }}>✓</span>}
+                          <div style={{ fontSize: 20, marginBottom: 5, lineHeight: 1 }}>📚</div>
+                          <div style={{ fontSize: 12.5, fontWeight: 700, color: active ? T.goldDark : T.ink, marginBottom: 3 }}>Sermon Research</div>
+                          <div style={{ fontSize: 10.5, color: T.inkMuted, lineHeight: 1.45 }}>Calvin, Wesley, N.T. Wright, Church Fathers — named scholars, not a blend.</div>
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
-            </div>}
+            </div>
 
           <div style={{ position: 'relative' }}>
             <button onClick={() => setMenuOpen((v) => !v)} style={{ background: menuOpen ? 'rgba(184,115,58,0.18)' : 'transparent', border: `1px solid ${menuOpen ? T.gold : C.border}`, color: C.soft, borderRadius: 999, padding: '5px 11px', fontSize: 16, cursor: 'pointer', lineHeight: 1 }}>⋮</button>
