@@ -374,7 +374,12 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse }) {
   }
 
   const q = query.toLowerCase();
-  const filteredUser = userNotes.filter((n) =>
+
+  // Verse bookmarks (source='verse') belong in book sections, not "Saved notes"
+  const verseBookmarks = userNotes.filter((n) => n.source === 'verse');
+  const savedNotes     = userNotes.filter((n) => n.source !== 'verse');
+
+  const filteredSaved = savedNotes.filter((n) =>
     !q || n.title?.toLowerCase().includes(q) || n.body?.toLowerCase().includes(q)
   );
   const filteredVerse = verseNotes.filter((n) =>
@@ -383,18 +388,29 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse }) {
     n.note_text?.toLowerCase().includes(q) ||
     n.verse_text?.toLowerCase().includes(q)
   );
+  const filteredBookmarks = verseBookmarks.filter((n) =>
+    !q || n.title?.toLowerCase().includes(q) || n.body?.toLowerCase().includes(q)
+  );
 
-  // Group verse notes by book
+  // Group bible_notes + verse bookmarks by book
   const grouped = [];
-  const bookMap = {};
+  const bookMap = {}; // bookName → { notes: bible_note[], bookmarks: user_note[] }
+
   for (const note of filteredVerse) {
     const key = note.book_name ?? 'Unknown';
-    if (!bookMap[key]) { bookMap[key] = []; grouped.push(key); }
-    bookMap[key].push(note);
+    if (!bookMap[key]) { bookMap[key] = { notes: [], bookmarks: [] }; grouped.push(key); }
+    bookMap[key].notes.push(note);
+  }
+  for (const bm of filteredBookmarks) {
+    const bookName = BOOK_ORDER.find((b) => bm.title?.startsWith(b)) ?? 'Unknown';
+    if (!bookMap[bookName]) { bookMap[bookName] = { notes: [], bookmarks: [] }; grouped.push(bookName); }
+    bookMap[bookName].bookmarks.push(bm);
   }
   grouped.sort((a, b) => bookRank(a) - bookRank(b));
+  const parseChVerse = (title) => { const m = title?.match(/(\d+):(\d+)$/); return m ? [parseInt(m[1]), parseInt(m[2])] : [0, 0]; };
   for (const key of grouped) {
-    bookMap[key].sort((a, b) => a.chapter - b.chapter || a.verse - b.verse);
+    bookMap[key].notes.sort((a, b) => a.chapter - b.chapter || a.verse - b.verse);
+    bookMap[key].bookmarks.sort((a, b) => { const [ac, av] = parseChVerse(a.title); const [bc, bv] = parseChVerse(b.title); return ac - bc || av - bv; });
   }
 
   const totalCount = verseNotes.length + userNotes.length;
@@ -518,13 +534,13 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse }) {
               Tap "+ New note" to write one, save an AI response<br />from Ask or Bible chat, or tap ✏ Note on any verse.
             </div>
           </div>
-        ) : filteredUser.length === 0 && filteredVerse.length === 0 ? (
+        ) : filteredSaved.length === 0 && filteredVerse.length === 0 && filteredBookmarks.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: T.inkMuted, fontFamily: T.serif, fontSize: 15 }}>No results for "{query}"</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
 
-            {/* Saved + manual notes */}
-            {filteredUser.length > 0 && (
+            {/* Saved + manual notes (non-verse) */}
+            {filteredSaved.length > 0 && (
               <div>
                 <div style={{
                   fontFamily: T.serif, fontSize: 12, fontWeight: 700,
@@ -534,7 +550,7 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse }) {
                   Saved notes
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {filteredUser.map((note) => (
+                  {filteredSaved.map((note) => (
                     <UserNoteCard
                       key={note.id}
                       note={note}
@@ -546,7 +562,7 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse }) {
               </div>
             )}
 
-            {/* Verse notes grouped by book */}
+            {/* Verse notes + verse bookmarks grouped by book */}
             {grouped.map((bookName) => (
               <div key={bookName}>
                 <div style={{
@@ -557,7 +573,7 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse }) {
                   {bookName}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {bookMap[bookName].map((note) => (
+                  {bookMap[bookName].notes.map((note) => (
                     <NoteCard
                       key={note.id}
                       note={note}
@@ -565,6 +581,14 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse }) {
                       onAskVerse={onAskVerse}
                       onSave={(id, text) => setVerseNotes((prev) => prev.map((n) => n.id === id ? { ...n, note_text: text, updated_at: new Date().toISOString() } : n))}
                       onDelete={(id) => setVerseNotes((prev) => prev.filter((n) => n.id !== id))}
+                    />
+                  ))}
+                  {bookMap[bookName].bookmarks.map((bm) => (
+                    <UserNoteCard
+                      key={bm.id}
+                      note={bm}
+                      onDelete={(id) => setUserNotes((prev) => prev.filter((n) => n.id !== id))}
+                      onSave={(id, body, title) => setUserNotes((prev) => prev.map((n) => n.id === id ? { ...n, body, title, updated_at: new Date().toISOString() } : n))}
                     />
                   ))}
                 </div>
