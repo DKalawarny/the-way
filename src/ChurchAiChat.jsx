@@ -358,14 +358,29 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
   const inputRef     = useRef(null);
   const scrollRef    = useRef(null);
   const userScrolled = useRef(false);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
 
   useEffect(() => {
-    // Only auto-scroll when a new message is added, not during streaming chunks
-    if (messages.length > 0) {
-      userScrolled.current = false;
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = scrollRef.current;
+    if (!el) return;
+    if (!userScrolled.current) {
+      el.scrollTo({ top: el.scrollHeight, behavior: busy ? 'instant' : 'smooth' });
     }
-  }, [messages.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [messages, busy]);
+
+  function handleScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    userScrolled.current = !nearBottom;
+    setShowScrollBtn(!nearBottom);
+  }
+
+  function scrollToBottom() {
+    userScrolled.current = false;
+    setShowScrollBtn(false);
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+  }
 
   // Persist conversation to localStorage
   useEffect(() => {
@@ -417,7 +432,6 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
           if (ev === 'text') {
             assistantContent += payload.delta;
             setMessages((m) => { const c = m.slice(); c[c.length - 1] = { role: 'assistant', content: c[c.length - 1].content + payload.delta }; return c; });
-            if (!userScrolled.current) bottomRef.current?.scrollIntoView({ behavior: 'instant' });
           } else if (ev === 'error') throw new Error(payload.message || 'stream error');
         }
       }
@@ -497,7 +511,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
       <BoardModal open={boardOpen} onClose={() => setBoardOpen(false)} churchId={churchId} onReopenInAsk={reopenInAsk} />
       <HistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} conversations={history} onLoad={loadConversation} onDelete={deleteConversation} onNew={newConversation} />
 
-      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)', minHeight: 400, background: C.bg, color: C.text, transition: 'background 0.2s, color 0.2s', borderRadius: 8, padding: '12px 20px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)', minHeight: 400, background: C.bg, color: C.text, transition: 'background 0.2s, color 0.2s', borderRadius: 8, padding: '12px 20px', position: 'relative' }}>
 
         {/* ── Header ── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10, borderBottom: `1px solid ${C.border}`, marginBottom: 4, flexShrink: 0 }}>
@@ -635,13 +649,8 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
         {/* ── Messages ── */}
         <div
           ref={scrollRef}
-          onScroll={() => {
-            const el = scrollRef.current;
-            if (!el) return;
-            const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-            userScrolled.current = !atBottom;
-          }}
-          style={{ flex: 1, overflowY: 'auto', padding: '12px 0' }}
+          onScroll={handleScroll}
+          style={{ flex: 1, overflowY: 'auto', padding: '12px 0', position: 'relative' }}
         >
           {isEmpty && !aiUsage.atLimit && (
             <div style={{ textAlign: 'center', padding: '24px 0 32px' }}>
@@ -833,6 +842,21 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
           {saveError && <div style={{ fontSize: 12, color: '#A53F2B', padding: '6px 0', textAlign: 'center' }}>{saveError}</div>}
           <div ref={bottomRef} />
         </div>
+
+        {/* ── Scroll to bottom button ── */}
+        {showScrollBtn && (
+          <button
+            onClick={scrollToBottom}
+            style={{
+              position: 'absolute', bottom: 90, left: '50%', transform: 'translateX(-50%)',
+              background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+              padding: '7px 16px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(26,17,8,0.25)', zIndex: 10, whiteSpace: 'nowrap',
+            }}
+          >
+            {busy ? '↓ Still loading' : '↓ Scroll to bottom'}
+          </button>
+        )}
 
         {/* ── Input ── */}
         {aiUsage.atLimit ? (
