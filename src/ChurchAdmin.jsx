@@ -2422,7 +2422,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
           />
         )}
         {tab === 'ask' && (
-          <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
+          <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative', alignItems: 'stretch' }}>
             {/* Chat — takes remaining width */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <ChurchAiChat
@@ -2437,7 +2437,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
             {/* Desktop: Scholar's Desk panel */}
             {isWide && (
               <Suspense fallback={null}>
-                <DeskPanel session={session} churchId={churchId} />
+                <DeskPanel session={session} profile={profile} churchId={churchId} />
               </Suspense>
             )}
 
@@ -2458,6 +2458,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
                   <Suspense fallback={null}>
                     <DeskPanel
                       session={session}
+                      profile={profile}
                       churchId={churchId}
                       isMobile
                       initialTab={mobileDeskPanel}
