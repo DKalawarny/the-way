@@ -349,12 +349,18 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
   const [boardOpen, setBoardOpen]     = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
 
-  const bottomRef = useRef(null);
-  const inputRef  = useRef(null);
+  const bottomRef    = useRef(null);
+  const inputRef     = useRef(null);
+  const scrollRef    = useRef(null);
+  const userScrolled = useRef(false);
 
   useEffect(() => {
-    if (messages.length > 0) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    // Only auto-scroll when a new message is added, not during streaming chunks
+    if (messages.length > 0) {
+      userScrolled.current = false;
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Persist conversation to localStorage
   useEffect(() => {
@@ -406,6 +412,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
           if (ev === 'text') {
             assistantContent += payload.delta;
             setMessages((m) => { const c = m.slice(); c[c.length - 1] = { role: 'assistant', content: c[c.length - 1].content + payload.delta }; return c; });
+            if (!userScrolled.current) bottomRef.current?.scrollIntoView({ behavior: 'instant' });
           } else if (ev === 'error') throw new Error(payload.message || 'stream error');
         }
       }
@@ -621,7 +628,16 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan })
         </div>
 
         {/* ── Messages ── */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 0' }}>
+        <div
+          ref={scrollRef}
+          onScroll={() => {
+            const el = scrollRef.current;
+            if (!el) return;
+            const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+            userScrolled.current = !atBottom;
+          }}
+          style={{ flex: 1, overflowY: 'auto', padding: '12px 0' }}
+        >
           {isEmpty && !aiUsage.atLimit && (
             <div style={{ textAlign: 'center', padding: '24px 0 32px' }}>
               <div style={{ marginBottom: 10 }}><KinwoveStar size={22} /></div>
