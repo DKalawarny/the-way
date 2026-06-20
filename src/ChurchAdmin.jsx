@@ -11,7 +11,7 @@ import FlagPicker from './FlagPicker.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 import { usePlan, CHURCH_BASE_MEMBER_LIMIT } from './usePlan.js';
-import { TrialBanner, UpgradeWall } from './PlanGate.jsx';
+import { TrialBanner, UpgradeWall, startChurchCheckout } from './PlanGate.jsx';
 
 const PastorDashboard = lazy(() => import('./PastorDashboard.jsx'));
 const SermonComposer  = lazy(() => import('./SermonComposer.jsx'));
@@ -1195,6 +1195,7 @@ function InviteModal({ member, existingRoles, pendingInvites, onClose, onSubmit 
 }
 
 function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, onShowQr }) {
+  const [upgradeBusy, setUpgradeBusy] = useState(false);
   const [members, setMembers]   = useState([]);
   const [rolesByUser, setRolesByUser] = useState({});  // { user_id: [role rows] }
   const [pendingInvites, setPendingInvites] = useState([]);  // [{...invite, user_profile}]
@@ -1499,19 +1500,26 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
                   : 'Your congregation is growing. Upgrade to Church Pro for unlimited members.'}
               </div>
             </div>
-            <a
-              href={`mailto:hello@kinwove.app?subject=${encodeURIComponent('Upgrade to Church Pro')}`}
+            <button
+              onClick={async () => {
+                if (upgradeBusy) return;
+                setUpgradeBusy(true);
+                const { error } = await startChurchCheckout(session, 'church_pro');
+                if (error) setUpgradeBusy(false);
+              }}
+              disabled={upgradeBusy}
               style={{
                 background: atLimit
                   ? 'linear-gradient(135deg, #A53F2B 0%, #7d2e1e 100%)'
                   : `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
-                color: '#FDF8EE', borderRadius: 999,
-                padding: '8px 16px', fontSize: 13, fontWeight: 600,
+                color: '#FDF8EE', border: 'none', borderRadius: 999,
+                padding: '8px 16px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
+                cursor: upgradeBusy ? 'default' : 'pointer', opacity: upgradeBusy ? 0.7 : 1,
                 textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap',
               }}
             >
-              Upgrade to Pro →
-            </a>
+              {upgradeBusy ? 'Opening…' : 'Upgrade to Pro →'}
+            </button>
           </div>
         );
       })()}
@@ -2433,12 +2441,12 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
       fullBleed={tab === 'bible' || tab === 'ask'}
     >
       {trialExpired && (
-        <UpgradeWall onBack={onBack} />
+        <UpgradeWall onBack={onBack} session={session} />
       )}
       <Suspense fallback={<div style={{ color: T.inkMuted, fontFamily: T.serif, padding: 40, textAlign: 'center' }}>Loading…</div>}>
         {!trialExpired && plan === 'trial' && daysLeft <= 14 && (
           <div style={{ padding: '16px 16px 0' }}>
-            <TrialBanner daysLeft={daysLeft} />
+            <TrialBanner daysLeft={daysLeft} session={session} />
           </div>
         )}
         {tab === 'overview' && (

@@ -1,18 +1,47 @@
+import { useState } from 'react';
 import { T } from './theme.js';
 import { CHURCH_BASE_PRICE, CHURCH_PRO_PRICE, UPGRADE_EMAIL, TRIAL_DAYS } from './usePlan.js';
 import { TRIAL_MSG_LIMIT } from './useSermonAiUsage.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
-const subject = encodeURIComponent('kinwove — Church Pro upgrade');
-const body    = encodeURIComponent('Hi, I would like to upgrade my church to kinwove Pro.');
-const href    = `mailto:${UPGRADE_EMAIL}?subject=${subject}&body=${body}`;
+// Starts a Stripe Checkout for a church plan ('church_base' | 'church_pro').
+// Mirrors UpgradeModal.startCheckout — the create-checkout edge function +
+// stripe-webhook already handle church plans (sets pastor's profiles.plan and
+// marks the church verified). Redirects on success; returns { error } on failure.
+export async function startChurchCheckout(session, plan) {
+  if (!session?.user) return { error: 'Please sign in again.' };
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          price_plan: plan,
+          user_id:    session.user.id,
+          user_email: session.user.email,
+          return_url: window.location.origin,
+        }),
+      }
+    );
+    const data = await res.json();
+    if (data.url) { window.location.href = data.url; return {}; }
+    return { error: data.error ?? 'Something went wrong. Try again.' };
+  } catch {
+    return { error: 'Could not reach the payment service. Try again.' };
+  }
+}
 
 /* ── Trial banner ────────────────────────────────────────────────────────────
    Shown at the top of ChurchAdmin while the trial is active.
    Designed to be noticed without nagging — progress bar communicates urgency
    visually, copy frames it around the congregation (not the product).
 ── */
-export function TrialBanner({ daysLeft }) {
+export function TrialBanner({ daysLeft, session }) {
+  const [busy, setBusy] = useState(false);
   const urgent  = daysLeft <= 7;
   const pct     = Math.max(0, Math.min(100, ((TRIAL_DAYS - daysLeft) / TRIAL_DAYS) * 100));
 
@@ -62,20 +91,30 @@ export function TrialBanner({ daysLeft }) {
             </div>
           </div>
 
-          <a
-            href={href}
+          <button
+            onClick={async () => {
+              if (busy) return;
+              setBusy(true);
+              const { error } = await startChurchCheckout(session, 'church_base');
+              if (error) setBusy(false); // redirect happens on success; reset to allow retry
+            }}
+            disabled={busy}
             style={{
               background: urgent
                 ? 'linear-gradient(135deg, #A53F2B 0%, #7d2e1e 100%)'
                 : `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
               color: '#FDF8EE',
+              border: 'none',
               borderRadius: 999,
               padding: '9px 20px',
               fontSize: 13,
               fontWeight: 600,
+              fontFamily: 'inherit',
               textDecoration: 'none',
               flexShrink: 0,
               display: 'inline-block',
+              cursor: busy ? 'default' : 'pointer',
+              opacity: busy ? 0.7 : 1,
               boxShadow: urgent
                 ? '0 3px 12px rgba(165,63,43,0.3)'
                 : '0 3px 12px rgba(184,115,58,0.3)',
@@ -83,8 +122,8 @@ export function TrialBanner({ daysLeft }) {
               whiteSpace: 'nowrap',
             }}
           >
-            {urgent ? 'Upgrade now' : `Keep my tools · from ${CHURCH_BASE_PRICE}`}
-          </a>
+            {busy ? 'Opening…' : urgent ? 'Upgrade now' : `Keep my tools · from ${CHURCH_BASE_PRICE}`}
+          </button>
         </div>
 
         {/* Progress bar: shows how much of the trial has elapsed */}
@@ -113,7 +152,9 @@ export function TrialBanner({ daysLeft }) {
    dark editorial header (mission/emotional) → light pricing section (rational).
    CTA is gold and prominent. Copy frames around the congregation, not the plan.
 ── */
-export function UpgradeWall({ onBack }) {
+export function UpgradeWall({ onBack, session }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
   const features = [
     { icon: '📊', text: 'Pastor dashboard & congregation insights' },
     { icon: '✍️', text: 'AI sermon composer — draft a full sermon in minutes' },
@@ -260,8 +301,15 @@ export function UpgradeWall({ onBack }) {
           </div>
 
           {/* CTA */}
-          <a
-            href={href}
+          <button
+            onClick={async () => {
+              if (busy) return;
+              setErr(null);
+              setBusy(true);
+              const { error } = await startChurchCheckout(session, 'church_base');
+              if (error) { setErr(error); setBusy(false); }
+            }}
+            disabled={busy}
             style={{
               display: 'block',
               width: '100%',
@@ -272,7 +320,9 @@ export function UpgradeWall({ onBack }) {
               padding: '16px 20px',
               fontSize: 16,
               fontWeight: 600,
-              cursor: 'pointer',
+              fontFamily: 'inherit',
+              cursor: busy ? 'default' : 'pointer',
+              opacity: busy ? 0.7 : 1,
               textDecoration: 'none',
               boxSizing: 'border-box',
               textAlign: 'center',
@@ -281,18 +331,18 @@ export function UpgradeWall({ onBack }) {
               marginBottom: 8,
             }}
           >
-            Keep my church active →
-          </a>
+            {busy ? 'Opening checkout…' : 'Keep my church active →'}
+          </button>
 
           {/* Reassurance */}
           <div style={{
             textAlign: 'center',
             fontSize: 12,
-            color: T.inkMuted,
+            color: err ? T.error : T.inkMuted,
             lineHeight: 1.6,
             marginBottom: 16,
           }}>
-            We'll confirm by email. Usually live within minutes.
+            {err ?? 'Secure checkout through Stripe. Cancel any time.'}
           </div>
 
           <button
