@@ -155,6 +155,7 @@ export function TrialBanner({ daysLeft, session }) {
 export function UpgradeWall({ onBack, session }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
+  const [selectedPlan, setSelectedPlan] = useState('church_base');
   const features = [
     { icon: '📊', text: 'Pastor dashboard & congregation insights' },
     { icon: '✍️', text: 'AI sermon composer — draft a full sermon in minutes' },
@@ -259,26 +260,45 @@ export function UpgradeWall({ onBack, session }) {
           borderRadius: '0 0 20px 20px',
           padding: '28px 32px 32px',
         }}>
-          {/* Pricing tiers */}
+          {/* Pricing tiers — tap to choose which plan to buy */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 22 }}>
             {[
-              { label: 'Church Base', price: CHURCH_BASE_PRICE, detail: 'Up to 150 members' },
-              { label: 'Church Pro',  price: CHURCH_PRO_PRICE,  detail: 'Unlimited congregation' },
-            ].map((tier) => (
-              <div key={tier.label} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 14px',
-                background: 'rgba(184,115,58,0.04)',
-                border: '1px solid rgba(184,115,58,0.12)',
-                borderRadius: 10,
-              }}>
-                <div>
-                  <div style={{ fontSize: 13.5, fontWeight: 600, color: T.ink }}>{tier.label}</div>
-                  <div style={{ fontSize: 12, color: T.inkMuted }}>{tier.detail}</div>
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: T.goldDark, flexShrink: 0 }}>{tier.price}</div>
-              </div>
-            ))}
+              { plan: 'church_base', label: 'Church Base', price: CHURCH_BASE_PRICE, detail: 'Up to 150 members' },
+              { plan: 'church_pro',  label: 'Church Pro',  price: CHURCH_PRO_PRICE,  detail: 'Unlimited congregation' },
+            ].map((tier) => {
+              const selected = selectedPlan === tier.plan;
+              return (
+                <button
+                  key={tier.label}
+                  onClick={() => setSelectedPlan(tier.plan)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                    width: '100%', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+                    padding: '12px 14px',
+                    background: selected ? 'rgba(184,115,58,0.1)' : 'rgba(184,115,58,0.04)',
+                    border: `1.5px solid ${selected ? T.gold : 'rgba(184,115,58,0.12)'}`,
+                    borderRadius: 10,
+                    transition: 'border-color 0.12s ease, background 0.12s ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}>
+                    {/* Radio */}
+                    <div style={{
+                      width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                      border: `1.5px solid ${selected ? T.gold : T.line}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {selected && <div style={{ width: 9, height: 9, borderRadius: '50%', background: T.gold }} />}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 600, color: T.ink }}>{tier.label}</div>
+                      <div style={{ fontSize: 12, color: T.inkMuted }}>{tier.detail}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: T.goldDark, flexShrink: 0 }}>{tier.price}</div>
+                </button>
+              );
+            })}
           </div>
           <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 22 }}>
             Cancel any time. No contracts. No lock-in.
@@ -300,13 +320,13 @@ export function UpgradeWall({ onBack, session }) {
             ))}
           </div>
 
-          {/* CTA */}
+          {/* CTA — buys the selected tier */}
           <button
             onClick={async () => {
               if (busy) return;
               setErr(null);
               setBusy(true);
-              const { error } = await startChurchCheckout(session, 'church_base');
+              const { error } = await startChurchCheckout(session, selectedPlan);
               if (error) { setErr(error); setBusy(false); }
             }}
             disabled={busy}
@@ -331,7 +351,9 @@ export function UpgradeWall({ onBack, session }) {
               marginBottom: 8,
             }}
           >
-            {busy ? 'Opening checkout…' : 'Keep my church active →'}
+            {busy
+              ? 'Opening checkout…'
+              : `Continue with ${selectedPlan === 'church_pro' ? 'Church Pro' : 'Church Base'} →`}
           </button>
 
           {/* Reassurance */}
