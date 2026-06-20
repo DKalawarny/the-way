@@ -56,6 +56,7 @@ export default function ChurchModeShell({
     <div style={{ height: 'calc(100vh - var(--global-header-h, 0px))', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden', background: T.cream }}>
       <div style={{
         zIndex: 20,
+        minWidth: 0,
         background: '#1e1208',
         borderBottom: 'none',
         padding: '14px 20px 0',
@@ -118,7 +119,7 @@ export default function ChurchModeShell({
       </div>
 
       {/* Public/visitor view renders full-bleed — ChurchPage owns its own layout */}
-      <div style={{ minHeight: 0, overflow: fullBleed ? 'hidden' : 'auto', paddingBottom: (!fullBleed && isVisitorView) ? 80 : 0 }}>
+      <div style={{ minWidth: 0, minHeight: 0, overflow: fullBleed ? 'hidden' : 'auto', paddingBottom: (!fullBleed && isVisitorView) ? 80 : 0 }}>
         {isVisitorView || fullBleed
           ? children
           : <div style={{ maxWidth: bodyMaxWidth, margin: '0 auto', padding: '20px 20px 80px', width: '100%', boxSizing: 'border-box' }}>{children}</div>

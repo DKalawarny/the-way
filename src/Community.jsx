@@ -1971,7 +1971,6 @@ useEffect(() => {
       }}>
         {[
           { id: 'posts',      label: '📝 Posts'     },
-          { id: 'following',  label: '👥 Following'  },
           { id: 'prayers',    label: '🙏 Prayers'   },
           { id: 'discover',   label: <><KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 4, flexShrink: 0 }} /> Discover</> },
           { id: 'milestones', label: <><KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 4, flexShrink: 0 }} /> Milestones</> },
@@ -2331,62 +2330,6 @@ useEffect(() => {
                       </Fragment>
                     ));
                   })()}
-                </div>
-              </>
-            );
-          })()}
-
-          {/* ── Following feed ── */}
-          {feedType === 'following' && (() => {
-            if (following.size === 0) {
-              return (
-                <EmptyState
-                  icon="👥"
-                  title="Nobody followed yet."
-                  body="Follow people from the Posts feed and their posts will appear here."
-                />
-              );
-            }
-            const followed = posts
-              .filter((p) => following.has(p.author_id))
-              .filter((p) => !blockedIds.includes(p.author_id));
-            return (
-              <>
-                {loading && <div style={{ textAlign: 'center', color: T.inkMuted, padding: 40, fontFamily: T.serif, fontSize: 16 }}>Loading…</div>}
-                {!loading && followed.length === 0 && (
-                  <EmptyState
-                    icon="👥"
-                    title="Nothing from your following yet."
-                    body="The people you follow haven't posted publicly. Check back soon."
-                  />
-                )}
-                <div className="stagger-in">
-                  {followed.map((p, i) => (
-                    <Fragment key={`post:${p.id}`}>
-                      <PostCard
-                        post={p}
-                        index={Math.min(i, 6)}
-                        session={session}
-                        currentUserId={session?.user?.id}
-                        userProfile={profile}
-                        userGroup={userGroup}
-                        onReact={handleReact}
-                        onReplySubmit={handleReply}
-                        onRepost={handleRepost}
-                        onSendDM={onSendDM}
-                        isFollowing={true}
-                        onFollow={handleFollow}
-                        onViewProfile={onViewProfile}
-                        tabColor={TAB_COLOR}
-                        tabText={TAB_TEXT}
-                        isSaved={savedPostIds.has(p.id)}
-                        onSaveToggle={session ? handleSaveToggle : undefined}
-                        isAuthorBlocked={blockedIds.includes(p.author_id)}
-                        onBlockAuthor={session ? handleBlockAuthor : undefined}
-                      />
-                      {i < followed.length - 1 && <CardSeparator />}
-                    </Fragment>
-                  ))}
                 </div>
               </>
             );
