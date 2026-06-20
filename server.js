@@ -3210,7 +3210,7 @@ if (process.env.NODE_ENV !== 'development') {
   <meta property="og:url" content="https://www.kinwove.com/conversations" />
   <meta property="og:title" content="AI Bible Study Conversations — kinwove" />
   <meta property="og:description" content="Browse real conversations from kinwove's AI Bible companion — questions about scripture, faith, doubt, and Christian living answered honestly." />
-  <meta property="og:image" content="https://www.kinwove.com/og-image.png" />
+  <meta property="og:image" content="https://www.kinwove.com/og-image.png?v=20260619" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="AI Bible Study Conversations — kinwove" />
   <meta name="twitter:description" content="Real questions about faith answered honestly. Browse publicly shared kinwove AI conversations." />
@@ -3374,7 +3374,7 @@ ${entries.join('\n')}
       // Image: YouTube thumbnail (i.ytimg.com CDN, always exists) > default OG
       const ogImage = ytId
         ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`
-        : 'https://www.kinwove.com/og-image.png';
+        : 'https://www.kinwove.com/og-image.png?v=20260619';
       const ogImageW = ytId ? '480' : '1200';
       const ogImageH = ytId ? '360' : '630';
 

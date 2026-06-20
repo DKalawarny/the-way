@@ -20,10 +20,10 @@
   <g transform='translate(355,148) scale(6.167) translate(-12,-12)' filter='url(#sg)'>
     <path fill='#C07838' d='M12 1 L13.4 9.6 L22 11 L13.4 12.4 L12 23 L10.6 12.4 L2 11 L10.6 9.6 Z'/>
   </g>
-  <!-- Wordmark 210px -->
-  <text x='600' y='415' font-family="Georgia,'Times New Roman',serif" font-size='210' font-weight='500' text-anchor='middle' fill='#FDF8F0' letter-spacing='-6'>kinwove</text>
-  <!-- Tagline -->
-  <text x='600' y='478' font-family="Georgia,'Times New Roman',serif" font-style='italic' font-size='26' text-anchor='middle' fill='#C8AD80' letter-spacing='1.5'>Big questions, ancient text, modern conversation.</text>
+  <!-- Wordmark 210px — dotless-i (ı U+0131) so only the star sits above the i -->
+  <text x='600' y='415' font-family="Georgia,'Times New Roman',serif" font-size='210' font-weight='500' text-anchor='middle' fill='#FDF8F0' letter-spacing='-6'>kınwove</text>
+  <!-- Tagline — canonical brand slogan (matches og:title / site) -->
+  <text x='600' y='478' font-family="Georgia,'Times New Roman',serif" font-style='italic' font-size='26' text-anchor='middle' fill='#C8AD80' letter-spacing='1.5'>Real answers to hard faith questions</text>
   <!-- Domain -->
   <text x='600' y='578' font-family="Georgia,'Times New Roman',serif" font-size='16' letter-spacing='7' text-anchor='middle' fill='#7A4A20'>KINWOVE.COM</text>
 </svg>
