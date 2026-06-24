@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   MoreVertical, LayoutGrid, Clock, UserPlus, Phone, Inbox,
   Building2, Star, ShieldCheck, Flag, UserCog,
-  LogOut, Trash2, Megaphone, HelpCircle, Users, Search, AlertTriangle,
+  LogOut, Trash2, Megaphone, HelpCircle, Users, Search, AlertTriangle, NotebookPen,
 } from 'lucide-react';
 import { T } from './theme.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
@@ -15,6 +15,7 @@ export default function TopRightMenu({
   isDesktop = false,
   onFindPeople,
   onOpenBoard,
+  onOpenJournal,
   onOpenHistory,
   onInviteFriends,
   onOpenTalkToSomeone,
@@ -48,6 +49,7 @@ export default function TopRightMenu({
       label: 'Go to',
       items: [
         onOpenBoard     && { icon: LayoutGrid, label: 'Your board',    onClick: onOpenBoard },
+        onOpenJournal   && { icon: NotebookPen, label: 'Notes',        onClick: onOpenJournal },
         onFindPeople    && { icon: Users,      label: 'Find people',   onClick: onFindPeople },
         onFindChurches  && { icon: Search,     label: 'Find a church', onClick: onFindChurches },
         onInviteFriends && { icon: UserPlus,   label: 'Invite friends', onClick: onInviteFriends },

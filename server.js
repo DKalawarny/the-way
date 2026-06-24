@@ -29,7 +29,24 @@ function normalize(text) {
     .trim();
 }
 
-app.use(cors());
+// CORS allowlist. The web app is served same-origin (no CORS needed for it);
+// this only governs cross-origin callers. Allow the production domains, local
+// dev, and Capacitor mobile shells. Requests with no Origin (same-origin,
+// server-to-server, curl) are always allowed.
+const ALLOWED_ORIGINS = new Set([
+  'https://www.kinwove.com',
+  'https://kinwove.com',
+  'http://localhost:5173',
+  'http://localhost:8787',
+  'capacitor://localhost',
+  'https://localhost',
+]);
+app.use(cors({
+  origin(origin, cb) {
+    if (!origin || ALLOWED_ORIGINS.has(origin)) return cb(null, true);
+    return cb(null, false);
+  },
+}));
 // Route-aware body size limit:
 //   /api/chat and /api/moderate-image allow up to 20 MB (base64 image payloads).
 //   All other routes stay at 64 KB — no legitimate non-image payload is larger.
@@ -159,6 +176,11 @@ function safeError(res, err, ctx) {
   if (!res.headersSent) res.status(500).json({ error: 'something went wrong' });
 }
 
+// Guard for any client-supplied id interpolated into a PostgREST filter URL.
+// Prevents filter-injection like id=eq.gt.0 from rewriting the query.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = (v) => typeof v === 'string' && UUID_RE.test(v);
+
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
 });
@@ -177,8 +199,13 @@ const BLOCKED_DOMAINS = new Set([
 
 function isBlockedUrl(url) {
   try {
-    const h = new URL(url).hostname.replace(/^www\./, '');
-    if (/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.)/.test(h)) return true;
+    const u = new URL(url);
+    if (!/^https?:$/.test(u.protocol)) return true;          // no file:, gopher:, etc.
+    const h = u.hostname.replace(/^www\./, '').replace(/^\[|\]$/g, '');
+    // Private/loopback/link-local IPv4 + cloud metadata
+    if (/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.)/.test(h)) return true;
+    // IPv6 loopback (::1) and unique-local / link-local (fc00::/7, fe80::/10)
+    if (h === '::1' || /^(fc|fd|fe8|fe9|fea|feb)/i.test(h) || h === '::') return true;
     return BLOCKED_DOMAINS.has(h);
   } catch { return true; }
 }
@@ -1268,8 +1295,7 @@ app.post('/api/email/welcome', requireAuth, async (req, res) => {
     await sendEmail(email, `Welcome to kinwove, ${firstName} ✦`, welcomeEmailHtml(firstName));
     res.json({ ok: true });
   } catch (e) {
-    console.error('[email/welcome]', e.message);
-    res.status(500).json({ error: e.message });
+    safeError(res, e, 'email/welcome');
   }
 });
 
@@ -1303,7 +1329,8 @@ app.post('/api/church/role-invite', requireAuth, limitAuthed({ capacity: 20, ref
   });
   if (!inviteR.ok) {
     const err = await inviteR.text().catch(() => '');
-    return res.status(500).json({ error: err });
+    console.error('[kinwove] role-invite insert failed', inviteR.status, err);
+    return res.status(500).json({ error: 'could not create invite' });
   }
   const [createdInvite] = await inviteR.json().catch(() => [{}]);
   const inviteId = createdInvite?.id ?? null;
@@ -1424,9 +1451,12 @@ Hard rules:
 Respond ONLY with valid JSON on a single line: {"body":"post text here"}`;
 
 app.post('/api/cron/daily-post', async (req, res) => {
+  // Header-only cron secret (never accept it via query string — leaks into logs).
+  // If CRON_SECRET is unset, the secret path is closed and only an admin bearer
+  // token can trigger this — it never falls open.
   const secret = process.env.CRON_SECRET;
-  const provided = req.headers['x-cron-secret'] || req.query.secret;
-  if (secret && provided !== secret) {
+  const cronOk = !!secret && req.headers['x-cron-secret'] === secret;
+  if (!cronOk) {
     // Also allow admin users to trigger via bearer token
     const userId = await attachUser(req);
     if (userId && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
@@ -1857,10 +1887,13 @@ app.post('/api/church/scrape-emails', requireAuth, limitAuthed({ capacity: 5, re
   let url;
   try { url = new URL(website.startsWith('http') ? website : `https://${website}`); }
   catch { return res.status(400).json({ error: 'invalid URL' }); }
+  // SSRF guard: refuse private/internal/metadata targets.
+  if (isBlockedUrl(url.toString())) return res.status(400).json({ error: 'invalid URL' });
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 8000);
-    const r = await fetch(url.toString(), { signal: ctrl.signal, headers: { 'User-Agent': 'TheWayVerification/1.0' } });
+    // redirect: 'manual' so a public URL can't 302 us to an internal host.
+    const r = await fetch(url.toString(), { signal: ctrl.signal, redirect: 'manual', headers: { 'User-Agent': 'TheWayVerification/1.0' } });
     clearTimeout(t);
     const html = await r.text();
     const junk = /example\.com|sentry|jquery|schema|\.png|\.gif|\.jpg|\.svg|\.js$|\.css$/i;
@@ -2652,7 +2685,7 @@ app.post('/api/moderate-image', limitAnon({ capacity: 30, refillPerSec: 30 / 60 
   if (!validTypes.has(mediaType)) return res.json({ approved: true }); // unknown type — pass through
 
   try {
-    const msg = await anthropic.messages.create({
+    const msg = await client.messages.create({
       model:      'claude-haiku-4-5-20251001', // fast + cheap for moderation
       max_tokens: 5,
       messages: [{
@@ -2698,7 +2731,7 @@ app.post('/api/care/screen-message', requireAuth, limitAuthed({ capacity: 20, re
   }
 
   try {
-    const msg = await anthropic.messages.create({
+    const msg = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 5,
       messages: [{
@@ -2791,7 +2824,8 @@ app.patch('/api/admin/reports/:id', requireAdmin, async (req, res) => {
     const { status, admin_note } = req.body ?? {};
     const valid = ['open', 'resolved', 'dismissed'];
     if (!valid.includes(status)) return res.status(400).json({ error: 'invalid status' });
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/user_reports?id=eq.${req.params.id}`, {
+    if (!isUuid(req.params.id)) return res.status(400).json({ error: 'invalid id' });
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/user_reports?id=eq.${encodeURIComponent(req.params.id)}`, {
       method: 'PATCH',
       headers: {
         apikey: SUPABASE_SERVICE_KEY,
@@ -2811,10 +2845,10 @@ app.patch('/api/admin/reports/:id', requireAdmin, async (req, res) => {
 // ── Admin church lookup + edit ────────────────────────────────────────────────
 app.get('/api/admin/church', requireAdmin, async (req, res) => {
   const { pastor_id } = req.query;
-  if (!pastor_id) return res.status(400).json({ error: 'pastor_id required' });
+  if (!isUuid(pastor_id)) return res.status(400).json({ error: 'pastor_id required' });
   try {
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/churches?pastor_id=eq.${pastor_id}&limit=1`,
+      `${SUPABASE_URL}/rest/v1/churches?pastor_id=eq.${encodeURIComponent(pastor_id)}&limit=1`,
       { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } },
     );
     const rows = await r.json();
@@ -2830,9 +2864,10 @@ app.patch('/api/admin/church/:churchId', requireAdmin, async (req, res) => {
     if (Object.prototype.hasOwnProperty.call(req.body ?? {}, key)) updates[key] = req.body[key];
   }
   if (!Object.keys(updates).length) return res.status(400).json({ error: 'nothing to update' });
+  if (!isUuid(req.params.churchId)) return res.status(400).json({ error: 'invalid id' });
   try {
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/churches?id=eq.${req.params.churchId}`,
+      `${SUPABASE_URL}/rest/v1/churches?id=eq.${encodeURIComponent(req.params.churchId)}`,
       {
         method: 'PATCH',
         headers: {
