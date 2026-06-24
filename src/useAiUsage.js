@@ -4,7 +4,7 @@ import { supabase } from './supabase.js';
 // ── Plan configuration ────────────────────────────────────────────────────────
 export const PLAN_LIMITS = {
   free:              { period: 'weekly',        limit: 5   },  // 5 free questions/week
-  trial:             { period: 'church-trial',  limit: 30  },  // church 5-week trial — 30 Sonnet questions
+  trial:             { period: 'church-trial',  limit: 100 },  // church 5-week trial — 100 questions (generous taste → convert)
   premium:           { period: 'monthly',       limit: 200 },  // Individual $6.99 CAD
   premium_plus:      { period: 'monthly',       limit: 270 },  // Individual Pro $13.99 CAD
   church_base:       { period: 'monthly',       limit: 250 },  // Church Base $41.99 CAD
