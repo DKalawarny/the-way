@@ -224,7 +224,7 @@ function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, 
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {userGroups.map((entry) => {
-              const COLORS = ['#B8733A','#6B4A35','#7A4A6B','#4A6B5B','#5B6E8A','#8B6E35','#6B2438','#4A5830'];
+              const COLORS = ['#A85530','#6B4A35','#7A4A6B','#4A6B5B','#5B6E8A','#8B6E35','#6B2438','#4A5830'];
               let h = 0;
               for (let i = 0; i < entry.group.id.length; i++) h = (h * 31 + entry.group.id.charCodeAt(i)) >>> 0;
               const color = COLORS[h % COLORS.length];
@@ -417,7 +417,7 @@ function SermonTeaserCard({ sermon, isMember, onOpenChurch }) {
   );
 }
 
-function PostCard({ post, index = 0, session, currentUserId, userProfile, userGroup, onReact, onReplySubmit, onRepost, onSendDM, isFollowing, onFollow, onViewProfile, tabColor = '#B8733A', tabText = '#8E5528', isSaved = false, onSaveToggle, isAuthorBlocked = false, onBlockAuthor, defaultCommentsOpen = false, churchName = null }) {
+function PostCard({ post, index = 0, session, currentUserId, userProfile, userGroup, onReact, onReplySubmit, onRepost, onSendDM, isFollowing, onFollow, onViewProfile, tabColor = '#A85530', tabText = '#8E5528', isSaved = false, onSaveToggle, isAuthorBlocked = false, onBlockAuthor, defaultCommentsOpen = false, churchName = null }) {
   const [bodyExpanded,   setBodyExpanded]   = useState(false);
   const [commentsOpen,   setCommentsOpen]   = useState(defaultCommentsOpen);
   // post.post_comments is the embedded select from loadPosts; it's a thin
@@ -1122,7 +1122,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
   );
 }
 
-function FeaturedThread({ thread, onRespond, tabColor = '#B8733A' }) {
+function FeaturedThread({ thread, onRespond, tabColor = '#A85530' }) {
   if (!thread) return null;
   return (
     <div style={{
@@ -1165,7 +1165,7 @@ function FeaturedThread({ thread, onRespond, tabColor = '#B8733A' }) {
   );
 }
 
-function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tabColor = '#B8733A', tabText = '#8E5528' }) {
+function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tabColor = '#A85530', tabText = '#8E5528' }) {
   const [encOpen,    setEncOpen]    = useState(false);
   const [encs,       setEncs]       = useState(null);
   const [encInput,   setEncInput]   = useState('');
@@ -1460,7 +1460,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tab
 
 export default function Community({ session, profile, onClose, onOpenChat, hideHeader, userGroup, userGroups = [], onViewProfile, onFindPeople, onInviteFriends, onOpenPrayer, onOpenRead, onOpenBible, onVerseClick, onOpenChurch, onOpenSermon, onOpenConnect, onOpenGroups, onOpenGroup, accentColor, openCommentPostId, onSendDM, openTab, onConsumeTab }) {
   // Section colour: gold for main Feed, forest green for church community feed
-  const TAB_COLOR = accentColor ?? '#B8733A';
+  const TAB_COLOR = accentColor ?? '#A85530';
   const TAB_TEXT  = accentColor ?? '#8E5528'; // slightly darker for text legibility
   const [posts, setPosts] = useState([]);
   const [sermonItems, setSermonItems] = useState([]);

@@ -643,13 +643,13 @@ async function fetchChapter(bibleId, bookId, chapterNum) {
 
 const LIGHT = {
   bg: '#FAF7F2', text: '#1C1008', muted: '#7A5C3A',
-  verse: '#B8733A', border: 'rgba(184,115,58,0.18)',
+  verse: '#A85530', border: 'rgba(184,115,58,0.18)',
   card: '#FFFFFF', cardBorder: 'rgba(184,115,58,0.15)',
   inputBg: '#F3EDE4', section: '#F3EDE4',
 };
 const DARK = {
   bg: '#0E0906', text: 'rgba(253,248,240,0.92)', muted: 'rgba(253,248,240,0.45)',
-  verse: '#B8733A', border: 'rgba(184,115,58,0.2)',
+  verse: '#A85530', border: 'rgba(184,115,58,0.2)',
   card: 'rgba(255,255,255,0.06)', cardBorder: 'rgba(184,115,58,0.2)',
   inputBg: 'rgba(255,255,255,0.07)', section: 'rgba(255,255,255,0.04)',
 };

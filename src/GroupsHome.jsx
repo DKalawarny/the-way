@@ -5,7 +5,7 @@ import { Avatar } from './ProfilePage.jsx';
 import GroupSetup from './GroupSetup.jsx';
 
 const CIRCLE_COLORS = [
-  '#B8733A', '#6B4A35', '#7A4A6B', '#4A6B5B',
+  '#A85530', '#6B4A35', '#7A4A6B', '#4A6B5B',
   '#5B6E8A', '#8B6E35', '#6B2438', '#4A5830',
 ];
 

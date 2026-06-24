@@ -1098,7 +1098,7 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
 
   // Each section has its own colour identity
   const SECTION_COLORS = {
-    home:   '#B8733A', // amber gold   — Feed
+    home:   '#A85530', // amber gold   — Feed
     church: '#6b2438', // burgundy     — Church
     read:   '#4a1542', // plum         — Bible
     me:     '#1a3050', // deep navy    — Personal
@@ -1774,7 +1774,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
   const active = tabFor(stage);
 
   const SECTION_COLORS = {
-    home:   '#B8733A',
+    home:   '#A85530',
     church: '#6b2438',
     read:   '#4a1542',
     me:     '#1a3050',
@@ -3037,6 +3037,7 @@ export default function App() {
             else setStage('churches');
           }}
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
+          onOpenConnect={() => setStage('connect')}
           onOpenGroups={() => setStage('groups')}
           onOpenGroup={(entry) => { setViewingGroupEntry(entry); setStage('groups'); }}
           onSendDM={(url) => { setPendingShareUrl(url); setStage('messages'); }}
@@ -3052,6 +3053,7 @@ export default function App() {
             sermonId={viewingSermonId}
             onBack={handleSermonBack}
             onChangeSermon={(id) => setViewingSermonId(id)}
+            onOpenChurch={isOwnSermon ? undefined : (id) => { setViewingChurchId(id); setStage('church'); }}
             chromeless={isOwnSermon}
           />
         );
@@ -3094,6 +3096,7 @@ export default function App() {
             else setStage('churches');
           }}
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
+          onOpenConnect={() => setStage('connect')}
           onOpenGroups={() => setStage('groups')}
           onOpenGroup={(entry) => { setViewingGroupEntry(entry); setStage('groups'); }}
           onSendDM={(url) => { setPendingShareUrl(url); setStage('messages'); }}
@@ -3161,6 +3164,7 @@ export default function App() {
           onOpenTalkToSomeone={profile?.church_id ? () => { setViewingChurchId(profile.church_id); setStage('talk-to-someone'); } : undefined}
           onOpenCareInbox={(careTeamRecord || pastorChurchId) ? () => setStage('care-inbox') : undefined}
           onOpenMessages={() => setStage('messages')}
+          onOpenConnect={() => setStage('connect')}
 
           onOpenPastorDashboard={pastorChurchId ? () => setStage('church-admin') : undefined}
           hasCareTeamRole={!!(careTeamRecord || pastorChurchId)}
@@ -3205,6 +3209,16 @@ export default function App() {
             setChatPanelOpen(true);
           }}
         />
+      )}
+      {stage === 'connect' && session && (
+        <Suspense fallback={<ScreenLoader />}>
+          <ConnectScreen
+            session={session}
+            profile={profile}
+            onClose={() => goBack('me')}
+            onStartDM={(uid) => startDM(uid)}
+          />
+        </Suspense>
       )}
       {stage === 'pastor-admin-queue' && session && profile?.is_admin && (
         <PastorAdminQueue
@@ -3704,6 +3718,7 @@ export default function App() {
           rightOffset={isDocked ? chatPanelWidth : 0}
           onOpenBoard={() => { setStage('feed'); setBoardOpen(true); }}
           onOpenHistory={() => { setStage('feed'); setHistoryOpen(true); }}
+          onOpenJournal={() => { setViewingUserId(null); setStage('journal'); }}
           onFindPeople={() => setPeopleSearchOpen(true)}
           onInviteFriends={() => setStage('invite')}
           onOpenTalkToSomeone={profile?.church_id ? () => { setViewingChurchId(profile.church_id); setStage('talk-to-someone'); } : undefined}

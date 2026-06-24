@@ -54,8 +54,8 @@ function BookMark() {
     <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ display: 'block' }}>
       <circle cx="24" cy="24" r="23" stroke="rgba(184,115,58,0.25)" strokeWidth="1"/>
       <path d="M24 10C20 7 13 7 8 10v22c5-3 12-3 16 0 4-3 11-3 16 0V10c-5-3-12-3-16 0z"
-            stroke="#B8733A" strokeWidth="1.5" strokeLinejoin="round" fill="rgba(184,115,58,0.07)"/>
-      <path d="M24 10v22" stroke="#B8733A" strokeWidth="1.5" strokeLinecap="round"/>
+            stroke="#A85530" strokeWidth="1.5" strokeLinejoin="round" fill="rgba(184,115,58,0.07)"/>
+      <path d="M24 10v22" stroke="#A85530" strokeWidth="1.5" strokeLinecap="round"/>
       <path d="M16 16h4M16 20h4M28 16h4M28 20h4" stroke="rgba(184,115,58,0.5)" strokeWidth="1" strokeLinecap="round"/>
     </svg>
   );

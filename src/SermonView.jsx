@@ -29,8 +29,9 @@ function formatWeekOf(dateStr) {
   } catch { return null; }
 }
 
-export default function SermonView({ session, profile, sermonId, onBack, onChangeSermon, chromeless = false }) {
+export default function SermonView({ session, profile, sermonId, onBack, onChangeSermon, onOpenChurch, chromeless = false }) {
   const [sermon, setSermon]   = useState(null);
+  const [churchName, setChurchName] = useState('');
   const [items, setItems]     = useState([]);
   const [loading, setLoading] = useState(true);
   const [siblings, setSiblings] = useState([]); // other published sermons for same church
@@ -70,7 +71,7 @@ export default function SermonView({ session, profile, sermonId, onBack, onChang
     return () => { cancelled = true; };
   }, [sermonId]);
 
-  // Load sibling sermons once we know the church_id
+  // Load sibling sermons + church name once we know the church_id
   useEffect(() => {
     if (!sermon?.church_id) return;
     supabase
@@ -80,6 +81,12 @@ export default function SermonView({ session, profile, sermonId, onBack, onChang
       .eq('is_published', true)
       .order('week_starts_on', { ascending: false })
       .then(({ data }) => setSiblings(data ?? []));
+    supabase
+      .from('churches')
+      .select('name')
+      .eq('id', sermon.church_id)
+      .maybeSingle()
+      .then(({ data }) => setChurchName(data?.name ?? ''));
   }, [sermon?.church_id]);
 
   if (loading) {
@@ -138,6 +145,14 @@ export default function SermonView({ session, profile, sermonId, onBack, onChang
               background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer',
               padding: '0 12px 0 0', minHeight: 44, display: 'flex', alignItems: 'center',
             }}>← Sermons</button>
+            {onOpenChurch && sermon?.church_id && churchName && (
+              <button onClick={() => onOpenChurch(sermon.church_id)} style={{
+                marginLeft: 'auto', background: 'none', border: 'none', color: T.goldDark,
+                fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                padding: '0 0 0 12px', minHeight: 44, display: 'flex', alignItems: 'center',
+                maxWidth: '60%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>{churchName} →</button>
+            )}
           </div>
         </header>
       )}

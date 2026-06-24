@@ -310,8 +310,8 @@ function GuestWall({ onSignUp }) {
     <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'rgba(44,24,16,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)', padding: 24 }}>
       <div style={{ background: T.ink, borderRadius: 24, padding: '44px 32px', maxWidth: 400, width: '100%', textAlign: 'center', border: '1px solid rgba(184,115,58,0.3)', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}>
         <svg width="28" height="28" viewBox="0 0 28 28" style={{ marginBottom: 22 }}>
-          <line x1="14" y1="0" x2="14" y2="28" stroke="#B8733A" strokeWidth="2"/>
-          <line x1="0" y1="14" x2="28" y2="14" stroke="#B8733A" strokeWidth="2"/>
+          <line x1="14" y1="0" x2="14" y2="28" stroke="#A85530" strokeWidth="2"/>
+          <line x1="0" y1="14" x2="28" y2="14" stroke="#A85530" strokeWidth="2"/>
         </svg>
         <div style={{ fontFamily: T.serif, fontSize: 30, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.12, marginBottom: 14 }}>
           This conversation is worth keeping.
@@ -2204,7 +2204,7 @@ export default function Chat({
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
               <span style={{
-                fontSize: 12, fontWeight: 600, color: '#B8733A',
+                fontSize: 12, fontWeight: 600, color: '#A85530',
                 letterSpacing: 1.5, textTransform: 'uppercase',
               }}>
                 {versePopover.refRaw.replace(/[()]/g, '')}

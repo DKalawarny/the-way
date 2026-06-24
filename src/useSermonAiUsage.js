@@ -22,8 +22,8 @@ function currentMonthKey() {
 // Tracks AI sermon generation usage.
 // free        → 3 lifetime generations
 // trial       → 100 total during trial window
-// church_base → 200/month
-// church_pro  → 270/month
+// church_base → 250/month
+// church_pro  → 250/month
 export function useSermonAiUsage(userId, plan = 'free') {
   const isFree  = !plan || plan === 'free';
   const isTrial = plan === 'trial';

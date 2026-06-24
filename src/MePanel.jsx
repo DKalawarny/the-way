@@ -1769,6 +1769,24 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
               🔍 Find people
             </button>
 
+            {onOpenConnect && (
+              <button
+                onClick={() => onOpenConnect?.()}
+                style={{
+                  width: '100%', background: T.parchment,
+                  border: `1.5px dashed ${T.goldLight}`, borderRadius: 12,
+                  padding: '12px 16px', marginBottom: 12, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  fontSize: 14, color: T.goldDark, fontWeight: 600,
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(184,115,58,0.08)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = T.parchment)}
+              >
+                🤝 Connect with members
+              </button>
+            )}
+
             {/* Pending requests */}
             {pendingRequests.length > 0 && (
               <div style={{ marginBottom: 20 }}>
