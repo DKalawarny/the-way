@@ -480,7 +480,7 @@ export default function HelpPage({ onClose, onOpenTour }) {
                     width: '100%', textAlign: 'left', border: 'none',
                     padding: '9px 20px', cursor: 'pointer', outline: 'none',
                     display: 'flex', alignItems: 'center', gap: 10,
-                    borderLeft: `3px solid ${active ? '#B8733A' : 'transparent'}`,
+                    borderLeft: `3px solid ${active ? '#A85530' : 'transparent'}`,
                     background: active ? 'rgba(184,115,58,0.06)' : 'transparent',
                     color: active ? '#8a5a20' : T.inkSoft,
                     fontWeight: active ? 600 : 400,
@@ -525,7 +525,7 @@ export default function HelpPage({ onClose, onOpenTour }) {
               </div>
               <a
                 href="mailto:hello@kinwove.app"
-                style={{ fontSize: 12.5, color: '#B8733A', fontWeight: 600, textDecoration: 'none' }}
+                style={{ fontSize: 12.5, color: '#A85530', fontWeight: 600, textDecoration: 'none' }}
               >
                 hello@kinwove.app
               </a>
@@ -559,7 +559,7 @@ export default function HelpPage({ onClose, onOpenTour }) {
               /* Section content */
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
-                  <activeSection.Icon size={22} strokeWidth={1.5} color="#B8733A" />
+                  <activeSection.Icon size={22} strokeWidth={1.5} color="#A85530" />
                   <h2 style={{
                     fontFamily: "'Fraunces', Georgia, serif",
                     fontSize: 24, fontWeight: 600, color: T.ink, margin: 0, letterSpacing: '-0.02em',
@@ -627,14 +627,14 @@ function MobileSection({ section }) {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Icon size={15} strokeWidth={1.75} color={open ? '#B8733A' : T.inkSoft} style={{ flexShrink: 0 }} />
+          <Icon size={15} strokeWidth={1.75} color={open ? '#A85530' : T.inkSoft} style={{ flexShrink: 0 }} />
           <span style={{
             fontFamily: "'Fraunces', Georgia, serif",
             fontSize: 15, fontWeight: 600,
             color: open ? T.ink : T.inkSoft,
           }}>{section.title}</span>
         </div>
-        <span style={{ fontSize: 18, color: open ? '#B8733A' : T.inkMuted, fontWeight: 300, lineHeight: 1 }}>
+        <span style={{ fontSize: 18, color: open ? '#A85530' : T.inkMuted, fontWeight: 300, lineHeight: 1 }}>
           {open ? '−' : '+'}
         </span>
       </button>

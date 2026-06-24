@@ -1098,7 +1098,7 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
 
   // Each section has its own colour identity
   const SECTION_COLORS = {
-    home:   '#B8733A', // amber gold   — Feed
+    home:   '#A85530', // amber gold   — Feed
     church: '#6b2438', // burgundy     — Church
     read:   '#4a1542', // plum         — Bible
     me:     '#1a3050', // deep navy    — Personal
@@ -1774,7 +1774,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
   const active = tabFor(stage);
 
   const SECTION_COLORS = {
-    home:   '#B8733A',
+    home:   '#A85530',
     church: '#6b2438',
     read:   '#4a1542',
     me:     '#1a3050',

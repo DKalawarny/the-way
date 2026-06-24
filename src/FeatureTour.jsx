@@ -23,7 +23,7 @@ const STEPS = [
     tourId: 'feed',
     title: 'Your community',
     body: 'Posts from people and churches you follow. Share publicly, church-only, or just for yourself.',
-    color: '#B8733A',
+    color: '#A85530',
   },
   {
     tourId: 'church',

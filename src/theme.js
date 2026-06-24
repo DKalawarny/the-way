@@ -119,13 +119,13 @@ export const SEMANTIC = {
 // Each persona contributes a soft warm/cool wash so a feed of 10 posts isn't
 // 10 identical rectangles. Backgrounds stay near-white; the accent is the rail.
 export const TYPE_TINTS = {
-  curious:      { bg: 'rgba(168,85,48,0.14)',  bgChip: 'rgba(168,85,48,0.22)', rail: '#B8733A', text: '#8E5528' },
+  curious:      { bg: 'rgba(168,85,48,0.14)',  bgChip: 'rgba(168,85,48,0.22)', rail: '#A85530', text: '#8E5528' },
   seeking:      { bg: 'rgba(74,123,157,0.16)',  bgChip: 'rgba(74,123,157,0.24)', rail: '#4A7B9D', text: '#2E6A8E' },
   skeptic:      { bg: 'rgba(110,110,120,0.14)', bgChip: 'rgba(110,110,120,0.22)', rail: '#7A6B58', text: '#555' },
   'new-faith':  { bg: 'rgba(74,139,90,0.16)',   bgChip: 'rgba(74,139,90,0.24)', rail: '#4A8B5A', text: '#2E7A48' },
   'heard-things': { bg: 'rgba(120,90,150,0.16)', bgChip: 'rgba(120,90,150,0.24)', rail: '#8E6FB8', text: '#6B3FA0' },
   deeper:       { bg: 'rgba(150,90,40,0.16)',   bgChip: 'rgba(150,90,40,0.24)', rail: '#A66A2A', text: '#7A4F1F' },
-  group:        { bg: 'rgba(168,85,48,0.14)',  bgChip: 'rgba(168,85,48,0.22)', rail: '#B8733A', text: '#8E5528' },
+  group:        { bg: 'rgba(168,85,48,0.14)',  bgChip: 'rgba(168,85,48,0.22)', rail: '#A85530', text: '#8E5528' },
   'inter-faith':{ bg: 'rgba(45,120,120,0.16)',  bgChip: 'rgba(45,120,120,0.24)', rail: '#3D8C8C', text: '#2A6868' },
   guided:       { bg: 'rgba(180,120,60,0.16)',  bgChip: 'rgba(180,120,60,0.24)', rail: '#B57A3C', text: '#8C5A26' },
 };

@@ -480,7 +480,7 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
               <div>
                 <div style={{ fontWeight: 600, color: T.goldDark, fontSize: 14 }}>Free trial active</div>
                 <div style={{ fontSize: 13, color: T.inkMuted, marginTop: 2 }}>
-                  {trial.daysLeft} day{trial.daysLeft !== 1 ? 's' : ''} remaining · then $7.99 CAD/month
+                  {trial.daysLeft} day{trial.daysLeft !== 1 ? 's' : ''} remaining · then $6.99 CAD/month
                 </div>
               </div>
               <div style={{ fontSize: 22 }}>✨</div>
