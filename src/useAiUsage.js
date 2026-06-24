@@ -8,7 +8,7 @@ export const PLAN_LIMITS = {
   premium:           { period: 'monthly',       limit: 200 },  // Individual $6.99 CAD
   premium_plus:      { period: 'monthly',       limit: 270 },  // Individual Pro $13.99 CAD
   church_base:       { period: 'monthly',       limit: 250 },  // Church Base $41.99 CAD
-  church_pro:        { period: 'monthly',       limit: 250 },  // Church Pro $82.99 CAD
+  church_pro:        { period: 'monthly',       limit: 600 },  // Church Pro $82.99 CAD
 };
 
 export const TOPUP_MESSAGES = 100;
