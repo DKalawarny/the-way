@@ -10,6 +10,7 @@ import { PERSON_TYPES } from './constants.js';
 import { Avatar } from './ProfilePage.jsx';
 import ShareSheet from './ShareSheet.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
+import { exactTime } from './time.js';
 import { getDailyVerse } from './dailyVerse.js';
 import { codeToFlag } from './countries.js';
 import EmptyState from './EmptyState.jsx';
@@ -528,7 +529,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                   become chips below so they don't crowd the byline. */}
               <div style={{ fontSize: 12, color: T.inkSoft, marginTop: 1 }}>
                 {post.profiles?.country ? `${post.profiles.country} · ` : ''}
-                {timeAgo(post.created_at)}
+                <span title={exactTime(post.created_at)}>{timeAgo(post.created_at)}</span>
                 {churchName && <> · in {churchName}</>}
               </div>
             </div>
@@ -824,7 +825,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                     <div style={{ fontSize: 12, color: T.inkMuted }}>
                       {post.profiles?.country ?? ''}
                       {post.profiles?.tradition ? ` · ${post.profiles.tradition}` : ''}
-                      {' · '}{timeAgo(post.created_at)}
+                      {' · '}<span title={exactTime(post.created_at)}>{timeAgo(post.created_at)}</span>
                     </div>
                   </div>
                 </div>
@@ -915,7 +916,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                           </div>
                           <div style={{ fontFamily: T.serif, fontSize: 14, color: T.inkSoft, lineHeight: 1.55 }}>{r.body}</div>
                         </div>
-                        <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 4, paddingLeft: 10 }}>
+                        <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 4, paddingLeft: 10 }} title={exactTime(r.created_at)}>
                           {timeAgo(r.created_at)}
                         </div>
                       </div>
@@ -1237,7 +1238,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tab
               <div style={{ fontSize: 12, color: T.inkMuted }}>
                 {prayer.profiles?.country ?? ''}
                 {prayer.profiles?.tradition ? ` · ${prayer.profiles.tradition}` : ''}
-                {' · '}{timeAgo(prayer.created_at)}
+                {' · '}<span title={exactTime(prayer.created_at)}>{timeAgo(prayer.created_at)}</span>
               </div>
             </div>
             {prayer.is_answered && (

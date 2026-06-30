@@ -15,3 +15,15 @@ export function relativeTime(iso) {
   if (d < 7)  return `${d}d`;
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
+
+// Full, human date+time for the hover tooltip on a relative timestamp
+// (e.g. "Tue, June 10, 2026 at 9:36 PM"). Empty string on bad input.
+export function exactTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString(undefined, {
+    weekday: 'short', month: 'long', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit',
+  });
+}

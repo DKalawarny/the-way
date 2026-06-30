@@ -5,7 +5,7 @@ import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { BadgeList, presetForRole } from './Badge.jsx';
 import { Avatar } from './ProfilePage.jsx';
-import { relativeTime } from './time.js';
+import { relativeTime, exactTime } from './time.js';
 import Comments from './Comments.jsx';
 import SermonDiscussion from './SermonDiscussion.jsx';
 import LinkPreview, { stripFirstUrl } from './LinkPreview.jsx';
@@ -753,7 +753,7 @@ export default function PostCard({
             )}
           </div>
           <div style={{ fontSize: 11.5, color: T.inkMuted }}>
-            {relativeTime(item.created_at)}
+            <span title={exactTime(item.created_at)}>{relativeTime(item.created_at)}</span>
             {item.scope === 'church' && churchInfo?.name && <> · in {churchInfo.name}</>}
             {item.source === 'post' && localVisibility !== 'public' && ` · ${visMeta.emoji} ${visMeta.label}`}
             {hiddenLocally && ' · hidden from your profile'}
@@ -1295,7 +1295,7 @@ export default function PostCard({
                     />
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 14, color: T.ink }}>{displayName}</div>
-                      <div style={{ fontSize: 12, color: T.inkMuted }}>{relativeTime(item.created_at)}</div>
+                      <div style={{ fontSize: 12, color: T.inkMuted }} title={exactTime(item.created_at)}>{relativeTime(item.created_at)}</div>
                     </div>
                   </div>
                 )}

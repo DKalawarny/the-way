@@ -156,6 +156,7 @@ import CoachMark, { incrementLoginCount } from './CoachMark.jsx';
 import DailyVerseCard, { shouldShowDailyVerse, markVerseAsSeen } from './DailyVerseCard.jsx';
 import { GlobalTooltip } from './Tooltip.jsx';
 import { SpellcheckEnabler } from './spellcheck.jsx';
+import { AutoGrowTextareas } from './uiComfort.jsx';
 
 // ── Role label map (client-side mirror of server ROLE_LABELS) ────────────────
 const ROLE_LABELS_CLIENT = {
@@ -3954,6 +3955,9 @@ export default function App() {
 
       {/* Native spell check (red squiggles) on all prose fields, site-wide. */}
       <SpellcheckEnabler />
+
+      {/* Text boxes grow with their content as you type. */}
+      <AutoGrowTextareas />
     </>
   );
 }
