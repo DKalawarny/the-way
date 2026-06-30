@@ -154,6 +154,7 @@ import { getJourneyProgress, advanceJourneyProgress } from './journeys.js';
 import FeatureTour, { isTourDone } from './FeatureTour.jsx';
 import CoachMark, { incrementLoginCount } from './CoachMark.jsx';
 import DailyVerseCard, { shouldShowDailyVerse, markVerseAsSeen } from './DailyVerseCard.jsx';
+import { GlobalTooltip } from './Tooltip.jsx';
 
 // ── Role label map (client-side mirror of server ROLE_LABELS) ────────────────
 const ROLE_LABELS_CLIENT = {
@@ -3945,6 +3946,10 @@ export default function App() {
           onClose={() => setShowVerseCard(false)}
         />
       )}
+
+      {/* Branded hover tooltips app-wide — reads `title`/`data-tip` on any
+          element. Hover-only (no effect on touch devices). */}
+      <GlobalTooltip />
     </>
   );
 }
