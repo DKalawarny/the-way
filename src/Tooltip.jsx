@@ -34,7 +34,7 @@ export function GlobalTooltip() {
     if (!window.matchMedia || !window.matchMedia('(hover: hover)').matches) return;
 
     function tipElFrom(target) {
-      return target && target.closest ? target.closest('[data-tip], [title]') : null;
+      return target && target.closest ? target.closest('[data-tip], [title], [aria-label]') : null;
     }
 
     function readText(el) {
@@ -48,6 +48,11 @@ export function GlobalTooltip() {
         el.__tipFromTitle = true;
         return title;
       }
+      // Fall back to the accessibility label — these sit on exactly the
+      // icon-only buttons (Back, Close, Menu, Notifications…) that need a hint.
+      // We only READ it (never remove it) so screen readers still work.
+      const aria = el.getAttribute('aria-label');
+      if (aria && aria.trim()) return aria;
       return '';
     }
 
