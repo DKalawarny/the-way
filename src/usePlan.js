@@ -69,7 +69,8 @@ export function usePlan(churchId) {
     : null;
   const daysLeft     = trialEnd ? Math.max(0, Math.ceil((trialEnd - now) / MS_DAY)) : 0;
   const trialExpired = plan === 'trial' && daysLeft === 0;
-  const hasAccess    = plan === 'active' || (plan === 'trial' && daysLeft > 0);
+  const isPaidChurch = plan === 'church_base' || plan === 'church_pro';
+  const hasAccess    = plan === 'active' || isPaidChurch || (plan === 'trial' && daysLeft > 0);
 
   return { loading: false, plan, hasAccess, daysLeft, trialExpired, trialStartedAt };
 }

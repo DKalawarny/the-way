@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase, authedFetch } from './supabase.js';
 import { T } from './theme.js';
 import { useSermonAiUsage, FREE_SERMON_LIMIT } from './useSermonAiUsage.js';
-import { SermonAiNudge } from './PlanGate.jsx';
+import { SermonAiNudge, startChurchCheckout } from './PlanGate.jsx';
 import { useUiKit } from './uikit.jsx';
 import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
@@ -164,6 +164,15 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
   const [error, setError] = useState(null);
   const { showToast, ui: uikitUi } = useUiKit();
   const sermonAi = useSermonAiUsage(session?.user?.id, userPlan);
+  const [upgradeBusy, setUpgradeBusy] = useState(false);
+
+  async function handleUpgrade() {
+    if (upgradeBusy) return;
+    setUpgradeBusy(true);
+    const { error: checkoutErr } = await startChurchCheckout(session, 'church_base');
+    // On success Stripe redirects away; only reset on failure so the user can retry.
+    if (checkoutErr) { setError(checkoutErr); setUpgradeBusy(false); }
+  }
 
   // Series state — null means standalone (no series). Loaded once per church.
   const [seriesList, setSeriesList] = useState([]);
@@ -730,19 +739,23 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
                     Upgrade to keep generating — your congregation won't notice the difference in prep time, but you will.
                   </div>
                 </div>
-                <a
-                  href={`mailto:hello@kinwove.app?subject=${encodeURIComponent('kinwove — AI Upgrade')}&body=${encodeURIComponent('Hi, I would like to upgrade to unlock unlimited AI sermon generation.')}`}
+                <button
+                  onClick={handleUpgrade}
+                  disabled={upgradeBusy}
                   style={{
                     background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
-                    color: '#FDF8EE', borderRadius: 999,
+                    color: '#FDF8EE', border: 'none', borderRadius: 999,
                     padding: '9px 18px', fontSize: 13, fontWeight: 600,
-                    textDecoration: 'none', flexShrink: 0,
+                    fontFamily: 'inherit',
+                    cursor: upgradeBusy ? 'default' : 'pointer',
+                    opacity: upgradeBusy ? 0.7 : 1,
+                    flexShrink: 0,
                     boxShadow: '0 3px 12px rgba(184,115,58,0.3)',
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  Unlock AI →
-                </a>
+                  {upgradeBusy ? 'Opening…' : 'Unlock AI →'}
+                </button>
               </div>
             ) : (
               <>

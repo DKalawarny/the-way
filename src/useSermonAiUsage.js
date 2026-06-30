@@ -9,6 +9,7 @@ const PAID_LIMITS = {
   church_base: 250,
   church_pro:  250,
   active:      250, // fallback for legacy 'active' rows
+  expired:     0,   // trial ended, unpaid — sermon AI off, rest of dashboard stays usable
 };
 
 const PERIOD_FREE  = 'sermon-lifetime';

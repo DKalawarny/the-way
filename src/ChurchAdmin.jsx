@@ -11,7 +11,7 @@ import FlagPicker from './FlagPicker.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 import { usePlan, CHURCH_BASE_MEMBER_LIMIT } from './usePlan.js';
-import { TrialBanner, UpgradeWall, startChurchCheckout } from './PlanGate.jsx';
+import { TrialBanner, startChurchCheckout } from './PlanGate.jsx';
 
 const PastorDashboard = lazy(() => import('./PastorDashboard.jsx'));
 const SermonComposer  = lazy(() => import('./SermonComposer.jsx'));
@@ -2368,6 +2368,10 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
   }, [church]);
   const [composerSermonId, setComposerSermonId] = useState(null);
   const { plan, hasAccess, daysLeft, trialExpired } = usePlan(churchId);
+  // Trial over + unpaid: force AI surfaces to a 0-limit plan so they show their
+  // upgrade gate, while the rest of the dashboard keeps working. Paid churches
+  // (church_base/church_pro) keep their real plan.
+  const aiPlan = (trialExpired && !hasAccess) ? 'expired' : plan;
   // One-shot action that the next mounted panel should execute (e.g. when the
   // setup checklist's "Print your QR code" item fires, we route to Settings
   // *and* signal the panel to open the QR modal — saves a second click at the
@@ -2440,11 +2444,12 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
       currentSubpage={null}
       fullBleed={tab === 'bible' || tab === 'ask'}
     >
-      {trialExpired && (
-        <UpgradeWall onBack={onBack} session={session} />
-      )}
       <Suspense fallback={<div style={{ color: T.inkMuted, fontFamily: T.serif, padding: 40, textAlign: 'center' }}>Loading…</div>}>
-        {!trialExpired && plan === 'trial' && daysLeft <= 14 && (
+        {/* When the trial ends unpaid we no longer wall off the whole dashboard —
+            Overview/People/Sermons/Bible/Settings stay usable. Only the AI
+            surfaces are gated (see aiPlan below). The banner keeps the upgrade
+            CTA in front of the pastor. */}
+        {plan === 'trial' && daysLeft <= 14 && (
           <div style={{ padding: '16px 16px 0' }}>
             <TrialBanner daysLeft={daysLeft} session={session} />
           </div>
@@ -2480,7 +2485,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
                 session={session}
                 profile={profile}
                 churchId={churchId}
-                churchPlan={plan ?? 'church_base'}
+                churchPlan={aiPlan ?? 'church_base'}
                 onOpenDesk={isWide ? null : setMobileDeskPanel}
                 inSplit={isWide}
                 onNoteSaved={() => setNotesRefreshKey(k => k + 1)}
@@ -2530,7 +2535,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
         {tab === 'bible' && (
           <BibleReader
             session={session}
-            profile={profile ? { ...profile, plan: plan ?? 'church_base' } : profile}
+            profile={profile ? { ...profile, plan: aiPlan ?? 'church_base' } : profile}
             topOffset={145}
           />
         )}
@@ -2541,7 +2546,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
             churchId={churchId}
             initialSermonId={composerSermonId}
             onOpenSermon={onOpenSermon}
-            userPlan={plan ?? 'free'}
+            userPlan={aiPlan ?? 'free'}
             onBack={() => { setComposerSermonId(null); setTab('overview'); }}
           />
         )}

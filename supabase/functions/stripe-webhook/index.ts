@@ -42,7 +42,14 @@ async function syncChurchVerification(userId: string, plan: string, isActive: bo
   if (!role?.church_id) return;
   await supabase
     .from('churches')
-    .update({ verification_status: isActive ? 'verified' : 'pending' })
+    .update({
+      verification_status: isActive ? 'verified' : 'pending',
+      // Mirror the paid plan onto the church row so usePlan(churchId) — which
+      // reads churches.plan — grants access. Without this every church (even
+      // paying ones) reverts to the trial wall at day 35. Downgrade to 'free'
+      // when the subscription ends.
+      plan: isActive ? plan : 'free',
+    })
     .eq('id', role.church_id);
 }
 
