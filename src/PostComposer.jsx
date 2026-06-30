@@ -7,6 +7,7 @@ import MentionInput from './MentionInput.jsx';
 import { Avatar } from './ProfilePage.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { cleanText } from './moderation.js';
+import { useDraft } from './useDraft.js';
 
 const MAX_IMAGES_PER_POST = 4;
 
@@ -100,6 +101,9 @@ export default function PostComposer({
       .then(({ data }) => { if (!cancelled) setPersonType(data?.person_type ?? null); });
     return () => { cancelled = true; };
   }, [profile?.person_type, session?.user?.id]);
+
+  // Keep what they're writing safe across reloads / accidental navigation.
+  const clearDraft = useDraft(`post:${scope}:${scopeId ?? 'me'}`, text, setText, session?.user?.id);
 
   function reset() {
     setText(''); setScriptureRef(''); setAnon(false); setError(null);
@@ -199,7 +203,7 @@ export default function PostComposer({
     setBusy(false);
     if (err) { setError(err.message); return; }
     track('post_created', { scope, kind: dbKind });
-    reset(); setOpen(false);
+    reset(); clearDraft(); setOpen(false);
     onPosted?.(data);
   }
 
@@ -269,7 +273,7 @@ export default function PostComposer({
     : (text.trim().length > 0 || imageDrafts.length > 0);
 
   return (
-    <div style={wrapperStyle}>
+    <div style={wrapperStyle} data-compose>
 
       {/* ── Announcement header ── */}
       {isAnnouncement && (
@@ -506,7 +510,7 @@ export default function PostComposer({
             style={{ background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999, padding: '8px 14px', fontSize: 13, color: T.inkSoft, cursor: 'pointer' }}>
             Cancel
           </button>
-          <button onClick={submit} disabled={!canPost} style={{
+          <button onClick={submit} disabled={!canPost} data-submit title="Post (\u2318/Ctrl + Enter)" style={{
             background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
             padding: '9px 18px', fontSize: 13.5, fontWeight: 600,
             cursor: canPost ? 'pointer' : 'not-allowed', opacity: canPost ? 1 : 0.5,

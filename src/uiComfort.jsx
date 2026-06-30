@@ -24,6 +24,31 @@ function grow(el) {
   el.style.overflowY = el.scrollHeight > cap ? 'auto' : 'hidden';
 }
 
+/* ── Cmd / Ctrl + Enter to submit ────────────────────────────────────────────
+   Pressing ⌘/Ctrl + Enter while writing fires that composer's submit button.
+   Opt-in + safe: it only acts inside a container marked `data-compose`, and
+   only clicks a button marked `data-submit` that isn't disabled — so it can
+   never trigger the wrong action. Add those two attributes to a composer to
+   enable it there.
+── */
+export function CmdEnterSubmit() {
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    function onKeyDown(e) {
+      if (e.key !== 'Enter' || !(e.metaKey || e.ctrlKey)) return;
+      const el = e.target;
+      if (!el || (el.tagName !== 'TEXTAREA' && el.tagName !== 'INPUT')) return;
+      const scope = el.closest && el.closest('[data-compose]');
+      if (!scope) return;
+      const btn = scope.querySelector('[data-submit]:not([disabled])');
+      if (btn) { e.preventDefault(); btn.click(); }
+    }
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => document.removeEventListener('keydown', onKeyDown, true);
+  }, []);
+  return null;
+}
+
 export function AutoGrowTextareas() {
   useEffect(() => {
     if (typeof document === 'undefined') return;
