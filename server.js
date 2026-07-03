@@ -185,6 +185,36 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
 });
 
+// ── Cron health (dead-man's switch) ──────────────────────────────────────────
+// Reports whether background jobs are still running by their observable output.
+// The daily kinwove post is the canary: if no system-account post exists in the
+// last ~26h, the cron has silently stopped (exactly what happened when pg_cron
+// was off). Returns HTTP 503 when stale so a free uptime monitor (UptimeRobot,
+// Better Uptime, etc.) pointed at this URL will alert you automatically.
+app.get('/api/health/crons', async (_req, res) => {
+  const out = { ok: true, checks: {} };
+  try {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+      return res.json({ ok: true, note: 'supabase not configured' });
+    }
+    const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+    const sys = await fetch(`${SUPABASE_URL}/rest/v1/profiles?is_system_account=eq.true&select=id&limit=1`, { headers: h })
+      .then((r) => r.json()).then((rows) => rows?.[0]?.id).catch(() => null);
+    if (sys) {
+      const last = await fetch(`${SUPABASE_URL}/rest/v1/posts?author_id=eq.${sys}&order=created_at.desc&limit=1&select=created_at`, { headers: h })
+        .then((r) => r.json()).then((rows) => rows?.[0]?.created_at).catch(() => null);
+      const ageHours = last ? (Date.now() - new Date(last).getTime()) / 3.6e6 : null;
+      const stale = ageHours == null || ageHours > 26;
+      out.checks.dailyPost = { lastAt: last ?? null, ageHours: ageHours == null ? null : Math.round(ageHours * 10) / 10, stale };
+      if (stale) out.ok = false;
+    }
+  } catch (e) {
+    out.ok = false;
+    out.error = e?.message;
+  }
+  res.status(out.ok ? 200 : 503).json(out);
+});
+
 // ── Client error reporting ───────────────────────────────────────────────────
 // The frontend posts uncaught errors / crashes here. We log them (visible in
 // Render logs) and send a rate-limited email alert so a production break is
@@ -1563,6 +1593,12 @@ app.post('/api/cron/daily-post', async (req, res) => {
     }
 
     console.log(`[daily-post] posted: "${body.slice(0, 60)}…"`);
+    // Dead-man's switch ping: if HEALTHCHECK_DAILYPOST_URL is set (e.g. a free
+    // healthchecks.io check), a successful post pings it. If pings stop, that
+    // service emails you — catching a silently-dead cron.
+    if (process.env.HEALTHCHECK_DAILYPOST_URL) {
+      fetch(process.env.HEALTHCHECK_DAILYPOST_URL, { method: 'POST' }).catch(() => {});
+    }
     res.json({ ok: true, body });
   } catch (e) {
     console.error('[daily-post] error:', e?.message);
