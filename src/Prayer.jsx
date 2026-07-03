@@ -6,6 +6,7 @@ import { churchBannerBg } from './ChurchAdmin.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { Avatar } from './ProfilePage.jsx';
 import EmptyState from './EmptyState.jsx';
+import { useDraft } from './useDraft.js';
 
 // Candle — personal prayer list empty state
 const CandleIcon = (
@@ -60,6 +61,7 @@ function MyPrayers({ session, profile }) {
   const [text,         setText]         = useState('');
   const [newIsAnonymous, setNewIsAnonymous] = useState(false); // false = named, true = anonymous
   const [submitting,   setSubmitting]   = useState(false);
+  const clearDraft = useDraft('personal-prayer', text, setText, session?.user?.id);
   const [submitError,  setSubmitError]  = useState(null);
   const [composeOpen,  setComposeOpen]  = useState(false);
   const [praiseTarget, setPraiseTarget] = useState(null);   // prayer awaiting answered-confirmation
@@ -116,7 +118,7 @@ function MyPrayers({ session, profile }) {
       return;
     }
     setSubmitError(null);
-    setText(''); setNewIsAnonymous(false); setComposeOpen(false);
+    setText(''); clearDraft(); setNewIsAnonymous(false); setComposeOpen(false);
     if (data) setPrayers(prev => [data, ...prev]);
   }
 

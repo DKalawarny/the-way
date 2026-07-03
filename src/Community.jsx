@@ -11,6 +11,7 @@ import { Avatar } from './ProfilePage.jsx';
 import ShareSheet from './ShareSheet.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
 import { exactTime } from './time.js';
+import { useDraft } from './useDraft.js';
 import { getDailyVerse } from './dailyVerse.js';
 import { codeToFlag } from './countries.js';
 import EmptyState from './EmptyState.jsx';
@@ -1478,6 +1479,7 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
   const [composeOpen, setComposeOpen] = useState(false);
   const [prayerComposeOpen, setPrayerComposeOpen] = useState(false);
   const [prayerText, setPrayerText] = useState('');
+  const clearPrayerDraft = useDraft('prayer:public', prayerText, setPrayerText, session?.user?.id);
   const [prayerSubmitting, setPrayerSubmitting] = useState(false);
   const [feedType, setFeedType] = useState('posts');
   useEffect(() => { if (openTab) { setFeedType(openTab); onConsumeTab?.(); } }, [openTab]);
@@ -1873,7 +1875,7 @@ useEffect(() => {
     }
     if (data) {
       setPrayers(prev => [{ ...data, support_count: 0, enc_count: 0, my_prayed: false }, ...prev]);
-      setPrayerText('');
+      setPrayerText(''); clearPrayerDraft();
       setPrayerComposeOpen(false);
       track('prayer_shared');
     }
