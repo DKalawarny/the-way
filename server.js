@@ -185,6 +185,45 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true });
 });
 
+// ── Client error reporting ───────────────────────────────────────────────────
+// The frontend posts uncaught errors / crashes here. We log them (visible in
+// Render logs) and send a rate-limited email alert so a production break is
+// noticed fast instead of by a user email days later.
+// Set ERROR_ALERT_EMAIL to receive alerts (needs RESEND_API_KEY too).
+const _errorAlertSeen = new Map(); // message → last-emailed epoch ms
+const ERROR_ALERT_COOLDOWN_MS = 30 * 60 * 1000; // 1 email per identical error / 30 min
+
+app.post('/api/client-error', async (req, res) => {
+  try {
+    const { message, stack, url, userAgent, kind, componentStack } = req.body ?? {};
+    if (!message || typeof message !== 'string') return res.status(204).end();
+    const msg = message.slice(0, 300);
+
+    console.error(`[client-error]${kind ? ` (${kind})` : ''} ${msg}`);
+    if (stack)          console.error('  stack:', String(stack).split('\n').slice(0, 6).join('\n  '));
+    if (componentStack) console.error('  react:', String(componentStack).split('\n').slice(0, 4).join('\n  '));
+    if (url)            console.error('  url:', url);
+
+    const alertTo = process.env.ERROR_ALERT_EMAIL;
+    if (alertTo && process.env.RESEND_API_KEY) {
+      const key = msg.slice(0, 200);
+      const now = Date.now();
+      if (now - (_errorAlertSeen.get(key) ?? 0) > ERROR_ALERT_COOLDOWN_MS) {
+        _errorAlertSeen.set(key, now);
+        const html = `<pre style="white-space:pre-wrap;font-size:13px;color:#333">${
+          [`${kind ? `[${kind}] ` : ''}${msg}`, '', `URL: ${url ?? '—'}`, `Agent: ${userAgent ?? '—'}`, '', String(stack ?? '').slice(0, 2500)]
+            .join('\n').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))
+        }</pre>`;
+        sendEmail(alertTo, `kinwove error: ${msg.slice(0, 90)}`, html).catch((e) =>
+          console.error('[client-error] alert email failed:', e?.message));
+      }
+    }
+  } catch (e) {
+    console.error('[client-error] handler error:', e?.message);
+  }
+  res.status(204).end();
+});
+
 // ── URL content fetcher (web pages + YouTube transcripts) ────────────────────
 
 const URL_DETECT = /https?:\/\/[^\s<>"{}|\\^`\[\]]{8,}/gi;
