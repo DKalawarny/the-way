@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 import { T } from './theme.js';
 import { supabase } from './supabase.js';
+import { useDraft } from './useDraft.js';
 
 const BibleReader = lazy(() => import('./BibleReader.jsx'));
 
@@ -105,6 +106,12 @@ function NotesSection({ session, churchId, refreshKey = 0 }) {
   const [seriesInput, setSeriesInput]       = useState('');
   const editorRef = useRef(null);
 
+  // Draft safety net for the notes editor — so an interrupted note isn't lost.
+  // New-note form is a plain textarea (useDraft); the edit editor is a
+  // contentEditable, so it stashes its HTML to a user-scoped key by hand.
+  const clearNewNoteDraft = useDraft(`note-new:${churchId ?? ''}`, formBody, setFormBody, userId);
+  const editDraftKey = (id) => (userId && id ? `kw:draft:${userId}:note-edit:${id}` : null);
+
   useEffect(() => {
     if (!churchId) return;
     supabase.from('church_notes')
@@ -117,6 +124,16 @@ function NotesSection({ session, churchId, refreshKey = 0 }) {
     if (!editingId || !editorRef.current) return;
     editorRef.current.innerHTML = toEditorHtml(editInitBody);
     setIsDirty(false);
+    // Recover an interrupted edit: if we stashed unsaved changes for this note
+    // (a reload/nav before Save), restore them over the saved version.
+    try {
+      const k = editDraftKey(editingId);
+      const draft = k && localStorage.getItem(k);
+      if (draft && draft !== editorRef.current.innerHTML) {
+        editorRef.current.innerHTML = draft;
+        setIsDirty(true);
+      }
+    } catch { /* ignore */ }
     setShowDonePrompt(false);
     editorRef.current.focus();
     // move cursor to end
@@ -139,7 +156,7 @@ function NotesSection({ session, churchId, refreshKey = 0 }) {
     setCreating(false);
     if (error) return;
     setNotes(prev => [data, ...prev]);
-    setFormTitle(''); setFormBody(''); setFormSeries(''); setShowForm(false);
+    setFormTitle(''); setFormBody(''); clearNewNoteDraft(); setFormSeries(''); setShowForm(false);
   }
 
   function startEdit(note) {
@@ -162,6 +179,7 @@ function NotesSection({ session, churchId, refreshKey = 0 }) {
     if (error) { setSaveState('error'); return; }
     setNotes(prev => prev.map(n => n.id === noteId ? { ...n, ...updates } : n));
     setIsDirty(false);
+    try { const k = editDraftKey(noteId); if (k) localStorage.removeItem(k); } catch { /* ignore */ }
     setSaveState('saved');
     setTimeout(() => setSaveState('idle'), 2000);
   }
@@ -182,6 +200,7 @@ function NotesSection({ session, churchId, refreshKey = 0 }) {
   async function deleteNote(noteId) {
     await supabase.from('church_notes').delete().eq('id', noteId);
     setNotes(prev => prev.filter(n => n.id !== noteId));
+    try { const k = editDraftKey(noteId); if (k) localStorage.removeItem(k); } catch { /* ignore */ }
     setEditingId(null); setConfirmDelete(null);
   }
 
@@ -326,7 +345,13 @@ function NotesSection({ session, churchId, refreshKey = 0 }) {
                     ref={editorRef}
                     contentEditable
                     suppressContentEditableWarning
-                    onInput={() => { setIsDirty(true); setShowDonePrompt(false); }}
+                    onInput={() => {
+                      setIsDirty(true); setShowDonePrompt(false);
+                      try {
+                        const k = editDraftKey(note.id);
+                        if (k) localStorage.setItem(k, editorRef.current.innerHTML);
+                      } catch { /* ignore */ }
+                    }}
                     onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) { e.preventDefault(); saveEdit(note.id); } }}
                     style={{ width: '100%', minHeight: 180, fontSize: 14, fontFamily: T.display, color: T.ink, outline: 'none', lineHeight: 1.75, boxSizing: 'border-box' }}
                   />
