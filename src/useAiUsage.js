@@ -2,15 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabase.js';
 
 // ── Plan configuration ────────────────────────────────────────────────────────
-export const PLAN_LIMITS = {
-  free:              { period: 'weekly',        limit: 5   },  // 5 free questions/week
-  trial:             { period: 'church-trial',  limit: 100 },  // church 5-week trial — 100 questions (generous taste → convert)
-  premium:           { period: 'monthly',       limit: 200 },  // Individual $6.99 CAD
-  premium_plus:      { period: 'monthly',       limit: 270 },  // Individual Pro $13.99 CAD
-  church_base:       { period: 'monthly',       limit: 250 },  // Church Base $41.99 CAD
-  church_pro:        { period: 'monthly',       limit: 600 },  // Church Pro $82.99 CAD
-  expired:           { period: 'monthly',       limit: 0   },  // trial ended, unpaid — AI off, rest of dashboard stays usable
-};
+// Single source of truth lives in planConfig.js (pure + unit-tested).
+import { PLAN_LIMITS } from './planConfig.js';
+export { PLAN_LIMITS };
 
 export const TOPUP_MESSAGES = 100;
 export const TOPUP_PRICE    = '$6.99 CAD';

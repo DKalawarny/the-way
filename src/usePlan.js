@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase.js';
+import { churchHasAccess } from './planConfig.js';
 
 export const TRIAL_DAYS               = 35;
 export const CHURCH_BASE_PRICE        = '$41.99 CAD/mo';
@@ -69,8 +70,7 @@ export function usePlan(churchId) {
     : null;
   const daysLeft     = trialEnd ? Math.max(0, Math.ceil((trialEnd - now) / MS_DAY)) : 0;
   const trialExpired = plan === 'trial' && daysLeft === 0;
-  const isPaidChurch = plan === 'church_base' || plan === 'church_pro';
-  const hasAccess    = plan === 'active' || isPaidChurch || (plan === 'trial' && daysLeft > 0);
+  const hasAccess    = churchHasAccess(plan, daysLeft);
 
   return { loading: false, plan, hasAccess, daysLeft, trialExpired, trialStartedAt };
 }

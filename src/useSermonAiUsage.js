@@ -4,13 +4,8 @@ import { supabase } from './supabase.js';
 export const FREE_SERMON_LIMIT  = 3;    // lifetime, non-church
 export const TRIAL_MSG_LIMIT    = 100;  // total during 5-week trial
 
-// Monthly caps for paid church plans — mirrors individual chat limits
-const PAID_LIMITS = {
-  church_base: 250,
-  church_pro:  250,
-  active:      250, // fallback for legacy 'active' rows
-  expired:     0,   // trial ended, unpaid — sermon AI off, rest of dashboard stays usable
-};
+// Monthly caps for paid church plans — single source of truth in planConfig.js
+import { SERMON_PAID_LIMITS as PAID_LIMITS } from './planConfig.js';
 
 const PERIOD_FREE  = 'sermon-lifetime';
 const PERIOD_TRIAL = 'sermon-trial';
