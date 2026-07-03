@@ -1,6 +1,7 @@
 import { lazy, useEffect, useRef, useState, Suspense } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
+import { exactTime } from './time.js';
 import { Avatar } from './ProfilePage.jsx';
 import CareConversation from './CareConversation.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar';
@@ -116,7 +117,7 @@ function ThreadRow({ name, avatarConfig, photoUrl, subtitle, subtitleColor, last
               <div style={{ fontWeight: unread ? 700 : 600, fontSize: 13.5, color: T.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {name ?? 'Someone from your church'}
               </div>
-              {ts && <div style={{ fontSize: 11, color: T.inkMuted, flexShrink: 0, whiteSpace: 'nowrap' }}>{timeAgo(ts)}</div>}
+              {ts && <div title={exactTime(ts)} style={{ fontSize: 11, color: T.inkMuted, flexShrink: 0, whiteSpace: 'nowrap' }}>{timeAgo(ts)}</div>}
             </div>
             <div style={{ fontSize: 11.5, color: subtitleColor ?? T.inkMuted, marginBottom: lastBody ? 3 : 0 }}>
               {subtitle}

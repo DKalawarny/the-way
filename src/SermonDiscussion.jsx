@@ -3,7 +3,7 @@ import { Smile } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { presetForRole } from './Badge.jsx';
-import { relativeTime } from './time.js';
+import { relativeTime, exactTime } from './time.js';
 import { useUiKit, TextButton } from './uikit.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
 import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
@@ -204,7 +204,7 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
             </div>
             {/* Timestamp + actions below bubble */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 4, paddingLeft: 10 }}>
-              <span style={{ fontSize: 12, color: T.inkMuted }}>{relativeTime(row.created_at)}</span>
+              <span style={{ fontSize: 12, color: T.inkMuted }} title={exactTime(row.created_at)}>{relativeTime(row.created_at)}</span>
               <button
                 onClick={() => setReplyTo(row)}
                 style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 12, cursor: 'pointer', padding: 0, fontWeight: 600 }}

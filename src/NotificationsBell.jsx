@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { UserPlus, Users, MessageCircle, CornerDownRight, Smile, Heart, BookOpen } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
+import { exactTime } from './time.js';
 import { Avatar } from './ProfilePage.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
@@ -180,7 +181,7 @@ function NotificationRow({ n, onClick, onFriendAction, onAvatarClick, onRoleAcce
           )}
         </div>
         <div style={{ fontSize: 12.5, color: T.goldDark, fontWeight: 600, letterSpacing: '0.01em' }}>
-          {timeAgo(n.created_at)}
+          <span title={exactTime(n.created_at)}>{timeAgo(n.created_at)}</span>
         </div>
 
         {/* Accept / Decline buttons for friend requests */}

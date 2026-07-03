@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
+import { exactTime } from './time.js';
 import { Avatar } from './ProfilePage.jsx';
 import { useUiKit } from './uikit.jsx';
 
@@ -332,7 +333,7 @@ export default function CareConversation({ session, profile, conversationId, vie
                     fontSize: 10, color: mine ? 'rgba(253,248,240,0.55)' : T.inkMuted,
                     marginTop: 4, fontFamily: T.sans,
                   }}>
-                    {timeAgo(m.created_at)}
+                    <span title={exactTime(m.created_at)}>{timeAgo(m.created_at)}</span>
                     {m.is_safety_flag && <span style={{ marginLeft: 6, color: mine ? T.goldLight : T.error }}>· flagged</span>}
                   </div>
                 </div>

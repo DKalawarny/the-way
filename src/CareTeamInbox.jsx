@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
+import { exactTime } from './time.js';
 import CareConversation from './CareConversation.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
@@ -83,7 +84,7 @@ function ConversationRow({ conversation, lastMessage, onOpen, isUnclaimed, helpe
           <div style={{ fontWeight: 600, fontSize: 14.5, color: T.ink }}>{subjectName}</div>
           <div style={{ fontSize: 12, color: T.inkMuted }}>
             {conversation.topic ? `Topic: ${conversation.topic}` : 'No topic specified'}
-            {' · '}{timeAgo(conversation.last_message_at ?? conversation.created_at)}
+            {' · '}<span title={exactTime(conversation.last_message_at ?? conversation.created_at)}>{timeAgo(conversation.last_message_at ?? conversation.created_at)}</span>
           </div>
         </div>
         {isUnclaimed && (

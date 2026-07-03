@@ -1,4 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { T } from './theme.js';
 
 /* ── Auto-growing text boxes ─────────────────────────────────────────────────
    Makes every <textarea> grow with its content as you type instead of showing
@@ -22,6 +24,105 @@ function grow(el) {
   const next = Math.min(el.scrollHeight, cap);
   el.style.height = next + 'px';
   el.style.overflowY = el.scrollHeight > cap ? 'auto' : 'hidden';
+}
+
+/* ── Offline banner ──────────────────────────────────────────────────────────
+   A quiet strip at the top when the connection drops, so a failed post or load
+   reads as "you're offline" rather than "the app is broken." Auto-hides when
+   the connection returns (with a brief "Back online" confirmation).
+── */
+export function OfflineBanner() {
+  const [online, setOnline] = useState(
+    typeof navigator === 'undefined' ? true : navigator.onLine
+  );
+  const [justReconnected, setJustReconnected] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let t = null;
+    function goOnline() {
+      setOnline(true);
+      setJustReconnected(true);
+      t = setTimeout(() => setJustReconnected(false), 2600);
+    }
+    function goOffline() { setOnline(false); setJustReconnected(false); }
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+      if (t) clearTimeout(t);
+    };
+  }, []);
+
+  if (online && !justReconnected) return null;
+
+  const offlineStyle = {
+    background: '#3a2a1a', color: '#F5EDD8', borderBottom: `1px solid ${T.gold}55`,
+  };
+  const backStyle = {
+    background: T.gold, color: '#FDF8EE', borderBottom: 'none',
+  };
+
+  return createPortal(
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100000,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+      padding: '7px 14px', fontFamily: T.display, fontSize: 13, fontWeight: 500,
+      textAlign: 'center', paddingTop: 'calc(7px + env(safe-area-inset-top, 0px))',
+      ...(online ? backStyle : offlineStyle),
+    }}>
+      {online ? 'Back online' : "You're offline — some things may not load or save until you reconnect."}
+    </div>,
+    document.body,
+  );
+}
+
+/* ── "Copied!" confirmation ──────────────────────────────────────────────────
+   Wraps navigator.clipboard.writeText once so ANY copy in the app — invite
+   codes, share links, anything added later — flashes a small confirmation.
+── */
+export function CopyToast() {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return;
+    const clip = navigator.clipboard;
+    const original = clip.writeText.bind(clip);
+    let hideTimer = null;
+    function patched(text) {
+      return original(text).then(
+        (r) => {
+          setShow(true);
+          if (hideTimer) clearTimeout(hideTimer);
+          hideTimer = setTimeout(() => setShow(false), 1600);
+          return r;
+        },
+        (err) => { throw err; },   // copy failed — no toast
+      );
+    }
+    try { clip.writeText = patched; } catch { /* non-writable — skip */ }
+    return () => {
+      try { clip.writeText = original; } catch { /* ignore */ }
+      if (hideTimer) clearTimeout(hideTimer);
+    };
+  }, []);
+
+  if (!show) return null;
+
+  return createPortal(
+    <div style={{
+      position: 'fixed', left: '50%', bottom: 'calc(78px + env(safe-area-inset-bottom, 0px))',
+      transform: 'translateX(-50%)', zIndex: 100000, pointerEvents: 'none',
+      background: T.ink, color: T.cream, borderRadius: 999,
+      padding: '9px 18px', fontFamily: T.display, fontSize: 13.5, fontWeight: 600,
+      boxShadow: '0 6px 22px rgba(26,17,8,0.28)',
+      display: 'flex', alignItems: 'center', gap: 7,
+    }}>
+      <span aria-hidden>✓</span> Copied
+    </div>,
+    document.body,
+  );
 }
 
 /* ── Cmd / Ctrl + Enter to submit ────────────────────────────────────────────

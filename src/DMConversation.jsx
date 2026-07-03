@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase, authedFetch } from './supabase.js';
 import { T } from './theme.js';
+import { exactTime } from './time.js';
 import { Avatar } from './ProfilePage.jsx';
 import MsgText from './MsgText.jsx';
 import { getSystemPrompt } from './prompts.js';
@@ -573,7 +574,7 @@ export default function DMConversation({ session, profile, conversationId, other
               )}
 
               <div style={{ fontSize: 10.5, color: T.inkMuted, marginTop: 3, textAlign: isMe ? 'right' : 'left', paddingLeft: isMe ? 0 : 2, paddingRight: isMe ? 2 : 0 }}>
-                {timeAgo(msg.created_at)}{msg._edited ? ' · edited' : ''}
+                <span title={exactTime(msg.created_at)}>{timeAgo(msg.created_at)}</span>{msg._edited ? ' · edited' : ''}
               </div>
             </div>
           );
