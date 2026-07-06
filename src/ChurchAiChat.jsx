@@ -657,6 +657,14 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
             </div>
           )}
 
+          {/* At the monthly limit with no conversation open: center the upgrade
+              card in the empty space instead of leaving a large blank void. */}
+          {isEmpty && aiUsage.atLimit && (
+            <div style={{ minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 0' }}>
+              <AiLimitWall plan={plan} panelMode onTopupSuccess={() => aiUsage.refreshAfterTopup()} />
+            </div>
+          )}
+
           {messages.map((m, i) => {
             const isAssistant = m.role === 'assistant';
             const isStreaming  = isAssistant && m.content === '' && busy;
@@ -819,9 +827,13 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
 
         {/* ── Input ── */}
         {aiUsage.atLimit ? (
-          <div style={{ overflowY: 'auto', flexShrink: 0, maxHeight: '70%' }}>
-            <AiLimitWall plan={plan} panelMode onTopupSuccess={() => aiUsage.refreshAfterTopup()} />
-          </div>
+          // When the chat is empty the wall is centered in the message area
+          // above, so only pin it at the bottom when there's a conversation.
+          !isEmpty && (
+            <div style={{ overflowY: 'auto', flexShrink: 0, maxHeight: '70%' }}>
+              <AiLimitWall plan={plan} panelMode onTopupSuccess={() => aiUsage.refreshAfterTopup()} />
+            </div>
+          )
         ) : (
           <div style={{ borderTop: `1px solid ${C.border}`, padding: '12px 0 0', flexShrink: 0 }}>
             {/* Mobile: floating desk buttons above input */}

@@ -68,6 +68,7 @@ Deno.serve(async (req) => {
       client_reference_id: user_id,
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
+      allow_promotion_codes: true,   // show a "Add promotion code" field at checkout
       success_url: `${return_url}?stripe_success=1`,
       cancel_url:  `${return_url}?stripe_cancel=1`,
       subscription_data: {

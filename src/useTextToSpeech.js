@@ -137,7 +137,10 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
   function unlockAudioCtx() {
     try {
       if (!audioCtxRef.current || audioCtxRef.current.state === 'closed') {
-        audioCtxRef.current = new AudioContext();
+        // Older iOS Safari only exposes the webkit-prefixed constructor.
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        audioCtxRef.current = new AC();
       }
       if (audioCtxRef.current.state === 'suspended') {
         audioCtxRef.current.resume(); // intentionally not awaited
