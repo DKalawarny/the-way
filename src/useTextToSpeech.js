@@ -28,6 +28,7 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
   const blobUrl     = useRef(null);
   const abortRef    = useRef(null);
   const audioCtxRef = useRef(null);   // shared AudioContext
+  const speechPrimed = useRef(false); // iOS: native speech unlocked in-gesture?
 
   const supported = true;
 
@@ -250,6 +251,18 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
     // gesture context is still live. This unlocks the AudioContext for all
     // subsequent playback — including after async fetch/decode on iOS.
     unlockAudioCtx();
+
+    // iOS: unlock the native speech engine within the tap gesture, so if the
+    // high-quality TTS fetch fails, the Web Speech fallback can still speak
+    // (it otherwise runs after an await and iOS silently blocks it).
+    if (IS_IOS && 'speechSynthesis' in window && !speechPrimed.current) {
+      try {
+        const u = new SpeechSynthesisUtterance(' ');
+        u.volume = 0;
+        window.speechSynthesis.speak(u);
+        speechPrimed.current = true;
+      } catch { /* ignore */ }
+    }
 
     try {
       if (IS_IOS) {
