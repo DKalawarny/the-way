@@ -596,6 +596,36 @@ app.get('/api/bible/:bibleId/chapters/:chapterId', optionalAuth, limitEither({ c
   }
 });
 
+// ── Audio Bible proxies (api.bible narrated MP3 — free/open-access, no cost) ──
+// Real human narration streamed from api.bible; replaces paid TTS for Bible
+// listening. Same voice for everyone, no per-character billing, no storage.
+app.get('/api/bible-audio/list', optionalAuth, limitEither({ capacity: 30, refillPerSec: 0.5 }, { capacity: 10, refillPerSec: 10 / 60 }), async (_req, res) => {
+  const BIBLE_API_KEY = process.env.VITE_BIBLE_API_KEY;
+  if (!BIBLE_API_KEY) return res.status(500).json({ error: 'Missing VITE_BIBLE_API_KEY on server' });
+  try {
+    const upstream = await fetch('https://rest.api.bible/v1/audio-bibles', { headers: { 'api-key': BIBLE_API_KEY } });
+    if (!upstream.ok) return res.status(upstream.status >= 500 ? 502 : upstream.status).json({ error: 'audio-bibles upstream error' });
+    res.set('Cache-Control', 'public, max-age=3600').json(await upstream.json());
+  } catch (e) { safeError(res, e, 'audio-bibles list'); }
+});
+
+app.get('/api/bible-audio/:audioBibleId/chapters/:chapterId', optionalAuth, limitEither({ capacity: 60, refillPerSec: 1 }, { capacity: 20, refillPerSec: 20 / 60 }), async (req, res) => {
+  const { audioBibleId, chapterId } = req.params;
+  const BIBLE_API_KEY = process.env.VITE_BIBLE_API_KEY;
+  if (!BIBLE_API_KEY) return res.status(500).json({ error: 'Missing VITE_BIBLE_API_KEY on server' });
+  try {
+    const upstream = await fetch(
+      `https://rest.api.bible/v1/audio-bibles/${audioBibleId}/chapters/${chapterId}`,
+      { headers: { 'api-key': BIBLE_API_KEY } }
+    );
+    if (!upstream.ok) {
+      console.error('[kinwove] audio bible chapter upstream', upstream.status);
+      return res.status(upstream.status >= 500 ? 502 : upstream.status).json({ error: 'audio bible upstream error' });
+    }
+    res.json(await upstream.json()); // data.resourceUrl = the MP3 to play
+  } catch (e) { safeError(res, e, 'audio bible chapter'); }
+});
+
 // ── Bible verse proxy (for version comparison) ───────────────────────────────
 app.get('/api/bible/:bibleId/verses/:verseId', optionalAuth, limitEither({ capacity: 60, refillPerSec: 1 }, { capacity: 20, refillPerSec: 20 / 60 }), async (req, res) => {
   const { bibleId, verseId } = req.params;
