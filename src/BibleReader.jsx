@@ -779,6 +779,9 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     voice: ttsVoice,
     // Keep-reading: when a chapter finishes reading aloud, auto-advance to the
     // next chapter and keep going — the "sit back and just listen" mode.
+    // Bible reading uses the free on-device voice so hours-long listening never
+    // burns the paid ElevenLabs quota. (Premium cached audio can come later.)
+    preferNative: true,
     onEnded: (id) => {
       if (typeof id !== 'string' || !id.startsWith('ch:')) return;
       const bookIdx = ALL_BOOKS.findIndex((b) => b.id === bookId);

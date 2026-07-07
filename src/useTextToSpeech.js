@@ -18,7 +18,7 @@ const VOICE_SHAPE = {
 
 const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-export function useTextToSpeech({ voice = 'onyx', onEnded } = {}) {
+export function useTextToSpeech({ voice = 'onyx', onEnded, preferNative = false } = {}) {
   const [speakingId, setSpeakingId] = useState(null);
   const [paused, setPaused]         = useState(false);
   const [loadingId, setLoadingId]   = useState(null);
@@ -269,6 +269,11 @@ export function useTextToSpeech({ voice = 'onyx', onEnded } = {}) {
         speechPrimed.current = true;
       } catch { /* ignore */ }
     }
+
+    // Long-form reading (the Bible) uses the free on-device voice — reading
+    // whole chapters for hours through paid ElevenLabs would drain the quota
+    // (and rack up cost) fast. Premium cached audio can layer on later.
+    if (preferNative) { setLoadingId(null); fallbackSpeak(id, text); return; }
 
     try {
       if (IS_IOS) {
