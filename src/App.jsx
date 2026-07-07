@@ -3939,10 +3939,15 @@ export default function App() {
           profile wizard runs and the pastor prompt is set. */}
       {showVerseCard && !showTour && !showPastorPrompt && session && profile?.person_type && (
         <DailyVerseCard
-          onReflect={(verse) => {
-            if (!currentConvId) startChatFromProfile();
-            setAutoSendPrompt(`Help me reflect on today's verse — ${verse.ref}: "${verse.text}"`);
-            setChatPanelOpen(true);
+          onReflect={async () => {
+            // Open today's shared verse post so people reflect together —
+            // same thread the daily email links to. Falls back to the feed.
+            try {
+              const r = await authedFetch('/api/verse/today');
+              const { postId } = await r.json();
+              if (postId) { setOpenCommentPostId(postId); setStage('feed'); return; }
+            } catch { /* ignore */ }
+            setStage('feed');
           }}
           onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }}
           onClose={() => setShowVerseCard(false)}

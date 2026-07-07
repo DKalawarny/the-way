@@ -111,7 +111,7 @@ export default function DailyVerseCard({ onReflect, onOpenBible, onClose }) {
               width: '100%',
             }}
           >
-            Reflect on this verse →
+            Reflect with others →
           </button>
           <button
             onClick={() => { onOpenBible?.(verse.ref); onClose(); }}

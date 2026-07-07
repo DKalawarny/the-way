@@ -1540,6 +1540,45 @@ app.get('/api/email/unsubscribe', async (req, res) => {
   );
 });
 
+// Ensure today's verse is posted as a shared, commentable community post by the
+// kinwove account, and return its id. Idempotent — reuses today's post if it
+// already exists. Used by both the daily email and the in-app verse card so
+// they land people in the same place.
+async function ensureVersePost(verse) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null;
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+  const systemId = await getOrCreateSystemAccount();
+  if (!systemId) return null;
+  const since = new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString();
+  const existing = await fetch(
+    `${SUPABASE_URL}/rest/v1/posts?author_id=eq.${systemId}&created_at=gte.${since}&select=id,body&order=created_at.desc&limit=25`,
+    { headers: h }
+  ).then((x) => x.json()).catch(() => []);
+  const snippet = verse.text.slice(0, 40);
+  let postId = Array.isArray(existing) ? existing.find((p) => (p.body || '').includes(snippet))?.id : null;
+  if (!postId) {
+    const verseBody = `“${verse.text}”\n\n— ${verse.ref}\n\nWhat is this stirring in you today?`;
+    const created = await fetch(`${SUPABASE_URL}/rest/v1/posts`, {
+      method: 'POST',
+      headers: { ...h, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({ author_id: systemId, scope: 'me', visibility: 'public', kind: 'text', body: verseBody }),
+    }).then((x) => x.json()).catch(() => null);
+    postId = Array.isArray(created) ? created[0]?.id : created?.id;
+  }
+  return postId ?? null;
+}
+
+// Today's shared verse post — the in-app daily verse card hits this so
+// "Reflect with others" opens the same thread the email links to.
+app.get('/api/verse/today', requireAuth, async (_req, res) => {
+  try {
+    const postId = await ensureVersePost(getDailyVerse());
+    res.json({ postId });
+  } catch (e) {
+    res.status(500).json({ error: e?.message ?? 'error' });
+  }
+});
+
 // ── Daily verse email (cron) ──────────────────────────────────────────────────
 // One calm morning email with today's verse. Sent to every onboarded, opted-in
 // member. Schedule via pg_cron (see scripts/2026-07-06-daily-verse-email-cron.sql).
@@ -1551,31 +1590,11 @@ app.post('/api/cron/daily-verse-email', async (req, res) => {
   const verse = getDailyVerse();
   const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
 
-  // Post today's verse as a shared, commentable community post (by the kinwove
-  // account) — a daily gathering point where everyone reflects together. Reuse
-  // today's post if it already exists so re-fires don't duplicate it.
+  // Post (or reuse) today's shared verse post; link the email to it.
   let reflectUrl = 'https://www.kinwove.com';
   try {
-    const systemId = await getOrCreateSystemAccount();
-    if (systemId) {
-      const since = new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString();
-      const existing = await fetch(
-        `${SUPABASE_URL}/rest/v1/posts?author_id=eq.${systemId}&created_at=gte.${since}&select=id,body&order=created_at.desc&limit=25`,
-        { headers: h }
-      ).then((x) => x.json()).catch(() => []);
-      const snippet = verse.text.slice(0, 40);
-      let postId = Array.isArray(existing) ? existing.find((p) => (p.body || '').includes(snippet))?.id : null;
-      if (!postId) {
-        const verseBody = `“${verse.text}”\n\n— ${verse.ref}\n\nWhat is this stirring in you today?`;
-        const created = await fetch(`${SUPABASE_URL}/rest/v1/posts`, {
-          method: 'POST',
-          headers: { ...h, 'Content-Type': 'application/json', Prefer: 'return=representation' },
-          body: JSON.stringify({ author_id: systemId, scope: 'me', visibility: 'public', kind: 'text', body: verseBody }),
-        }).then((x) => x.json()).catch(() => null);
-        postId = Array.isArray(created) ? created[0]?.id : created?.id;
-      }
-      if (postId) reflectUrl = `https://www.kinwove.com/?post=${postId}`;
-    }
+    const postId = await ensureVersePost(verse);
+    if (postId) reflectUrl = `https://www.kinwove.com/?post=${postId}`;
   } catch (e) {
     console.error('[daily-verse-email] verse post:', e.message);
   }
