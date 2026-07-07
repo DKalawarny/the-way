@@ -3029,7 +3029,7 @@ export default function App() {
           onClose={() => goBack('home')}
           onOpenChat={(q) => { if (!currentConvId) startChatFromProfile(); if (q) setPrefilledInput(q); setChatPanelOpen(true); }}
           onViewProfile={(uid) => uid === session.user.id ? setStage('me') : setViewingUserId(uid)}
-          onFindPeople={() => setPeopleSearchOpen(true)}
+          onFindPeople={() => { setViewingUserId(null); setPeopleSearchOpen(true); }}
           onInviteFriends={() => setStage('invite')}
           onOpenPrayer={() => setStage('prayer')}
           onOpenRead={() => setStage('read')}
@@ -3089,7 +3089,7 @@ export default function App() {
           onClose={() => goBack('home')}
           onOpenChat={(q) => { if (!currentConvId) startChatFromProfile(); if (q) setPrefilledInput(q); setChatPanelOpen(true); }}
           onViewProfile={(uid) => uid === session.user.id ? setStage('me') : setViewingUserId(uid)}
-          onFindPeople={() => setPeopleSearchOpen(true)}
+          onFindPeople={() => { setViewingUserId(null); setPeopleSearchOpen(true); }}
           onInviteFriends={() => setStage('invite')}
           onOpenPrayer={() => setStage('prayer')}
           onOpenRead={() => setStage('read')}
@@ -3121,7 +3121,7 @@ export default function App() {
               session={session}
               profile={profile}
               onClose={() => setViewingGroupEntry(null)}
-              onFindPeople={() => setPeopleSearchOpen(true)}
+              onFindPeople={() => { setViewingUserId(null); setPeopleSearchOpen(true); }}
               onLeave={async () => {
                 await supabase.from('group_members').delete().eq('member_id', session.user.id).eq('group_id', viewingGroupEntry.group.id);
                 setUserGroups((prev) => prev.filter((g) => g.group.id !== viewingGroupEntry.group.id));
@@ -3155,9 +3155,9 @@ export default function App() {
           onProfileUpdate={(p) => setProfile(p)}
           onViewProfile={(uid) => setViewingUserId(uid)}
           onOpenChat={(q) => { if (!currentConvId) startChatFromProfile(); if (q) setPrefilledInput(q); setChatPanelOpen(true); }}
-          onFindPeople={() => setPeopleSearchOpen(true)}
+          onFindPeople={() => { setViewingUserId(null); setPeopleSearchOpen(true); }}
           onInviteFriends={() => setStage('invite')}
-          onFindChurches={() => setStage('churches')}
+          onFindChurches={() => { setViewingUserId(null); setStage('churches'); }}
           onApplyAsPastor={() => setStage('pastor-apply')}
           onOpenPastorAdminQueue={profile?.is_admin ? () => setStage('pastor-admin-queue') : undefined}
           onOpenChurchDisputesQueue={profile?.is_admin ? () => setStage('church-disputes-queue') : undefined}
@@ -3300,7 +3300,7 @@ export default function App() {
               : undefined}
             onOpenCareInbox={(careTeamRecord || pastorChurchId) ? () => setStage('care-inbox') : undefined}
             onOpenWalks={() => setStage('walks')}
-            onFindChurches={() => setStage('churches')}
+            onFindChurches={() => { setViewingUserId(null); setStage('churches'); }}
             onRequestJoin={!session
               ? () => { setPendingChurchJoin(viewingChurchId); setAuthStage('auth'); }
               : undefined}
@@ -3722,12 +3722,12 @@ export default function App() {
           onOpenBoard={() => { setStage('feed'); setBoardOpen(true); }}
           onOpenHistory={() => { setStage('feed'); setHistoryOpen(true); }}
           onOpenJournal={() => { setViewingUserId(null); setStage('journal'); }}
-          onFindPeople={() => setPeopleSearchOpen(true)}
+          onFindPeople={() => { setViewingUserId(null); setPeopleSearchOpen(true); }}
           onInviteFriends={() => setStage('invite')}
           onOpenTalkToSomeone={profile?.church_id ? () => { setViewingChurchId(profile.church_id); setStage('talk-to-someone'); } : undefined}
           onOpenCareInbox={(careTeamRecord || pastorChurchId) ? () => setStage('care-inbox') : undefined}
           onOpenPastorDashboard={pastorChurchId ? () => setStage('church-admin') : undefined}
-          onFindChurches={() => setStage('churches')}
+          onFindChurches={() => { setViewingUserId(null); setStage('churches'); }}
           onApplyAsPastor={() => setStage('pastor-apply')}
           onOpenPastorAdminQueue={profile?.is_admin ? () => setStage('pastor-admin-queue') : undefined}
           onOpenChurchDisputesQueue={profile?.is_admin ? () => setStage('church-disputes-queue') : undefined}
@@ -3743,7 +3743,7 @@ export default function App() {
         <FindButton
           isDesktop={isDesktop}
           rightOffset={isDocked ? chatPanelWidth : 0}
-          onFindPeople={() => setPeopleSearchOpen(true)}
+          onFindPeople={() => { setViewingUserId(null); setPeopleSearchOpen(true); }}
           onFindChurches={() => { setViewingUserId(null); setStage('churches'); }}
         />
       )}
