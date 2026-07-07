@@ -1285,8 +1285,9 @@ async function sendEmail(to, subject, html) {
   if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text().catch(() => '')}`);
 }
 
-// Hosted SVG wordmark — exact star-above-i layout, works in all email clients.
-const KW_LOGO = `<img src="https://www.kinwove.com/wordmark-email.svg" width="320" height="80" alt="kinwove" style="display:block;border:0" />`.trim();
+// Wordmark as plain HTML text — SVG/remote images are blocked by Gmail, iOS
+// Mail, etc., so an <img> logo shows up blank. Text renders everywhere.
+const KW_LOGO = `<div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:600;color:#FDF8F0;letter-spacing:0.3px;line-height:1"><span style="color:#D4A24A;margin-right:2px">✦</span>kinwove</div>`.trim();
 
 // Shared brand wrapper — keeps all kinwove emails visually consistent.
 // Pass unsubUrl to add a one-click unsubscribe line (required for recurring
@@ -1318,14 +1319,14 @@ function emailToken(userId) {
 
 // Daily verse email — a calm morning touchpoint. Verse + one gentle reflection,
 // with a CTA back into the app to reflect with the AI.
-function dailyVerseEmailHtml(firstName, verse, unsubUrl) {
+function dailyVerseEmailHtml(firstName, verse, unsubUrl, reflectUrl) {
   return emailWrap(`
     <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#B8733A;font-weight:700;margin:0 0 18px">Today's verse</div>
     <div style="font-family:Georgia,serif;font-size:23px;font-style:italic;line-height:1.5;color:#2C1810;margin:0 0 12px">&ldquo;${verse.text}&rdquo;</div>
     <div style="font-size:14px;color:#B8733A;font-weight:600;margin:0 0 28px">— ${verse.ref}</div>
     <p style="font-size:15.5px;color:#6B5344;line-height:1.75;margin:0 0 2px">Sit with it for a moment, ${firstName}. What is it stirring in you today?</p>
-    ${btnHtml('Reflect on it', 'https://www.kinwove.com')}
-    <p style="font-size:13px;color:#9C7B5E;margin:0">One verse a day. No noise.</p>
+    ${btnHtml('Reflect with others', reflectUrl || 'https://www.kinwove.com')}
+    <p style="font-size:13px;color:#9C7B5E;margin:0">See what others are sharing, and add your own.</p>
   `, unsubUrl);
 }
 
@@ -1550,6 +1551,35 @@ app.post('/api/cron/daily-verse-email', async (req, res) => {
   const verse = getDailyVerse();
   const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
 
+  // Post today's verse as a shared, commentable community post (by the kinwove
+  // account) — a daily gathering point where everyone reflects together. Reuse
+  // today's post if it already exists so re-fires don't duplicate it.
+  let reflectUrl = 'https://www.kinwove.com';
+  try {
+    const systemId = await getOrCreateSystemAccount();
+    if (systemId) {
+      const since = new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString();
+      const existing = await fetch(
+        `${SUPABASE_URL}/rest/v1/posts?author_id=eq.${systemId}&created_at=gte.${since}&select=id,body&order=created_at.desc&limit=25`,
+        { headers: h }
+      ).then((x) => x.json()).catch(() => []);
+      const snippet = verse.text.slice(0, 40);
+      let postId = Array.isArray(existing) ? existing.find((p) => (p.body || '').includes(snippet))?.id : null;
+      if (!postId) {
+        const verseBody = `“${verse.text}”\n\n— ${verse.ref}\n\nWhat is this stirring in you today?`;
+        const created = await fetch(`${SUPABASE_URL}/rest/v1/posts`, {
+          method: 'POST',
+          headers: { ...h, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+          body: JSON.stringify({ author_id: systemId, scope: 'me', visibility: 'public', kind: 'text', body: verseBody }),
+        }).then((x) => x.json()).catch(() => null);
+        postId = Array.isArray(created) ? created[0]?.id : created?.id;
+      }
+      if (postId) reflectUrl = `https://www.kinwove.com/?post=${postId}`;
+    }
+  } catch (e) {
+    console.error('[daily-verse-email] verse post:', e.message);
+  }
+
   // Onboarded members who haven't opted out. (Requires the daily_verse_opt_out
   // column — see the migration script; until it's added this returns an error
   // object and we safely send 0.)
@@ -1568,7 +1598,7 @@ app.post('/api/cron/daily-verse-email', async (req, res) => {
       if (!email) continue;
       const firstName = (usr.display_name || '').split(' ')[0] || 'friend';
       const unsubUrl = `https://www.kinwove.com/api/email/unsubscribe?u=${usr.id}&t=${emailToken(usr.id)}`;
-      await sendEmail(email, `Today’s verse — ${verse.ref}`, dailyVerseEmailHtml(firstName, verse, unsubUrl));
+      await sendEmail(email, `Today’s verse — ${verse.ref}`, dailyVerseEmailHtml(firstName, verse, unsubUrl, reflectUrl));
       sent++;
       await new Promise((rr) => setTimeout(rr, 150)); // gentle pacing between sends
     } catch (e) {
