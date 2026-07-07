@@ -18,7 +18,7 @@ const VOICE_SHAPE = {
 
 const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-export function useTextToSpeech({ voice = 'onyx' } = {}) {
+export function useTextToSpeech({ voice = 'onyx', onEnded } = {}) {
   const [speakingId, setSpeakingId] = useState(null);
   const [paused, setPaused]         = useState(false);
   const [loadingId, setLoadingId]   = useState(null);
@@ -29,6 +29,9 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
   const abortRef    = useRef(null);
   const audioCtxRef = useRef(null);   // shared AudioContext
   const speechPrimed = useRef(false); // iOS: native speech unlocked in-gesture?
+  const onEndedRef   = useRef(onEnded); // fires only on natural completion (not stop)
+  onEndedRef.current = onEnded;
+  const endedByStop  = useRef(false);   // true while a user-initiated stop is happening
 
   const supported = true;
 
@@ -64,6 +67,7 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
   }
 
   function stop() {
+    endedByStop.current = true;
     cancelFetch();
     stopAudio();
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
@@ -228,6 +232,7 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
           audioRef.current = null;
           setSpeakingId(null);
           setPaused(false);
+          if (!endedByStop.current) onEndedRef.current?.(id);
         }
       };
 
@@ -243,6 +248,7 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
   async function speak(id, text) {
     if (speakingId === id) { stop(); return; }
     stop();
+    endedByStop.current = false;
     setSpeakingId(id);
     setLoadingId(id);
     abortRef.current = new AbortController();
@@ -282,7 +288,7 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
       const audio = new Audio(url);
       audioRef.current = audio;
       shapeAudio(audio);
-      audio.onended = () => { stopAudio(); setSpeakingId(null); setPaused(false); };
+      audio.onended = () => { stopAudio(); setSpeakingId(null); setPaused(false); if (!endedByStop.current) onEndedRef.current?.(id); };
       audio.onerror = () => { stopAudio(); setSpeakingId(null); setPaused(false); };
 
       ms.addEventListener('sourceopen', async () => {
@@ -373,7 +379,7 @@ export function useTextToSpeech({ voice = 'onyx' } = {}) {
         else clearTimer();
       }, 10000);
     };
-    utt.onend   = () => { clearTimer(); setSpeakingId(null); };
+    utt.onend   = () => { clearTimer(); setSpeakingId(null); if (!endedByStop.current) onEndedRef.current?.(id); };
     utt.onerror = () => { clearTimer(); setSpeakingId(null); };
     window.speechSynthesis.speak(utt);
   }

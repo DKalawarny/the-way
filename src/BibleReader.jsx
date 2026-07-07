@@ -775,7 +775,17 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const { listening: micListening, toggle: toggleMic, supported: micSupported } =
     useSpeechRecognition((t) => { setChatInput(t); chatInputRef.current?.focus(); });
   const ttsVoice = profile?.tts_voice ?? 'onyx';
-  const { speakingId: rdSpeakingId, loadingId: rdLoadingId, paused: rdPaused, speak: rdSpeak, stop: rdStop, pause: rdPause, resume: rdResume, rewind: rdRewind, forward: rdForward, supported: rdTtsSupported } = useTextToSpeech({ voice: ttsVoice });
+  const { speakingId: rdSpeakingId, loadingId: rdLoadingId, paused: rdPaused, speak: rdSpeak, stop: rdStop, pause: rdPause, resume: rdResume, rewind: rdRewind, forward: rdForward, supported: rdTtsSupported } = useTextToSpeech({
+    voice: ttsVoice,
+    // Keep-reading: when a chapter finishes reading aloud, auto-advance to the
+    // next chapter and keep going — the "sit back and just listen" mode.
+    onEnded: (id) => {
+      if (typeof id !== 'string' || !id.startsWith('ch:')) return;
+      const bookIdx = ALL_BOOKS.findIndex((b) => b.id === bookId);
+      const hasNext = chNum < book.ch || bookIdx < ALL_BOOKS.length - 1;
+      if (hasNext) { autoStartTts.current = true; goChapter(chNum + 1); }
+    },
+  });
   const CHAPTER_TTS_ID = `ch:${bookId}:${chNum}`;
 
   // When chapter changes: if audio was playing, stop it and flag to auto-start new chapter
@@ -808,6 +818,28 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     localStorage.setItem(`rdr_tts:${bookId}:${chNum}`, String(verseNum));
     rdSpeak(CHAPTER_TTS_ID, text);
   }
+
+  // Keep the screen awake while reading aloud so it doesn't auto-lock mid-chapter
+  // and cut the audio. Best-effort (feature-detected); re-acquires when the tab
+  // becomes visible again.
+  useEffect(() => {
+    if (!rdSpeakingId || typeof navigator === 'undefined' || !('wakeLock' in navigator)) return;
+    let lock = null, released = false;
+    const acquire = () => {
+      navigator.wakeLock.request('screen').then((l) => {
+        if (released) { l.release?.().catch(() => {}); return; }
+        lock = l;
+      }).catch(() => {});
+    };
+    const onVis = () => { if (document.visibilityState === 'visible' && !lock) acquire(); };
+    acquire();
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      released = true;
+      document.removeEventListener('visibilitychange', onVis);
+      if (lock) { lock.release?.().catch(() => {}); lock = null; }
+    };
+  }, [rdSpeakingId]);
 
   const isDesktop    = winW >= 768;
   const C = dark ? DARK : LIGHT;
