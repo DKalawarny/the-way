@@ -1272,15 +1272,17 @@ const ROLE_LABELS = {
   worship: 'Worship', youth: 'Youth',
 };
 
-/** Send an email via Resend. Throws on failure. */
-async function sendEmail(to, subject, html) {
+/** Send an email via Resend. Throws on failure. Optional per-message headers
+ *  (e.g. List-Unsubscribe) improve inbox placement. Defaults to the VERIFIED
+ *  kinwove.com domain — never the shared resend.dev domain, which lands in spam. */
+async function sendEmail(to, subject, html, headers) {
   const key  = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM || 'kinwove <onboarding@resend.dev>';
+  const from = process.env.RESEND_FROM || 'kinwove <hello@kinwove.com>';
   if (!key) throw new Error('RESEND_API_KEY not set');
   const r = await fetch('https://api.resend.com/emails', {
     method:  'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body:    JSON.stringify({ from, to: [to], subject, html }),
+    body:    JSON.stringify({ from, to: [to], subject, html, ...(headers ? { headers } : {}) }),
   });
   if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text().catch(() => '')}`);
 }
@@ -1617,7 +1619,9 @@ app.post('/api/cron/daily-verse-email', async (req, res) => {
       if (!email) continue;
       const firstName = (usr.display_name || '').split(' ')[0] || 'friend';
       const unsubUrl = `https://www.kinwove.com/api/email/unsubscribe?u=${usr.id}&t=${emailToken(usr.id)}`;
-      await sendEmail(email, `Today’s verse — ${verse.ref}`, dailyVerseEmailHtml(firstName, verse, unsubUrl, reflectUrl));
+      await sendEmail(email, `Today’s verse — ${verse.ref}`, dailyVerseEmailHtml(firstName, verse, unsubUrl, reflectUrl), {
+        'List-Unsubscribe': `<${unsubUrl}>`,
+      });
       sent++;
       await new Promise((rr) => setTimeout(rr, 150)); // gentle pacing between sends
     } catch (e) {
@@ -1963,7 +1967,7 @@ function generateCode() { return String(Math.floor(100000 + Math.random() * 9000
 async function sendVerificationEmail(to, code, churchName) {
   const key = process.env.RESEND_API_KEY;
   if (!key) throw new Error('RESEND_API_KEY not set');
-  const from = process.env.RESEND_FROM || 'kinwove <onboarding@resend.dev>';
+  const from = process.env.RESEND_FROM || 'kinwove <hello@kinwove.com>';
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
