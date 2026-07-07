@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import Anthropic from '@anthropic-ai/sdk';
 import { getDailyVerse } from './src/dailyVerse.js';
+import { ANSWERS, ANSWERS_BY_SLUG, renderAnswerPage, renderAnswerIndex } from './content/answers.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -3559,6 +3560,10 @@ if (process.env.NODE_ENV !== 'development') {
       // Blog / conversations index — changes every time someone shares a conversation
       `<url><loc>${host}/conversations</loc><changefreq>hourly</changefreq><priority>0.9</priority><lastmod>${today}</lastmod></url>`,
       `<url><loc>${host}/llms.txt</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>`,
+      // Answers library — crawlable faith-question pages (Google + AI engines)
+      `<url><loc>${host}/answers</loc><changefreq>weekly</changefreq><priority>0.9</priority><lastmod>${today}</lastmod></url>`,
+      ...ANSWERS.map((a) =>
+        `<url><loc>${host}/answers/${escapeXml(a.slug)}</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>${escapeXml(a.updated)}</lastmod></url>`),
     ];
 
     // Add all public shared conversations (user-generated content Google can index)
@@ -3681,6 +3686,17 @@ ${entries.join('\n')}
   // /llms.txt — also serve from root (canonical: /.well-known/llms.txt handled by static)
   app.get('/llms.txt', (_req, res) => {
     res.sendFile(path.join(distPath, '..', 'public', 'llms.txt'));
+  });
+
+  // ── Answers library — crawlable, GEO-optimized faith-question pages ──────────
+  // Real server-rendered HTML (not the SPA) so Google + AI engines can read/cite.
+  app.get('/answers', (_req, res) => {
+    res.set('Cache-Control', 'public, max-age=3600').type('html').send(renderAnswerIndex());
+  });
+  app.get('/answers/:slug', (req, res) => {
+    const a = ANSWERS_BY_SLUG[req.params.slug];
+    if (!a) return res.redirect(302, '/answers');
+    res.set('Cache-Control', 'public, max-age=3600').type('html').send(renderAnswerPage(a));
   });
 
   app.use(express.static(distPath));
