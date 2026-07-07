@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { getStoredUtm, clearStoredUtm } from './utm.js';
+import { Turnstile, TURNSTILE_ENABLED } from './Turnstile.jsx';
 
 function Field({ label, children }) {
   return (
@@ -64,6 +65,9 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaReset, setCaptchaReset] = useState(0);
+  const resetCaptcha = () => setCaptchaReset((n) => n + 1);
 
   async function handleDevLogin() {
     setLoading(true);
@@ -87,6 +91,7 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
       password,
       options: {
         emailRedirectTo: window.location.origin,
+        captchaToken,
         data: {
           // First-touch attribution — stored in raw_user_meta_data,
           // visible in the Supabase dashboard under Authentication → Users.
@@ -99,7 +104,7 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
       },
     });
     setLoading(false);
-    if (err) return setError(err.message);
+    if (err) { resetCaptcha(); return setError(err.message); }
     clearStoredUtm(); // attribution captured — clean up
     // If Supabase returns a session immediately (email confirmation disabled),
     // hand it to App.jsx so the wizard can run. Otherwise show the verify screen.
@@ -114,9 +119,9 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { data, error: err } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error: err } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } });
     setLoading(false);
-    if (err) return setError(err.message);
+    if (err) { resetCaptcha(); return setError(err.message); }
     onAuth(data.session);
   }
 
@@ -219,9 +224,16 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
             </label>
           )}
 
-          <button type="submit" style={{ ...btn, opacity: loading || (mode === 'signup' && !ageConfirmed) ? 0.6 : 1, cursor: loading || (mode === 'signup' && !ageConfirmed) ? 'not-allowed' : 'pointer' }} disabled={loading || (mode === 'signup' && !ageConfirmed)}>
+          <Turnstile onToken={setCaptchaToken} resetKey={captchaReset} />
+
+          {(() => {
+            const disabled = loading || (mode === 'signup' && !ageConfirmed) || (TURNSTILE_ENABLED && !captchaToken);
+            return (
+          <button type="submit" style={{ ...btn, opacity: disabled ? 0.6 : 1, cursor: disabled ? 'not-allowed' : 'pointer' }} disabled={disabled}>
             {loading ? 'One moment…' : mode === 'signin' ? 'Sign in' : 'Create account'}
           </button>
+            );
+          })()}
         </form>
 
         {DEV_LOGIN_ENABLED && (
