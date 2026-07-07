@@ -371,6 +371,420 @@ export const ANSWERS = [
     ],
     related: ['will-god-forgive-me', 'does-god-love-me'],
   },
+
+  {
+    slug: 'what-is-the-gospel',
+    question: `What is the gospel?`,
+    category: 'Salvation',
+    updated: '2026-07-06',
+    answer: `The gospel means "good news," and it is this: that God loves you, that Jesus lived, died, and rose to deal with everything broken between you and God, and that this rescue is a gift you receive rather than a reward you earn. In short — you are more flawed than you feared, and more loved than you hoped.`,
+    body: [
+      { h: `It is news, not advice`, p: `Most religion is advice — do these things and get to God. The gospel is news — that God already came to you. It is not a to-do list; it is an announcement of something already done.` },
+      { h: `The core of it in one line`, p: `Jesus took what we owed and offered us what we could never earn. His death paid the debt; his resurrection opened the door. All that is left is to receive it.` },
+      { h: `Why it is called "good"`, p: `Because it does not depend on you being good enough — which is a relief, since no one is. It meets you at your worst and calls you loved anyway.` },
+    ],
+    scriptures: [
+      { ref: `John 3:16`, text: `For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.` },
+      { ref: `Romans 5:8`, text: `But God demonstrates his own love for us in this: While we were still sinners, Christ died for us.` },
+    ],
+    faqs: [
+      { q: `What does "gospel" actually mean?`, a: `It is an old word for "good news" — specifically the news that God has rescued people through Jesus.` },
+      { q: `Is the gospel about being a good person?`, a: `No. It is the opposite — that you cannot be good enough on your own, so God did for you what you could not do for yourself.` },
+      { q: `How do I respond to it?`, a: `By receiving it — trusting Jesus and turning to him. It is a gift to accept, not a standard to meet.` },
+    ],
+    related: ['how-do-i-become-a-christian', 'what-is-grace'],
+  },
+
+  {
+    slug: 'who-is-the-holy-spirit',
+    question: `Who is the Holy Spirit?`,
+    category: 'Holy Spirit',
+    updated: '2026-07-06',
+    answer: `The Holy Spirit is God himself present and active — not a force or an "it," but the third person of the Trinity. Christians describe the Spirit as God living within them: comforting, guiding, convicting, and giving strength. Where God can feel distant, the Spirit is the nearness.`,
+    body: [
+      { h: `Not a force, but God present`, p: `The Bible speaks of the Spirit as personal — he can be grieved, he speaks, he guides. He is God with us and in us, not an impersonal energy.` },
+      { h: `What the Spirit does`, p: `Comforts the hurting, gives wisdom, produces character over time (love, joy, peace, patience), and makes God's presence real rather than theoretical.` },
+      { h: `Why it matters for you`, p: `It means faith is not you white-knuckling toward God from a distance. The Spirit is God closing the distance — living in ordinary people and slowly changing them from the inside.` },
+    ],
+    scriptures: [
+      { ref: `John 14:26`, text: `But the Advocate, the Holy Spirit, whom the Father will send in my name, will teach you all things.` },
+      { ref: `Galatians 5:22-23`, text: `But the fruit of the Spirit is love, joy, peace, forbearance, kindness, goodness, faithfulness.` },
+    ],
+    faqs: [
+      { q: `Is the Holy Spirit a person or a force?`, a: `Christianity describes the Spirit as a person — God himself — not an impersonal force.` },
+      { q: `How do I receive the Holy Spirit?`, a: `The Bible teaches the Spirit comes to those who turn to Jesus — it is part of what happens when you become a Christian, not a separate achievement.` },
+      { q: `Can I feel the Holy Spirit?`, a: `Sometimes, but it is not mainly about feelings. The Spirit is often known by slow change — growing peace, wisdom, and love over time.` },
+    ],
+    related: ['what-is-the-trinity', 'what-is-the-gospel'],
+  },
+
+  {
+    slug: 'what-is-the-trinity',
+    question: `What is the Trinity?`,
+    category: 'Jesus Christ',
+    updated: '2026-07-06',
+    answer: `The Trinity is the Christian belief that God is one being who exists as three persons — Father, Son, and Holy Spirit. Not three gods, and not one person wearing three masks, but one God in three. It is genuinely hard to picture, which is honest: an infinite God being fully understandable would be more suspicious.`,
+    body: [
+      { h: `One God, three persons`, p: `Christians are firmly monotheists — one God. But the Bible presents Father, Son, and Spirit as each fully God, distinct yet united. That tension is the Trinity.` },
+      { h: `Why analogies fall short`, p: `Water as ice, liquid, and steam; or a person as parent, worker, and friend — every analogy breaks down, because nothing in creation is quite like it. That is expected when describing the Creator.` },
+      { h: `Why it actually matters`, p: `It means God is, in his very nature, relationship and love — not a solitary ruler, but a communion of love that has always existed. That shapes everything about how Christians see God.` },
+    ],
+    scriptures: [
+      { ref: `Matthew 28:19`, text: `Therefore go and make disciples of all nations, baptizing them in the name of the Father and of the Son and of the Holy Spirit.` },
+      { ref: `2 Corinthians 13:14`, text: `May the grace of the Lord Jesus Christ, and the love of God, and the fellowship of the Holy Spirit be with you all.` },
+    ],
+    faqs: [
+      { q: `Do Christians believe in three gods?`, a: `No. Christianity is monotheistic — one God — who exists as three persons: Father, Son, and Holy Spirit.` },
+      { q: `Is the word "Trinity" in the Bible?`, a: `The word itself is not, but the idea is drawn from many passages where Father, Son, and Spirit are each called God and shown as distinct.` },
+      { q: `Do I have to fully understand it to be a Christian?`, a: `No. Even lifelong Christians find it mysterious. You are not required to explain it, only to trust the God it describes.` },
+    ],
+    related: ['is-jesus-really-god', 'who-is-the-holy-spirit'],
+  },
+
+  {
+    slug: 'what-does-the-bible-say-about-depression',
+    question: `What does the Bible say about depression?`,
+    category: 'Mental Health',
+    updated: '2026-07-06',
+    answer: `The Bible never shames people for depression — it is full of them. David, Elijah, and even Jesus knew deep anguish. Its message is not "snap out of it" but "you are not alone in this, and it is not the end of your story." Faith and seeking real help — counseling, medicine — belong together.`,
+    body: [
+      { h: `Scripture is honest about the darkness`, p: `The Psalms include raw cries like "why, my soul, are you so downcast?" Elijah asked to die. The Bible does not pretend faith erases pain — it gives words to it.` },
+      { h: `You are not carrying it alone`, p: `The repeated promise is God's nearness in the low places: "close to the brokenhearted." Not a fix on demand, but a presence that does not leave.` },
+      { h: `Faith and help are not rivals`, p: `Seeking a counselor, a doctor, or medication is not a lack of faith — it is stewarding the life you have. Many faithful people carry depression and get real help for it. Both are good.` },
+    ],
+    scriptures: [
+      { ref: `Psalm 34:18`, text: `The Lord is close to the brokenhearted and saves those who are crushed in spirit.` },
+      { ref: `Psalm 42:11`, text: `Why, my soul, are you downcast? Put your hope in God, for I will yet praise him.` },
+    ],
+    faqs: [
+      { q: `Is depression a sin or a lack of faith?`, a: `No. The Bible shows people of deep faith wrestling with despair. Depression is treated with compassion, not blame.` },
+      { q: `Should Christians take medication or see a therapist?`, a: `Many do, and Scripture gives no reason not to. Caring for your mind is part of caring for the life God gave you.` },
+      { q: `What can I do right now if I'm struggling?`, a: `Tell someone, reach out for help, and if you are in crisis, contact a crisis line. You are not meant to carry this alone.` },
+    ],
+    related: ['what-does-the-bible-say-about-anxiety', 'does-god-love-me'],
+  },
+
+  {
+    slug: 'how-do-i-read-the-bible-as-a-beginner',
+    question: `How do I read the Bible as a beginner?`,
+    category: 'Bible',
+    updated: '2026-07-06',
+    answer: `Don't start at page one. Begin with the Gospel of John or Mark to meet Jesus directly, then try Psalms for honest prayer and Proverbs for daily wisdom. Read a little at a time, ask what it says about God and people, and don't worry about understanding everything at once.`,
+    body: [
+      { h: `Start with Jesus, not Genesis`, p: `Genesis-to-front is where many beginners get stuck. Start with a Gospel — John or Mark — where you meet Jesus himself. Everything else makes more sense in that light.` },
+      { h: `Small and steady beats marathon`, p: `A few verses read slowly and thought about beats rushing chapters. Ask three simple questions: what does this say about God, about people, and about me?` },
+      { h: `It is okay not to get it all`, p: `Some passages are hard, and even scholars debate them. Confusion is not failure — it is an invitation to ask. You can bring any question to kinwove as you read.` },
+    ],
+    scriptures: [
+      { ref: `Psalm 119:105`, text: `Your word is a lamp for my feet, a light on my path.` },
+      { ref: `Joshua 1:8`, text: `Keep this Book of the Law always on your lips; meditate on it day and night.` },
+    ],
+    faqs: [
+      { q: `Which Bible translation should a beginner use?`, a: `A readable modern one like the NIV or NLT is a great start — clear English without losing the meaning.` },
+      { q: `Where exactly should I start reading?`, a: `The Gospel of John or Mark to meet Jesus, then Psalms and Proverbs. Skip trying to read cover to cover at first.` },
+      { q: `What if I don't understand what I read?`, a: `That is normal. Note your questions and ask — kinwove can explain passages in plain language as you go.` },
+    ],
+    related: ['can-i-trust-the-bible', 'how-do-i-start-praying'],
+  },
+
+  {
+    slug: 'what-is-grace',
+    question: `What is grace?`,
+    category: 'Grace',
+    updated: '2026-07-06',
+    answer: `Grace is love you did not earn and cannot repay. It is the heart of Christianity: not "be good and God will accept you," but "God accepts you, and that changes you." Grace means the acceptance comes first — before you clean up, before you deserve it, before you even ask.`,
+    body: [
+      { h: `Unearned, on purpose`, p: `Every other system runs on earning — do more, get more. Grace flips it: the gift comes first, freely, precisely to people who could never earn it. That is what makes it grace and not wages.` },
+      { h: `It is not a license, it is a change`, p: `People worry grace means "do whatever you want." In practice it does the opposite — being loved when you least deserve it tends to change you more than any threat ever could.` },
+      { h: `Why it is such a relief`, p: `Grace means you can stop performing. You do not have to earn your place; it is given. For anyone worn out from trying to be enough, that is the best news there is.` },
+    ],
+    scriptures: [
+      { ref: `Ephesians 2:8-9`, text: `For it is by grace you have been saved, through faith — and this is not from yourselves, it is the gift of God — not by works, so that no one can boast.` },
+      { ref: `2 Corinthians 12:9`, text: `My grace is sufficient for you, for my power is made perfect in weakness.` },
+    ],
+    faqs: [
+      { q: `What is the simple definition of grace?`, a: `Unearned love and favor from God — receiving good you did not earn and could not repay.` },
+      { q: `Does grace mean I can do whatever I want?`, a: `No. Grace is not permission to do wrong; it is love that changes you from the inside, which usually leads away from it.` },
+      { q: `How is grace different from mercy?`, a: `Mercy is not getting the punishment you deserve; grace is getting the good you do not deserve. They go together.` },
+    ],
+    related: ['does-god-love-me', 'what-is-the-gospel'],
+  },
+
+  {
+    slug: 'why-do-i-need-jesus-if-im-a-good-person',
+    question: `Why do I need Jesus if I'm a good person?`,
+    category: 'Salvation',
+    updated: '2026-07-06',
+    answer: `Christianity does not say you are worthless — it says "good enough" was never the standard, for anyone. The point is not that you are terrible, but that none of us fully lives up to even our own ideals, and Jesus offers relationship, not just moral improvement. It is less about being bad and more about being loved.`,
+    body: [
+      { h: `Everyone falls short of their own standard`, p: `You do not have to be a villain to sense the gap. Most honest people admit they do not fully live up to what they know is right. The bar is not "better than average"; it is perfect, and no one clears it.` },
+      { h: `It is about relationship, not a report card`, p: `Jesus does not offer mainly to make you a nicer person. He offers connection with God — something being good, on its own, cannot manufacture. Good people can still be far from God.` },
+      { h: `Grace is for good people too`, p: `The gift is not only for the obviously broken. It is for the respectable, the moral, the "I'm basically fine" — all of whom are also invited to receive rather than earn.` },
+    ],
+    scriptures: [
+      { ref: `Romans 3:23`, text: `For all have sinned and fall short of the glory of God.` },
+      { ref: `Ephesians 2:8-9`, text: `For it is by grace you have been saved, through faith... not by works, so that no one can boast.` },
+    ],
+    faqs: [
+      { q: `Isn't being a good person enough?`, a: `Christianity says goodness is real but not the point — the offer is relationship with God, which good behavior alone cannot create.` },
+      { q: `Does Christianity think I'm a bad person?`, a: `No. It says everyone, good and bad alike, falls short of perfection and is equally invited into grace.` },
+      { q: `So do good works matter at all?`, a: `Yes — but as a response to being loved, not as the way to earn it. Grace comes first; good living flows from it.` },
+    ],
+    related: ['what-is-grace', 'how-do-i-become-a-christian'],
+  },
+
+  {
+    slug: 'does-god-answer-prayer',
+    question: `Does God answer prayer?`,
+    category: 'Prayer',
+    updated: '2026-07-06',
+    answer: `Christianity teaches that God hears and answers prayer — but not like a vending machine. Sometimes the answer is yes, sometimes no, sometimes wait. The promise is not that you always get what you ask, but that you are always heard, and that God works for good even through the answers you did not want.`,
+    body: [
+      { h: `Heard is the first promise`, p: `Before results, the Bible's core claim is that God listens — that no honest prayer disappears into silence. You are heard even when the answer is not yet clear.` },
+      { h: `"No" and "wait" are answers too`, p: `A loving parent does not grant every request. Some unanswered prayers, looking back, were mercies. God answering wisely is better than God answering instantly.` },
+      { h: `Prayer changes the one praying`, p: `Prayer is not only about outcomes; it is a relationship. Many people find that even when circumstances do not change, they do — gaining peace, perspective, or strength to endure.` },
+    ],
+    scriptures: [
+      { ref: `1 John 5:14`, text: `This is the confidence we have in approaching God: that if we ask anything according to his will, he hears us.` },
+      { ref: `Matthew 7:7`, text: `Ask and it will be given to you; seek and you will find; knock and the door will be opened.` },
+    ],
+    faqs: [
+      { q: `Why do some prayers go unanswered?`, a: `Christianity frames "no" and "wait" as real answers from a wise, loving God — not silence. Sometimes an unanswered prayer is later seen as a mercy.` },
+      { q: `Does God answer the prayers of non-Christians?`, a: `The Bible shows God responding to honest seekers of all kinds. You do not have to have it all figured out to pray.` },
+      { q: `How do I know if God answered?`, a: `Answers come as yes, no, wait, or an unexpected redirect. Looking back over time often makes them clearer than they felt in the moment.` },
+    ],
+    related: ['how-do-i-start-praying', 'why-does-god-feel-so-far-away'],
+  },
+
+  {
+    slug: 'what-does-the-bible-say-about-money',
+    question: `What does the Bible say about money?`,
+    category: 'Money & Giving',
+    updated: '2026-07-06',
+    answer: `The Bible talks about money constantly — not to shame wealth, but to warn that money makes a terrible master. It is a tool, not a god. Generosity is treated as freedom, greed as a trap, and contentment as worth more than riches. The heart follows the treasure, so watch where yours goes.`,
+    body: [
+      { h: `Money is a tool, not the enemy`, p: `The Bible does not call money evil — it calls the love of money a root of trouble. Wealth is fine; being owned by it is the danger.` },
+      { h: `Generosity is framed as freedom`, p: `Giving is presented not as loss but as liberation — proof that money has not captured you. "It is more blessed to give than to receive" is about the giver's freedom, not just the receiver's gain.` },
+      { h: `Contentment beats accumulation`, p: `"Godliness with contentment is great gain." The Bible keeps redirecting from "how much can I get" to "is my heart free" — because where your treasure is, your heart follows.` },
+    ],
+    scriptures: [
+      { ref: `1 Timothy 6:10`, text: `For the love of money is a root of all kinds of evil.` },
+      { ref: `Matthew 6:21`, text: `For where your treasure is, there your heart will be also.` },
+    ],
+    faqs: [
+      { q: `Is it a sin to be rich?`, a: `No. The Bible warns against loving money and trusting it, not against having it. Wealth is a responsibility, not a crime.` },
+      { q: `Do I have to give money to God or church?`, a: `Generosity is encouraged throughout the Bible as a joyful freedom, not a fee. It is framed as good for the giver, not a toll.` },
+      { q: `What does the Bible say about debt or greed?`, a: `It cautions against being enslaved by debt and against greed, and points instead toward contentment and open-handedness.` },
+    ],
+    related: ['what-is-the-meaning-of-life', 'what-does-the-bible-say-about-anxiety'],
+  },
+
+  {
+    slug: 'what-does-the-bible-say-about-loneliness',
+    question: `What does the Bible say about loneliness?`,
+    category: 'Mental Health',
+    updated: '2026-07-06',
+    answer: `The Bible takes loneliness seriously and answers it two ways: with the promise that God is always present — "I will never leave you" — and with the design that we were made for community, not isolation. You are not meant to do life alone, and even when people are absent, you are not truly abandoned.`,
+    body: [
+      { h: `The promise of presence`, p: `Again and again, God's answer to fear and isolation is "I am with you." The Bible insists you are never fully alone, even in the moments it feels most true.` },
+      { h: `We were made for each other`, p: `From the start, "it is not good for man to be alone." Loneliness is not a personal failing — it is a signal that you were built for connection, and it is worth answering by reaching toward others.` },
+      { h: `A first step out`, p: `Isolation deepens itself. Even one honest conversation, one message sent, one community joined can begin to break it. Faith communities exist partly for exactly this.` },
+    ],
+    scriptures: [
+      { ref: `Deuteronomy 31:6`, text: `Be strong and courageous... for the Lord your God goes with you; he will never leave you nor forsake you.` },
+      { ref: `Psalm 68:6`, text: `God sets the lonely in families.` },
+    ],
+    faqs: [
+      { q: `Does God care that I'm lonely?`, a: `Yes. The Bible repeatedly promises God's presence to the isolated and describes him as setting the lonely in community.` },
+      { q: `Is loneliness a sign something is wrong with me?`, a: `No. It is a normal human signal that you were made for connection — not a flaw, but a pointer toward reaching out.` },
+      { q: `What can I actually do about it?`, a: `Small steps: one honest conversation, one message, one community. kinwove exists partly to help people not walk it alone.` },
+    ],
+    related: ['does-god-love-me', 'why-should-i-go-to-church'],
+  },
+
+  {
+    slug: 'is-hell-real',
+    question: `Is hell real?`,
+    category: 'Eternal Life',
+    updated: '2026-07-06',
+    answer: `The Bible does speak of hell as real — but it is best understood as the tragic possibility of a life fully turned away from God, not a threat God delights in. The emphasis of Scripture is overwhelmingly on the invitation: God "wants everyone to come to repentance." Hell is what he is rescuing people from, not longing to send them to.`,
+    body: [
+      { h: `Taken seriously, not sensationally`, p: `The Bible treats separation from God as a real and weighty possibility. But the lurid pop-culture image is not the center of the message — the rescue is.` },
+      { h: `Freedom makes refusal possible`, p: `A God who honors real freedom is a God whose love can be genuinely refused. Many describe hell less as God locking people out and more as God honoring a "no" some insist on.` },
+      { h: `The tone is invitation`, p: `Scripture keeps stressing that God "is patient with you, not wanting anyone to perish." The point of talking about hell is to say: there is a way home, and it is open.` },
+    ],
+    scriptures: [
+      { ref: `2 Peter 3:9`, text: `The Lord is not slow in keeping his promise... he is patient with you, not wanting anyone to perish, but everyone to come to repentance.` },
+      { ref: `1 Timothy 2:4`, text: `God our Savior, who wants all people to be saved and to come to a knowledge of the truth.` },
+    ],
+    faqs: [
+      { q: `Does God send people to hell?`, a: `The Bible frames it more as honoring a freely chosen turning-away, with God relentlessly inviting people home rather than eager to condemn.` },
+      { q: `How can a loving God allow hell?`, a: `Real love requires real freedom, including the freedom to refuse God. Christianity presents God as doing everything to rescue, not to condemn.` },
+      { q: `Should fear of hell be why I follow God?`, a: `Christianity invites people primarily through love and grace, not fear. The healthiest reason to come is that God is good, not just that hell is bad.` },
+    ],
+    related: ['what-happens-when-you-die', 'is-christianity-the-only-way-to-god'],
+  },
+
+  {
+    slug: 'how-do-i-know-gods-will-for-my-life',
+    question: `How do I know God's will for my life?`,
+    category: 'Purpose',
+    updated: '2026-07-06',
+    answer: `God's will is less a hidden map you have to crack and more a direction you can walk. Most of it is already clear — love God, love people, live with integrity. For the specific decisions, the Bible points to prayer, wisdom, godly counsel, and trusting that God guides people who are genuinely willing to follow.`,
+    body: [
+      { h: `Most of God's will is not secret`, p: `The Bible spends far more time on how to live than on which job to take. Love, honesty, kindness, humility — start living the clear parts, and the specific ones tend to clarify.` },
+      { h: `Guidance, not a treasure hunt`, p: `You do not have to fear "missing" some single hidden plan. God is described as guiding willing people step by step — "he will make your paths straight" — not hiding the ball.` },
+      { h: `Practical ways to discern`, p: `Pray honestly, seek wisdom in Scripture, ask trusted people who know you, notice your gifts and the needs around you, and take a faithful next step. Direction usually comes as you move, not before.` },
+    ],
+    scriptures: [
+      { ref: `Proverbs 3:5-6`, text: `Trust in the Lord with all your heart... in all your ways submit to him, and he will make your paths straight.` },
+      { ref: `Micah 6:8`, text: `And what does the Lord require of you? To act justly and to love mercy and to walk humbly with your God.` },
+    ],
+    faqs: [
+      { q: `What if I make the wrong decision?`, a: `Christianity presents God as able to guide and redeem willing people even through mistakes. You are not one wrong choice away from ruining a hidden plan.` },
+      { q: `Does God have one specific plan for me?`, a: `The Bible emphasizes God's character and clear commands more than a single secret blueprint, while trusting he guides the details as you walk with him.` },
+      { q: `How do I hear God's guidance?`, a: `Through prayer, Scripture, wise counsel, your circumstances and gifts — and a willingness to actually follow what becomes clear.` },
+    ],
+    related: ['what-is-the-meaning-of-life', 'how-do-i-start-praying'],
+  },
+
+  {
+    slug: 'what-does-it-mean-to-be-born-again',
+    question: `What does it mean to be born again?`,
+    category: 'Salvation',
+    updated: '2026-07-06',
+    answer: `"Born again" is Jesus's own phrase for a fresh start so deep it is like beginning life over. It is not about religious behavior but inner renewal — God giving you a new heart and a new beginning, no matter your past. Less turning over a new leaf, more receiving a new life.`,
+    body: [
+      { h: `Jesus's own image`, p: `A religious leader named Nicodemus asked Jesus how to enter God's kingdom, and Jesus answered, "you must be born again." It is his picture of a beginning so total it is like a second birth.` },
+      { h: `Inner change, not just behavior`, p: `It is not mainly about joining a religion or cleaning up your habits. The Bible describes God giving "a new heart" — a change that starts inside and works outward.` },
+      { h: `A real fresh start`, p: `Whatever your history, being born again means the slate is genuinely new. Not your old self trying harder, but a new life received as a gift.` },
+    ],
+    scriptures: [
+      { ref: `John 3:3`, text: `Jesus replied, "Very truly I tell you, no one can see the kingdom of God unless they are born again."` },
+      { ref: `2 Corinthians 5:17`, text: `Therefore, if anyone is in Christ, the new creation has come: The old has gone, the new is here!` },
+    ],
+    faqs: [
+      { q: `Does "born again" mean joining a specific denomination?`, a: `No. It is Jesus's term for spiritual rebirth — a new beginning through him — not a label for one church group.` },
+      { q: `How do I get "born again"?`, a: `The Bible ties it to turning to Jesus in faith. It is God's work in you, received rather than achieved.` },
+      { q: `Does it erase my past?`, a: `That is the point — a genuinely new start. The old is described as gone, the new as here.` },
+    ],
+    related: ['how-do-i-become-a-christian', 'am-i-too-far-gone-for-god'],
+  },
+
+  {
+    slug: 'why-should-i-go-to-church',
+    question: `Why should I go to church?`,
+    category: 'Church',
+    updated: '2026-07-06',
+    answer: `You do not have to attend church to have faith — but Christianity was never meant to be done alone. Church, at its best, is people carrying each other: encouragement, honesty, belonging, and shared purpose. It is less a building or a performance and more a family you are not meant to grow without.`,
+    body: [
+      { h: `Faith was designed to be shared`, p: `The Bible assumes community, not solo spirituality — "let us encourage one another." We grow, are held accountable, and are carried in ways isolation can never provide.` },
+      { h: `It is people, not a building`, p: `Church is not the architecture or the service; it is the people. At its best it is a place to be known, to serve, and to belong — especially on the days faith feels thin.` },
+      { h: `Honest about its flaws`, p: `Churches are full of imperfect people and sometimes get it wrong. That is worth naming. But a good community — flawed and real — still beats trying to do life and faith entirely alone.` },
+    ],
+    scriptures: [
+      { ref: `Hebrews 10:24-25`, text: `And let us consider how we may spur one another on toward love and good deeds, not giving up meeting together... but encouraging one another.` },
+      { ref: `Ecclesiastes 4:9-10`, text: `Two are better than one... If either of them falls down, one can help the other up.` },
+    ],
+    faqs: [
+      { q: `Can I be a Christian without going to church?`, a: `Yes, faith is personal — but the Bible strongly encourages community, because we are not designed to grow alone.` },
+      { q: `What if I've been hurt by a church?`, a: `That is real and worth honoring. Not all communities are healthy; the goal is a good one, not just any one — and it is okay to take time.` },
+      { q: `How do I find a good church?`, a: `Look for honesty, grace, and genuine care over performance. kinwove's directory can help you find a community near you.` },
+    ],
+    related: ['what-does-the-bible-say-about-loneliness', 'how-do-i-become-a-christian'],
+  },
+
+  {
+    slug: 'what-does-the-bible-say-about-fear',
+    question: `What does the Bible say about fear?`,
+    category: 'Mental Health',
+    updated: '2026-07-06',
+    answer: `"Do not be afraid" is the most repeated command in the Bible — said not because life is safe, but because God promises to be with you in it. Scripture does not scold fear; it meets it with presence. The antidote it offers is not pretending you are not afraid, but not facing it alone.`,
+    body: [
+      { h: `Fear is met with presence, not shame`, p: `Over and over, God's response to frightened people is "I am with you." The point is not to feel no fear, but to know you are not alone in it.` },
+      { h: `Courage is fear plus company`, p: `Biblical courage is not the absence of fear; it is moving forward because God goes with you. "Be strong and courageous... for the Lord your God will be with you."` },
+      { h: `Perfect love drives out fear`, p: `The deeper answer is love. The more secure you are in being loved by God, the less power fear holds. "There is no fear in love; perfect love drives out fear."` },
+    ],
+    scriptures: [
+      { ref: `Isaiah 41:10`, text: `So do not fear, for I am with you; do not be dismayed, for I am your God. I will strengthen you and help you.` },
+      { ref: `1 John 4:18`, text: `There is no fear in love. But perfect love drives out fear.` },
+    ],
+    faqs: [
+      { q: `Why does the Bible say "do not fear" so often?`, a: `Because fear is universal — and God's repeated answer is his presence: you do not face it alone.` },
+      { q: `Does faith mean I'll never be afraid?`, a: `No. It means fear does not have the final word. Courage in the Bible is acting while afraid, trusting God is with you.` },
+      { q: `What verse helps most with fear?`, a: `Isaiah 41:10 — "do not fear, for I am with you" — is one many people hold onto.` },
+    ],
+    related: ['what-does-the-bible-say-about-anxiety', 'does-god-love-me'],
+  },
+
+  {
+    slug: 'why-does-god-feel-so-far-away',
+    question: `Why does God feel so far away?`,
+    category: 'Faith & Doubt',
+    updated: '2026-07-06',
+    answer: `Feeling distant from God is one of the most common experiences of faith — and feeling far is not the same as being far. Even great believers went through it; some of the Psalms are written from exactly that place. The distance is usually in the feeling, not the reality, and it rarely lasts.`,
+    body: [
+      { h: `You are in good company`, p: `The Psalms cry out "why do you hide your face?" — and they are Scripture. Feeling God's absence is not a sign you have failed at faith; it is part of many honest faith journeys.` },
+      { h: `Feelings are not the measure`, p: `God's nearness is described as a fact, not a mood — "I will never leave you." Emotions rise and fall; the promise does not. You can be held even when you do not feel it.` },
+      { h: `What can help`, p: `Keep showing up honestly — even prayers of "I don't feel you, but I'm still here" count. Community, Scripture, and time often bring the felt sense back. Dry seasons usually pass.` },
+    ],
+    scriptures: [
+      { ref: `Psalm 13:1`, text: `How long, Lord? Will you forget me forever? How long will you hide your face from me?` },
+      { ref: `Deuteronomy 31:8`, text: `The Lord himself goes before you and will be with you; he will never leave you nor forsake you.` },
+    ],
+    faqs: [
+      { q: `Does God actually leave people?`, a: `The Bible promises the opposite — that God never leaves. Feeling distant is common, but it is described as a feeling, not the reality.` },
+      { q: `Did I do something to push God away?`, a: `Not necessarily. Spiritual dryness happens to almost everyone, often for no clear reason. It is not proof of failure.` },
+      { q: `How do I feel close to God again?`, a: `Keep showing up honestly in prayer, community, and Scripture. The felt closeness usually returns with time; the promise holds in the meantime.` },
+    ],
+    related: ['how-can-i-believe-when-i-have-doubts', 'does-god-answer-prayer'],
+  },
+
+  {
+    slug: 'what-is-faith',
+    question: `What is faith?`,
+    category: 'Faith & Doubt',
+    updated: '2026-07-06',
+    answer: `Faith is not pretending to be certain about things you cannot see. It is trust — leaning your weight on what you have good reason to believe, even without total proof. You already live by faith every day: in people, in chairs, in tomorrow. Faith in God is that same trust, aimed higher.`,
+    body: [
+      { h: `Trust, not blind certainty`, p: `Faith is often caricatured as believing without reason. Biblically it is closer to trust — confidence based on what you have come to know of God's character, not a leap into the dark.` },
+      { h: `You already live by faith`, p: `You trust a chair to hold you, a friend to keep a promise, a pilot you have never met. None of it is total certainty. Faith is not foreign to you — it is how you already move through life.` },
+      { h: `Faith and doubt can coexist`, p: `Faith does not require the absence of questions. It is leaning toward trust while still holding some doubts — and that is a normal, honest kind of belief, not a lesser one.` },
+    ],
+    scriptures: [
+      { ref: `Hebrews 11:1`, text: `Now faith is confidence in what we hope for and assurance about what we do not see.` },
+      { ref: `Mark 9:24`, text: `Immediately the boy's father exclaimed, "I do believe; help me overcome my unbelief!"` },
+    ],
+    faqs: [
+      { q: `Is faith the same as blind belief?`, a: `No. Biblical faith is trust grounded in reasons and in God's character, not belief with your eyes shut.` },
+      { q: `Can I have faith and still doubt?`, a: `Yes. Faith and doubt regularly coexist. Leaning toward trust while holding questions is a normal form of belief.` },
+      { q: `How do I grow in faith?`, a: `The same way you grow any trust — by getting to know the person. Prayer, Scripture, and experience deepen it over time.` },
+    ],
+    related: ['how-can-i-believe-when-i-have-doubts', 'is-there-evidence-that-god-exists'],
+  },
+
+  {
+    slug: 'how-do-i-forgive-someone-who-hurt-me',
+    question: `How do I forgive someone who hurt me?`,
+    category: 'Relationships',
+    updated: '2026-07-06',
+    answer: `Forgiveness is not saying what happened was okay, forgetting it, or forcing reconciliation. It is choosing to release the debt and hand the desire for revenge to God, for your own freedom as much as anything. It is usually a process, not a single moment — and it does not mean the wound was not real.`,
+    body: [
+      { h: `What forgiveness is not`, p: `It is not excusing, forgetting, or automatically restoring trust with someone unsafe. You can forgive and still set boundaries. Forgiveness releases the offense; it does not deny it.` },
+      { h: `It is mostly for you`, p: `Holding onto revenge keeps you chained to the person who hurt you. Forgiveness hands that weight to God — "leave room for God's justice" — and frees you to stop carrying it.` },
+      { h: `A process, not a switch`, p: `Deep hurts rarely forgive in one moment. It is often a decision you make again and again, with God's help, until the grip loosens. That is normal, not failure.` },
+    ],
+    scriptures: [
+      { ref: `Colossians 3:13`, text: `Bear with each other and forgive one another... Forgive as the Lord forgave you.` },
+      { ref: `Ephesians 4:32`, text: `Be kind and compassionate to one another, forgiving each other, just as in Christ God forgave you.` },
+    ],
+    faqs: [
+      { q: `Does forgiving mean I have to reconcile?`, a: `No. Forgiveness releases the offense; reconciliation requires trust and safety, which are not always wise or possible.` },
+      { q: `What if I don't feel like forgiving?`, a: `Forgiveness starts as a choice, not a feeling. The feelings often follow later, sometimes long after the decision.` },
+      { q: `How does God's forgiveness relate to mine?`, a: `The Bible ties them together — we forgive because we have been forgiven so much ourselves. His grace fuels ours.` },
+    ],
+    related: ['will-god-forgive-me', 'what-is-grace'],
+  },
 ];
 
 export const ANSWERS_BY_SLUG = Object.fromEntries(ANSWERS.map((a) => [a.slug, a]));
