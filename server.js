@@ -6,7 +6,9 @@ import cors from 'cors';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
 import Anthropic from '@anthropic-ai/sdk';
+import { getDailyVerse } from './src/dailyVerse.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -1287,7 +1289,12 @@ async function sendEmail(to, subject, html) {
 const KW_LOGO = `<img src="https://www.kinwove.com/wordmark-email.svg" width="320" height="80" alt="kinwove" style="display:block;border:0" />`.trim();
 
 // Shared brand wrapper — keeps all kinwove emails visually consistent.
-function emailWrap(bodyHtml) {
+// Pass unsubUrl to add a one-click unsubscribe line (required for recurring
+// mail — CASL/CAN-SPAM).
+function emailWrap(bodyHtml, unsubUrl) {
+  const unsub = unsubUrl
+    ? `<br><a href="${unsubUrl}" style="color:#9C7B5E;text-decoration:underline">Unsubscribe from the daily verse</a>`
+    : '';
   return `<div style="font-family:Georgia,serif;max-width:480px;margin:0 auto;color:#2C1810;background:#ffffff">
     <!-- Wordmark header: dark chocolate bar with ✦ + serif kinwove -->
     <div style="background:#1A1108;padding:22px 32px;margin-bottom:36px">
@@ -1297,10 +1304,29 @@ function emailWrap(bodyHtml) {
     ${bodyHtml}
     <div style="margin-top:40px;padding-top:20px;border-top:1px solid #E8D5BB;font-size:12px;color:#9C7B5E;line-height:1.7">
       You're receiving this because you have a kinwove account.<br>
-      <a href="https://www.kinwove.com" style="color:#A85530;text-decoration:none">www.kinwove.com</a>
+      <a href="https://www.kinwove.com" style="color:#A85530;text-decoration:none">www.kinwove.com</a>${unsub}
     </div>
     </div>
   </div>`;
+}
+
+// Signed token for one-click unsubscribe links (no login needed).
+function emailToken(userId) {
+  const secret = process.env.CRON_SECRET || process.env.SUPABASE_SERVICE_KEY || 'kw-fallback';
+  return crypto.createHmac('sha256', secret).update(String(userId)).digest('hex').slice(0, 24);
+}
+
+// Daily verse email — a calm morning touchpoint. Verse + one gentle reflection,
+// with a CTA back into the app to reflect with the AI.
+function dailyVerseEmailHtml(firstName, verse, unsubUrl) {
+  return emailWrap(`
+    <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#B8733A;font-weight:700;margin:0 0 18px">Today's verse</div>
+    <div style="font-family:Georgia,serif;font-size:23px;font-style:italic;line-height:1.5;color:#2C1810;margin:0 0 12px">&ldquo;${verse.text}&rdquo;</div>
+    <div style="font-size:14px;color:#B8733A;font-weight:600;margin:0 0 28px">— ${verse.ref}</div>
+    <p style="font-size:15.5px;color:#6B5344;line-height:1.75;margin:0 0 2px">Sit with it for a moment, ${firstName}. What is it stirring in you today?</p>
+    ${btnHtml('Reflect on it', 'https://www.kinwove.com')}
+    <p style="font-size:13px;color:#9C7B5E;margin:0">One verse a day. No noise.</p>
+  `, unsubUrl);
 }
 
 function btnHtml(label, url) {
@@ -1476,6 +1502,81 @@ app.post('/api/cron/nudge-incomplete', async (req, res) => {
   }
   console.log(`[nudge-incomplete] sent ${sent} of ${incomplete.length}`);
   res.json({ sent, total: incomplete.length });
+});
+
+// ── Unsubscribe from the daily verse (one-click, no login) ────────────────────
+app.get('/api/email/unsubscribe', async (req, res) => {
+  const { u, t, resub } = req.query;
+  const ok = u && t && t === emailToken(u);
+  const optOut = resub !== '1'; // ?resub=1 turns the daily verse back on
+  if (ok && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+    await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${u}`, {
+      method: 'PATCH',
+      headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ daily_verse_opt_out: optOut }),
+    }).catch((e) => console.error('[unsubscribe]', e.message));
+  }
+  let title, body, action = '';
+  if (!ok) {
+    title = 'Link expired';
+    body  = 'Please use the unsubscribe link from a recent email.';
+  } else if (optOut) {
+    title  = 'You’re unsubscribed';
+    body   = 'You won’t get the daily verse email anymore.';
+    action = `<a href="https://www.kinwove.com/api/email/unsubscribe?u=${u}&t=${t}&resub=1" style="color:#A85530;text-decoration:none">Changed your mind? Resubscribe</a>`;
+  } else {
+    title = 'You’re back on';
+    body  = 'The daily verse will land in your inbox each morning again.';
+  }
+  res.set('Content-Type', 'text/html').send(
+    `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head>` +
+    `<body style="font-family:Georgia,serif;background:#FAF3E2;color:#2C1810;text-align:center;padding:64px 24px;margin:0">` +
+    `<div style="font-size:40px;margin-bottom:12px">✦</div>` +
+    `<h2 style="font-weight:600;margin:0 0 10px">${title}</h2>` +
+    `<p style="color:#6B5344;max-width:360px;margin:0 auto 24px;line-height:1.6">${body}</p>` +
+    (action ? `<p style="margin:0 0 16px">${action}</p>` : '') +
+    `<a href="https://www.kinwove.com" style="color:#A85530;text-decoration:none">Back to kinwove →</a></body></html>`
+  );
+});
+
+// ── Daily verse email (cron) ──────────────────────────────────────────────────
+// One calm morning email with today's verse. Sent to every onboarded, opted-in
+// member. Schedule via pg_cron (see scripts/2026-07-06-daily-verse-email-cron.sql).
+app.post('/api/cron/daily-verse-email', async (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || req.headers['x-cron-secret'] !== secret) return res.status(401).json({ error: 'unauthorized' });
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+
+  const verse = getDailyVerse();
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+
+  // Onboarded members who haven't opted out. (Requires the daily_verse_opt_out
+  // column — see the migration script; until it's added this returns an error
+  // object and we safely send 0.)
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/profiles?daily_verse_opt_out=eq.false&display_name=not.is.null&select=id,display_name&limit=5000`,
+    { headers: h }
+  );
+  const users = await r.json().catch(() => []);
+  if (!Array.isArray(users) || !users.length) return res.json({ sent: 0 });
+
+  let sent = 0;
+  for (const usr of users) {
+    try {
+      if ((usr.display_name || '').toLowerCase() === 'kinwove') continue; // skip system account
+      const email = await getUserEmail(usr.id);
+      if (!email) continue;
+      const firstName = (usr.display_name || '').split(' ')[0] || 'friend';
+      const unsubUrl = `https://www.kinwove.com/api/email/unsubscribe?u=${usr.id}&t=${emailToken(usr.id)}`;
+      await sendEmail(email, `Today’s verse — ${verse.ref}`, dailyVerseEmailHtml(firstName, verse, unsubUrl));
+      sent++;
+      await new Promise((rr) => setTimeout(rr, 150)); // gentle pacing between sends
+    } catch (e) {
+      console.error('[daily-verse-email]', e.message);
+    }
+  }
+  console.log(`[daily-verse-email] sent ${sent} of ${users.length} — ${verse.ref}`);
+  res.json({ sent, total: users.length });
 });
 
 // ── kinwove persona — daily auto-post (cron) ────────────────────────────────
