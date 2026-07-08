@@ -1409,16 +1409,31 @@ function btnHtml(label, url) {
 }
 
 function welcomeEmailHtml(firstName) {
+  const ask = (q) =>
+    `<a href="https://www.kinwove.com/?q=${encodeURIComponent(q)}" style="display:block;text-decoration:none;color:#2C1810;background:#FDF8F0;border:1px solid #E8D5BB;border-radius:10px;padding:12px 16px;margin-bottom:8px;font-size:15px;line-height:1.5">&rsaquo;&nbsp; ${q}</a>`;
   return emailWrap(`
     <h1 style="font-size:28px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">Welcome, ${firstName}.</h1>
     <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
-      You've joined a space to explore the Bible honestly — whether you're full of faith, full of questions, or somewhere in between.
+      I'm Danny — I built kinwove. I made it because I came to faith the slow way, full of questions, and I wanted one place where honest questions get honest answers. No pressure, no agenda.
     </p>
-    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 4px">
-      Ask anything. Read deeply. Save what matters.
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
+      One thing that makes it different: it doesn't push an opinion or preach at you. It stays grounded in scripture — giving you honest, sourced answers, and telling you plainly where faithful people have long disagreed. You're free to make up your own mind.
     </p>
-    ${btnHtml('Open kinwove', 'https://www.kinwove.com')}
-    <p style="font-size:13px;color:#9C7B5E;margin:0">No pressure. No agenda. Just honest answers.</p>
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
+      The best way to start is simple: <strong>ask it something real.</strong> That's where kinwove comes alive. Try one —
+    </p>
+    <div style="margin:0 0 20px">
+      ${ask('What does the Bible say about anxiety?')}
+      ${ask('Why does God allow suffering?')}
+      ${ask('How do I even start reading the Bible?')}
+    </div>
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
+      Whatever you're carrying — faith, doubt, or somewhere in between — bring it here.
+    </p>
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 20px">
+      And you're not on your own in it. When you're ready, there's a community here too — people walking the same road, honest conversation, and prayer when you need it.
+    </p>
+    <p style="font-size:15px;color:#6B5344;line-height:1.7;margin:0">&mdash; Danny</p>
   `);
 }
 
