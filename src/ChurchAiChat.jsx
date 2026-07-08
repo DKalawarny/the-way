@@ -377,7 +377,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
       const res = await authedFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ system, messages: next, personType, plan }),
+        body: JSON.stringify({ system, messages: next, personType, plan, groundCommentary: researchMode }),
       });
       if (!res.ok || !res.body) throw new Error((await res.text().catch(() => '')) || `HTTP ${res.status}`);
       setMessages((m) => [...m, { role: 'assistant', content: '' }]);

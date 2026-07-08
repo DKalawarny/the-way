@@ -748,11 +748,76 @@ app.get('/api/bible/:bibleId/search', optionalAuth, limitEither({ capacity: 30, 
   }
 });
 
+// ── Commentary grounding (HelloAO free public-domain commentary API) ──────────
+// When a pastor researches a passage, we fetch the ACTUAL text of classic
+// commentaries and feed it to the AI so it quotes real sources instead of
+// recalling (and risking fabricating) them. Free, no key, no rate limits.
+const BOOK_USFM = {
+  'genesis':'GEN','exodus':'EXO','leviticus':'LEV','numbers':'NUM','deuteronomy':'DEU',
+  'joshua':'JOS','judges':'JDG','ruth':'RUT','1 samuel':'1SA','2 samuel':'2SA',
+  '1 kings':'1KI','2 kings':'2KI','1 chronicles':'1CH','2 chronicles':'2CH','ezra':'EZR',
+  'nehemiah':'NEH','esther':'EST','job':'JOB','psalm':'PSA','psalms':'PSA','proverbs':'PRO',
+  'ecclesiastes':'ECC','song of solomon':'SNG','song of songs':'SNG','isaiah':'ISA',
+  'jeremiah':'JER','lamentations':'LAM','ezekiel':'EZK','daniel':'DAN','hosea':'HOS',
+  'joel':'JOL','amos':'AMO','obadiah':'OBA','jonah':'JON','micah':'MIC','nahum':'NAM',
+  'habakkuk':'HAB','zephaniah':'ZEP','haggai':'HAG','zechariah':'ZEC','malachi':'MAL',
+  'matthew':'MAT','mark':'MRK','luke':'LUK','john':'JHN','acts':'ACT','romans':'ROM',
+  '1 corinthians':'1CO','2 corinthians':'2CO','galatians':'GAL','ephesians':'EPH',
+  'philippians':'PHP','colossians':'COL','1 thessalonians':'1TH','2 thessalonians':'2TH',
+  '1 timothy':'1TI','2 timothy':'2TI','titus':'TIT','philemon':'PHM','hebrews':'HEB',
+  'james':'JAS','1 peter':'1PE','2 peter':'2PE','1 john':'1JN','2 john':'2JN','3 john':'3JN',
+  'jude':'JUD','revelation':'REV','revelations':'REV',
+};
+// Longest names first so "1 john" matches before "john", "song of solomon" before "song".
+const BOOK_ENTRIES = Object.entries(BOOK_USFM).sort((a, b) => b[0].length - a[0].length);
+
+function parsePassageRef(text) {
+  if (!text || typeof text !== 'string') return null;
+  const hay = ' ' + text.toLowerCase().replace(/\s+/g, ' ') + ' ';
+  for (const [name, code] of BOOK_ENTRIES) {
+    const re = new RegExp(`\\b${name.replace(/ /g, '\\s+')}\\s+(\\d{1,3})\\b`);
+    const m = hay.match(re);
+    if (m) {
+      const chapter = parseInt(m[1], 10);
+      if (chapter >= 1 && chapter <= 150) {
+        return { code, chapter, name: name.replace(/\b\w/g, (c) => c.toUpperCase()) };
+      }
+    }
+  }
+  return null;
+}
+
+const COMMENTARY_SOURCES = [
+  { id: 'matthew-henry', label: 'Matthew Henry' },
+  { id: 'jamieson-fausset-brown', label: 'Jamieson-Fausset-Brown' },
+];
+async function fetchCommentary(code, chapter) {
+  const blocks = [];
+  for (const src of COMMENTARY_SOURCES) {
+    try {
+      const r = await fetch(`https://bible.helloao.org/api/c/${src.id}/${code}/${chapter}.json`);
+      if (!r.ok) continue;
+      const data = await r.json();
+      const content = data?.chapter?.content;
+      if (!Array.isArray(content)) continue;
+      let text = content
+        .filter((c) => c && c.type === 'verse' && Array.isArray(c.content))
+        .map((c) => `v${c.number}: ${c.content.filter((s) => typeof s === 'string').join(' ')}`)
+        .join('\n')
+        .trim();
+      if (!text) continue;
+      if (text.length > 2800) text = text.slice(0, 2800) + '… [excerpt truncated]';
+      blocks.push(`── ${src.label} ──\n${text}`);
+    } catch { /* skip this source */ }
+  }
+  return blocks.length ? blocks.join('\n\n') : null;
+}
+
 app.post('/api/chat', optionalAuth, limitEither(
   { capacity: 12, refillPerSec: 12 / 60 },      // authed: 12/min sustained
   { capacity: 2,  refillPerSec: 2 / 86400 },    // anon (GuestQuestion): 2 per day per IP
 ), async (req, res) => {
-  const { system, messages, personType, seekingContext } = req.body ?? {};
+  const { system, messages, personType, seekingContext, groundCommentary } = req.body ?? {};
 
   if (!system || typeof system !== 'string' || !Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'system and messages are required' });
@@ -853,6 +918,20 @@ app.post('/api/chat', optionalAuth, limitEither(
     } catch {}
   }
 
+  // Grounded commentary (research mode only): if the last message references a
+  // passage, pull the ACTUAL public-domain commentary text so the AI quotes real
+  // sources instead of recalling — and possibly fabricating — them.
+  let commentaryContext = '';
+  if (groundCommentary) {
+    const ref = parsePassageRef(lastUserMsg);
+    if (ref) {
+      const commentary = await fetchCommentary(ref.code, ref.chapter).catch(() => null);
+      if (commentary) {
+        commentaryContext = `\n\n── RETRIEVED COMMENTARY — quote from THIS, do not invent ──\nBelow is the actual public-domain commentary text on ${ref.name} ${ref.chapter}. When you cite Matthew Henry or Jamieson-Fausset-Brown, draw the quote or paraphrase from this text — never from memory. If a point isn't covered here, say so plainly rather than inventing a citation.\n\n${commentary}`;
+      }
+    }
+  }
+
   try {
     // Model routing — tier controls ceiling, complexity controls selection within tier.
     // Free: Haiku only. Individual: Haiku|Sonnet. Pro: Haiku|Sonnet|Opus.
@@ -887,7 +966,7 @@ app.post('/api/chat', optionalAuth, limitEither(
     const stream = client.messages.stream({
       model,
       max_tokens: 2048,
-      system: cachedSystem(system, urlContext + memoryContext),
+      system: cachedSystem(system, urlContext + memoryContext + commentaryContext),
       messages: trimmed,
     });
     req.on('close', () => stream.controller?.abort?.());
