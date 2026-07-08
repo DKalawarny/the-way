@@ -1584,18 +1584,24 @@ function nudgeEmailHtml(firstName) {
 function inviteEmailHtml(firstName, userId) {
   const ref = userId ? `&ref=${String(userId).slice(0, 8)}` : '';
   const inviteUrl = `https://www.kinwove.com/?utm_source=welcome-invite&utm_medium=invite&utm_campaign=referral${ref}`;
-  const mailto = `mailto:?subject=${encodeURIComponent('Thought of you')}&body=${encodeURIComponent("I've been using kinwove — honest answers to the big questions about faith, and a place to read the Bible. No pressure, no agenda. Thought you might like it:\n\n" + inviteUrl)}`;
+  const msg = "Thought of you — kinwove's a place for the big questions: life, meaning, faith, doubt. Honest conversation, no pressure, no agenda. Wherever you're at:";
+  const body = encodeURIComponent(`${msg}\n\n${inviteUrl}`);
+  const sms = `sms:?body=${body}`;
+  const mailto = `mailto:?subject=${encodeURIComponent('Thought of you')}&body=${body}`;
+  const pill = (label, href) => `<a href="${href}" style="display:inline-block;background:#B8733A;color:#FDF8F0;text-decoration:none;padding:13px 26px;border-radius:999px;font-size:15px;font-weight:600;margin:0 10px 10px 0;letter-spacing:0.01em">${label}</a>`;
   return emailWrap(`
     <h1 style="font-size:26px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">kinwove's better with a friend in it, ${firstName}.</h1>
     <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
       It's Danny. Here's the honest truth: the community here is young and still filling in. So the best way to start isn't to wait for it — it's to bring someone. A friend who's curious, a family member walking through something, anyone you'd want to figure this out alongside.
     </p>
-    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 18px">
-      Bring them in, and from day one you've got someone to talk to, pray with, and read alongside — right here.
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 20px">
+      Bring them in, and you've got someone to talk it through with — the questions, the doubts, the parts you're still figuring out — instead of going it alone.
     </p>
-    ${btnHtml('Invite someone →', mailto)}
+    <div style="margin:0 0 18px">
+      ${pill('Text a friend', sms)}${pill('Email a friend', mailto)}
+    </div>
     <p style="font-size:13px;color:#9C7B5E;line-height:1.7;margin:0">
-      Prefer text or WhatsApp? Open kinwove and tap <strong>Invite friends</strong> — every way to share is there. — Danny
+      Or open kinwove and tap <strong>Invite friends</strong> for WhatsApp, QR, and more. — Danny
     </p>
   `);
 }
@@ -1610,7 +1616,7 @@ function bibleEmailHtml(firstName) {
     <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
       Not sure where to start? Most people new to it find the Gospel of John a good first door — it's Jesus, up close. And if you'd rather listen than read, you can — it'll read to you.
     </p>
-    ${btnHtml('Start reading →', 'https://www.kinwove.com')}
+    ${btnHtml('Start reading', 'https://www.kinwove.com')}
     <p style="font-size:13px;color:#9C7B5E;margin:0">One chapter is enough. — Danny</p>
   `);
 }
@@ -1630,7 +1636,7 @@ function pastorEmailHtml(firstName) {
     <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 18px">
       Start with one sermon. See what it's like to hand your congregation something for the whole week, not just Sunday morning.
     </p>
-    ${btnHtml('Open your sermon tools →', 'https://www.kinwove.com')}
+    ${btnHtml('Open your sermon tools', 'https://www.kinwove.com')}
     <p style="font-size:13px;color:#9C7B5E;margin:0">And when you're ready, invite your congregation in — that's when it all comes alive. — Danny</p>
   `);
 }
