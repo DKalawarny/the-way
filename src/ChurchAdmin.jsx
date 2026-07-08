@@ -10,8 +10,8 @@ import ChurchModeShell from './ChurchModeShell.jsx';
 import FlagPicker from './FlagPicker.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
-import { usePlan, CHURCH_BASE_MEMBER_LIMIT } from './usePlan.js';
-import { TrialBanner, SeatNudge, startChurchCheckout } from './PlanGate.jsx';
+import { usePlan } from './usePlan.js';
+import { TrialBanner, SeatNudge } from './PlanGate.jsx';
 
 const PastorDashboard = lazy(() => import('./PastorDashboard.jsx'));
 const SermonComposer  = lazy(() => import('./SermonComposer.jsx'));
@@ -1195,7 +1195,6 @@ function InviteModal({ member, existingRoles, pendingInvites, onClose, onSubmit 
 }
 
 function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, onShowQr }) {
-  const [upgradeBusy, setUpgradeBusy] = useState(false);
   const [members, setMembers]   = useState([]);
   const [rolesByUser, setRolesByUser] = useState({});  // { user_id: [role rows] }
   const [pendingInvites, setPendingInvites] = useState([]);  // [{...invite, user_profile}]
@@ -1473,64 +1472,14 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
   return (
     <div style={{ display: 'grid', gap: 14 }}>
       {uikitUi}
-      {/* Member gate — Church Base is capped at 150 */}
-      {(() => {
-        const memberLimit = churchPlan === 'church_base' ? CHURCH_BASE_MEMBER_LIMIT : Infinity;
-        const count = members.length;
-        const atLimit = count >= memberLimit;
-        const nearLimit = !atLimit && count >= memberLimit * 0.8;
-        if (!atLimit && !nearLimit) return null;
-        const spotsLeft = memberLimit - count;
-        return (
-          <div style={{
-            background: atLimit
-              ? 'linear-gradient(135deg, rgba(165,63,43,0.1) 0%, rgba(184,115,58,0.08) 100%)'
-              : 'linear-gradient(135deg, rgba(184,115,58,0.1) 0%, rgba(184,115,58,0.05) 100%)',
-            border: `1px solid ${atLimit ? 'rgba(165,63,43,0.35)' : 'rgba(184,115,58,0.3)'}`,
-            borderRadius: 12, padding: '14px 16px', marginBottom: 16,
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
-          }}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: atLimit ? '#A53F2B' : T.goldDark, marginBottom: 3 }}>
-                {atLimit ? `Member limit reached (${memberLimit})` : `${spotsLeft} spot${spotsLeft === 1 ? '' : 's'} left on Church Base`}
-              </div>
-              <div style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.5 }}>
-                {atLimit
-                  ? 'Upgrade to Church Pro to keep growing your congregation.'
-                  : 'Your congregation is growing. Upgrade to Church Pro for unlimited members.'}
-              </div>
-            </div>
-            <button
-              onClick={async () => {
-                if (upgradeBusy) return;
-                setUpgradeBusy(true);
-                const { error } = await startChurchCheckout(session, 'church_pro');
-                if (error) setUpgradeBusy(false);
-              }}
-              disabled={upgradeBusy}
-              style={{
-                background: atLimit
-                  ? 'linear-gradient(135deg, #A53F2B 0%, #7d2e1e 100%)'
-                  : `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
-                color: '#FDF8EE', border: 'none', borderRadius: 999,
-                padding: '8px 16px', fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
-                cursor: upgradeBusy ? 'default' : 'pointer', opacity: upgradeBusy ? 0.7 : 1,
-                textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap',
-              }}
-            >
-              {upgradeBusy ? 'Opening…' : 'Upgrade to Pro →'}
-            </button>
-          </div>
-        );
-      })()}
+      {/* Member growth is handled by the gentle SeatNudge banner (ChurchAdmin,
+          above the tabs) — never a wall here. Inviting stays open at any size. */}
 
       {/* Invite code card */}
       <div style={{
         background: `linear-gradient(135deg, ${T.parchment} 0%, ${T.parchmentDark} 100%)`,
         border: `1px solid ${T.line}`, borderRadius: 14,
         padding: '18px 20px',
-        opacity: (churchPlan === 'church_base' && members.length >= CHURCH_BASE_MEMBER_LIMIT) ? 0.45 : 1,
-        pointerEvents: (churchPlan === 'church_base' && members.length >= CHURCH_BASE_MEMBER_LIMIT) ? 'none' : 'auto',
       }}>
         <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center' }}>
           <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Invite your congregation
