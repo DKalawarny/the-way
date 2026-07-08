@@ -689,6 +689,49 @@ export default function AdminPage({ onBack }) {
               );
             })()}
 
+            {dash.services && (() => {
+              const sv = dash.services;
+              const email = sv.email || {}, ai = sv.ai || {}, tts = sv.tts || {};
+              const emailNear = (email.sentToday ?? 0) >= (email.dailyLimit ?? 100) * 0.8;
+              const ttsFailing = (tts.failed ?? 0) > 0;
+              const aiCost = ((ai.inTokens ?? 0) / 1e6) * 3 + ((ai.outTokens ?? 0) / 1e6) * 15; // Sonnet 4.6 est
+              const cell = (label, value, color) => (
+                <div key={label}>
+                  <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 2 }}>{label}</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: color || T.ink }}>{value}</div>
+                </div>
+              );
+              const box = (danger, extra) => ({ border: `1px solid ${danger ? '#a53f2b' : T.line}`, background: danger ? 'rgba(165,63,43,0.06)' : T.white, borderRadius: 12, padding: '14px 16px', display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center', marginBottom: extra || 12 });
+              const link = (href, label) => <div style={{ flexBasis: '100%' }}><a href={href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12.5, fontWeight: 600, color: T.gold, textDecoration: 'none' }}>{label}</a></div>;
+              return (
+                <>
+                  <SectionTitle style={{ marginTop: 8 }}>System · Other services</SectionTitle>
+                  <div style={box(emailNear)}>
+                    {cell('Email (Resend)', emailNear ? '⚠ Near daily limit' : '✓ Healthy', emailNear ? '#a53f2b' : '#2e7a48')}
+                    {cell('Sent today', `${(email.sentToday ?? 0).toLocaleString()} / ${email.dailyLimit ?? 100}`)}
+                    {cell('This month', (email.sentMonth ?? 0).toLocaleString())}
+                    {link('https://resend.com/emails', 'Open Resend dashboard →')}
+                  </div>
+                  <div style={box(false)}>
+                    {cell('AI (Claude)', '✓ Running', '#2e7a48')}
+                    {cell('Chat requests', (ai.calls ?? 0).toLocaleString())}
+                    {cell('Tokens in / out', `${((ai.inTokens ?? 0) / 1000).toFixed(0)}k / ${((ai.outTokens ?? 0) / 1000).toFixed(0)}k`)}
+                    {cell('Est. spend', `~$${aiCost.toFixed(2)}`, T.goldDark)}
+                    <div style={{ flexBasis: '100%', fontSize: 11, color: T.inkMuted, lineHeight: 1.55 }}>
+                      Since {ai.since ? new Date(ai.since).toLocaleDateString() : '—'} · resets on deploy · main chat surfaces only.{' '}
+                      <a href="https://console.anthropic.com/settings/usage" target="_blank" rel="noopener noreferrer" style={{ color: T.gold, textDecoration: 'none' }}>Open Anthropic usage →</a>
+                    </div>
+                  </div>
+                  <div style={box(ttsFailing, 32)}>
+                    {cell('Voice (ElevenLabs)', ttsFailing ? '⚠ Failing (quota?)' : '✓ Healthy', ttsFailing ? '#a53f2b' : '#2e7a48')}
+                    {cell('TTS requests', (tts.calls ?? 0).toLocaleString())}
+                    {ttsFailing && cell('Failures', `${tts.failed} · last ${tts.lastFailAt ? new Date(tts.lastFailAt).toLocaleString() : '—'}`, '#a53f2b')}
+                    {link('https://elevenlabs.io/app/usage', 'Open ElevenLabs usage →')}
+                  </div>
+                </>
+              );
+            })()}
+
             <SectionTitle style={{ marginTop: 8 }}>Growth (last 10 weeks)</SectionTitle>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 32 }}>
               <Card label="New users / week">

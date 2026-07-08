@@ -540,6 +540,7 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
       }),
     });
 
+    trackTts(elevenRes.status);
     if (!elevenRes.ok) {
       const err = await elevenRes.text();
       console.error('[kinwove] ElevenLabs TTS error:', err);
@@ -575,6 +576,23 @@ function trackBibleUsage(status) {
   bibleApiUsage.calls++;
   if (status === 429) { bibleApiUsage.throttled++; bibleApiUsage.lastThrottleAt = new Date().toISOString(); }
 }
+
+// ── Third-party service usage (admin dashboard) — all in-memory, reset on deploy
+// Email (Resend): free tier ~100/day, 3,000/mo — the closest ceiling as users grow.
+const RESEND_DAILY_LIMIT = Number(process.env.RESEND_DAILY_LIMIT || 100);
+const emailUsage = { since: new Date().toISOString(), day: new Date().toISOString().slice(0, 10), month: new Date().toISOString().slice(0, 7), sentToday: 0, sentMonth: 0 };
+function trackEmail() {
+  const now = new Date().toISOString(), d = now.slice(0, 10), m = now.slice(0, 7);
+  if (emailUsage.day !== d) { emailUsage.day = d; emailUsage.sentToday = 0; }
+  if (emailUsage.month !== m) { emailUsage.month = m; emailUsage.sentMonth = 0; }
+  emailUsage.sentToday++; emailUsage.sentMonth++;
+}
+// TTS (ElevenLabs): character-billed; watch for 401/429 = quota/credits exhausted.
+const ttsUsage = { since: new Date().toISOString(), calls: 0, failed: 0, lastFailAt: null };
+function trackTts(status) { ttsUsage.calls++; if (status === 401 || status === 429) { ttsUsage.failed++; ttsUsage.lastFailAt = new Date().toISOString(); } }
+// AI (Anthropic/Claude): token usage → your biggest variable cost as you scale.
+const aiUsage = { since: new Date().toISOString(), calls: 0, inTokens: 0, outTokens: 0 };
+function trackAi(usage) { aiUsage.calls++; if (usage) { aiUsage.inTokens += usage.input_tokens || 0; aiUsage.outTokens += usage.output_tokens || 0; } }
 
 app.get('/api/bible/:bibleId/chapters/:chapterId', optionalAuth, limitEither({ capacity: 60, refillPerSec: 1 }, { capacity: 20, refillPerSec: 20 / 60 }), async (req, res) => {
   const { bibleId, chapterId } = req.params;
@@ -850,6 +868,7 @@ app.post('/api/chat', optionalAuth, limitEither(
     });
 
     const final = await stream.finalMessage();
+    trackAi(final.usage);
     const fullText = final.content
       .filter((b) => b.type === 'text')
       .map((b) => b.text)
@@ -1328,6 +1347,7 @@ async function sendEmail(to, subject, html, headers) {
     body:    JSON.stringify({ from, to: [to], subject, html, ...(headers ? { headers } : {}) }),
   });
   if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text().catch(() => '')}`);
+  trackEmail();
 }
 
 // Wordmark as plain HTML text — SVG/remote images are blocked by Gmail, iOS
@@ -2031,6 +2051,7 @@ async function sendVerificationEmail(to, code, churchName) {
     }),
   });
   if (!r.ok) throw new Error(`Resend ${r.status}: ${await r.text().catch(() => '')}`);
+  trackEmail();
 }
 
 // Return the calling user's pastor church (service role → bypasses all client-side RLS)
@@ -2450,6 +2471,7 @@ app.post('/api/anon/ask', limitAnon({ capacity: 6, refillPerSec: 6 / 300 }), asy
     stream.on('error', (err) => { console.error('[kinwove] anon stream error:', err); send('error', { message: 'stream error' }); });
 
     const final = await stream.finalMessage();
+    trackAi(final.usage);
     const fullText = final.content
       .filter((b) => b.type === 'text')
       .map((b) => b.text)
@@ -3182,6 +3204,11 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
       recentFeedback: Array.isArray(recentFeedback) ? recentFeedback : [],
       userReports: Array.isArray(userReports) ? userReports : [],
       bibleApi: { ...bibleApiUsage, monthlyLimit: BIBLE_MONTHLY_LIMIT },
+      services: {
+        email: { ...emailUsage, dailyLimit: RESEND_DAILY_LIMIT },
+        tts:   { ...ttsUsage },
+        ai:    { ...aiUsage },
+      },
     });
   } catch (e) {
     safeError(res, e, 'admin-dashboard');
