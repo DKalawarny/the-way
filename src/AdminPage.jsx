@@ -644,6 +644,50 @@ export default function AdminPage({ onBack }) {
               <StatCard label="Shared conversations" value={s.total_shared} />
             </div>
 
+            {dash.bibleApi && (() => {
+              const b = dash.bibleApi;
+              const throttled = b.throttled > 0;
+              return (
+                <>
+                  <SectionTitle style={{ marginTop: 8 }}>System · Bible API (api.bible)</SectionTitle>
+                  <div style={{
+                    border: `1px solid ${throttled ? '#a53f2b' : T.line}`,
+                    background: throttled ? 'rgba(165,63,43,0.06)' : T.white,
+                    borderRadius: 12, padding: '14px 16px', marginBottom: 32,
+                    display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'center',
+                  }}>
+                    <div>
+                      <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 2 }}>Status</div>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: throttled ? '#a53f2b' : '#2e7a48' }}>
+                        {throttled ? '⚠ Being rate-limited' : '✓ Healthy'}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 2 }}>Calls since {new Date(b.since).toLocaleDateString()}</div>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: T.ink }}>
+                        {Number(b.calls).toLocaleString()}
+                        <span style={{ fontSize: 12, color: T.inkMuted, fontWeight: 400 }}> / ~{Number(b.monthlyLimit).toLocaleString()} per month</span>
+                      </div>
+                    </div>
+                    {throttled && (
+                      <div>
+                        <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 2 }}>Throttle events</div>
+                        <div style={{ fontSize: 15, fontWeight: 600, color: '#a53f2b' }}>
+                          {b.throttled}
+                          <span style={{ fontSize: 12, fontWeight: 400 }}> · last {b.lastThrottleAt ? new Date(b.lastThrottleAt).toLocaleString() : '—'}</span>
+                        </div>
+                      </div>
+                    )}
+                    <div style={{ fontSize: 11, color: T.inkMuted, flexBasis: '100%', lineHeight: 1.55 }}>
+                      {throttled
+                        ? 'You are hitting your api.bible plan limit — time to upgrade the tier. Bible text/audio may be failing for users right now.'
+                        : 'Counter resets on each deploy; the authoritative monthly total is on your api.bible dashboard. If Status turns red, bump your api.bible plan.'}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+
             <SectionTitle style={{ marginTop: 8 }}>Growth (last 10 weeks)</SectionTitle>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 32 }}>
               <Card label="New users / week">

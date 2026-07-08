@@ -566,6 +566,16 @@ app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 6
 });
 
 // ── Bible proxy (keeps API key server-side, avoids CORS) ──────────────────────
+// ── Bible API usage tracking (admin dashboard + throttle awareness) ───────────
+// In-memory (resets on deploy). Counts api.bible calls + any upstream rate-limit
+// (429) responses, so you can see when you're nearing your plan's call allowance.
+const BIBLE_MONTHLY_LIMIT = Number(process.env.BIBLE_API_MONTHLY_LIMIT || 150000);
+const bibleApiUsage = { since: new Date().toISOString(), calls: 0, throttled: 0, lastThrottleAt: null };
+function trackBibleUsage(status) {
+  bibleApiUsage.calls++;
+  if (status === 429) { bibleApiUsage.throttled++; bibleApiUsage.lastThrottleAt = new Date().toISOString(); }
+}
+
 app.get('/api/bible/:bibleId/chapters/:chapterId', optionalAuth, limitEither({ capacity: 60, refillPerSec: 1 }, { capacity: 20, refillPerSec: 20 / 60 }), async (req, res) => {
   const { bibleId, chapterId } = req.params;
   const BIBLE_API_KEY = process.env.VITE_BIBLE_API_KEY;
@@ -585,6 +595,7 @@ app.get('/api/bible/:bibleId/chapters/:chapterId', optionalAuth, limitEither({ c
       `https://rest.api.bible/v1/bibles/${bibleId}/chapters/${chapterId}?${params}`,
       { headers: { 'api-key': BIBLE_API_KEY } }
     );
+    trackBibleUsage(upstream.status);
     if (!upstream.ok) {
       console.error('[kinwove] bible chapter upstream', upstream.status);
       return res.status(upstream.status >= 500 ? 502 : upstream.status).json({ error: 'bible upstream error' });
@@ -618,6 +629,7 @@ app.get('/api/bible-audio/:audioBibleId/chapters/:chapterId', optionalAuth, limi
       `https://rest.api.bible/v1/audio-bibles/${audioBibleId}/chapters/${chapterId}`,
       { headers: { 'api-key': BIBLE_API_KEY } }
     );
+    trackBibleUsage(upstream.status);
     if (!upstream.ok) {
       console.error('[kinwove] audio bible chapter upstream', upstream.status);
       return res.status(upstream.status >= 500 ? 502 : upstream.status).json({ error: 'audio bible upstream error' });
@@ -3169,6 +3181,7 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
       pendingApps: Array.isArray(pendingApps) ? pendingApps : [],
       recentFeedback: Array.isArray(recentFeedback) ? recentFeedback : [],
       userReports: Array.isArray(userReports) ? userReports : [],
+      bibleApi: { ...bibleApiUsage, monthlyLimit: BIBLE_MONTHLY_LIMIT },
     });
   } catch (e) {
     safeError(res, e, 'admin-dashboard');
