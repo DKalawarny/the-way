@@ -2179,6 +2179,29 @@ useEffect(() => {
               .filter((p) => !blockedIds.includes(p.author_id));
             return (
               <>
+                {!loading && !feedError && onInviteFriends && (
+                  <div style={{
+                    background: T.parchment, border: `1px solid ${T.gold}`, borderRadius: 14,
+                    padding: '15px 18px', marginBottom: 14,
+                    display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
+                  }}>
+                    <div style={{ flex: 1, minWidth: 200 }}>
+                      <div style={{ fontFamily: T.serif, fontSize: 16, fontWeight: 600, color: T.ink, marginBottom: 3 }}>
+                        It's better with a friend
+                      </div>
+                      <div style={{ fontFamily: T.display, fontSize: 14, color: T.inkSoft, lineHeight: 1.5 }}>
+                        Invite someone to explore alongside you — the questions are easier when you're not the only one asking.
+                      </div>
+                    </div>
+                    <button onClick={onInviteFriends} style={{
+                      background: T.gold, color: '#FFF', border: 'none', borderRadius: 999,
+                      padding: '9px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                      whiteSpace: 'nowrap', fontFamily: T.sans,
+                    }}>
+                      Invite a friend
+                    </button>
+                  </div>
+                )}
                 {loading && <div style={{ textAlign: 'center', color: T.inkMuted, padding: 40, fontFamily: T.serif, fontSize: 16 }}>Loading…</div>}
                 {!loading && feedError && (
                   <div style={{ textAlign: 'center', color: T.inkMuted, fontFamily: T.serif, padding: '32px 20px', lineHeight: 1.65 }}>
