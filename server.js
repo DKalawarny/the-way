@@ -1431,7 +1431,7 @@ function welcomeEmailHtml(firstName) {
       Whatever you're carrying — faith, doubt, or somewhere in between — bring it here.
     </p>
     <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 20px">
-      And you're not on your own in it. When you're ready, there's a community here too — people walking the same road, honest conversation, and prayer when you need it.
+      There's also a community just beginning here — and you're early, which means you get to help shape what it becomes.
     </p>
     <p style="font-size:15px;color:#6B5344;line-height:1.7;margin:0">&mdash; Danny</p>
   `);
@@ -1469,15 +1469,15 @@ function nudgeEmailHtml(firstName) {
 // Welcome sequence · day 2 — the community side.
 function communityEmailHtml(firstName) {
   return emailWrap(`
-    <h1 style="font-size:26px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">You're not meant to walk this alone, ${firstName}.</h1>
+    <h1 style="font-size:26px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">You're early, ${firstName} — and that's a good thing.</h1>
     <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
-      It's Danny again. A few days in, here's something a lot of people miss at first: kinwove isn't only answers. There's a community inside it.
+      It's Danny again. Let me be straight with you: kinwove's community is just getting started. It's small and new. But that means the people who show up now are the ones who shape what it becomes — the tone, the honesty, the welcome.
     </p>
     <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
-      Real people, at every stage of faith — sharing honest questions, encouragement, and prayer. Nobody's performing here. If you're carrying something heavy, you can post a prayer and people will actually pray for it. And if you'd rather just listen for a while, that's welcome too.
+      The idea is a place where real questions, encouragement, and prayer belong — no performing, no pretending. You can share a prayer, post a thought, or just quietly read. Every good community starts with a few honest people, and I'd love for you to be one of them.
     </p>
-    ${btnHtml('See who\'s here →', 'https://www.kinwove.com')}
-    <p style="font-size:13px;color:#9C7B5E;margin:0">Come as you are. — Danny</p>
+    ${btnHtml('Take a look →', 'https://www.kinwove.com')}
+    <p style="font-size:13px;color:#9C7B5E;margin:0">Thanks for being here at the start. — Danny</p>
   `);
 }
 
@@ -1641,7 +1641,7 @@ app.post('/api/cron/welcome-sequence', async (req, res) => {
   const hrsAgo = (n) => new Date(Date.now() - n * 60 * 60 * 1000).toISOString();
 
   const stages = [
-    { name: 'community', olderThan: 72,  newerThan: 48,  subject: "You're not meant to walk this alone", html: communityEmailHtml },
+    { name: 'community', olderThan: 72,  newerThan: 48,  subject: "You're one of the first here", html: communityEmailHtml },
     { name: 'bible',     olderThan: 144, newerThan: 120, subject: "The whole Bible's in here",           html: bibleEmailHtml },
   ];
 
