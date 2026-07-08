@@ -1474,7 +1474,7 @@ function inviteEmailHtml(firstName, userId) {
   const inviteUrl = `https://www.kinwove.com/?utm_source=welcome-invite&utm_medium=invite&utm_campaign=referral${ref}`;
   const mailto = `mailto:?subject=${encodeURIComponent('Thought of you')}&body=${encodeURIComponent("I've been using kinwove — honest answers to the big questions about faith, and a place to read the Bible. No pressure, no agenda. Thought you might like it:\n\n" + inviteUrl)}`;
   return emailWrap(`
-    <h1 style="font-size:26px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">kinwove's better with someone you love in it, ${firstName}.</h1>
+    <h1 style="font-size:26px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">kinwove's better with a friend in it, ${firstName}.</h1>
     <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
       It's Danny. Here's the honest truth: the community here is young and still filling in. So the best way to start isn't to wait for it — it's to bring someone. A friend who's curious, a family member walking through something, anyone you'd want to figure this out alongside.
     </p>
