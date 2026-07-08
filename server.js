@@ -621,6 +621,12 @@ function alertOps(key, subject, detail) {
   sendEmail(to, subject, html).catch((e) => console.error('[ops-alert] email failed:', e?.message));
 }
 
+// Skip your own/system addresses in bulk sends (welcome sequence, backfill) so
+// test/admin accounts on @kinwove.com don't receive the member drip.
+function isInternalEmail(email) {
+  return typeof email === 'string' && /@kinwove\.com$/i.test(email.trim());
+}
+
 // Prompt caching: the big static system prompt is sent on every message, so cache
 // it (Anthropic bills the cached prefix at ~10%). Dynamic context (URLs, memory)
 // stays uncached. This is the single biggest AI-cost lever — see the financial model.
@@ -1794,7 +1800,7 @@ app.post('/api/cron/welcome-sequence', async (req, res) => {
       if (st.audience === 'pastor' && !isPastor) continue;
       try {
         const email = await getUserEmail(row.id);
-        if (!email) continue;
+        if (!email || isInternalEmail(email)) continue;
         const firstName = (row.display_name || '').trim().split(/\s+/)[0] || email.split('@')[0] || 'friend';
         await sendEmail(email, st.subject, st.html(firstName, row.id));
         counts[st.name]++;
@@ -1830,10 +1836,16 @@ app.post('/api/cron/welcome-backfill', async (req, res) => {
   const def = DEFS[stage];
   if (!def) return res.status(400).json({ error: 'stage must be invite | bible | pastor' });
 
+  // Window is adjustable so you can fill the gap left by the first run without
+  // re-hitting people already emailed. Defaults 6–30 days. Pass min=0&max=6 to
+  // catch recent signups whose automatic Day-2 window passed before the cron existed.
+  const minDays = Math.max(0, Number(req.query.min ?? 6));
+  const maxDays = Math.max(minDays + 1, Number(req.query.max ?? 30));
+
   const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
   const hrsAgo = (n) => new Date(Date.now() - n * 60 * 60 * 1000).toISOString();
   const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?display_name=not.is.null&created_at=gte.${hrsAgo(24 * 30)}&created_at=lte.${hrsAgo(24 * 6)}&select=id,display_name,is_pastor&limit=1000`,
+    `${SUPABASE_URL}/rest/v1/profiles?display_name=not.is.null&created_at=gte.${hrsAgo(24 * maxDays)}&created_at=lte.${hrsAgo(24 * minDays)}&select=id,display_name,is_pastor&limit=1000`,
     { headers: h }
   );
   const rows = await r.json().catch(() => []);
@@ -1845,7 +1857,7 @@ app.post('/api/cron/welcome-backfill', async (req, res) => {
     if (def.audience === 'pastor' && !isPastor) { skipped++; continue; }
     try {
       const email = await getUserEmail(row.id);
-      if (!email) { skipped++; continue; }
+      if (!email || isInternalEmail(email)) { skipped++; continue; }
       const firstName = (row.display_name || '').trim().split(/\s+/)[0] || email.split('@')[0] || 'friend';
       await sendEmail(email, def.subject, def.html(firstName, row.id));
       sent++;
