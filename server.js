@@ -1808,6 +1808,56 @@ app.post('/api/cron/welcome-sequence', async (req, res) => {
   res.json({ sent: counts });
 });
 
+// ── Welcome backfill (one-time catch-up) ──────────────────────────────────────
+// Sends a chosen sequence email to EXISTING signups from the last month who
+// joined before the sequence existed. Targets 6–30 days old so it never overlaps
+// the live cron's 2–5 day windows (no double-sends there). No per-user tracking,
+// so FIRE EACH STAGE ONCE — re-firing the same stage re-sends to everyone.
+// Usage: POST /api/cron/welcome-backfill?stage=invite|bible|pastor
+app.post('/api/cron/welcome-backfill', async (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  if (secret && req.headers['x-cron-secret'] !== secret) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+
+  const stage = String(req.query.stage || req.body?.stage || 'invite');
+  const DEFS = {
+    invite: { audience: 'seeker', subject: "kinwove's better with a friend in it", html: (n, id) => inviteEmailHtml(n, id) },
+    bible:  { audience: 'seeker', subject: "The whole Bible's in here",           html: (n) => bibleEmailHtml(n) },
+    pastor: { audience: 'pastor', subject: 'A shortcut for Sunday',               html: (n) => pastorEmailHtml(n) },
+  };
+  const def = DEFS[stage];
+  if (!def) return res.status(400).json({ error: 'stage must be invite | bible | pastor' });
+
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+  const hrsAgo = (n) => new Date(Date.now() - n * 60 * 60 * 1000).toISOString();
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/profiles?display_name=not.is.null&created_at=gte.${hrsAgo(24 * 30)}&created_at=lte.${hrsAgo(24 * 6)}&select=id,display_name,is_pastor&limit=1000`,
+    { headers: h }
+  );
+  const rows = await r.json().catch(() => []);
+
+  let sent = 0, skipped = 0;
+  for (const row of rows) {
+    const isPastor = row.is_pastor === true;
+    if (def.audience === 'seeker' && isPastor) { skipped++; continue; }
+    if (def.audience === 'pastor' && !isPastor) { skipped++; continue; }
+    try {
+      const email = await getUserEmail(row.id);
+      if (!email) { skipped++; continue; }
+      const firstName = (row.display_name || '').trim().split(/\s+/)[0] || email.split('@')[0] || 'friend';
+      await sendEmail(email, def.subject, def.html(firstName, row.id));
+      sent++;
+      await new Promise((r) => setTimeout(r, 200)); // gentle rate-limit
+    } catch (e) {
+      console.error(`[welcome-backfill:${stage}]`, e.message);
+    }
+  }
+  console.log(`[welcome-backfill] stage=${stage} sent=${sent} skipped=${skipped} of ${rows.length}`);
+  res.json({ stage, sent, skipped, total: rows.length });
+});
+
 // ── Unsubscribe from the daily verse (one-click, no login) ────────────────────
 app.get('/api/email/unsubscribe', async (req, res) => {
   const { u, t, resub } = req.query;
