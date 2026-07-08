@@ -1466,18 +1466,25 @@ function nudgeEmailHtml(firstName) {
   `);
 }
 
-// Welcome sequence · day 2 — the community side.
-function communityEmailHtml(firstName) {
+// Welcome sequence · day 2 — invite a friend. The community grows by invitation,
+// and this is the best growth lever. The ref code ties any signup back to the
+// inviter, matching the in-app InviteFriends attribution (?ref=id[:8]).
+function inviteEmailHtml(firstName, userId) {
+  const ref = userId ? `&ref=${String(userId).slice(0, 8)}` : '';
+  const inviteUrl = `https://www.kinwove.com/?utm_source=welcome-invite&utm_medium=invite&utm_campaign=referral${ref}`;
+  const mailto = `mailto:?subject=${encodeURIComponent('Thought of you')}&body=${encodeURIComponent("I've been using kinwove — honest answers to the big questions about faith, and a place to read the Bible. No pressure, no agenda. Thought you might like it:\n\n" + inviteUrl)}`;
   return emailWrap(`
-    <h1 style="font-size:26px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">You're early, ${firstName} — and that's a good thing.</h1>
+    <h1 style="font-size:26px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">kinwove's better with someone you love in it, ${firstName}.</h1>
     <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
-      It's Danny again. Let me be straight with you: kinwove's community is just getting started. It's small and new. But that means the people who show up now are the ones who shape what it becomes — the tone, the honesty, the welcome.
+      It's Danny. Here's the honest truth: the community here is young and still filling in. So the best way to start isn't to wait for it — it's to bring someone. A friend who's curious, a family member walking through something, anyone you'd want to figure this out alongside.
     </p>
-    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
-      The idea is a place where real questions, encouragement, and prayer belong — no performing, no pretending. You can share a prayer, post a thought, or just quietly read. Every good community starts with a few honest people, and I'd love for you to be one of them.
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 18px">
+      Bring them in, and from day one you've got someone to talk to, pray with, and read alongside — right here.
     </p>
-    ${btnHtml('Take a look →', 'https://www.kinwove.com')}
-    <p style="font-size:13px;color:#9C7B5E;margin:0">Thanks for being here at the start. — Danny</p>
+    ${btnHtml('Invite someone →', mailto)}
+    <p style="font-size:13px;color:#9C7B5E;line-height:1.7;margin:0">
+      Prefer text or WhatsApp? Open kinwove and tap <strong>Invite friends</strong> — every way to share is there. — Danny
+    </p>
   `);
 }
 
@@ -1641,7 +1648,7 @@ app.post('/api/cron/welcome-sequence', async (req, res) => {
   const hrsAgo = (n) => new Date(Date.now() - n * 60 * 60 * 1000).toISOString();
 
   const stages = [
-    { name: 'community', olderThan: 72,  newerThan: 48,  subject: "You're one of the first here", html: communityEmailHtml },
+    { name: 'invite',    olderThan: 72,  newerThan: 48,  subject: "kinwove's better with a friend in it", html: inviteEmailHtml },
     { name: 'bible',     olderThan: 144, newerThan: 120, subject: "The whole Bible's in here",           html: bibleEmailHtml },
   ];
 
@@ -1659,7 +1666,7 @@ app.post('/api/cron/welcome-sequence', async (req, res) => {
         const email = await getUserEmail(row.id);
         if (!email) continue;
         const firstName = (row.display_name || '').trim().split(/\s+/)[0] || email.split('@')[0] || 'friend';
-        await sendEmail(email, st.subject, st.html(firstName));
+        await sendEmail(email, st.subject, st.html(firstName, row.id));
         counts[st.name]++;
         await new Promise((r) => setTimeout(r, 200)); // gentle rate-limit
       } catch (e) {
@@ -1667,7 +1674,7 @@ app.post('/api/cron/welcome-sequence', async (req, res) => {
       }
     }
   }
-  console.log(`[welcome-sequence] community=${counts.community} bible=${counts.bible}`);
+  console.log(`[welcome-sequence] invite=${counts.invite} bible=${counts.bible}`);
   res.json({ sent: counts });
 });
 
