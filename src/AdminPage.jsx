@@ -683,6 +683,7 @@ export default function AdminPage({ onBack }) {
                         ? 'You are hitting your api.bible plan limit — time to upgrade the tier. Bible text/audio may be failing for users right now.'
                         : 'Counter resets on each deploy; the authoritative monthly total is on your api.bible dashboard. If Status turns red, bump your api.bible plan.'}
                     </div>
+                    <a href="https://app.api.bible/" target="_blank" rel="noopener noreferrer" style={{ flexBasis: '100%', fontSize: 12.5, fontWeight: 600, color: T.gold, textDecoration: 'none' }}>Open api.bible dashboard →</a>
                   </div>
                 </>
               );
