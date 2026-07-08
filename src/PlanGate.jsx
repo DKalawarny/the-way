@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { T } from './theme.js';
+import { supabase } from './supabase.js';
 import { CHURCH_BASE_PRICE, CHURCH_PRO_PRICE, UPGRADE_EMAIL, TRIAL_DAYS } from './usePlan.js';
 import { TRIAL_MSG_LIMIT } from './useSermonAiUsage.js';
+import { includedMembers, seatBlocksNeeded, SEAT_BLOCK_SIZE, SEAT_BLOCK_PRICE } from './planConfig.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 // Starts a Stripe Checkout for a church plan ('church_base' | 'church_pro').
@@ -33,6 +35,77 @@ export async function startChurchCheckout(session, plan) {
   } catch {
     return { error: 'Could not reach the payment service. Try again.' };
   }
+}
+
+/* ── Seat nudge ───────────────────────────────────────────────────────────────
+   Shown to the pastor when the congregation has grown past the plan's included
+   members. A gentle "you've grown" prompt with one-click add-seats — never a
+   wall, and invisible to members. Renders nothing when the church is within its
+   limit (or not on a paid/trial church plan). Self-contained: fetches its own
+   member count. Note: `seatBlocks` is read as 0 until a churches.seat_blocks
+   column + webhook sync exist — wire that at Stripe go-live so the nudge clears
+   after a pastor buys seats. */
+export function SeatNudge({ churchId, plan, session, seatBlocks = 0 }) {
+  const [memberCount, setMemberCount] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr]   = useState(null);
+
+  useEffect(() => {
+    if (!churchId) return;
+    let cancelled = false;
+    supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('church_id', churchId)
+      .then(({ count }) => { if (!cancelled) setMemberCount(count ?? 0); }, () => {});
+    return () => { cancelled = true; };
+  }, [churchId]);
+
+  if (memberCount == null) return null;
+  const blocks = seatBlocksNeeded(memberCount, plan, seatBlocks);
+  if (blocks <= 0) return null;
+
+  const included = includedMembers(plan, seatBlocks);
+
+  async function addSeats() {
+    setBusy(true); setErr(null);
+    const { error } = await startChurchCheckout(session, 'church_seats');
+    if (error) { setErr(error); setBusy(false); }
+  }
+
+  return (
+    <div style={{
+      background: T.parchment,
+      border: `1px solid ${T.gold}`,
+      borderRadius: 14,
+      padding: '16px 18px',
+      margin: '16px 16px 0',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <KinwoveStar size={15} />
+        <div style={{ fontFamily: T.serif, fontSize: 16, fontWeight: 600, color: T.ink }}>
+          Your congregation has grown past {included} — that's a joy to see.
+        </div>
+      </div>
+      <div style={{ fontFamily: T.display, fontSize: 14.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 14, maxWidth: '60ch' }}>
+        Because every member can lean on the AI companion, and that carries a real cost for us,
+        plans grow gently with your church. Adding {SEAT_BLOCK_SIZE} seats keeps it running for
+        everyone you're reaching — and helps us keep kinwove within reach for smaller churches too.
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <button
+          onClick={addSeats}
+          disabled={busy}
+          style={{
+            background: T.gold, color: T.white, border: 'none', borderRadius: 999,
+            padding: '9px 20px', fontSize: 14, fontWeight: 600, cursor: busy ? 'default' : 'pointer',
+            opacity: busy ? 0.7 : 1, fontFamily: T.sans,
+          }}
+        >
+          {busy ? 'Opening checkout…' : `Add ${SEAT_BLOCK_SIZE} seats — $${SEAT_BLOCK_PRICE}/month`}
+        </button>
+        <span style={{ fontSize: 12, color: T.inkMuted }}>Secure checkout through Stripe. Cancel any time.</span>
+      </div>
+      {err && <div style={{ fontSize: 13, color: '#a53f2b', marginTop: 10 }}>{err}</div>}
+    </div>
+  );
 }
 
 /* ── Trial banner ────────────────────────────────────────────────────────────

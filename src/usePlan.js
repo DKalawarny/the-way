@@ -3,8 +3,8 @@ import { supabase } from './supabase.js';
 import { churchHasAccess } from './planConfig.js';
 
 export const TRIAL_DAYS               = 35;
-export const CHURCH_BASE_PRICE        = '$41.99 CAD/mo';
-export const CHURCH_PRO_PRICE         = '$82.99 CAD/mo';
+export const CHURCH_BASE_PRICE        = '$79 CAD/mo';
+export const CHURCH_PRO_PRICE         = '$149 CAD/mo';
 export const PRO_PRICE                = CHURCH_BASE_PRICE; // kept for legacy imports
 export const UPGRADE_EMAIL            = 'hello@kinwove.app'; // swap for Stripe link when ready
 export const CHURCH_BASE_MEMBER_LIMIT = 150;

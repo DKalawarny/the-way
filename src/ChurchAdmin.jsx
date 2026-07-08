@@ -11,7 +11,7 @@ import FlagPicker from './FlagPicker.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 import { usePlan, CHURCH_BASE_MEMBER_LIMIT } from './usePlan.js';
-import { TrialBanner, startChurchCheckout } from './PlanGate.jsx';
+import { TrialBanner, SeatNudge, startChurchCheckout } from './PlanGate.jsx';
 
 const PastorDashboard = lazy(() => import('./PastorDashboard.jsx'));
 const SermonComposer  = lazy(() => import('./SermonComposer.jsx'));
@@ -2454,6 +2454,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
             <TrialBanner daysLeft={daysLeft} session={session} />
           </div>
         )}
+        {hasAccess && <SeatNudge churchId={churchId} plan={plan} session={session} />}
         {tab === 'overview' && (
           <PastorDashboard
             embedded
