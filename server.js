@@ -574,7 +574,10 @@ const BIBLE_MONTHLY_LIMIT = Number(process.env.BIBLE_API_MONTHLY_LIMIT || 150000
 const bibleApiUsage = { since: new Date().toISOString(), calls: 0, throttled: 0, lastThrottleAt: null };
 function trackBibleUsage(status) {
   bibleApiUsage.calls++;
-  if (status === 429) { bibleApiUsage.throttled++; bibleApiUsage.lastThrottleAt = new Date().toISOString(); }
+  if (status === 429) {
+    bibleApiUsage.throttled++; bibleApiUsage.lastThrottleAt = new Date().toISOString();
+    alertOps('bible-429', 'kinwove: Bible API is being rate-limited', 'api.bible returned 429 — you may be at your plan limit, and Bible text/audio could be failing for users. Consider bumping the api.bible tier.');
+  }
 }
 
 // ── Third-party service usage (admin dashboard) — all in-memory, reset on deploy
@@ -586,13 +589,37 @@ function trackEmail() {
   if (emailUsage.day !== d) { emailUsage.day = d; emailUsage.sentToday = 0; }
   if (emailUsage.month !== m) { emailUsage.month = m; emailUsage.sentMonth = 0; }
   emailUsage.sentToday++; emailUsage.sentMonth++;
+  if (emailUsage.sentToday === Math.floor(RESEND_DAILY_LIMIT * 0.9)) {
+    alertOps('email-near-limit', 'kinwove: email nearing the daily limit', `You've sent ${emailUsage.sentToday} emails today — near the ${RESEND_DAILY_LIMIT}/day Resend limit. New emails may soon start failing; upgrading Resend (~$20/mo) clears it.`);
+  }
 }
 // TTS (ElevenLabs): character-billed; watch for 401/429 = quota/credits exhausted.
 const ttsUsage = { since: new Date().toISOString(), calls: 0, failed: 0, lastFailAt: null };
-function trackTts(status) { ttsUsage.calls++; if (status === 401 || status === 429) { ttsUsage.failed++; ttsUsage.lastFailAt = new Date().toISOString(); } }
+function trackTts(status) {
+  ttsUsage.calls++;
+  if (status === 401 || status === 429) {
+    ttsUsage.failed++; ttsUsage.lastFailAt = new Date().toISOString();
+    alertOps('tts-fail', 'kinwove: voice (ElevenLabs) is failing', `ElevenLabs returned ${status} — likely out of credits. Voice replies are falling back to the device voice. Check your ElevenLabs plan.`);
+  }
+}
 // AI (Anthropic/Claude): token usage → your biggest variable cost as you scale.
 const aiUsage = { since: new Date().toISOString(), calls: 0, inTokens: 0, outTokens: 0 };
 function trackAi(usage) { aiUsage.calls++; if (usage) { aiUsage.inTokens += usage.input_tokens || 0; aiUsage.outTokens += usage.output_tokens || 0; } }
+
+// Ops alert — one email when a third-party service goes red (throttled / near a
+// limit / failing). Reuses the error-alert email path + _errorAlertSeen cooldown
+// so you get a heads-up, not a flood. No-op unless ERROR_ALERT_EMAIL is set.
+const OPS_ALERT_COOLDOWN_MS = 12 * 60 * 60 * 1000; // one email per issue / 12h
+function alertOps(key, subject, detail) {
+  const to = process.env.ERROR_ALERT_EMAIL;
+  if (!to || !process.env.RESEND_API_KEY) return;
+  const now = Date.now();
+  if (now - (_errorAlertSeen.get(`ops:${key}`) ?? 0) < OPS_ALERT_COOLDOWN_MS) return;
+  _errorAlertSeen.set(`ops:${key}`, now);
+  const html = `<p style="font-size:15px;color:#333;line-height:1.6">${detail}</p>` +
+    `<p style="font-size:13px;color:#888">Live status is in the admin dashboard → System panels.</p>`;
+  sendEmail(to, subject, html).catch((e) => console.error('[ops-alert] email failed:', e?.message));
+}
 
 // Prompt caching: the big static system prompt is sent on every message, so cache
 // it (Anthropic bills the cached prefix at ~10%). Dynamic context (URLs, memory)
@@ -1503,6 +1530,26 @@ function bibleEmailHtml(firstName) {
   `);
 }
 
+// Welcome sequence · day 3 (pastors only) — the sermon AI + church tools. This is
+// where the social features (private groups, messaging) belong: churches arrive
+// with their own people, so those tools are useful on day one.
+function pastorEmailHtml(firstName) {
+  return emailWrap(`
+    <h1 style="font-size:26px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">A shortcut for Sunday, ${firstName}.</h1>
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
+      Danny here. You've got kinwove set up for your church — here's the part most pastors find hard to give up: take this week's sermon and, in a couple of minutes, turn it into a week of daily reflections, discussion questions, and prayer for your whole congregation. The AI drafts it; you keep the final say on every word.
+    </p>
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
+      Underneath, it's a full study desk too — original languages, commentary across traditions, sermon illustrations — plus a private space for your people: groups, messaging, prayer, and care.
+    </p>
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 18px">
+      Start with one sermon. See what it's like to hand your congregation something for the whole week, not just Sunday morning.
+    </p>
+    ${btnHtml('Open your sermon tools →', 'https://www.kinwove.com')}
+    <p style="font-size:13px;color:#9C7B5E;margin:0">And when you're ready, invite your congregation in — that's when it all comes alive. — Danny</p>
+  `);
+}
+
 // ── Welcome email (called after profile wizard completes) ─────────────────────
 app.post('/api/email/welcome', requireAuth, async (req, res) => {
   try {
@@ -1648,8 +1695,9 @@ app.post('/api/cron/welcome-sequence', async (req, res) => {
   const hrsAgo = (n) => new Date(Date.now() - n * 60 * 60 * 1000).toISOString();
 
   const stages = [
-    { name: 'invite',    olderThan: 72,  newerThan: 48,  subject: "kinwove's better with a friend in it", html: inviteEmailHtml },
-    { name: 'bible',     olderThan: 144, newerThan: 120, subject: "The whole Bible's in here",           html: bibleEmailHtml },
+    { name: 'invite', olderThan: 72,  newerThan: 48,  audience: 'seeker', subject: "kinwove's better with a friend in it", html: inviteEmailHtml },
+    { name: 'bible',  olderThan: 144, newerThan: 120, audience: 'seeker', subject: "The whole Bible's in here",           html: bibleEmailHtml },
+    { name: 'pastor', olderThan: 96,  newerThan: 72,  audience: 'pastor', subject: 'A shortcut for Sunday',               html: pastorEmailHtml },
   ];
 
   const counts = {};
@@ -1657,11 +1705,14 @@ app.post('/api/cron/welcome-sequence', async (req, res) => {
     counts[st.name] = 0;
     // created between (olderThan) and (newerThan) hours ago, onboarding finished
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?display_name=not.is.null&created_at=gte.${hrsAgo(st.olderThan)}&created_at=lte.${hrsAgo(st.newerThan)}&select=id,display_name&limit=200`,
+      `${SUPABASE_URL}/rest/v1/profiles?display_name=not.is.null&created_at=gte.${hrsAgo(st.olderThan)}&created_at=lte.${hrsAgo(st.newerThan)}&select=id,display_name,is_pastor&limit=200`,
       { headers: h }
     );
     const rows = await r.json().catch(() => []);
     for (const row of rows) {
+      const isPastor = row.is_pastor === true;
+      if (st.audience === 'seeker' && isPastor) continue; // pastors get their own track
+      if (st.audience === 'pastor' && !isPastor) continue;
       try {
         const email = await getUserEmail(row.id);
         if (!email) continue;
@@ -1674,7 +1725,7 @@ app.post('/api/cron/welcome-sequence', async (req, res) => {
       }
     }
   }
-  console.log(`[welcome-sequence] invite=${counts.invite} bible=${counts.bible}`);
+  console.log(`[welcome-sequence] invite=${counts.invite} bible=${counts.bible} pastor=${counts.pastor}`);
   res.json({ sent: counts });
 });
 
