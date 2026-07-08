@@ -594,6 +594,15 @@ function trackTts(status) { ttsUsage.calls++; if (status === 401 || status === 4
 const aiUsage = { since: new Date().toISOString(), calls: 0, inTokens: 0, outTokens: 0 };
 function trackAi(usage) { aiUsage.calls++; if (usage) { aiUsage.inTokens += usage.input_tokens || 0; aiUsage.outTokens += usage.output_tokens || 0; } }
 
+// Prompt caching: the big static system prompt is sent on every message, so cache
+// it (Anthropic bills the cached prefix at ~10%). Dynamic context (URLs, memory)
+// stays uncached. This is the single biggest AI-cost lever — see the financial model.
+function cachedSystem(staticText, dynamicText) {
+  const blocks = [{ type: 'text', text: staticText, cache_control: { type: 'ephemeral' } }];
+  if (dynamicText) blocks.push({ type: 'text', text: dynamicText });
+  return blocks;
+}
+
 app.get('/api/bible/:bibleId/chapters/:chapterId', optionalAuth, limitEither({ capacity: 60, refillPerSec: 1 }, { capacity: 20, refillPerSec: 20 / 60 }), async (req, res) => {
   const { bibleId, chapterId } = req.params;
   const BIBLE_API_KEY = process.env.VITE_BIBLE_API_KEY;
@@ -851,7 +860,7 @@ app.post('/api/chat', optionalAuth, limitEither(
     const stream = client.messages.stream({
       model,
       max_tokens: 2048,
-      system: system + urlContext + memoryContext,
+      system: cachedSystem(system, urlContext + memoryContext),
       messages: trimmed,
     });
     req.on('close', () => stream.controller?.abort?.());
