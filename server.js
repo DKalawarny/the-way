@@ -1466,6 +1466,36 @@ function nudgeEmailHtml(firstName) {
   `);
 }
 
+// Welcome sequence · day 2 — the community side.
+function communityEmailHtml(firstName) {
+  return emailWrap(`
+    <h1 style="font-size:26px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">You're not meant to walk this alone, ${firstName}.</h1>
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
+      It's Danny again. A few days in, here's something a lot of people miss at first: kinwove isn't only answers. There's a community inside it.
+    </p>
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
+      Real people, at every stage of faith — sharing honest questions, encouragement, and prayer. Nobody's performing here. If you're carrying something heavy, you can post a prayer and people will actually pray for it. And if you'd rather just listen for a while, that's welcome too.
+    </p>
+    ${btnHtml('See who\'s here →', 'https://www.kinwove.com')}
+    <p style="font-size:13px;color:#9C7B5E;margin:0">Come as you are. — Danny</p>
+  `);
+}
+
+// Welcome sequence · day 5 — reading the Bible with a companion.
+function bibleEmailHtml(firstName) {
+  return emailWrap(`
+    <h1 style="font-size:26px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">The whole Bible's in here, ${firstName}.</h1>
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
+      Danny here. One of the quietest, best things in kinwove: you can read the whole Bible right inside it — and ask about anything the moment it puzzles you. No commentary to buy, no Greek degree required. Just read, and when a verse stops you, ask.
+    </p>
+    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
+      Not sure where to start? Most people new to it find the Gospel of John a good first door — it's Jesus, up close. And if you'd rather listen than read, you can — it'll read to you.
+    </p>
+    ${btnHtml('Start reading →', 'https://www.kinwove.com')}
+    <p style="font-size:13px;color:#9C7B5E;margin:0">One chapter is enough. — Danny</p>
+  `);
+}
+
 // ── Welcome email (called after profile wizard completes) ─────────────────────
 app.post('/api/email/welcome', requireAuth, async (req, res) => {
   try {
@@ -1592,6 +1622,53 @@ app.post('/api/cron/nudge-incomplete', async (req, res) => {
   }
   console.log(`[nudge-incomplete] sent ${sent} of ${incomplete.length}`);
   res.json({ sent, total: incomplete.length });
+});
+
+// ── Welcome sequence (cron) ───────────────────────────────────────────────────
+// Run once per day. Each stage is a 24 h cohort window (created N–24 h to N h ago),
+// so with a daily run every completed signup receives each email exactly once — no
+// tracking table needed, matching the nudge-incomplete pattern above. Only users
+// who finished onboarding (display_name set) get these; the rest get the nudge.
+// Cron config: POST with header X-Cron-Secret: <CRON_SECRET>.
+app.post('/api/cron/welcome-sequence', async (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  if (secret && req.headers['x-cron-secret'] !== secret) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+  const hrsAgo = (n) => new Date(Date.now() - n * 60 * 60 * 1000).toISOString();
+
+  const stages = [
+    { name: 'community', olderThan: 72,  newerThan: 48,  subject: "You're not meant to walk this alone", html: communityEmailHtml },
+    { name: 'bible',     olderThan: 144, newerThan: 120, subject: "The whole Bible's in here",           html: bibleEmailHtml },
+  ];
+
+  const counts = {};
+  for (const st of stages) {
+    counts[st.name] = 0;
+    // created between (olderThan) and (newerThan) hours ago, onboarding finished
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?display_name=not.is.null&created_at=gte.${hrsAgo(st.olderThan)}&created_at=lte.${hrsAgo(st.newerThan)}&select=id,display_name&limit=200`,
+      { headers: h }
+    );
+    const rows = await r.json().catch(() => []);
+    for (const row of rows) {
+      try {
+        const email = await getUserEmail(row.id);
+        if (!email) continue;
+        const firstName = (row.display_name || '').trim().split(/\s+/)[0] || email.split('@')[0] || 'friend';
+        await sendEmail(email, st.subject, st.html(firstName));
+        counts[st.name]++;
+        await new Promise((r) => setTimeout(r, 200)); // gentle rate-limit
+      } catch (e) {
+        console.error(`[welcome-sequence:${st.name}]`, e.message);
+      }
+    }
+  }
+  console.log(`[welcome-sequence] community=${counts.community} bible=${counts.bible}`);
+  res.json({ sent: counts });
 });
 
 // ── Unsubscribe from the daily verse (one-click, no login) ────────────────────
