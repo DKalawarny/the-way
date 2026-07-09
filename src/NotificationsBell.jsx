@@ -30,6 +30,8 @@ const KIND_COPY = {
   role_invited:              { verb: 'invited you to a role', Icon: null, emoji: '🎖' },
   dm_message:                { verb: 'sent you a message', Icon: MessageCircle },
   care_message:              { verb: 'sent you a care message', Icon: MessageCircle },
+  care_safety_flag:          { verb: 'a care conversation needs urgent attention', Icon: null, emoji: '⚠️' },
+  care_new_request:          { verb: 'someone reached out for care', Icon: null, emoji: '💛' },
   group_invite:              { verb: 'invited you to a group', Icon: null, emoji: '📖' },
   group_post:                { verb: 'posted in', Icon: null, emoji: '◯' },
   group_reply:               { verb: 'replied to your post in', Icon: null, emoji: '↩' },

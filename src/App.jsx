@@ -3807,6 +3807,9 @@ export default function App() {
             else if (n.kind === 'follow') {
               if (n.actor_profile?.display_name !== 'kinwove') setViewingUserId(n.actor_id);
             }
+            else if (n.kind === 'care_safety_flag' || n.kind === 'care_new_request') {
+              setStage('care-inbox'); // urgent care alerts → the team's inbox to claim/open
+            }
             else if (n.kind === 'care_message' || n.target_type === 'care_conversation') {
               const convId = n.data?.conversation_id ?? n.target_id;
               setPendingCareId(convId ?? null);
