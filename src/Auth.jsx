@@ -304,6 +304,14 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
             </label>
           )}
 
+          {mode === 'signup' && (
+            <p style={{ fontSize: 11.5, color: T.inkMuted, lineHeight: 1.5, margin: '0 0 12px' }}>
+              By creating an account you agree to our{' '}
+              <a href="/terms" target="_blank" rel="noopener" style={{ color: T.goldDark }}>Terms</a> and{' '}
+              <a href="/privacy" target="_blank" rel="noopener" style={{ color: T.goldDark }}>Privacy Policy</a>.
+            </p>
+          )}
+
           <Turnstile onToken={setCaptchaToken} resetKey={captchaReset} />
 
           {(() => {

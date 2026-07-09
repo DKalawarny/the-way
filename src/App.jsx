@@ -693,7 +693,13 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
       </section>
 
       <footer style={{ padding: '20px 40px', textAlign: 'center', fontSize: 12, color: 'rgba(253,248,240,0.2)', borderTop: `1px solid ${RULE}`, letterSpacing: '0.04em' }}>
-        <KinwoveWordmark size={13} textColor="rgba(253,248,240,0.3)" starColor="rgba(212,162,74,0.35)" /> &nbsp;·&nbsp; {new Date().getFullYear()} &nbsp;·&nbsp; Free to explore
+        <KinwoveWordmark size={13} textColor="rgba(253,248,240,0.3)" starColor="rgba(212,162,74,0.35)" /> &nbsp;·&nbsp; {new Date().getFullYear()}
+        <br />
+        <span style={{ fontSize: 11.5 }}>
+          <a href="/privacy" style={{ color: 'rgba(253,248,240,0.35)', textDecoration: 'none' }}>Privacy</a> &nbsp;·&nbsp;
+          <a href="/terms" style={{ color: 'rgba(253,248,240,0.35)', textDecoration: 'none' }}>Terms</a> &nbsp;·&nbsp;
+          <a href="mailto:hello@kinwove.com" style={{ color: 'rgba(253,248,240,0.35)', textDecoration: 'none' }}>Contact</a>
+        </span>
       </footer>
     </div>
   );

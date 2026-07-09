@@ -11,6 +11,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { getDailyVerse } from './src/dailyVerse.js';
 import { ANSWERS, ANSWERS_BY_SLUG, renderAnswerPage, renderAnswerIndex } from './content/answers.js';
 import { PLAN_LIMITS } from './src/planConfig.js';
+import { renderLegalPage } from './content/legal.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -4155,6 +4156,13 @@ ${entries.join('\n')}
   });
 
   app.use(express.static(distPath));
+  app.get('/privacy', (_req, res) => {
+    res.set('Cache-Control', 'public, max-age=3600').type('html').send(renderLegalPage('privacy'));
+  });
+  app.get('/terms', (_req, res) => {
+    res.set('Cache-Control', 'public, max-age=3600').type('html').send(renderLegalPage('terms'));
+  });
+
   app.get('*', (_req, res) => res.sendFile(path.join(distPath, 'index.html')));
 }
 
