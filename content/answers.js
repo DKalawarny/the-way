@@ -785,6 +785,331 @@ export const ANSWERS = [
     ],
     related: ['will-god-forgive-me', 'what-is-grace'],
   },
+
+  {
+    slug: 'why-did-jesus-have-to-die',
+    question: 'Why did Jesus have to die?',
+    category: 'Jesus Christ',
+    updated: '2026-07-09',
+    answer:
+      `Christianity's central claim is that the cross was not an accident but a rescue: Jesus willingly took on himself the weight of human wrong so that forgiveness could be real rather than pretended. Justice and mercy meet there — sin is taken seriously, and people are loved anyway. His death absorbs what we could not fix ourselves.`,
+    body: [
+      { h: `Forgiveness always costs someone something`, p: `When someone wrongs you deeply and you forgive them, you absorb the cost — the debt does not vanish, you carry it. The cross is that same logic at full scale: God does not wave sin away as if it never mattered. He absorbs it himself. That is why Christians call it grace rather than leniency.` },
+      { h: `It was chosen, not suffered helplessly`, p: `The Gospels are insistent on this: Jesus was not cornered by events. He set his face toward Jerusalem knowing what waited there, and said plainly that no one takes his life from him — he lays it down. Whatever else the cross is, it is a decision made out of love, not a tragedy that got out of hand.` },
+      { h: `The death is only half the claim`, p: `Christianity never presents the cross alone — it presents cross and resurrection together. The death deals with what is broken; the resurrection announces that death and failure do not get the last word. If you are weighing this, weigh both. One without the other is not the Christian message.` },
+    ],
+    scriptures: [
+      { ref: `John 10:18`, text: `No one takes it from me, but I lay it down of my own accord. I have authority to lay it down and authority to take it up again.` },
+      { ref: `Romans 5:8`, text: `But God demonstrates his own love for us in this: While we were still sinners, Christ died for us.` },
+      { ref: `1 Peter 2:24`, text: `He himself bore our sins in his body on the cross, so that we might die to sins and live for righteousness; by his wounds you have been healed.` },
+    ],
+    faqs: [
+      { q: `Couldn't God just forgive without a death?`, a: `The Christian answer is that real forgiveness always absorbs a real cost — pretending wrong never happened is not forgiveness, it is denial. The cross is God absorbing the cost himself rather than passing it on.` },
+      { q: `Was Jesus's death a punishment from an angry God?`, a: `The New Testament frames it as God's own initiative and love — Father and Son acting together to rescue, not a reluctant victim appeasing a furious deity. "God so loved the world" is the stated motive.` },
+      { q: `What does his death actually change for me?`, a: `Christianity claims it makes forgiveness available as a gift: your record does not have to be carried, hidden, or paid off. It was dealt with. Receiving that is what faith means.` },
+    ],
+    related: ['what-is-the-gospel', 'is-the-resurrection-of-jesus-real', 'what-is-grace'],
+  },
+
+  {
+    slug: 'what-is-sin',
+    question: 'What is sin, really?',
+    category: 'Salvation',
+    updated: '2026-07-09',
+    answer:
+      `Sin is not primarily rule-breaking — it is relationship-breaking. The Bible's word means "missing the mark": living turned away from God and, usually, at cost to other people and yourself. That is why the answer to sin is not trying harder but coming home — it is a fracture that gets healed, not a score that gets settled.`,
+    body: [
+      { h: `Less like a crime, more like a fracture`, p: `Modern ears hear "sin" as a list of banned behaviors. Scripture treats it as something deeper: a bent-away-ness from the God who made you, which then shows up in behaviors. Jesus was hardest not on obvious rule-breakers but on people whose hearts were far away while their conduct looked clean.` },
+      { h: `Why the Bible refuses to grade on a curve`, p: `Romans says all have sinned — the saint and the scoundrel alike. That sounds harsh until you see what it does: it removes the ranking system entirely. Nobody gets to look down on anybody. The ground at the foot of the cross is level, which is bad news for pride and very good news for everyone else.` },
+      { h: `The diagnosis exists for the sake of the cure`, p: `Christianity talks about sin the way a doctor talks about a tumor — not to shame you, but because naming it is the first step to healing it. Any version of faith that uses sin to crush people has lost the plot. The point of the diagnosis is that a cure exists, and it is offered freely.` },
+    ],
+    scriptures: [
+      { ref: `Romans 3:23–24`, text: `For all have sinned and fall short of the glory of God, and all are justified freely by his grace through the redemption that came by Christ Jesus.` },
+      { ref: `Isaiah 53:6`, text: `We all, like sheep, have gone astray, each of us has turned to our own way; and the Lord has laid on him the iniquity of us all.` },
+      { ref: `1 John 1:9`, text: `If we confess our sins, he is faithful and just and will forgive us our sins and purify us from all unrighteousness.` },
+    ],
+    faqs: [
+      { q: `Are some sins worse than others?`, a: `Scripture does distinguish consequences — some wrongs wound more deeply — but it refuses a ranking system that lets anyone claim superiority. All of it separates; all of it is forgivable.` },
+      { q: `Is being tempted the same as sinning?`, a: `No. Jesus himself was tempted and did not sin. Temptation is the pull; sin is the yielding. Feeling the pull is human, not guilt.` },
+      { q: `What do I do about my sin?`, a: `Bring it into the light rather than managing it in the dark. Confession — honest naming before God — is met with forgiveness, not humiliation. That is the consistent promise.` },
+    ],
+    related: ['what-is-repentance', 'will-god-forgive-me', 'why-do-i-need-jesus-if-im-a-good-person'],
+  },
+
+  {
+    slug: 'what-is-repentance',
+    question: 'What does it mean to repent?',
+    category: 'Salvation',
+    updated: '2026-07-09',
+    answer:
+      `Repentance is a change of direction, not a session of self-hatred. The biblical word means to turn — to stop walking away from God and start walking toward him. It involves honestly naming what is wrong, but its energy is hope, not shame: you turn because someone is waiting for you, gladly.`,
+    body: [
+      { h: `The word means "turn around"`, p: `In both Hebrew and Greek, repentance is movement language — a turning, a homecoming. It is less "feel terrible about yourself" and more "you are headed the wrong way; come back." The feeling that matters is not self-loathing but the dawning sense that home is better than where you were going.` },
+      { h: `The father runs — that is the tone of it`, p: `Jesus told a story about a son who blew his inheritance and rehearsed a groveling apology on the road home. He never got to finish it. The father saw him far off and ran. That story is Jesus's own picture of what repentance meets: not a lecture, not probation — a running father and a feast.` },
+      { h: `It is a practice, not a one-time event`, p: `Turning happens at the start of faith and then keeps happening — small course corrections for the rest of your life. Christians repent regularly not because grace runs out but because turning back quickly beats drifting far. It gets less dramatic and more natural, like steering.` },
+    ],
+    scriptures: [
+      { ref: `Luke 15:20`, text: `But while he was still a long way off, his father saw him and was filled with compassion for him; he ran to his son, threw his arms around him and kissed him.` },
+      { ref: `Acts 3:19`, text: `Repent, then, and turn to God, so that your sins may be wiped out, that times of refreshing may come from the Lord.` },
+      { ref: `2 Corinthians 7:10`, text: `Godly sorrow brings repentance that leads to salvation and leaves no regret, but worldly sorrow brings death.` },
+    ],
+    faqs: [
+      { q: `Is repentance just feeling guilty?`, a: `No — guilt can even be a counterfeit of it. Scripture distinguishes godly sorrow, which turns and moves toward God, from worldly sorrow, which just spirals. Repentance is the turning, not the wallowing.` },
+      { q: `Do I have to fix myself before coming to God?`, a: `The order is the opposite: you come as you are, and the turning and mending happen in relationship with him. The father ran before the apology was finished.` },
+      { q: `What if I keep failing at the same thing?`, a: `Then you keep turning back. Jesus told Peter to forgive seventy-seven times — a picture of God's own patience. Repeated struggle met with repeated return is a normal Christian life, not a failed one.` },
+    ],
+    related: ['what-is-sin', 'am-i-too-far-gone-for-god', 'how-do-i-become-a-christian'],
+  },
+
+  {
+    slug: 'what-does-the-bible-say-about-grief',
+    question: 'What does the Bible say about grief and losing someone?',
+    category: 'Mental Health',
+    updated: '2026-07-09',
+    answer:
+      `The Bible treats grief as love with nowhere to go — real, heavy, and nothing to apologize for. Jesus himself wept at a friend's grave even knowing what came next. Scripture offers no timetable and no shame, but it does offer two things: a God described as near to the brokenhearted, and a hope that death does not get the final word.`,
+    body: [
+      { h: `Jesus wept — that is not a small detail`, p: `At the tomb of Lazarus, standing minutes from raising him, Jesus cried. Grief is not a failure of faith; the founder of the faith grieved. Whatever anyone has told you about needing to be strong or "having enough faith," the shortest verse in the Bible quietly says otherwise.` },
+      { h: `The Psalms give you words when you have none`, p: `Nearly a third of the Psalms are laments — raw, unedited grief addressed straight to God. "How long, Lord?" is scripture. You are allowed to bring God the anger, the numbness, and the questions. The Bible does not ask you to perform okay-ness; it hands you a vocabulary for not being okay.` },
+      { h: `Grieving with hope is still grieving`, p: `Paul told grieving believers they do not mourn "as those who have no hope" — but notice he assumed they would mourn. Christian hope does not skip the valley; it walks through it believing reunion and resurrection are real. The sorrow and the hope sit side by side, and both are honest.` },
+    ],
+    scriptures: [
+      { ref: `John 11:35`, text: `Jesus wept.` },
+      { ref: `Psalm 34:18`, text: `The Lord is close to the brokenhearted and saves those who are crushed in spirit.` },
+      { ref: `1 Thessalonians 4:13`, text: `Brothers and sisters, we do not want you to be uninformed about those who sleep in death, so that you do not grieve like the rest of mankind, who have no hope.` },
+      { ref: `Revelation 21:4`, text: `He will wipe every tear from their eyes. There will be no more death or mourning or crying or pain, for the old order of things has passed away.` },
+    ],
+    faqs: [
+      { q: `Is it wrong to be angry at God after a loss?`, a: `No. The Psalms model exactly that — grief and protest brought directly to God rather than hidden from him. He is described as receiving it, not punishing it.` },
+      { q: `How long is grief supposed to last?`, a: `Scripture gives no deadline. People in the Bible mourned for extended seasons, and no one is rebuked for grieving too long. Grief has its own pace; God stays for all of it.` },
+      { q: `Will I see the person I lost again?`, a: `Christian hope says yes for those in Christ — resurrection and reunion are core promises, not poetic flourishes. That hope does not erase the ache now, but it changes what the ache means.` },
+    ],
+    related: ['what-happens-when-you-die', 'what-does-the-bible-say-about-depression', 'why-does-god-allow-suffering'],
+  },
+
+  {
+    slug: 'what-does-the-bible-say-about-addiction',
+    question: 'What does the Bible say about addiction?',
+    category: 'Mental Health',
+    updated: '2026-07-09',
+    answer:
+      `The Bible does not use the word addiction, but it knows the experience intimately: doing the thing you hate, being mastered by what promised freedom. It responds without disgust — offering grace instead of shame, community instead of isolation, and a God who is patient with relapse. Faith and practical help, like recovery programs and counseling, belong together.`,
+    body: [
+      { h: `Paul described the trap exactly`, p: `"I do not do the good I want to do, but the evil I do not want to do — this I keep on doing." That is Romans 7, and anyone in addiction recognizes it instantly. The Bible is not naive about compulsion. It describes the divided will with more honesty than most modern writing, and without a trace of contempt.` },
+      { h: `Shame is the fuel; grace cuts the fuel line`, p: `Addiction thrives in secrecy and self-hatred — you use to numb the shame of using. Grace attacks that engine directly: you are loved as-is, before you are fixed. That is why confession to safe people and to God is so central to recovery. What comes into the light loses its leverage in the dark.` },
+      { h: `God works through means — use all of them`, p: `Seeking help is not a lack of faith. Recovery programs, counselors, medication, sponsors, honest community — Christians see these as instruments of grace, not alternatives to it. Twelve-step programs themselves grew from Christian soil: admitting powerlessness and turning to a higher power is an old, old road.` },
+    ],
+    scriptures: [
+      { ref: `Romans 7:15, 24–25`, text: `I do not understand what I do. For what I want to do I do not do, but what I hate I do… What a wretched man I am! Who will rescue me from this body that is subject to death? Thanks be to God, who delivers me through Jesus Christ our Lord!` },
+      { ref: `1 Corinthians 6:12`, text: `"I have the right to do anything," you say — but not everything is beneficial. "I have the right to do anything" — but I will not be mastered by anything.` },
+      { ref: `2 Corinthians 12:9`, text: `My grace is sufficient for you, for my power is made perfect in weakness.` },
+    ],
+    faqs: [
+      { q: `Is addiction a sin or a disease?`, a: `It is rarely useful to force that choice. It involves the body, the brain, wounds, and the will all at once. The Bible's category is bondage — and its posture is rescue and compassion, not blame-sorting.` },
+      { q: `Does relapse mean God has given up on me?`, a: `No. Scripture's picture is a father who keeps receiving a returning child. Recovery for most people includes falls; each return to the light counts, and none of them exhausts grace.` },
+      { q: `Should I get professional help or just pray?`, a: `Both. Prayer and practical means are allies, not rivals. Seeing a counselor or joining a recovery group is often exactly how the prayer gets answered.` },
+    ],
+    related: ['am-i-too-far-gone-for-god', 'what-is-grace', 'what-does-the-bible-say-about-depression'],
+  },
+
+  {
+    slug: 'how-does-god-speak-to-us-today',
+    question: 'How does God speak to us today?',
+    category: 'Prayer',
+    updated: '2026-07-09',
+    answer:
+      `Christians believe God still speaks — most reliably through the Bible, and also through prayer, wise counsel, circumstances, and the quiet internal nudge many describe as the Holy Spirit. It is rarely an audible voice. The consistent testimony is that his voice today never contradicts what he has already said in scripture.`,
+    body: [
+      { h: `The Bible is the baseline, not the backup`, p: `If you want to hear God and have never really read the Gospels, start there — that is the one channel Christians across every century agree on. Scripture is described as living and active, and most people who say "God spoke to me" mean a passage suddenly read them as much as they read it.` },
+      { h: `The whisper, not the earthquake`, p: `Elijah expected God in wind, earthquake, and fire — and got a low whisper. That story sets the pattern. Most believers describe guidance as quiet: a persistent impression, an unshakeable peace or lack of it, a thought that arrives with unusual weight during prayer. Subtle is normal. Spectacular is rare.` },
+      { h: `Test it — you are told to`, p: `Scripture itself says test everything. A genuine nudge from God will not contradict the Bible, will tend toward love and truth rather than ego, and usually survives the scrutiny of wise, mature people you trust. If a "word from God" flatters your worst instincts or isolates you from everyone, be suspicious.` },
+    ],
+    scriptures: [
+      { ref: `1 Kings 19:11–12`, text: `After the earthquake came a fire, but the Lord was not in the fire. And after the fire came a gentle whisper.` },
+      { ref: `Hebrews 4:12`, text: `For the word of God is alive and active. Sharper than any double-edged sword… it judges the thoughts and attitudes of the heart.` },
+      { ref: `John 10:27`, text: `My sheep listen to my voice; I know them, and they follow me.` },
+    ],
+    faqs: [
+      { q: `Why doesn't God just speak audibly?`, a: `He can, and scripture records it — rarely. The normal pattern, even in the Bible, is quieter: word, whisper, wisdom, community. Many believers suspect the quietness is invitation: it draws you close rather than compelling you from a distance.` },
+      { q: `How do I know it's God and not just my own thoughts?`, a: `Test it against scripture, time, and trusted counsel. God's voice tends to sound like Jesus — truthful, loving, sometimes uncomfortable but never degrading. If it contradicts the Bible, it is not him.` },
+      { q: `What if I hear nothing at all?`, a: `Silence is a common season, not a verdict. Keep showing up — reading, praying honestly, staying in community. Many of the most trusted voices in Christian history walked long quiet stretches.` },
+    ],
+    related: ['how-do-i-start-praying', 'does-god-answer-prayer', 'how-do-i-know-gods-will-for-my-life'],
+  },
+
+  {
+    slug: 'what-is-heaven-like',
+    question: 'What is heaven actually like?',
+    category: 'Eternal Life',
+    updated: '2026-07-09',
+    answer:
+      `The Bible's picture of heaven is more physical and more interesting than clouds and harps: a renewed creation — "a new heaven and a new earth" — with resurrection bodies, a city, a feast, reunion, and God himself present, wiping away every tear. Less an escape from the world than the world finally made right.`,
+    body: [
+      { h: `Not clouds — a renewed earth`, p: `The Bible's final chapters do not show souls floating away; they show heaven coming down. Revelation ends with a city descending, God moving in with people, and creation healed. Christian hope is not evacuation from reality but resurrection of it — which is why the promise includes bodies, not just spirits.` },
+      { h: `The best analogies are a feast and a homecoming`, p: `Jesus's favorite image for what is coming was a banquet — tables, wine, laughter, invited guests. Add reunion ("we will be with the Lord and with one another") and the picture is less like a formal ceremony and more like the best wedding reception you have ever attended, with no closing time.` },
+      { h: `What is absent matters as much as what is present`, p: `No more death, mourning, crying, or pain — the old order gone. Everything that has ever made you say "this is not how it should be" is on the demolition list. And the center of it all is not the scenery but the presence: "God himself will be with them." That presence is what makes it heaven.` },
+    ],
+    scriptures: [
+      { ref: `Revelation 21:1–4`, text: `Then I saw a new heaven and a new earth… God's dwelling place is now among the people, and he will dwell with them… He will wipe every tear from their eyes. There will be no more death or mourning or crying or pain.` },
+      { ref: `1 Corinthians 2:9`, text: `What no eye has seen, what no ear has heard, and what no human mind has conceived — the things God has prepared for those who love him.` },
+      { ref: `John 14:2–3`, text: `My Father's house has many rooms… I am going there to prepare a place for you… that you also may be where I am.` },
+    ],
+    faqs: [
+      { q: `Will we recognize people we love in heaven?`, a: `The strong implication of scripture is yes — resurrection accounts show a recognizable Jesus, and Paul comforts the grieving with the promise of being together. Reunion is part of the hope, not a folk addition to it.` },
+      { q: `Will heaven be boring?`, a: `Only if feasts, exploration, meaningful work, and unbroken relationships bore you. The biblical picture is a renewed creation with things to do — eternal life is described as knowing God, which is a depth to explore, not a waiting room.` },
+      { q: `Who gets in?`, a: `Entry is by grace received, not points earned — that is the consistent New Testament claim. It is a gift accepted through trust in Jesus, open to anyone, which is why deathbed thieves and lifelong saints arrive on the same basis.` },
+    ],
+    related: ['what-happens-when-you-die', 'is-hell-real', 'what-is-the-gospel'],
+  },
+
+  {
+    slug: 'do-christians-take-the-bible-literally',
+    question: 'Do Christians have to take the Bible literally?',
+    category: 'Bible',
+    updated: '2026-07-09',
+    answer:
+      `Thoughtful Christians take the Bible seriously, which means reading each part as the kind of writing it is: history as history, poetry as poetry, parable as parable, letters as letters. Nobody thinks God is literally a rock or a hen. The honest question for any passage is not "literal or not?" but "what is this text actually claiming?"`,
+    body: [
+      { h: `The Bible is a library, not a single book`, p: `Sixty-six documents, written across roughly 1,500 years, in multiple languages and genres: law, chronicle, poetry, prophecy, biography, letters, apocalyptic vision. Reading Psalms the way you read Acts is like reading a love poem the way you read a lab report. Taking scripture seriously starts with respecting what kind of writing you are holding.` },
+      { h: `Jesus himself spoke in figures — constantly`, p: `He called himself a door, a vine, bread, and a shepherd, and taught almost entirely in parables. His original hearers did not think he was made of wood. The Bible's own characters model reading with judgment: attentive to metaphor, alert to hyperbole, and dead serious about the truth those figures carry.` },
+      { h: `Where it matters most, the claims are meant as fact`, p: `This is not a dodge that dissolves everything into metaphor. The writers plant flags on certain claims as sober history — above all the crucifixion and resurrection, which Paul says were witnessed by hundreds. Christianity stakes itself on those being real events. The genre-reading cuts both ways: poetry is poetry, and testimony is testimony.` },
+    ],
+    scriptures: [
+      { ref: `Psalm 91:4`, text: `He will cover you with his feathers, and under his wings you will find refuge.` },
+      { ref: `John 10:9`, text: `I am the gate; whoever enters through me will be saved.` },
+      { ref: `1 Corinthians 15:14`, text: `And if Christ has not been raised, our preaching is useless and so is your faith.` },
+    ],
+    faqs: [
+      { q: `Isn't picking genres just picking what's convenient?`, a: `No — genre is a property of the text, not a preference of the reader. Hebrew poetry has recognizable structure; parables are introduced as parables; letters name their senders. Scholars across the spectrum, including skeptical ones, read this way.` },
+      { q: `What about the parts that seem to conflict with science?`, a: `Many Christians hold that Genesis answers who and why, not the mechanics of how — ancient cosmology framing theological claims. Christians land in different places here while sharing the same core faith, and the debate is far older than Darwin.` },
+      { q: `Can I trust a book I don't fully understand?`, a: `You already trust people you don't fully understand. Start with the Gospels, take them on their own terms, and let the difficult parts wait. Understanding grows by reading, not before it.` },
+    ],
+    related: ['can-i-trust-the-bible', 'how-do-i-read-the-bible-as-a-beginner'],
+  },
+
+  {
+    slug: 'what-is-baptism',
+    question: 'What is baptism and do I need it?',
+    category: 'Church',
+    updated: '2026-07-09',
+    answer:
+      `Baptism is the ancient, physical way Christians go public with faith — going under water as a picture of an old life buried, coming up as a picture of new life begun. Jesus was baptized and told his followers to be. It does not earn salvation, which is by grace, but it marks and celebrates it — like a wedding ring on a marriage.`,
+    body: [
+      { h: `A funeral and a birth in one motion`, p: `Paul says in baptism you are "buried with Christ and raised with him." Going under the water enacts the death of the old you; rising enacts resurrection. It is theology you can feel — which is precisely why Jesus gave his followers something physical to do, not just something mental to believe.` },
+      { h: `It is the going-public moment`, p: `In the early church, baptism was how you crossed the line visibly — the point where private belief became public identity, witnessed by a community that now walked with you. That is still its power. Faith can begin invisibly in a heart, but people are embodied, and commitments become real to us when they are enacted in front of others.` },
+      { h: `The thief on the cross settles the "requirement" anxiety`, p: `A criminal dying next to Jesus believed and was promised paradise that day — no baptism possible. Salvation is by grace through faith, full stop. So baptism is not a toll gate; it is obedience and celebration. If you believe, the New Testament's assumption is simply: why wait?` },
+    ],
+    scriptures: [
+      { ref: `Romans 6:4`, text: `We were therefore buried with him through baptism into death in order that, just as Christ was raised from the dead through the glory of the Father, we too may live a new life.` },
+      { ref: `Matthew 28:19`, text: `Therefore go and make disciples of all nations, baptizing them in the name of the Father and of the Son and of the Holy Spirit.` },
+      { ref: `Acts 2:38`, text: `Repent and be baptized, every one of you, in the name of Jesus Christ for the forgiveness of your sins.` },
+    ],
+    faqs: [
+      { q: `Do I have to be baptized to be saved?`, a: `Salvation is by grace through faith — the thief on the cross was saved without baptism. But baptism is Jesus's clear instruction for believers, so the better question than "must I?" is "why wouldn't I?"` },
+      { q: `I was baptized as a baby — does that count?`, a: `Christian traditions differ sincerely here. Some honor infant baptism as God's grace preceding your awareness; others practice believer's baptism as a personal public step. Talk with a pastor you trust; this is a family discussion, not a salvation issue.` },
+      { q: `How do I actually get baptized?`, a: `Ask at a local church — any pastor will be glad you did. There is usually a short conversation about your faith first, then it happens in a service, a pool, a lake, or wherever there is water and witnesses.` },
+    ],
+    related: ['how-do-i-become-a-christian', 'what-does-it-mean-to-be-born-again', 'why-should-i-go-to-church'],
+  },
+
+  {
+    slug: 'what-does-the-bible-say-about-divorce',
+    question: 'What does the Bible say about divorce?',
+    category: 'Relationships',
+    updated: '2026-07-09',
+    answer:
+      `The Bible treats marriage as sacred and divorce as a tearing God never wanted for anyone — while explicitly acknowledging real grounds like unfaithfulness and abandonment, and never treating divorced people as second-class. If you are divorced or facing it: God's grace is not reduced for you, and safety from abuse is never unfaithfulness.`,
+    body: [
+      { h: `What Jesus actually said, and why`, p: `Asked about divorce, Jesus pointed back to the beginning — two becoming one flesh — and called divorce a concession to hardened hearts, not the design. His seriousness was protective: in his world, discarded wives were left destitute. He named unfaithfulness as grounds; Paul later added abandonment. The Bible is realistic that some marriages die.` },
+      { h: `Divorce is not the unforgivable sin`, p: `Somewhere along the way, church culture treated divorce as a permanent stain, which scripture never does. God himself is described in Jeremiah as having divorced unfaithful Israel — the metaphor would be impossible if divorce made someone untouchable. Divorced people served, led, and belonged in the early church, and they belong now.` },
+      { h: `If you are in danger, leaving is not the sin`, p: `Nothing in the Bible obligates anyone to remain under abuse. The same God called a refuge for the oppressed does not chain the oppressed to their oppressor. Getting safe — for you and your children — is wisdom, and churches that say otherwise are misusing the text. Grace covers this ground fully.` },
+    ],
+    scriptures: [
+      { ref: `Matthew 19:8`, text: `Jesus replied, "Moses permitted you to divorce your wives because your hearts were hard. But it was not this way from the beginning."` },
+      { ref: `Malachi 2:16`, text: `"The man who hates and divorces his wife," says the Lord, the God of Israel, "does violence to the one he should protect."` },
+      { ref: `Psalm 34:18`, text: `The Lord is close to the brokenhearted and saves those who are crushed in spirit.` },
+    ],
+    faqs: [
+      { q: `Can a divorced person remarry?`, a: `Christian traditions read the texts differently, but many hold remarriage is permitted where there were biblical grounds — and all agree grace meets people in their actual histories. Talk it through with a pastor who knows your story, not just the verses.` },
+      { q: `Is divorce ever the right choice?`, a: `Scripture names unfaithfulness and abandonment as grounds, and protection from abuse is a moral necessity. Divorce is always a grief — but sometimes it is the least-bad faithful option in a broken situation.` },
+      { q: `Does God still love me after my divorce?`, a: `Completely and undiminished. Divorce is a wound, not a disqualification. God is described as especially near the brokenhearted — which includes the divorced, not everyone except them.` },
+    ],
+    related: ['how-do-i-forgive-someone-who-hurt-me', 'does-god-love-me', 'will-god-forgive-me'],
+  },
+
+  {
+    slug: 'what-does-the-bible-say-about-self-worth',
+    question: 'What does the Bible say about self-worth?',
+    category: 'Purpose',
+    updated: '2026-07-09',
+    answer:
+      `The Bible grounds your worth in something no failure, follower count, or opinion can touch: you are made in the image of God, known before birth, and valued enough that Christ died for you. Your worth is conferred, not earned — which means it also cannot be un-earned. That is a foundation, not a mood.`,
+    body: [
+      { h: `Worth by design, not by performance`, p: `The Bible's first claim about you is Genesis 1: made in the image of God. Not "valuable once successful" or "worthy if attractive" — imaged, from the start, like every human you will ever meet. Every other measure of worth fluctuates. This one was settled before you did anything at all.` },
+      { h: `The price tag argument`, p: `In any market, worth is what someone will pay. The Christian claim is staggering on exactly this point: God judged you worth the cross. "While we were still sinners" — not after cleanup, not at your best — Christ died for us. Whatever your inner critic says, it is now arguing with the price God actually paid.` },
+      { h: `Known completely, loved anyway`, p: `Psalm 139 says you were seen and known before birth — every day written down, nothing hidden. Most of us fear that full exposure would end love. The gospel says the opposite happened: the one who knows the very worst of you is the one who moved toward you. That is the only self-worth that can survive being fully known.` },
+    ],
+    scriptures: [
+      { ref: `Genesis 1:27`, text: `So God created mankind in his own image, in the image of God he created them; male and female he created them.` },
+      { ref: `Psalm 139:13–14`, text: `For you created my inmost being; you knit me together in my mother's womb. I praise you because I am fearfully and wonderfully made.` },
+      { ref: `Romans 5:8`, text: `But God demonstrates his own love for us in this: While we were still sinners, Christ died for us.` },
+    ],
+    faqs: [
+      { q: `Isn't self-worth just pride?`, a: `No — pride is inflating yourself above others; biblical worth is receiving a value God assigned to everyone. Humility is not thinking you are worthless; it is being free enough of the worth question to love people.` },
+      { q: `I feel worthless — what do I actually do?`, a: `Feelings lag facts. Read Psalm 139 slowly, tell God honestly how you feel, and let trusted people speak truth to you — and if the darkness is heavy or constant, see a counselor too. God works through help.` },
+      { q: `Does God value some people more than others?`, a: `No. The image of God is universal, and the New Testament goes out of its way to flatten every hierarchy — Jew and Greek, slave and free. Nobody outranks you in the economy of grace.` },
+    ],
+    related: ['does-god-love-me', 'what-is-the-meaning-of-life', 'what-does-the-bible-say-about-depression'],
+  },
+
+  {
+    slug: 'what-does-the-bible-say-about-rest',
+    question: 'What does the Bible say about rest and burnout?',
+    category: 'Mental Health',
+    updated: '2026-07-09',
+    answer:
+      `Rest is not a reward for finishing — it is a rhythm God built into creation and modeled himself. The Bible commands a day off (Sabbath), shows Jesus napping in boats and withdrawing from crowds, and diagnoses hurry as a spiritual problem, not a virtue. "Come to me, all you who are weary" is a standing invitation.`,
+    body: [
+      { h: `Rest is in the design, not the fine print`, p: `God rests on the seventh day of creation — not from exhaustion, but to establish a rhythm. Sabbath later becomes one of the Ten Commandments, sitting alongside "do not murder." Scripture takes rest that seriously. A culture that treats exhaustion as a status symbol is arguing with the design specs of being human.` },
+      { h: `Jesus was never in a hurry`, p: `Read the Gospels for pace: Jesus sleeps through a storm, withdraws to lonely places while crowds are still asking for him, and walks everywhere. Carrying the most important mission in history, he was unhurried. If he could leave needs unmet to pray and rest, your inbox can survive a Sabbath too.` },
+      { h: `Burnout is often a theology problem`, p: `Underneath chronic overwork is usually a belief: it all depends on me. Sabbath is a weekly protest against that lie — you stop, and the world keeps turning, because God runs it and you do not. Psalm 127 is blunt: it is vain to rise early and stay up late, "for he grants sleep to those he loves."` },
+    ],
+    scriptures: [
+      { ref: `Matthew 11:28–29`, text: `Come to me, all you who are weary and burdened, and I will give you rest. Take my yoke upon you and learn from me… and you will find rest for your souls.` },
+      { ref: `Psalm 127:2`, text: `In vain you rise early and stay up late, toiling for food to eat — for he grants sleep to those he loves.` },
+      { ref: `Mark 6:31`, text: `Then, because so many people were coming and going that they did not even have a chance to eat, he said to them, "Come with me by yourselves to a quiet place and get some rest."` },
+    ],
+    faqs: [
+      { q: `Is taking a day off really a spiritual practice?`, a: `Yes — Sabbath is one of the Ten Commandments and one Jesus practiced. Stopping is an act of trust: it declares the world is God's responsibility, not yours alone.` },
+      { q: `What does Sabbath look like today?`, a: `Not legalism — Jesus said Sabbath was made for man, not man for Sabbath. Pick a regular stretch to stop working, do what restores you, and enjoy God and people. Rhythm matters more than rules.` },
+      { q: `What if I literally can't rest — kids, two jobs, caregiving?`, a: `Scripture's God sees that and is not grading you against someone else's calendar. Start with rest in slivers — minutes of prayer, real sleep where possible — and let others help. The invitation "come to me" fits inside any life.` },
+    ],
+    related: ['what-does-the-bible-say-about-anxiety', 'what-is-the-meaning-of-life'],
+  },
+
+  {
+    slug: 'how-do-i-find-a-church',
+    question: 'How do I find a church as a beginner?',
+    category: 'Church',
+    updated: '2026-07-09',
+    answer:
+      `Look for three things: the Bible taught honestly, people who are warm before they know what you can offer, and grace at the center rather than performance. Visit a few — churches differ widely in style, and style is preference, not doctrine. You can just walk in on a Sunday. Nobody expects you to know anything.`,
+    body: [
+      { h: `What actually matters (and what doesn't)`, p: `Music volume, building size, and dress code are taste. What matters: Is scripture taught seriously and honestly? Is grace the message, or is it pressure and performance? Do people seem genuinely glad you exist? A small church with warm people beats an impressive one where you stay anonymous — unless anonymity is what you need at first, which is also okay.` },
+      { h: `Your first visit, demystified`, p: `You can arrive a few minutes early, sit near the back, and just watch. Singing is optional. Nobody will make you speak, and the offering plate is for regulars, not guests. If anyone asks, "it's my first time" is a complete sentence — and usually gets you a warm welcome. Give a church two or three visits before deciding; one odd Sunday happens everywhere.` },
+      { h: `Why bother with church at all`, p: `Because faith was never designed to be practiced alone. The New Testament's word for church means assembly — it is a body, and bodies have parts that need each other. Community is where encouragement, honest questions, prayer when life breaks, and casseroles when it really breaks, actually happen. Online content can teach you; it cannot know you.` },
+    ],
+    scriptures: [
+      { ref: `Hebrews 10:24–25`, text: `And let us consider how we may spur one another on toward love and good deeds, not giving up meeting together, as some are in the habit of doing, but encouraging one another.` },
+      { ref: `Acts 2:42`, text: `They devoted themselves to the apostles' teaching and to fellowship, to the breaking of bread and to prayer.` },
+    ],
+    faqs: [
+      { q: `What denomination should I choose?`, a: `As a beginner, don't stress the labels. Find a church that teaches the Bible, centers on Jesus, and treats people with grace. The denominational nuances will make more sense later — and matter less than you think at the start.` },
+      { q: `What if I've been hurt by church before?`, a: `That wound is real, and God is not the people who hurt you. Take it slow — maybe start with one trusted person or a small group rather than a big service. A healthy church will give you room to heal, not pressure to perform.` },
+      { q: `Do I need to believe before I attend?`, a: `Not at all. Churches are full of people mid-question, and any good one welcomes honest seekers. Attending is exploring, not signing anything.` },
+    ],
+    related: ['why-should-i-go-to-church', 'how-do-i-become-a-christian', 'what-is-baptism'],
+  },
 ];
 
 export const ANSWERS_BY_SLUG = Object.fromEntries(ANSWERS.map((a) => [a.slug, a]));
