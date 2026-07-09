@@ -680,6 +680,12 @@ app.get('/api/bible-audio/list', optionalAuth, limitEither({ capacity: 30, refil
   } catch (e) { safeError(res, e, 'audio-bibles list'); }
 });
 
+// Which audio Bible the reader should stream. Set AUDIO_BIBLE_ID on Render once
+// a narrated Bible is licensed in the api.bible dashboard; null = device voice.
+app.get('/api/bible-audio/config', (_req, res) => {
+  res.set('Cache-Control', 'public, max-age=300').json({ audioBibleId: process.env.AUDIO_BIBLE_ID || null });
+});
+
 app.get('/api/bible-audio/:audioBibleId/chapters/:chapterId', optionalAuth, limitEither({ capacity: 60, refillPerSec: 1 }, { capacity: 20, refillPerSec: 20 / 60 }), async (req, res) => {
   const { audioBibleId, chapterId } = req.params;
   const BIBLE_API_KEY = process.env.VITE_BIBLE_API_KEY;

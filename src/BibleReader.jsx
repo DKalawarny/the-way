@@ -791,6 +791,65 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   });
   const CHAPTER_TTS_ID = `ch:${bookId}:${chNum}`;
 
+  // ── Licensed narration (api.bible audio) ────────────────────────────────────
+  // When AUDIO_BIBLE_ID is configured on the server, chapter listening streams
+  // real human narration (an <audio> MP3) instead of the device voice. Same
+  // controls, same auto-advance; device voice remains the fallback. Real audio
+  // also keeps playing with the screen locked on mobile, which TTS cannot.
+  const [audioBibleId, setAudioBibleId] = useState(null);
+  const [caActive,  setCaActive]  = useState(false); // chapter narration playing/loading
+  const [caLoading, setCaLoading] = useState(false);
+  const [caPaused,  setCaPaused]  = useState(false);
+  const caRef = useRef(null); // persistent <audio> element (one user gesture unlocks it)
+
+  useEffect(() => {
+    fetch('/api/bible-audio/config').then((r) => r.json())
+      .then((d) => { if (d?.audioBibleId) setAudioBibleId(d.audioBibleId); }, () => {});
+  }, []);
+
+  async function caPlay(seekFraction, fallbackText) {
+    setCaActive(true); setCaLoading(true); setCaPaused(false);
+    try {
+      const r = await authedFetch(`/api/bible-audio/${audioBibleId}/chapters/${bookId}.${chNum}`);
+      const d = await r.json();
+      const url = d?.data?.resourceUrl;
+      if (!url) throw new Error('no audio url');
+      let a = caRef.current;
+      if (!a) { a = new Audio(); caRef.current = a; }
+      a.onended = () => {
+        setCaActive(false);
+        const bookIdx = ALL_BOOKS.findIndex((b) => b.id === bookId);
+        const hasNext = chNum < book.ch || bookIdx < ALL_BOOKS.length - 1;
+        if (hasNext) { autoStartTts.current = true; goChapter(chNum + 1); }
+      };
+      a.src = url;
+      const applySeek = () => { if (seekFraction > 0 && isFinite(a.duration) && a.duration > 0) a.currentTime = a.duration * seekFraction; };
+      if (a.readyState >= 1) applySeek(); else a.addEventListener('loadedmetadata', applySeek, { once: true });
+      await a.play();
+      setCaLoading(false);
+    } catch {
+      // Narration unavailable (not licensed for this book, network, etc.) —
+      // fall back to the device voice so Listen always works.
+      setCaActive(false); setCaLoading(false);
+      if (fallbackText) rdSpeak(CHAPTER_TTS_ID, fallbackText);
+    }
+  }
+  function caStop()   { const a = caRef.current; if (a) { a.onended = null; a.pause(); } setCaActive(false); setCaPaused(false); }
+  function caPause()  { caRef.current?.pause(); setCaPaused(true); }
+  function caResume() { caRef.current?.play().catch(() => {}); setCaPaused(false); }
+  function caSkip(s)  { const a = caRef.current; if (a && isFinite(a.duration)) a.currentTime = Math.max(0, Math.min(a.duration, a.currentTime + s)); }
+
+  // Unified chapter-listen controls: narration when configured, device voice otherwise.
+  const usingAudio = !!audioBibleId;
+  const chActive  = usingAudio ? caActive  : (rdSpeakingId === CHAPTER_TTS_ID || rdLoadingId === CHAPTER_TTS_ID);
+  const chLoading = usingAudio ? caLoading : rdLoadingId === CHAPTER_TTS_ID;
+  const chPaused  = usingAudio ? caPaused  : rdPaused;
+  const chPause   = usingAudio ? caPause   : rdPause;
+  const chResume  = usingAudio ? caResume  : rdResume;
+  const chStop    = usingAudio ? caStop    : rdStop;
+  const chRewind  = usingAudio ? (() => caSkip(-10)) : (() => rdRewind(10));
+  const chForward = usingAudio ? (() => caSkip(10))  : (() => rdForward(10));
+
   // When chapter changes: if audio was playing, stop it and flag to auto-start new chapter
   useEffect(() => {
     const saved = localStorage.getItem(`rdr_tts:${bookId}:${chNum}`);
@@ -798,6 +857,10 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     if (rdSpeakingId) {
       autoStartTts.current = true;
       rdStop();
+    }
+    if (caActive) {
+      autoStartTts.current = true;
+      caStop();
     }
   }, [bookId, chNum]);
 
@@ -809,7 +872,8 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     setTtsStartVerse(firstVerse);
     localStorage.setItem(`rdr_tts:${bookId}:${chNum}`, String(firstVerse));
     const text = verses.map((v) => v.text).join(' ');
-    rdSpeak(`ch:${bookId}:${chNum}`, text);
+    if (usingAudio) caPlay(0, text);
+    else rdSpeak(`ch:${bookId}:${chNum}`, text);
   }, [verses]);
 
   function startReadingFrom(verseNum) {
@@ -819,14 +883,22 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     setTtsStartVerse(verseNum);
     setSelectedVerse(null);
     localStorage.setItem(`rdr_tts:${bookId}:${chNum}`, String(verseNum));
-    rdSpeak(CHAPTER_TTS_ID, text);
+    if (usingAudio) {
+      // Narration is one MP3 per chapter — seek proportionally by character
+      // position so "read from verse N" lands close to the right spot.
+      const totalChars = verses.reduce((s, v) => s + v.text.length, 0) || 1;
+      const beforeChars = (startIdx > 0 ? verses.slice(0, startIdx) : []).reduce((s, v) => s + v.text.length, 0);
+      caPlay(beforeChars / totalChars, text);
+    } else {
+      rdSpeak(CHAPTER_TTS_ID, text);
+    }
   }
 
   // Keep the screen awake while reading aloud so it doesn't auto-lock mid-chapter
   // and cut the audio. Best-effort (feature-detected); re-acquires when the tab
   // becomes visible again.
   useEffect(() => {
-    if (!rdSpeakingId || typeof navigator === 'undefined' || !('wakeLock' in navigator)) return;
+    if ((!rdSpeakingId && !caActive) || typeof navigator === 'undefined' || !('wakeLock' in navigator)) return;
     let lock = null, released = false;
     const acquire = () => {
       navigator.wakeLock.request('screen').then((l) => {
@@ -842,7 +914,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
       document.removeEventListener('visibilitychange', onVis);
       if (lock) { lock.release?.().catch(() => {}); lock = null; }
     };
-  }, [rdSpeakingId]);
+  }, [rdSpeakingId, caActive]);
 
   const isDesktop    = winW >= 768;
   const C = dark ? DARK : LIGHT;
@@ -2303,27 +2375,27 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
             {!loading && !error && verses.length > 0 && (
               <>
                 {/* ── Chapter read-aloud controls ─────────────────── */}
-                {rdTtsSupported && (
-                  (rdSpeakingId === CHAPTER_TTS_ID || rdLoadingId === CHAPTER_TTS_ID) ? (
+                {(rdTtsSupported || usingAudio) && (
+                  chActive ? (
                     <div style={{
                       display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20,
                       background: C.card, border: `1px solid ${C.border}`,
                       borderRadius: 999, padding: '8px 14px',
                     }}>
-                      <button onClick={() => rdRewind(10)} title="Back 10s" disabled={!!rdLoadingId} style={{ background: 'none', border: 'none', cursor: rdLoadingId ? 'default' : 'pointer', color: rdLoadingId ? C.muted : C.verse, fontSize: 15, padding: '2px 6px', opacity: rdLoadingId ? 0.4 : 1 }}>⏮</button>
+                      <button onClick={chRewind} title="Back 10s" disabled={chLoading} style={{ background: 'none', border: 'none', cursor: chLoading ? 'default' : 'pointer', color: chLoading ? C.muted : C.verse, fontSize: 15, padding: '2px 6px', opacity: chLoading ? 0.4 : 1 }}>⏮</button>
                       <button
-                        onClick={() => rdPaused ? rdResume() : rdPause()}
-                        title={rdPaused ? 'Resume' : 'Pause'}
-                        disabled={!!rdLoadingId}
-                        style={{ background: 'none', border: 'none', cursor: rdLoadingId ? 'default' : 'pointer', color: rdLoadingId ? C.muted : C.verse, fontSize: 15, padding: '2px 6px', opacity: rdLoadingId ? 0.4 : 1 }}
+                        onClick={() => chPaused ? chResume() : chPause()}
+                        title={chPaused ? 'Resume' : 'Pause'}
+                        disabled={chLoading}
+                        style={{ background: 'none', border: 'none', cursor: chLoading ? 'default' : 'pointer', color: chLoading ? C.muted : C.verse, fontSize: 15, padding: '2px 6px', opacity: chLoading ? 0.4 : 1 }}
                       >
-                        {rdPaused ? '▶' : '⏸'}
+                        {chPaused ? '▶' : '⏸'}
                       </button>
-                      <button onClick={() => rdForward(10)} title="Skip 10s" disabled={!!rdLoadingId} style={{ background: 'none', border: 'none', cursor: rdLoadingId ? 'default' : 'pointer', color: rdLoadingId ? C.muted : C.verse, fontSize: 15, padding: '2px 6px', opacity: rdLoadingId ? 0.4 : 1 }}>⏭</button>
-                      <span style={{ fontSize: 12, color: C.muted, flex: 1, marginLeft: 4, fontStyle: rdLoadingId ? 'italic' : 'normal' }}>
-                        {rdLoadingId ? 'Preparing…' : rdPaused ? 'Paused' : 'Reading…'}{!rdLoadingId && ttsStartVerse && ttsStartVerse !== verses[0]?.number ? ` from v.${ttsStartVerse}` : ''}
+                      <button onClick={chForward} title="Skip 10s" disabled={chLoading} style={{ background: 'none', border: 'none', cursor: chLoading ? 'default' : 'pointer', color: chLoading ? C.muted : C.verse, fontSize: 15, padding: '2px 6px', opacity: chLoading ? 0.4 : 1 }}>⏭</button>
+                      <span style={{ fontSize: 12, color: C.muted, flex: 1, marginLeft: 4, fontStyle: chLoading ? 'italic' : 'normal' }}>
+                        {chLoading ? 'Preparing…' : chPaused ? 'Paused' : usingAudio ? 'Listening…' : 'Reading…'}{!chLoading && ttsStartVerse && ttsStartVerse !== verses[0]?.number ? ` from v.${ttsStartVerse}` : ''}
                       </span>
-                      <button onClick={rdStop} title="Stop" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 13, padding: '2px 6px' }}>✕</button>
+                      <button onClick={chStop} title="Stop" style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.muted, fontSize: 13, padding: '2px 6px' }}>✕</button>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
@@ -2439,7 +2511,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                                 {noteMap[v.number] ? '✏ Edit note' : '✏ Note'}
                               </button>
                             )}
-                            {rdTtsSupported && (
+                            {(rdTtsSupported || usingAudio) && (
                               <button onClick={() => startReadingFrom(v.number)} style={{ background: 'transparent', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                 ▶ Read from here
                               </button>
