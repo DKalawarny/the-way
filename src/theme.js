@@ -13,7 +13,7 @@ export const T = {
   // Type
   ink: '#1A1108',
   inkSoft: '#5A4733',
-  inkMuted: '#7A6B58',
+  inkMuted: '#6E5F4C', // darkened for WCAG AA on cream (~5.3:1); was #7A6B58 (failed at small sizes)
   line: 'rgba(26,17,8,0.12)',
   white: '#FFFFFF',
   error: '#A53F2B',
@@ -137,6 +137,19 @@ export const globalCss = `
   *, *::before, *::after { box-sizing: border-box; }
   html, body, #root { height: 100%; }
   html { overflow-x: hidden; }
+
+  /* Accessibility (audit 2026-07-09): visible keyboard focus (keyboard-only, so
+     mouse/touch aesthetics are untouched), and respect the OS "reduce motion"
+     setting — one of the most-enabled senior/vestibular accessibility options. */
+  :focus-visible { outline: 2px solid ${T.gold}; outline-offset: 2px; border-radius: 4px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
   body {
     margin: 0;
     font-family: ${T.sans};
