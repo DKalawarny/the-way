@@ -669,6 +669,13 @@ export default function AdminPage({ onBack }) {
                         <span style={{ fontSize: 12, color: T.inkMuted, fontWeight: 400 }}> / ~{Number(b.monthlyLimit).toLocaleString()} per month</span>
                       </div>
                     </div>
+                    <div>
+                      <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 2 }}>Narration listens</div>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: T.ink }}>
+                        {Number(b.audioListens ?? 0).toLocaleString()}
+                        <span style={{ fontSize: 12, color: T.inkMuted, fontWeight: 400 }}> — at 150 you get the "revisit paid audio" email</span>
+                      </div>
+                    </div>
                     {throttled && (
                       <div>
                         <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 2 }}>Throttle events</div>

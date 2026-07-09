@@ -700,6 +700,14 @@ app.get('/api/bible-audio/:audioBibleId/chapters/:chapterId', optionalAuth, limi
       console.error('[kinwove] audio bible chapter upstream', upstream.status);
       return res.status(upstream.status >= 500 ? 502 : upstream.status).json({ error: 'audio bible upstream error' });
     }
+    // The "revisit paid audio" alarm: when Listen gets real traction, it's time
+    // to reconsider the api.bible Pro plan ($29+/mo, full-Bible English audio —
+    // deferred 2026-07-09 as too rich pre-revenue). Usage is the trigger, not a date.
+    bibleApiUsage.audioListens = (bibleApiUsage.audioListens || 0) + 1;
+    if (bibleApiUsage.audioListens === 150) {
+      alertOps('audio-upgrade-time', 'kinwove: Bible Listen has real traction — revisit full audio',
+        `150 narrated chapters streamed since the last deploy — people genuinely use Listen. Time to revisit the api.bible Pro plan (~$29+/mo) for full-Bible English narration (coupon LGME8CFA was $20/mo off for 3 months), or gate premium audio to a paid tier. Free WEB NT keeps working either way.`);
+    }
     res.json(await upstream.json()); // data.resourceUrl = the MP3 to play
   } catch (e) { safeError(res, e, 'audio bible chapter'); }
 });
