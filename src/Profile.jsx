@@ -198,7 +198,7 @@ function ProfileWizard({ user, existing, onSave }) {
 
   function canAdvance() {
     if (current.optional) return true;
-    if (current.key === 'name') return form.first_name.trim() && form.last_name.trim();
+    if (current.key === 'name') return !!form.first_name.trim(); // last name optional — matches "no real name required"
     const v = form[current.key];
     return v && v !== '';
   }
@@ -214,7 +214,7 @@ function ProfileWizard({ user, existing, onSave }) {
     setError(null);
     const displayName = [form.first_name.trim(), form.last_name.trim()].filter(Boolean).join(' ');
     if (isReservedName(displayName)) {
-      return setError('That name is reserved — please use your real name.');
+      return setError('That name is reserved — please pick a different one.');
     }
     if (containsProfanity(displayName)) {
       return setError('Please use a respectful name that\'s appropriate for our community.');
@@ -297,7 +297,7 @@ function ProfileWizard({ user, existing, onSave }) {
               value={form.last_name}
               onChange={(e) => set('last_name', e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && canAdvance() && advance()}
-              placeholder="Last name"
+              placeholder="Last name (optional)"
               style={{
                 width: '100%', boxSizing: 'border-box',
                 border: 'none', borderBottom: `2px solid ${T.gold}`,
@@ -510,7 +510,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
     const { first_name, last_name, ...formRest } = form;
     const displayName = [first_name.trim(), last_name.trim()].filter(Boolean).join(' ');
     if (!existing?.is_system_account && isReservedName(displayName)) {
-      return setError('That name is reserved — please use your real name.');
+      return setError('That name is reserved — please pick a different one.');
     }
     if (containsProfanity(displayName)) {
       return setError('Please use a respectful name that\'s appropriate for our community.');
