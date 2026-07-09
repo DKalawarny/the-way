@@ -2910,10 +2910,16 @@ export default function App() {
                 setShowVerseCard(true);
                 // Fire-and-forget: send welcome DM from "kinwove" system account
                 authedFetch('/api/welcome-dm', { method: 'POST' }).catch(() => {});
-                // Open AI chat immediately for new users — they should see Ask first
+                // Open AI chat immediately for new users — they should see Ask first.
+                // If their guest conversation was restored at sign-in (currentConvId
+                // already set from kinwove:pendingConv), RESUME it — that's the whole
+                // reason they signed up ("keep this conversation going"). Otherwise
+                // start a fresh one.
                 const pt = p.person_type ?? 'curious';
-                const conv = createConv(pt);
-                setCurrentConvId(conv.id);
+                if (!currentConvId) {
+                  const conv = createConv(pt);
+                  setCurrentConvId(conv.id);
+                }
                 setPersonType(pt);
                 setChatPanelOpen(true);
               }
