@@ -380,8 +380,11 @@ export function useTextToSpeech({ voice = 'onyx', onEnded, preferNative = false 
       : (window.speechSynthesis.onvoiceschanged = () => { assign(); window.speechSynthesis.onvoiceschanged = null; });
     utt.onstart = () => {
       resumeTimer.current = setInterval(() => {
-        if (window.speechSynthesis.speaking) { window.speechSynthesis.pause(); window.speechSynthesis.resume(); }
-        else clearTimer();
+        if (!window.speechSynthesis.speaking) { clearTimer(); return; }
+        // Keep-alive nudge for Chrome's long-utterance timeout — but never while
+        // the USER has paused, or this would silently un-pause playback.
+        if (window.speechSynthesis.paused) return;
+        window.speechSynthesis.pause(); window.speechSynthesis.resume();
       }, 10000);
     };
     utt.onend   = () => { clearTimer(); setSpeakingId(null); if (!endedByStop.current) onEndedRef.current?.(id); };

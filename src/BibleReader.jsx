@@ -854,12 +854,14 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   useEffect(() => {
     const saved = localStorage.getItem(`rdr_tts:${bookId}:${chNum}`);
     setTtsStartVerse(saved ? parseInt(saved, 10) : null);
+    // Continue listening across a chapter change — but only if actually PLAYING.
+    // Paused audio must stay paused; navigating shouldn't surprise-start playback.
     if (rdSpeakingId) {
-      autoStartTts.current = true;
+      autoStartTts.current = !rdPaused;
       rdStop();
     }
     if (caActive) {
-      autoStartTts.current = true;
+      autoStartTts.current = !caPaused;
       caStop();
     }
   }, [bookId, chNum]);
