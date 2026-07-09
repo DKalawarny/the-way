@@ -1749,7 +1749,9 @@ app.post('/api/church/role-invite', requireAuth, limitAuthed({ capacity: 20, ref
 // Add a secret header in your cron config: X-Cron-Secret: <CRON_SECRET env var>
 app.post('/api/cron/nudge-incomplete', async (req, res) => {
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers['x-cron-secret'] !== secret) {
+  // Fail CLOSED: if the secret isn't configured, or doesn't match, refuse — these
+  // send real email to real users, so an unset secret must never leave them open.
+  if (!secret || req.headers['x-cron-secret'] !== secret) {
     return res.status(401).json({ error: 'unauthorized' });
   }
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
@@ -1760,7 +1762,7 @@ app.post('/api/cron/nudge-incomplete', async (req, res) => {
 
   // Profiles created 24–72 h ago with no display_name
   const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?display_name=is.null&created_at=gte.${since}&created_at=lte.${after}&select=id&limit=50`,
+    `${SUPABASE_URL}/rest/v1/profiles?daily_verse_opt_out=eq.false&display_name=is.null&created_at=gte.${since}&created_at=lte.${after}&select=id&limit=50`,
     { headers: h }
   );
   const incomplete = await r.json().catch(() => []);
@@ -1772,7 +1774,8 @@ app.post('/api/cron/nudge-incomplete', async (req, res) => {
       const email = await getUserEmail(id);
       if (!email) continue;
       const firstName = email.split('@')[0] || 'friend'; // best we can do without a name
-      await sendEmail(email, 'Your kinwove profile is waiting', nudgeEmailHtml(firstName));
+      const unsubUrl = `https://www.kinwove.com/api/email/unsubscribe?u=${id}&t=${emailToken(id)}`;
+      await sendEmail(email, 'Your kinwove profile is waiting', nudgeEmailHtml(firstName), { 'List-Unsubscribe': `<${unsubUrl}>` });
       sent++;
       await new Promise((r) => setTimeout(r, 200)); // gentle rate-limit between sends
     } catch (e) {
@@ -1791,7 +1794,9 @@ app.post('/api/cron/nudge-incomplete', async (req, res) => {
 // Cron config: POST with header X-Cron-Secret: <CRON_SECRET>.
 app.post('/api/cron/welcome-sequence', async (req, res) => {
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers['x-cron-secret'] !== secret) {
+  // Fail CLOSED: if the secret isn't configured, or doesn't match, refuse — these
+  // send real email to real users, so an unset secret must never leave them open.
+  if (!secret || req.headers['x-cron-secret'] !== secret) {
     return res.status(401).json({ error: 'unauthorized' });
   }
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
@@ -1810,7 +1815,7 @@ app.post('/api/cron/welcome-sequence', async (req, res) => {
     counts[st.name] = 0;
     // created between (olderThan) and (newerThan) hours ago, onboarding finished
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?display_name=not.is.null&created_at=gte.${hrsAgo(st.olderThan)}&created_at=lte.${hrsAgo(st.newerThan)}&select=id,display_name,is_pastor&limit=200`,
+      `${SUPABASE_URL}/rest/v1/profiles?daily_verse_opt_out=eq.false&display_name=not.is.null&created_at=gte.${hrsAgo(st.olderThan)}&created_at=lte.${hrsAgo(st.newerThan)}&select=id,display_name,is_pastor&limit=200`,
       { headers: h }
     );
     const rows = await r.json().catch(() => []);
@@ -1843,7 +1848,9 @@ app.post('/api/cron/welcome-sequence', async (req, res) => {
 // Usage: POST /api/cron/welcome-backfill?stage=invite|bible|pastor
 app.post('/api/cron/welcome-backfill', async (req, res) => {
   const secret = process.env.CRON_SECRET;
-  if (secret && req.headers['x-cron-secret'] !== secret) {
+  // Fail CLOSED: if the secret isn't configured, or doesn't match, refuse — these
+  // send real email to real users, so an unset secret must never leave them open.
+  if (!secret || req.headers['x-cron-secret'] !== secret) {
     return res.status(401).json({ error: 'unauthorized' });
   }
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
@@ -1866,7 +1873,7 @@ app.post('/api/cron/welcome-backfill', async (req, res) => {
   const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
   const hrsAgo = (n) => new Date(Date.now() - n * 60 * 60 * 1000).toISOString();
   const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?display_name=not.is.null&created_at=gte.${hrsAgo(24 * maxDays)}&created_at=lte.${hrsAgo(24 * minDays)}&select=id,display_name,is_pastor&limit=1000`,
+    `${SUPABASE_URL}/rest/v1/profiles?daily_verse_opt_out=eq.false&display_name=not.is.null&created_at=gte.${hrsAgo(24 * maxDays)}&created_at=lte.${hrsAgo(24 * minDays)}&select=id,display_name,is_pastor&limit=1000`,
     { headers: h }
   );
   const rows = await r.json().catch(() => []);
