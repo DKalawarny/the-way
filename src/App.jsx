@@ -2309,6 +2309,8 @@ export default function App() {
     });
     const { data: listener } = supabase.auth.onAuthStateChange((event, s) => {
       _setSession(s);
+      // Password-reset link landed: show the set-new-password screen, don't route home.
+      if (event === 'PASSWORD_RECOVERY') { setAuthInitialMode('recovery'); setAuthStage('auth'); return; }
       if (s) {
         if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') incrementLoginCount();
         // Only restore saved stage on initial load or fresh sign-in.
@@ -2855,6 +2857,7 @@ export default function App() {
         <Auth
           onAuth={async (s) => {
             setSession(s);
+            setAuthInitialMode('signin'); // clear any 'recovery' mode for next time
             // Profile-setup should only run on the very first sign-up (no
             // profiles row yet). Returning users — even ones with a partially
             // filled profile — skip it; they can edit from the Me page.

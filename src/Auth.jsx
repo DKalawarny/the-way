@@ -61,6 +61,7 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
   const [mode, setMode] = useState(initialMode); // signin | signup | verify
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [resetSent, setResetSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -125,6 +126,27 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
     onAuth(data.session);
   }
 
+  async function handleReset(e) {
+    e.preventDefault();
+    setLoading(true); setError(null);
+    const { error: err } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+    setLoading(false);
+    if (err) return setError(err.message);
+    setResetSent(true);
+  }
+
+  // After the recovery link lands, Supabase already has a session in recovery
+  // state — set the new password, then proceed straight into the app.
+  async function handleUpdatePassword(e) {
+    e.preventDefault();
+    setLoading(true); setError(null);
+    const { error: err } = await supabase.auth.updateUser({ password });
+    if (err) { setLoading(false); return setError(err.message); }
+    const { data } = await supabase.auth.getSession();
+    setLoading(false);
+    if (data?.session) onAuth(data.session);
+  }
+
   const btn = {
     width: '100%',
     background: T.ink,
@@ -139,6 +161,58 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
     marginTop: 8,
   };
 
+  if (mode === 'reset') {
+    return (
+      <div style={wrap}>
+        <div style={card}>
+          <div style={eyebrow}>kinwove</div>
+          <h2 style={title}>Reset your password</h2>
+          {resetSent ? (
+            <>
+              <p style={{ color: T.inkSoft, fontSize: 15, lineHeight: 1.6 }}>
+                If an account exists for <strong>{email}</strong>, a reset link is on its way.
+                Click it and you'll set a new password.
+              </p>
+              <button onClick={() => { setMode('signin'); setResetSent(false); setError(null); }} style={{ ...btn, background: 'transparent', color: T.inkMuted, border: `1px solid ${T.line}`, marginTop: 10 }}>
+                Back to sign in
+              </button>
+            </>
+          ) : (
+            <form onSubmit={handleReset}>
+              <p style={{ color: T.inkSoft, fontSize: 14, lineHeight: 1.6, margin: '0 0 14px' }}>
+                Enter your email and we'll send a link to set a new one.
+              </p>
+              <Field label="Email">
+                <input style={input} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@somewhere.com" required />
+              </Field>
+              {error && <div style={{ color: T.error, fontSize: 13, marginBottom: 10 }}>{error}</div>}
+              <button type="submit" style={btn} disabled={loading}>{loading ? 'Sending…' : 'Send reset link'}</button>
+              <button type="button" onClick={() => { setMode('signin'); setError(null); }} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 13, cursor: 'pointer', marginTop: 14, width: '100%' }}>← Back to sign in</button>
+            </form>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === 'recovery') {
+    return (
+      <div style={wrap}>
+        <div style={card}>
+          <div style={eyebrow}>kinwove</div>
+          <h2 style={title}>Set a new password</h2>
+          <form onSubmit={handleUpdatePassword}>
+            <Field label="New password">
+              <input style={input} type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" minLength={8} required />
+            </Field>
+            {error && <div style={{ color: T.error, fontSize: 13, marginBottom: 10 }}>{error}</div>}
+            <button type="submit" style={btn} disabled={loading}>{loading ? 'Saving…' : 'Save new password'}</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   if (mode === 'verify') {
     return (
       <div style={wrap}>
@@ -146,8 +220,8 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
           <div style={eyebrow}>kinwove</div>
           <h2 style={title}>Check your email</h2>
           <p style={{ color: T.inkSoft, fontSize: 15, lineHeight: 1.6 }}>
-            We sent a confirmation link to <strong>{email}</strong>. Click it to verify
-            your account, then come back and sign in.
+            We sent a confirmation link to <strong>{email}</strong>. Click it and
+            you're in — no need to come back here.
           </p>
           <p style={{ color: T.inkMuted, fontSize: 13, lineHeight: 1.6, marginTop: 0 }}>
             No email? Check spam, or tap below to send another.
@@ -205,6 +279,12 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
               </button>
             </div>
           </Field>
+
+          {mode === 'signin' && (
+            <button type="button" onClick={() => { setMode('reset'); setError(null); }} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 13, cursor: 'pointer', padding: 0, margin: '0 0 12px' }}>
+              Forgot password?
+            </button>
+          )}
 
           {error && (
             <div style={{ color: T.error, fontSize: 13, marginBottom: 10 }}>{error}</div>
