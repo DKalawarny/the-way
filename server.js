@@ -10,6 +10,7 @@ import crypto from 'node:crypto';
 import Anthropic from '@anthropic-ai/sdk';
 import { getDailyVerse } from './src/dailyVerse.js';
 import { ANSWERS, ANSWERS_BY_SLUG, renderAnswerPage, renderAnswerIndex } from './content/answers.js';
+import { PLAN_LIMITS } from './src/planConfig.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -833,6 +834,47 @@ async function fetchCommentary(code, chapter) {
   return blocks.length ? blocks.join('\n\n') : null;
 }
 
+// ── Server-authoritative AI plan + usage quota ───────────────────────────────
+// The client used to send its own `plan`, and the weekly cap lived only in client
+// JS — so a forged request could get Opus + unlimited calls. Now the SERVER derives
+// the plan (profiles.plan) and owns the counter (the same ai_usage table + RPC the
+// UI reads), so limits can't be bypassed by calling /api/chat directly.
+function serverPeriod(type) {
+  if (type === 'lifetime') return 'lifetime';
+  const d = new Date();
+  if (type === 'weekly') {
+    const mon = new Date(d);
+    mon.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // Monday-anchored, matches useAiUsage
+    return `W${mon.getFullYear()}${String(mon.getMonth() + 1).padStart(2, '0')}${String(mon.getDate()).padStart(2, '0')}`;
+  }
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+async function getServerPlan(userId) {
+  if (!userId || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) return 'free';
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=plan&limit=1`,
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } });
+    const [row] = await r.json();
+    return row?.plan ?? 'free';
+  } catch { return 'free'; }
+}
+async function getAiUsage(userId, period) {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/ai_usage?user_id=eq.${userId}&period=eq.${encodeURIComponent(period)}&select=count,topup&limit=1`,
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } });
+    const [row] = await r.json();
+    return { count: row?.count ?? 0, topup: row?.topup ?? 0 };
+  } catch { return { count: 0, topup: 0 }; }
+}
+function incrementAiUsage(userId, period) {
+  if (!userId) return;
+  fetch(`${SUPABASE_URL}/rest/v1/rpc/increment_ai_usage`, {
+    method: 'POST',
+    headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_user_id: userId, p_period: period }),
+  }).catch((e) => console.error('[ai_usage] increment failed:', e?.message));
+}
+
 app.post('/api/chat', optionalAuth, limitEither(
   { capacity: 12, refillPerSec: 12 / 60 },      // authed: 12/min sustained
   { capacity: 2,  refillPerSec: 2 / 86400 },    // anon (GuestQuestion): 2 per day per IP
@@ -877,6 +919,18 @@ app.post('/api/chat', optionalAuth, limitEither(
   // True if any message in the conversation contains an image block.
   const hasImages = messages.some((m) => Array.isArray(m.content) && m.content.some((b) => b.type === 'image'));
 
+  // Server-authoritative plan + quota. Anonymous callers are governed by the anon
+  // rate limiter above; authed callers are held to their real plan's period cap here.
+  const realPlan = await getServerPlan(req.userId);
+  const planCfg = PLAN_LIMITS[realPlan] ?? PLAN_LIMITS.free;
+  const usagePeriod = serverPeriod(planCfg.period);
+  if (req.userId) {
+    const u = await getAiUsage(req.userId, usagePeriod);
+    if (u.count >= planCfg.limit + u.topup) {
+      return res.status(429).json({ error: 'limit_reached', message: 'You’ve reached your questions for this period.' });
+    }
+  }
+
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
@@ -903,6 +957,7 @@ app.post('/api/chat', optionalAuth, limitEither(
         send('text', { delta: cached.answer.slice(i, i + 24) });
         await new Promise((r) => setTimeout(r, 12));
       }
+      incrementAiUsage(req.userId, usagePeriod);
       send('done', { stop_reason: 'end_turn', cached: true });
       res.end();
       // Fire-and-forget: bump hit count + log event.
@@ -955,7 +1010,7 @@ app.post('/api/chat', optionalAuth, limitEither(
   try {
     // Model routing — tier controls ceiling, complexity controls selection within tier.
     // Free: Haiku only. Individual: Haiku|Sonnet. Pro: Haiku|Sonnet|Opus.
-    const plan = req.body?.plan ?? 'free';
+    const plan = realPlan; // server-derived; never trust req.body.plan for model tier
     const isDeep = ['deeper', 'skeptic'].includes(personType);
     const isLongConversation = messages.length > 10;
     const isVeryLong = messages.length > 20;
@@ -1009,6 +1064,7 @@ app.post('/api/chat', optionalAuth, limitEither(
       .map((b) => b.text)
       .join('');
 
+    incrementAiUsage(req.userId, usagePeriod);
     send('done', { stop_reason: final.stop_reason, usage: final.usage });
     res.end();
 

@@ -48,13 +48,11 @@ export function useAiUsage(userId, plan = 'free') {
   const remaining = Math.max(0, limit + topup - used);
   const atLimit   = !loading && row !== null && remaining <= 0;
 
-  // Atomically increment — relies on the DB function below
-  async function increment() {
+  // Optimistic local bump only. The SERVER now owns the write (server.js
+  // incrementAiUsage on every successful /api/chat answer) so limits can't be
+  // bypassed by a forged client — writing here too would double-count.
+  function increment() {
     if (!userId) return;
-    await supabase.rpc('increment_ai_usage', {
-      p_user_id: userId,
-      p_period:  period,
-    });
     setRow((r) => r ? { ...r, count: r.count + 1 } : r);
   }
 
