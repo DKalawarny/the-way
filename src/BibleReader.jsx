@@ -841,6 +841,10 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
 
   // Unified chapter-listen controls: narration when configured, device voice otherwise.
   const usingAudio = !!audioBibleId;
+  // The free audio bible is NT-only — used to show the "Narrated" hint on the
+  // chapters where real narration actually plays.
+  const NT_BOOKS = new Set(['MAT','MRK','LUK','JHN','ACT','ROM','1CO','2CO','GAL','EPH','PHP','COL','1TH','2TH','1TI','2TI','TIT','PHM','HEB','JAS','1PE','2PE','1JN','2JN','3JN','JUD','REV']);
+  const hasNarration = usingAudio && NT_BOOKS.has(bookId);
   const chActive  = usingAudio ? caActive  : (rdSpeakingId === CHAPTER_TTS_ID || rdLoadingId === CHAPTER_TTS_ID);
   const chLoading = usingAudio ? caLoading : rdLoadingId === CHAPTER_TTS_ID;
   const chPaused  = usingAudio ? caPaused  : rdPaused;
@@ -2412,6 +2416,11 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                       >
                         ▶ {ttsStartVerse && ttsStartVerse !== verses[0]?.number ? `Resume from v.${ttsStartVerse}` : 'Read chapter'}
                       </button>
+                      {hasNarration && (
+                        <span style={{ fontSize: 11, color: C.muted, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                          🎧 Narrated
+                        </span>
+                      )}
                       {ttsStartVerse && ttsStartVerse !== verses[0]?.number && (
                         <button
                           onClick={() => { setTtsStartVerse(null); localStorage.removeItem(`rdr_tts:${bookId}:${chNum}`); }}
