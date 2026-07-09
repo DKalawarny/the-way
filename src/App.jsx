@@ -360,10 +360,9 @@ function CommunityPreview({ onBegin }) {
 
 function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorIntent, pastorChurchId, referralRef }) {
   const initialQuestion = useMemo(() => {
-    try {
-      const raw = new URLSearchParams(window.location.search).get('q');
-      return raw ? decodeURIComponent(raw) : null;
-    } catch { return null; }
+    // URLSearchParams.get already decodes — a second decodeURIComponent throws on
+    // any question containing a literal % and silently drops it. Use it directly.
+    return new URLSearchParams(window.location.search).get('q') || null;
   }, []);
 
   const DIM   = 'rgba(253,248,240,0.55)';
@@ -1980,11 +1979,24 @@ export default function App() {
   const [journeysOpen, setJourneysOpen] = useState(false);
   const [journeyProgress, setJourneyProgress] = useState({});
   const [autoSendPrompt, setAutoSendPrompt] = useState(null);
+  // Honor a ?q= deep link (from the /answers pages) for a LOGGED-IN visitor —
+  // open Ask with the question auto-sent, instead of silently dropping it.
+  useEffect(() => {
+    if (!session || !initialQ) return;
+    const pt = profile?.person_type ?? personType ?? 'curious';
+    if (!currentConvId) { const conv = createConv(pt); setCurrentConvId(conv.id); }
+    setPersonType(pt);
+    setAutoSendPrompt(initialQ);
+    setChatPanelOpen(true);
+    setInitialQ(null);
+    try { const u = new URL(window.location.href); u.searchParams.delete('q'); window.history.replaceState({}, '', u); } catch {}
+  }, [session, initialQ, profile]); // eslint-disable-line react-hooks/exhaustive-deps
   const [installTrigger, setInstallTrigger] = useState(false);
   const [userGroups, setUserGroups] = useState([]);   // [{ group, role }, ...]
   const [viewingGroupEntry, setViewingGroupEntry] = useState(null); // { group, role } | null
   const [pendingGroupCode, setPendingGroupCode] = useState(null);
   const [feedOpenTab, setFeedOpenTab] = useState(null);
+  const [initialQ, setInitialQ] = useState(() => new URLSearchParams(window.location.search).get('q'));
   const [shareId] = useState(() => new URLSearchParams(window.location.search).get('s'));
   const [deepLinkPostId] = useState(() => new URLSearchParams(window.location.search).get('post'));
   const [deepLinkInviteId] = useState(() => new URLSearchParams(window.location.search).get('invite'));
@@ -2909,11 +2921,11 @@ export default function App() {
             else {
               setStage(profileEditOrigin === 'me' ? 'me' : 'feed');
               if (isFirstTime) {
-                setShowPastorPrompt(true);
-                // Brand new users always see tour + daily verse regardless of
-                // browser localStorage (which persists across test accounts).
+                // Audit: don't stack modals on a brand-new user. Show a short tour
+                // and land them in their conversation — no "are you a pastor?" prompt
+                // (off-putting to a seeker; pastors have the menu) and no verse card
+                // on top of the chat. Both remain discoverable elsewhere.
                 setShowTour(true);
-                setShowVerseCard(true);
                 // Fire-and-forget: send welcome DM from "kinwove" system account
                 authedFetch('/api/welcome-dm', { method: 'POST' }).catch(() => {});
                 // Open AI chat immediately for new users — they should see Ask first.
