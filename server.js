@@ -2709,6 +2709,30 @@ app.delete('/api/account', requireAuth, async (req, res) => {
     'Content-Type': 'application/json',
   };
   try {
+    // Cancel any Stripe subscriptions FIRST, so a deleted account never keeps
+    // billing (the profile row — and its stripe_customer_id — cascades away with
+    // the auth user, after which the webhook can't find them). No-op until
+    // STRIPE_SECRET_KEY is set on Render at Stripe go-live.
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (stripeKey) {
+      try {
+        const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}&select=stripe_customer_id&limit=1`, { headers: svcH });
+        const [prof] = await pr.json();
+        const cust = prof?.stripe_customer_id;
+        if (cust) {
+          const sr = await fetch(`https://api.stripe.com/v1/subscriptions?customer=${encodeURIComponent(cust)}&status=all&limit=100`,
+            { headers: { Authorization: `Bearer ${stripeKey}` } });
+          const subs = (await sr.json())?.data ?? [];
+          for (const s of subs) {
+            if (['active', 'trialing', 'past_due', 'unpaid'].includes(s.status)) {
+              await fetch(`https://api.stripe.com/v1/subscriptions/${s.id}`,
+                { method: 'DELETE', headers: { Authorization: `Bearer ${stripeKey}` } }).catch(() => {});
+            }
+          }
+        }
+      } catch (e) { console.error('[account-delete] stripe cancel failed:', e?.message); }
+    }
+
     // Clear pastor_id on any churches owned by this user before deleting, to avoid
     // FK cascade ordering issues (churches.pastor_id → profiles ON DELETE SET NULL
     // can conflict with the profile cascade from auth delete in some Supabase versions).
