@@ -1808,7 +1808,8 @@ app.post('/api/cron/welcome-sequence', async (req, res) => {
         const email = await getUserEmail(row.id);
         if (!email || isInternalEmail(email)) continue;
         const firstName = (row.display_name || '').trim().split(/\s+/)[0] || email.split('@')[0] || 'friend';
-        await sendEmail(email, st.subject, st.html(firstName, row.id));
+        const unsubUrl = `https://www.kinwove.com/api/email/unsubscribe?u=${row.id}&t=${emailToken(row.id)}`;
+        await sendEmail(email, st.subject, st.html(firstName, row.id), { 'List-Unsubscribe': `<${unsubUrl}>` });
         counts[st.name]++;
         await new Promise((r) => setTimeout(r, 200)); // gentle rate-limit
       } catch (e) {
@@ -1865,7 +1866,8 @@ app.post('/api/cron/welcome-backfill', async (req, res) => {
       const email = await getUserEmail(row.id);
       if (!email || isInternalEmail(email)) { skipped++; continue; }
       const firstName = (row.display_name || '').trim().split(/\s+/)[0] || email.split('@')[0] || 'friend';
-      await sendEmail(email, def.subject, def.html(firstName, row.id));
+      const unsubUrl = `https://www.kinwove.com/api/email/unsubscribe?u=${row.id}&t=${emailToken(row.id)}`;
+      await sendEmail(email, def.subject, def.html(firstName, row.id), { 'List-Unsubscribe': `<${unsubUrl}>` });
       sent++;
       await new Promise((r) => setTimeout(r, 200)); // gentle rate-limit
     } catch (e) {
