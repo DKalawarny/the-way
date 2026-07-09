@@ -30,18 +30,22 @@ function timeAgo(ts) {
   return `${Math.floor(diff / 86400)}d`;
 }
 
-function SafetyBanner() {
+function SafetyBanner({ forRequester = false }) {
   return (
     <div style={{
       background: 'rgba(165,63,43,0.06)', border: `1px solid rgba(165,63,43,0.35)`,
       borderRadius: 12, padding: '14px 16px', margin: '0 0 14px',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <span style={{ fontSize: 16 }}>⚠</span>
-        <strong style={{ fontSize: 13, color: T.error }}>This may need professional support</strong>
+        <span style={{ fontSize: 16 }}>{forRequester ? '💛' : '⚠'}</span>
+        <strong style={{ fontSize: 13, color: T.error }}>
+          {forRequester ? 'You are not alone' : 'This may need professional support'}
+        </strong>
       </div>
       <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.6, marginBottom: 10 }}>
-        You don't have to handle this alone. Stay present, listen, and gently share these resources. If there's immediate danger, encourage them to call emergency services.
+        {forRequester
+          ? 'If things feel unsafe or too heavy right now, please reach out — someone is ready to listen any hour. You matter, and help is one call or message away.'
+          : "You don't have to handle this alone. Stay present, listen, and gently share these resources. If there's immediate danger, encourage them to call emergency services."}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {CRISIS_RESOURCES.map((r) => (
@@ -308,7 +312,12 @@ export default function CareConversation({ session, profile, conversationId, vie
             </div>
           )}
 
-          {showSafety && viewerRole === 'care_member' && <SafetyBanner />}
+          {/* Show crisis resources to BOTH sides when the conversation is flagged —
+              the care member (to triage) and the requester (warm, hotline first —
+              never a clinical "flagged" stamp). */}
+          {(showSafety || conversation.safety_flagged) && (
+            <SafetyBanner forRequester={viewerRole === 'requester'} />
+          )}
 
           {messages.map((m) => {
             const mine = m.sender_id === session?.user?.id;
@@ -334,7 +343,7 @@ export default function CareConversation({ session, profile, conversationId, vie
                     marginTop: 4, fontFamily: T.sans,
                   }}>
                     <span title={exactTime(m.created_at)}>{timeAgo(m.created_at)}</span>
-                    {m.is_safety_flag && <span style={{ marginLeft: 6, color: mine ? T.goldLight : T.error }}>· flagged</span>}
+                    {m.is_safety_flag && viewerRole === 'care_member' && <span style={{ marginLeft: 6, color: mine ? T.goldLight : T.error }}>· flagged</span>}
                   </div>
                 </div>
               </div>
