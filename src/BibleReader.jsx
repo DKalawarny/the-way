@@ -2424,6 +2424,11 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                       {sel && (
                         <span style={{ display: 'inline-block', verticalAlign: 'top' }}>
                           <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap', background: dark ? '#1A0E07' : T.white, border: `1px solid ${C.border}`, borderRadius: 12, padding: '8px 10px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', margin: '4px 0 4px 4px' }}>
+                            {/* Free-form ask — opens this book's chat with the input focused,
+                                no canned prompt. For "explain why…" or any question at all. */}
+                            <button onClick={() => { setSelectedVerse(null); setChatOpen(true); setTimeout(() => chatInputRef.current?.focus(), 300); }} style={{ background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`, border: '1px solid transparent', borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, color: T.cream, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                              💬 Ask
+                            </button>
                             {QUICK_ACTIONS.map((a) => (
                               <button key={a.id} onClick={() => sendQuickAction(a)} style={{ background: 'rgba(184,115,58,0.1)', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                 {a.label}
