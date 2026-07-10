@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { supabase } from './supabase.js';
+import { supabase, authedFetch } from './supabase.js';
 
 // Human-readable titles for each notification kind.
 const KIND_TITLES = {
@@ -36,6 +36,47 @@ function notifTitle(kind) {
   return KIND_TITLES[kind] ?? 'New notification — kinwove';
 }
 
+// ── True "app closed" push (VAPID) ──────────────────────────────────────────
+// Registers a PushSubscription with the service worker and stores it server-side.
+// Silently no-ops until the server has VAPID keys configured (404 on vapid-key),
+// on browsers without push support, and before notification permission is granted.
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+}
+
+let pushSubscribed = false;
+export async function ensurePushSubscription() {
+  if (pushSubscribed) return;
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (!reg) return; // SW only registers in production builds
+
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      const r = await fetch('/api/push/vapid-key');
+      if (!r.ok) return; // server has no VAPID keys yet
+      const { key } = await r.json();
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(key),
+      });
+    }
+    const saved = await authedFetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription: sub.toJSON() }),
+    });
+    if (saved.ok) pushSubscribed = true;
+  } catch {
+    // Push is progressive enhancement — never let it break anything.
+  }
+}
+
 // Quietly request permission without bothering the user more than once.
 // We call this on first interaction rather than on page load so browsers
 // don't block the permission prompt for "not triggered by user gesture".
@@ -45,7 +86,9 @@ export function requestNotificationPermission() {
   permissionRequested = true;
   if (!('Notification' in window)) return;
   if (Notification.permission === 'default') {
-    Notification.requestPermission().catch(() => {});
+    Notification.requestPermission()
+      .then((p) => { if (p === 'granted') ensurePushSubscription(); })
+      .catch(() => {});
   }
 }
 
@@ -55,6 +98,10 @@ export function usePushNotifications(userId) {
   useEffect(() => {
     if (!userId) return;
     if (!('Notification' in window)) return;
+
+    // Returning users who already granted permission: make sure their device
+    // has a stored push subscription (new device, cleared storage, etc.).
+    ensurePushSubscription();
 
     // Subscribe to INSERT events on the notifications table for this user
     const channel = supabase

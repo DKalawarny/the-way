@@ -8,6 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import Anthropic from '@anthropic-ai/sdk';
+import webpush from 'web-push';
 import { getDailyVerse } from './src/dailyVerse.js';
 import { ANSWERS, ANSWERS_BY_SLUG, renderAnswerPage, renderAnswerIndex } from './content/answers.js';
 import { PLAN_LIMITS } from './src/planConfig.js';
@@ -3627,6 +3628,137 @@ app.patch('/api/admin/church/:churchId', requireAdmin, async (req, res) => {
     res.json({ ok: true });
   } catch (e) { safeError(res, e, 'admin-church-patch'); }
 });
+
+// ── Web push (VAPID) ──────────────────────────────────────────────────────────
+// True "app closed" push. The client stores a PushSubscription via
+// /api/push/subscribe; a lightweight poller watches the notifications table and
+// fans new rows out through web-push. No-op until Daniel sets VAPID_PUBLIC_KEY +
+// VAPID_PRIVATE_KEY on Render (generate with `npx web-push generate-vapid-keys`).
+const VAPID_PUBLIC_KEY  = process.env.VAPID_PUBLIC_KEY  ?? '';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY ?? '';
+const PUSH_ENABLED = !!(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && SUPABASE_URL && SUPABASE_SERVICE_KEY);
+if (PUSH_ENABLED) {
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT ?? 'mailto:hello@kinwove.com',
+    VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY
+  );
+  console.log('[kinwove] web push enabled');
+}
+
+const pushSvcHeaders = () => ({
+  apikey: SUPABASE_SERVICE_KEY,
+  Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+  'Content-Type': 'application/json',
+});
+
+// Kinds worth waking a phone for, with their notification titles.
+const PUSH_KIND_TITLES = {
+  dm_message:              '✉ New message on kinwove',
+  care_message:            '💙 New care message',
+  care_new_request:        '💛 Someone reached out for care',
+  care_safety_flag:        '⚠️ A care conversation needs attention',
+  prayer_support:          '🙏 Someone is praying for you',
+  post_comment:            '💬 New comment on your post',
+  post_comment_reply:      '↩ Someone replied to your comment',
+  post_reaction:           '❤️ Someone reacted to your post',
+  friend_request_received: '👋 You have a new friend request',
+  friend_request_accepted: '🤝 Your friend request was accepted',
+  follow:                  '👤 Someone started following you',
+  sermon_published:        '📖 A new sermon has been published',
+};
+
+app.get('/api/push/vapid-key', (_req, res) => {
+  if (!PUSH_ENABLED) return res.status(404).json({ error: 'push not configured' });
+  res.json({ key: VAPID_PUBLIC_KEY });
+});
+
+app.post('/api/push/subscribe', requireAuth, limitAuthed({ capacity: 10, refillPerSec: 10 / 60 }), async (req, res) => {
+  if (!PUSH_ENABLED) return res.status(404).json({ error: 'push not configured' });
+  const sub = req.body?.subscription;
+  if (!sub?.endpoint || typeof sub.endpoint !== 'string' || sub.endpoint.length > 1000 || typeof sub.keys !== 'object') {
+    return res.status(400).json({ error: 'invalid subscription' });
+  }
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions`, {
+      method: 'POST',
+      headers: { ...pushSvcHeaders(), Prefer: 'resolution=merge-duplicates' },
+      body: JSON.stringify({ endpoint: sub.endpoint, user_id: req.userId, keys: sub.keys }),
+    });
+    if (!r.ok) throw new Error(`upsert ${r.status}`);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[kinwove] push subscribe failed:', e?.message);
+    res.status(500).json({ error: 'could not save subscription' });
+  }
+});
+
+app.post('/api/push/unsubscribe', requireAuth, limitAuthed({ capacity: 10, refillPerSec: 10 / 60 }), async (req, res) => {
+  const endpoint = req.body?.endpoint;
+  if (!endpoint || typeof endpoint !== 'string') return res.status(400).json({ error: 'endpoint required' });
+  try {
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(endpoint)}&user_id=eq.${req.userId}`,
+      { method: 'DELETE', headers: pushSvcHeaders() }
+    );
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ error: 'could not remove subscription' });
+  }
+});
+
+// Poller: every 15s, push any notification rows newer than the last sweep.
+// In-memory watermark — after a deploy restart, rows created mid-restart are
+// skipped rather than double-sent (the in-tab Realtime path still shows them).
+let pushWatermark = new Date().toISOString();
+async function pushSweep() {
+  const kinds = Object.keys(PUSH_KIND_TITLES).join(',');
+  const rowsRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/notifications?created_at=gt.${encodeURIComponent(pushWatermark)}&kind=in.(${kinds})&select=id,recipient_id,kind,data,created_at&order=created_at.asc&limit=100`,
+    { headers: pushSvcHeaders() }
+  );
+  const rows = await rowsRes.json();
+  if (!Array.isArray(rows) || rows.length === 0) return;
+  pushWatermark = rows[rows.length - 1].created_at;
+
+  const recipientIds = [...new Set(rows.map((r) => r.recipient_id))];
+  const subsRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=in.(${recipientIds.join(',')})&select=endpoint,user_id,keys`,
+    { headers: pushSvcHeaders() }
+  );
+  const subs = await subsRes.json();
+  if (!Array.isArray(subs) || subs.length === 0) return;
+
+  const subsByUser = new Map();
+  for (const s of subs) {
+    if (!subsByUser.has(s.user_id)) subsByUser.set(s.user_id, []);
+    subsByUser.get(s.user_id).push(s);
+  }
+
+  for (const row of rows) {
+    const targets = subsByUser.get(row.recipient_id) ?? [];
+    const snippet = row.data?.snippet;
+    const payload = JSON.stringify({
+      title: PUSH_KIND_TITLES[row.kind] ?? 'kinwove',
+      body: snippet ? `"${String(snippet).slice(0, 100)}"` : '',
+      tag: row.id,
+      url: '/',
+    });
+    for (const t of targets) {
+      webpush.sendNotification({ endpoint: t.endpoint, keys: t.keys }, payload).catch((err) => {
+        // 404/410 = subscription expired or revoked — clean it up.
+        if (err?.statusCode === 404 || err?.statusCode === 410) {
+          fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(t.endpoint)}`, {
+            method: 'DELETE', headers: pushSvcHeaders(),
+          }).catch(() => {});
+        }
+      });
+    }
+  }
+}
+if (PUSH_ENABLED) {
+  setInterval(() => pushSweep().catch((e) => console.error('[kinwove] push sweep failed:', e?.message)), 15000);
+}
 
 // ── Platform admin dashboard ──────────────────────────────────────────────────
 // Single endpoint that returns everything the AdminPage needs.
