@@ -1043,6 +1043,13 @@ app.post('/api/chat', optionalAuth, limitEither(
       model = 'claude-haiku-4-5-20251001';
     }
 
+    // The first answer is the "I need this" moment — never serve it on the cheapest
+    // model, even to free users. It's answered live only once (then cached), so the
+    // cost is bounded. Deep first questions already route to Sonnet/Opus above.
+    if (isFirstTurn && model === 'claude-haiku-4-5-20251001') {
+      model = 'claude-sonnet-4-6';
+    }
+
     const trimmed = messages.slice(-8);
 
     const stream = client.messages.stream({

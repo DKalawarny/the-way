@@ -1,6 +1,6 @@
 // Cache version — bump this string when you deploy a breaking change
 // so all clients immediately drop the old cache and fetch fresh assets.
-const CACHE = 'kinwove-v2';
+const CACHE = 'kinwove-v3';
 
 // ── Web Push (VAPID) ──────────────────────────────────────────────────────────
 // Handles push events when the app is closed (requires VAPID keys on server +
@@ -84,20 +84,33 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // All other production requests — stale-while-revalidate.
-  // Never returns undefined: if both cache and network fail, fall through
-  // so the browser shows its own error rather than a silent blank page.
+  // Navigations (the HTML document) → NETWORK-FIRST. A fresh index.html always
+  // references the current build's hashed /assets — serving a stale cached index
+  // (the old bug: Promise.resolve(cached) always won the race) pointed at deleted
+  // chunks → app crash → "reload" → same stale page → infinite loop. Fall back to
+  // cache only when the network is actually unreachable (offline).
+  if (request.mode === 'navigate' || request.destination === 'document') {
+    e.respondWith(
+      fetch(request)
+        .then((res) => {
+          if (res.ok) caches.open(CACHE).then((c) => c.put(request, res.clone()));
+          return res;
+        })
+        .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
+    );
+    return;
+  }
+
+  // Everything else — stale-while-revalidate: serve cache fast, refresh it in the
+  // background. Safe for non-HTML; never returns undefined.
   e.respondWith(
     caches.open(CACHE).then((cache) =>
       cache.match(request).then((cached) => {
         const networkFetch = fetch(request).then((res) => {
           if (res.ok) cache.put(request, res.clone());
           return res;
-        });
-        // Only use cache as fallback if it's a real Response, not undefined
-        return cached
-          ? Promise.race([networkFetch.catch(() => cached), Promise.resolve(cached)])
-          : networkFetch;
+        }).catch(() => cached);
+        return cached || networkFetch;
       })
     )
   );
