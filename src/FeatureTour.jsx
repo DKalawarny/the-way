@@ -34,7 +34,7 @@ const STEPS = [
   {
     tourId: 'bible',
     title: 'Open the Bible',
-    body: 'Read any chapter. Tap any verse for plain-English explanations, historical context, and original-language insights.',
+    body: 'Read any chapter — or tap Listen and it reads aloud to you. Tap any verse for plain-English explanations, historical context, and original-language insights.',
     color: '#4a1542',
   },
   {
