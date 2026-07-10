@@ -186,15 +186,19 @@ function TopicIcon({ topic, size = 28 }) {
 
 // PersonType welcome illustration — shows above starter questions
 function PersonTypeWelcome({ personType }) {
+  // Keys MUST match the real PERSON_TYPES ids in constants.js — otherwise every
+  // type falls back to "Curious" and the app misidentifies who it's talking to.
   const config = {
-    curious:       { icon: 'doubt',    label: 'Curious',        desc: 'Every honest question is a door worth opening.' },
-    skeptic:       { icon: 'doubt',    label: 'Skeptical',      desc: 'Doubt deserves honest answers, not deflection.' },
-    agnostic:      { icon: 'peace',    label: 'Still deciding', desc: 'You don\'t have to have it figured out to begin.' },
-    questioning:   { icon: 'suffering',label: 'Wrestling',      desc: 'The hardest questions are the most important ones.' },
-    believer:      { icon: 'scripture',label: 'Believing',      desc: 'Go deeper into what you already hold as true.' },
-    new:           { icon: 'creation', label: 'Just starting',  desc: 'Welcome. There\'s no wrong place to begin.' },
-    relationships: { icon: 'peace',    label: 'Relationships',  desc: 'Real people, real situations — through a faith lens.' },
-    life:          { icon: 'scripture',label: 'Life Questions',  desc: 'Real life, grounded in scripture.' },
+    curious:       { icon: 'doubt',    label: 'Curious',       desc: 'Every honest question is a door worth opening.' },
+    seeking:       { icon: 'peace',    label: 'Seeking',       desc: 'Whatever brought you here matters.' },
+    skeptic:       { icon: 'doubt',    label: 'Skeptical',     desc: 'Doubt deserves honest answers, not deflection.' },
+    'heard-things':{ icon: 'suffering',label: 'Heard things',  desc: 'Let\'s look at what\'s true and what isn\'t.' },
+    'new-faith':   { icon: 'creation', label: 'New to faith',  desc: 'Welcome. There\'s no wrong place to begin.' },
+    deeper:        { icon: 'scripture',label: 'Going deeper',  desc: 'Go further into what you already hold as true.' },
+    'inter-faith': { icon: 'peace',    label: 'Comparing faiths', desc: 'Honest questions across traditions, no pressure.' },
+    kids:          { icon: 'creation', label: 'For kids',      desc: 'Big questions, made simple and kind.' },
+    relationships: { icon: 'peace',    label: 'Relationships', desc: 'Real people, real situations — through a faith lens.' },
+    life:          { icon: 'scripture',label: 'Life Questions',desc: 'Real life, grounded in scripture.' },
   };
   const c = config[personType] ?? config.curious;
   return (

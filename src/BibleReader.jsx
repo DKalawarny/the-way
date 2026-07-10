@@ -658,6 +658,13 @@ const DARK = {
 // Handles: "Romans 8:28", "Psalm 23:1", "1 Peter 5:7", "Lamentations 3:22–23"
 function parseRef(refStr) {
   if (!refStr) return null;
+  // Dotted USFM-id form from the Journal deep-link ("GEN.3.16" / "GEN.3") \u2014 this
+  // was silently failing before (parseRef only understood "Book Chapter:Verse").
+  const dot = String(refStr).trim().match(/^([A-Za-z0-9]{2,3})\.(\d+)(?:\.(\d+))?$/);
+  if (dot) {
+    const b = ALL_BOOKS.find((x) => x.id.toLowerCase() === dot[1].toLowerCase());
+    if (b) return { bookId: b.id, chapter: parseInt(dot[2], 10), verse: dot[3] ? parseInt(dot[3], 10) : null };
+  }
   // Normalize em/en dashes
   const norm = refStr.replace(/[\u2013\u2014]/g, '-').trim();
   // Extract verse number (first number after colon, before any dash)
@@ -1327,13 +1334,16 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     const langInstruction = lang !== 'en'
       ? `\n\nRespond in ${LANG_NAMES[lang] ?? lang}. Use the script and conventions native speakers expect.`
       : '';
+    const tapped = lastVerse
+      ? `\nThe reader most recently tapped verse ${lastVerse.number}: "${lastVerse.text}". If their question is ambiguous ("why is this here?", "what does this mean?"), assume it refers to that verse.\n`
+      : '';
     return `You are a Bible reading companion. The reader is in ${book.name} chapter ${chNum} (${VERSIONS.find((v) => v.id === bibleId)?.abbr ?? 'KJV'}).
 
 Passage:
 ${passage}
-
+${tapped}
 Answer questions about this passage clearly and honestly. Offer plain-language explanations, historical context, cross-references, and original language insights when relevant. Keep answers readable on a phone screen — short paragraphs, no walls of text. Don't be preachy.${langInstruction}`;
-  }, [verses, book, chNum, bibleId, profile?.preferred_language]);
+  }, [verses, book, chNum, bibleId, profile?.preferred_language, lastVerse]);
 
   async function sendChat(text) {
     const prompt = (text ?? chatInput).trim();
