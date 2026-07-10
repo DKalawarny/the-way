@@ -908,6 +908,9 @@ export default function Chat({
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  // When a send fails before any answer arrived, holds {prompt, img} so the
+  // error banner's Retry can replay the exact same question.
+  const [retryPayload, setRetryPayload] = useState(null);
   const [savedIdx, setSavedIdx] = useState(() => new Set());
   const [copiedIdx, setCopiedIdx] = useState(null);
   // ── Scripture verification + flag state ──────────────────────────────────
@@ -1202,20 +1205,21 @@ export default function Chat({
     } catch { /* fail silently — suggestions are bonus UI */ }
   }
 
-  async function send(text) {
+  async function send(text, imgOverride) {
     const prompt = (text ?? input).trim();
-    if (!prompt && !attachedImg) return;
+    // imgOverride carries the image through a Retry, where attachedImg is already cleared
+    const img = imgOverride ?? attachedImg;
+    if (!prompt && !img) return;
     if (busy) return;
     if (aiUsage.atLimit) return; // hard gate — UI should prevent this anyway
     resetScroll();
     setInput('');
     setError(null);
+    setRetryPayload(null);
     setSuggestions([]);
     setTimeout(() => taRef.current?.focus(), 0);
 
-    // Capture and clear the attached image before state updates
-    const img = attachedImg;
-    if (img) setAttachedImg(null);
+    if (attachedImg) setAttachedImg(null);
 
     // Display message: profanity-cleaned for the visible chat bubble.
     // The raw prompt is kept for the API message so Claude still understands
@@ -1248,16 +1252,30 @@ export default function Chat({
       apiMsg,
     ];
 
+    // Watchdog: if no bytes arrive for 45s (including time-to-first-byte), abort
+    // the stream so `busy` never locks the composer forever on a hung connection.
+    const controller = new AbortController();
+    let watchdog = null;
+    const armWatchdog = () => {
+      clearTimeout(watchdog);
+      watchdog = setTimeout(() => controller.abort(), 45000);
+    };
+
     try {
+      armWatchdog();
       const res = await authedFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ system, messages: apiMessages, personType, seekingContext, plan: aiPlan }),
+        signal: controller.signal,
       });
 
       if (!res.ok || !res.body) {
-        const msg = await res.text().catch(() => 'Network error');
-        throw new Error(msg || `HTTP ${res.status}`);
+        let detail = '';
+        try { detail = JSON.parse(await res.text())?.message ?? ''; } catch {}
+        const err = new Error(detail || `HTTP ${res.status}`);
+        err.status = res.status;
+        throw err;
       }
 
       setMessages((m) => [...m, { role: 'assistant', content: '' }]);
@@ -1267,6 +1285,7 @@ export default function Chat({
       let buf = '';
 
       while (true) {
+        armWatchdog();
         const { value, done } = await reader.read();
         if (done) break;
         buf += decoder.decode(value, { stream: true });
@@ -1301,8 +1320,27 @@ export default function Chat({
         }
       }
     } catch (e) {
-      setError(e.message || 'Something went wrong.');
+      console.error('[kinwove] chat error:', e);
+      if (!assistantContent) {
+        // Nothing arrived — roll the failed turn back so Retry replays it cleanly.
+        // (No Retry on 429: replaying a limit error would just fail again.)
+        setMessages(messages);
+        if (e?.status !== 429) setRetryPayload({ prompt, img });
+      } else {
+        // A partial answer is on screen — keep it, just drop an empty tail bubble.
+        setMessages((m) => (m.at(-1)?.role === 'assistant' && m.at(-1).content === '' ? m.slice(0, -1) : m));
+      }
+      if (e?.status === 429) {
+        setError(e.message || 'You’ve reached your questions for now.');
+      } else if (assistantContent) {
+        setError('That answer got cut off partway — sorry about that. Ask again and it’ll pick the thought back up.');
+      } else if (e?.name === 'AbortError') {
+        setError('That answer took too long to arrive — it happens sometimes. Tap Retry and we’ll try again.');
+      } else {
+        setError('That one didn’t come through — a hiccup on our end, not yours. Your question is safe; tap Retry.');
+      }
     } finally {
+      clearTimeout(watchdog);
       setBusy(false);
       if (assistantContent && session) { aiUsage.increment(); track('ai_question', { plan: aiPlan }); }
       // Validate refs in the background — does not block UI
@@ -1964,9 +2002,31 @@ export default function Chat({
                 borderRadius: 10,
                 fontSize: 14,
                 color: T.error,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                flexWrap: 'wrap',
               }}
             >
-              {error}
+              <span style={{ flex: 1, minWidth: 180 }}>{error}</span>
+              {retryPayload && (
+                <button
+                  onClick={() => send(retryPayload.prompt, retryPayload.img)}
+                  style={{
+                    background: T.gold,
+                    border: 'none',
+                    borderRadius: 999,
+                    padding: '8px 18px',
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    color: '#FDF8EE',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  Retry
+                </button>
+              )}
             </div>
           )}
         </div>
