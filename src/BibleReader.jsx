@@ -1171,6 +1171,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
           system: `You are a Bible verse finder. The user will describe a verse or passage they remember — possibly paraphrased, partially recalled, or with some wrong words. Identify the most likely Bible verse(s) and return ONLY a valid JSON array. Each item: {"ref": "Book Chapter:Verse", "text": "the actual verse text"}. Return up to 5 matches, best first. If nothing matches, return []. No explanation, no markdown, just the JSON array.`,
           messages: [{ role: 'user', content: q }],
           personType: 'curious',
+          internal: true,
         }),
       });
       let raw = '';

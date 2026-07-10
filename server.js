@@ -900,6 +900,10 @@ app.post('/api/chat', optionalAuth, limitEither(
   { capacity: 2,  refillPerSec: 2 / 86400 },    // anon (GuestQuestion): 2 per day per IP
 ), async (req, res) => {
   const { system, messages, personType, seekingContext, groundCommentary } = req.body ?? {};
+  // Internal helper calls (suggestion chips, share headings) — not real questions.
+  // They skip the qa cache, usage counting, and analytics, and are pinned to
+  // Haiku with a small token cap so the flag can't be abused for free full answers.
+  const internal = req.body?.internal === true;
 
   if (!system || typeof system !== 'string' || !Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'system and messages are required' });
@@ -969,13 +973,16 @@ app.post('/api/chat', optionalAuth, limitEither(
   const lastUserMsg = msgText([...messages].reverse().find((m) => m.role === 'user')?.content ?? '');
   const isFirstTurn = messages.length === 1 && messages[0].role === 'user';
 
-  if (isFirstTurn && personType && !hasImages) {
+  if (isFirstTurn && personType && !hasImages && !internal) {
     const cached = await lookupCachedAnswer(personType, lastUserMsg);
     if (cached?.answer) {
       send('cache_hit', { id: cached.id });
-      for (let i = 0; i < cached.answer.length; i += 24) {
-        send('text', { delta: cached.answer.slice(i, i + 24) });
-        await new Promise((r) => setTimeout(r, 12));
+      // Replay at live-generation pace (~570 chars/s with a beat of "thought"
+      // up front) — instant playback reads as canned, not considered.
+      await new Promise((r) => setTimeout(r, 350));
+      for (let i = 0; i < cached.answer.length; i += 16) {
+        send('text', { delta: cached.answer.slice(i, i + 16) });
+        await new Promise((r) => setTimeout(r, 28));
       }
       incrementAiUsage(req.userId, usagePeriod);
       send('done', { stop_reason: 'end_turn', cached: true });
@@ -1062,12 +1069,13 @@ app.post('/api/chat', optionalAuth, limitEither(
     if (isFirstTurn && model === 'claude-haiku-4-5-20251001') {
       model = 'claude-sonnet-4-6';
     }
+    if (internal) model = 'claude-haiku-4-5-20251001';
 
     const trimmed = messages.slice(-8);
 
     const stream = client.messages.stream({
       model,
-      max_tokens: 2048,
+      max_tokens: internal ? 500 : 2048,
       system: cachedSystem(system + AI_SAFETY_BLOCK, urlContext + memoryContext + commentaryContext),
       messages: trimmed,
     });
@@ -1091,9 +1099,11 @@ app.post('/api/chat', optionalAuth, limitEither(
       .map((b) => b.text)
       .join('');
 
-    incrementAiUsage(req.userId, usagePeriod);
+    if (!internal) incrementAiUsage(req.userId, usagePeriod);
     send('done', { stop_reason: final.stop_reason, usage: final.usage });
     res.end();
+
+    if (internal) return; // helper calls never touch the cache or analytics
 
     // Persist cache + event after the response is on its way to the client.
     // Never cache image conversations — every image is unique context.
