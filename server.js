@@ -16,6 +16,10 @@ import { renderLegalPage } from './content/legal.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
+// Render terminates TLS at one proxy hop — trust it so req.ip is the REAL client
+// IP (parsed right-to-left from X-Forwarded-For), not an attacker-supplied first
+// token. Without this, every per-IP rate limit is spoofable.
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
 
 if (!process.env.ANTHROPIC_API_KEY) {
@@ -142,7 +146,9 @@ setInterval(() => {
 }, 5 * 60 * 1000).unref?.();
 
 function clientIp(req) {
-  return (req.get('x-forwarded-for')?.split(',')[0].trim()) || req.socket.remoteAddress || 'unknown';
+  // req.ip is derived from XFF using the trusted-hop count (see app.set('trust
+  // proxy')) — not the spoofable first token.
+  return req.ip || req.socket.remoteAddress || 'unknown';
 }
 
 function limitAuthed({ capacity, refillPerSec }) {
@@ -3373,6 +3379,10 @@ async function adminRpc(fn, body = {}) {
 // Called client-side before any base64 image is saved to the DB.
 // Uses Haiku for speed + cost — typical latency ~400–700 ms.
 // Rate-limited to 30 req/min per IP (same as anon endpoints).
+// NOTE: stays anon-callable on purpose — the client moderateImage() sends no auth
+// token and fails OPEN on 401, so requiring auth would silently disable moderation.
+// The trust-proxy fix above makes this per-IP limit un-spoofable, which is the
+// real hardening. (A stronger fix = switch moderateImage to authedFetch, then gate.)
 app.post('/api/moderate-image', limitAnon({ capacity: 30, refillPerSec: 30 / 60 }), async (req, res) => {
   const { imageData } = req.body ?? {};
   if (!imageData || typeof imageData !== 'string' || !imageData.startsWith('data:image/')) {
