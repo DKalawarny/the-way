@@ -29,10 +29,29 @@ function isIos() {
   return /iPhone|iPad|iPod/i.test(navigator.userAgent) && !window.MSStream;
 }
 
+// In-app webviews (Instagram, Facebook, Messenger…) have no Share → Add to
+// Home Screen path, so the iOS instructions would be a dead end there.
+function isInAppBrowser() {
+  return /Instagram|FBAN|FBAV|FB_IAB|Messenger|Line\/|Twitter|GSA\//i.test(navigator.userAgent);
+}
+
+// The iOS Safari share glyph (square with up arrow), drawn inline so the
+// instructions can point at the exact icon.
+function IosShareIcon({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: '-3px' }}>
+      <path d="M12 3v12" /><path d="M8 6.5 12 3l4 3.5" />
+      <path d="M6 10H5a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1h-1" />
+    </svg>
+  );
+}
+
 export default function InstallPrompt({ triggerNow = false }) {
   const [visible, setVisible]       = useState(false);
   const [installing, setInstalling] = useState(false);
+  const [iosSheet, setIosSheet]     = useState(false);
   const deferredRef = useRef(null);
+  const ios = isIos() && !isInAppBrowser();
 
   useEffect(() => {
     // Don't bother if already installed or dismissed before
@@ -48,13 +67,15 @@ export default function InstallPrompt({ triggerNow = false }) {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-  // Auto-show after delay
+  // Auto-show after delay. iOS needs no beforeinstallprompt — the banner
+  // opens the manual Share → Add to Home Screen instructions instead.
   useEffect(() => {
-    if (isAlreadyInstalled() || isIos()) return;
+    if (isAlreadyInstalled()) return;
+    if (isIos() && !ios) return; // iOS in-app browser: no install path at all
     if (localStorage.getItem(STORAGE_KEY)) return;
 
     const t = setTimeout(() => {
-      if (deferredRef.current) setVisible(true);
+      if (ios || deferredRef.current) setVisible(true);
     }, DELAY_MS);
     return () => clearTimeout(t);
   }, []);
@@ -62,17 +83,20 @@ export default function InstallPrompt({ triggerNow = false }) {
   // Parent can trigger early (e.g. after first AI message sent)
   useEffect(() => {
     if (!triggerNow) return;
-    if (isAlreadyInstalled() || isIos()) return;
+    if (isAlreadyInstalled()) return;
+    if (isIos() && !ios) return;
     if (localStorage.getItem(STORAGE_KEY)) return;
-    if (deferredRef.current) setVisible(true);
+    if (ios || deferredRef.current) setVisible(true);
   }, [triggerNow]);
 
   function dismiss() {
     localStorage.setItem(STORAGE_KEY, '1');
     setVisible(false);
+    setIosSheet(false);
   }
 
   async function install() {
+    if (ios) { setIosSheet(true); return; }
     if (!deferredRef.current) return;
     setInstalling(true);
     try {
@@ -88,6 +112,63 @@ export default function InstallPrompt({ triggerNow = false }) {
   }
 
   if (!visible) return null;
+
+  // ── iOS instruction sheet ──
+  if (iosSheet) {
+    const stepStyle = { display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 16 };
+    const numStyle = {
+      width: 24, height: 24, borderRadius: 999, background: T.gold, color: T.cream,
+      fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center',
+      justifyContent: 'center', flexShrink: 0, marginTop: 1,
+    };
+    const textStyle = { fontSize: 14.5, color: T.ink, lineHeight: 1.55, margin: 0 };
+    return (
+      <div
+        onClick={dismiss}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 95, background: 'rgba(14,7,3,0.55)',
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        }}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            width: '100%', maxWidth: 440, background: T.cream,
+            borderRadius: '20px 20px 0 0', padding: '24px 22px calc(20px + env(safe-area-inset-bottom))',
+            animation: 'fadeUp 0.3s cubic-bezier(0.2,0.8,0.2,1) both',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+            <KinwoveStar size={22} />
+            <div style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 600, color: T.ink }}>
+              Add kinwove to your home screen
+            </div>
+          </div>
+          <div style={stepStyle}>
+            <div style={numStyle}>1</div>
+            <p style={textStyle}>Tap the <strong>Share</strong> button <span style={{ color: '#2478D2' }}><IosShareIcon /></span> at the bottom of Safari.</p>
+          </div>
+          <div style={stepStyle}>
+            <div style={numStyle}>2</div>
+            <p style={textStyle}>Scroll down and tap <strong>Add to Home Screen</strong>.</p>
+          </div>
+          <div style={{ ...stepStyle, marginBottom: 20 }}>
+            <div style={numStyle}>3</div>
+            <p style={textStyle}>Tap <strong>Add</strong> — kinwove opens like an app, and you can get notifications.</p>
+          </div>
+          <button
+            onClick={dismiss}
+            style={{
+              width: '100%', background: T.ink, color: T.cream, border: 'none',
+              borderRadius: 999, padding: '13px 20px', fontSize: 14.5, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            Got it
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{
