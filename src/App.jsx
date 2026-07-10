@@ -1979,18 +1979,6 @@ export default function App() {
   const [journeysOpen, setJourneysOpen] = useState(false);
   const [journeyProgress, setJourneyProgress] = useState({});
   const [autoSendPrompt, setAutoSendPrompt] = useState(null);
-  // Honor a ?q= deep link (from the /answers pages) for a LOGGED-IN visitor —
-  // open Ask with the question auto-sent, instead of silently dropping it.
-  useEffect(() => {
-    if (!session || !initialQ) return;
-    const pt = profile?.person_type ?? personType ?? 'curious';
-    if (!currentConvId) { const conv = createConv(pt); setCurrentConvId(conv.id); }
-    setPersonType(pt);
-    setAutoSendPrompt(initialQ);
-    setChatPanelOpen(true);
-    setInitialQ(null);
-    try { const u = new URL(window.location.href); u.searchParams.delete('q'); window.history.replaceState({}, '', u); } catch {}
-  }, [session, initialQ, profile]); // eslint-disable-line react-hooks/exhaustive-deps
   const [installTrigger, setInstallTrigger] = useState(false);
   const [userGroups, setUserGroups] = useState([]);   // [{ group, role }, ...]
   const [viewingGroupEntry, setViewingGroupEntry] = useState(null); // { group, role } | null
@@ -2068,6 +2056,21 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const { conversations, create: createConv, update: updateConv, remove: removeConv } = useConversations(session?.user?.id ?? null, profile?.sync_conversations ?? false);
+
+  // Honor a ?q= deep link (from the /answers pages) for a LOGGED-IN visitor — open
+  // Ask with the question auto-sent, instead of silently dropping it. (Placed AFTER
+  // createConv/currentConvId/initialQ are declared — referencing them earlier is a
+  // temporal-dead-zone crash.)
+  useEffect(() => {
+    if (!session || !initialQ) return;
+    const pt = profile?.person_type ?? personType ?? 'curious';
+    if (!currentConvId) { const conv = createConv(pt); setCurrentConvId(conv.id); }
+    setPersonType(pt);
+    setAutoSendPrompt(initialQ);
+    setChatPanelOpen(true);
+    setInitialQ(null);
+    try { const u = new URL(window.location.href); u.searchParams.delete('q'); window.history.replaceState({}, '', u); } catch {}
+  }, [session, initialQ, profile]); // eslint-disable-line react-hooks/exhaustive-deps
   const { notes, addNote, removeNote } = useNotes(session?.user?.id ?? null);
   // Keep a ref so stage-save effect can access the current session without
   // needing session in its dependency array (would cause double-saves).
