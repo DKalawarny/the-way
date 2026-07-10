@@ -731,6 +731,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const [chatDark, setChatDark] = useState(() => localStorage.getItem('rdr_chat_dark') === '1');
   const [selectedVerse, setSelectedVerse] = useState(null);
   const [lastVerse,     setLastVerse]     = useState(null); // persists after deselect for quick actions
+  const [copiedVerse,   setCopiedVerse]   = useState(null); // verse # just copied (transient share feedback)
   const [chatOpen,      setChatOpen]      = useState(false);
   const [chatMsgs,      setChatMsgs]      = useState([]);
   const [chatInput,     setChatInput]     = useState('');
@@ -2521,6 +2522,19 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                                 no canned prompt. For "explain why…" or any question at all. */}
                             <button onClick={() => { setSelectedVerse(null); setChatOpen(true); setTimeout(() => chatInputRef.current?.focus(), 300); }} style={{ background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`, border: '1px solid transparent', borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, color: T.cream, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                               💬 Ask
+                            </button>
+                            {/* Share/copy the verse — the #1 organic-growth action in a Bible app. */}
+                            <button
+                              onClick={() => {
+                                const abbr = VERSIONS.find((x) => x.id === bibleId)?.abbr ?? 'KJV';
+                                const text = `"${v.text}" — ${book.name} ${chNum}:${v.number} (${abbr})`;
+                                const url = 'https://www.kinwove.com';
+                                if (navigator.share) { navigator.share({ text, url }).catch(() => {}); }
+                                else { navigator.clipboard?.writeText(`${text}\n${url}`).then(() => { setCopiedVerse(v.number); setTimeout(() => setCopiedVerse(null), 1500); }, () => {}); }
+                              }}
+                              style={{ background: 'rgba(184,115,58,0.1)', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                            >
+                              {copiedVerse === v.number ? '✓ Copied' : '⇪ Share'}
                             </button>
                             {QUICK_ACTIONS.map((a) => (
                               <button key={a.id} onClick={() => sendQuickAction(a)} style={{ background: 'rgba(184,115,58,0.1)', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}>
