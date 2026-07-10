@@ -546,7 +546,14 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
           console.warn('sermon announcement insert failed', eAnn.message);
           showToast(`Sermon saved, but it didn't post to the feed: ${eAnn.message}`, 'error');
         } else {
-          showToast('Sermon published — your church can discuss it now.', 'success');
+          showToast('Sermon published — your congregation is being emailed now.', 'success');
+          // First publish (no announcement existed yet) → email the congregation.
+          // Fire-and-forget, same as the PastorDashboard draft→Live toggle.
+          authedFetch('/api/send-sermon-digest', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ churchId, sermonId }),
+          }).catch(() => {});
         }
       }
     } else if (existingAnn) {

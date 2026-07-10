@@ -3251,7 +3251,7 @@ app.post('/api/welcome-dm', requireAuth, async (req, res) => {
 //   • Top 3 posts from the feed this week
 //   • Up to 3 recent prayer requests from the congregation
 
-function digestEmailHtml({ churchName, topPosts, prayers, sermon, unsubUrl }) {
+function digestEmailHtml({ churchName, topPosts, prayers, sermon, unsubUrl, ctaUrl }) {
   const gold = '#B8733A';
   const ink  = '#2C1810';
   const soft = '#6B5344';
@@ -3289,7 +3289,7 @@ function digestEmailHtml({ churchName, topPosts, prayers, sermon, unsubUrl }) {
         <h1 style="font-family:Georgia,serif;font-size:32px;font-weight:600;color:${ink};margin:0 0 10px;letter-spacing:-0.025em;line-height:1.15">${escHtml(sermon.title)}</h1>
         ${sermon.scripture_ref ? `<div style="font-size:14px;color:${gold};font-style:italic;margin-bottom:14px">${escHtml(sermon.scripture_ref)}</div>` : ''}
         ${sermon.summary ? `<p style="font-size:15px;color:${soft};line-height:1.7;margin:0 0 22px;font-family:Georgia,serif">${escHtml(sermon.summary.slice(0, 280))}${sermon.summary.length > 280 ? '…' : ''}</p>` : ''}
-        <a href="https://www.kinwove.com" style="display:inline-block;background:${ink};color:#FDF8F0;text-decoration:none;border-radius:999px;padding:12px 26px;font-size:14px;font-weight:600">Read this week's devotional →</a>
+        <a href="${ctaUrl ?? 'https://www.kinwove.com'}" style="display:inline-block;background:${ink};color:#FDF8F0;text-decoration:none;border-radius:999px;padding:12px 26px;font-size:14px;font-weight:600">Read this week's devotional →</a>
       </td></tr>
 
       <!-- Divider -->
@@ -3315,7 +3315,7 @@ function digestEmailHtml({ churchName, topPosts, prayers, sermon, unsubUrl }) {
       <tr><td style="padding-top:8px;text-align:center">
         <p style="font-size:11px;color:#9C7B5E;line-height:1.6;margin:0">
           You're receiving this because you're a member of ${escHtml(churchName)} on kinwove.<br>
-          <a href="https://www.kinwove.com" style="color:#9C7B5E">Open kinwove</a>
+          <a href="https://www.kinwove.com" style="color:#9C7B5E">Open kinwove</a>${unsubUrl ? ` · <a href="${unsubUrl}" style="color:#9C7B5E">Unsubscribe from emails</a>` : ''}
         </p>
       </td></tr>
 
@@ -3360,9 +3360,9 @@ app.post('/api/send-sermon-digest', requireAuth, async (req, res) => {
     const sermon = Array.isArray(sermons) ? sermons[0] : null;
     if (!sermon) return res.status(404).json({ error: 'Sermon not found' });
 
-    // 3. Fetch church members
+    // 3. Fetch church members (honoring the global email opt-out — CASL)
     const membersRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?church_id=eq.${churchId}&select=id,display_name&limit=500`,
+      `${SUPABASE_URL}/rest/v1/profiles?church_id=eq.${churchId}&daily_verse_opt_out=eq.false&select=id,display_name&limit=500`,
       { headers: h }
     );
     const members = await membersRes.json();
@@ -3412,10 +3412,11 @@ app.post('/api/send-sermon-digest', requireAuth, async (req, res) => {
         name: p.is_anonymous ? 'A member (anonymous)' : (p.profiles?.display_name ?? 'A member'),
       }));
 
-    // 7. Send one email per member (fire in parallel, cap concurrency)
+    // 7. Send one email per member (fire in parallel, cap concurrency).
+    // HTML is built per member so each gets their own signed unsubscribe link.
     const from = process.env.RESEND_FROM || 'kinwove <hello@kinwove.com>';
     const subject = `New sermon: "${sermon.title}" — ${church.name}`;
-    const html = digestEmailHtml({ churchName: church.name, topPosts, prayers, sermon });
+    const ctaUrl = `https://www.kinwove.com/?church=${churchId}`;
 
     let sent = 0;
     const queue = members.filter((m) => emailMap[m.id]);
@@ -3423,10 +3424,15 @@ app.post('/api/send-sermon-digest', requireAuth, async (req, res) => {
     for (let i = 0; i < queue.length; i += 10) {
       await Promise.all(queue.slice(i, i + 10).map(async (m) => {
         try {
+          const unsubUrl = `https://www.kinwove.com/api/email/unsubscribe?u=${m.id}&t=${emailToken(m.id)}`;
+          const html = digestEmailHtml({ churchName: church.name, topPosts, prayers, sermon, unsubUrl, ctaUrl });
           const r = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ from, to: [emailMap[m.id]], subject, html }),
+            body: JSON.stringify({
+              from, to: [emailMap[m.id]], subject, html,
+              headers: { 'List-Unsubscribe': `<${unsubUrl}>` },
+            }),
           });
           if (r.ok) sent++;
         } catch {}
