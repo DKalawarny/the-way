@@ -30,6 +30,7 @@ const KIND_TITLES = {
   dm_message:              '✉ You have a new direct message',
   care_message:            '💙 You have a new care message',
   sermon_published:        '📖 A new sermon has been published',
+  church_daily_question:   '📖 Today’s question from your church',
 };
 
 function notifTitle(kind) {

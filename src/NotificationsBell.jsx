@@ -25,6 +25,7 @@ const KIND_COPY = {
   prayer_encouragement:      { verb: 'left an encouragement', Icon: Heart },
   sermon_comment:            { verb: 'commented on your sermon', Icon: BookOpen },
   sermon_published:          { verb: 'published a new sermon', Icon: BookOpen },
+  church_daily_question:     { verb: 'shared today’s question', Icon: BookOpen },
   follow:                    { verb: 'started following you', Icon: UserPlus },
   role_assigned:             { verb: 'gave you a role', Icon: null, emoji: '🎖' },
   role_invited:              { verb: 'invited you to a role', Icon: null, emoji: '🎖' },

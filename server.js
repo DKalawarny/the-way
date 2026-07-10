@@ -2246,6 +2246,93 @@ app.post('/api/cron/daily-post', async (req, res) => {
   }
 });
 
+// ── Church daily-question delivery ───────────────────────────────────────────
+// The sermon week's daily questions fire via scheduled_at, but until now they
+// surfaced buried (feed sorts by composer-time created_at) and notified no one.
+// This cron (hourly via pg_cron — scripts/2026-07-10-daily-question-cron.sql):
+//   1. finds daily_verse rows whose scheduled_at fired in the last 26h,
+//      not yet delivered (delivered_at null),
+//   2. bumps created_at so the question surfaces at the top of the church feed,
+//   3. notifies every church member (kind church_daily_question) — which the
+//      web-push poller also fans out to phones.
+// Same fail-closed auth as daily-post: CRON_SECRET header or admin bearer.
+app.post('/api/cron/daily-question', async (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  const cronOk = !!secret && req.headers['x-cron-secret'] === secret;
+  if (!cronOk) {
+    const userId = await attachUser(req);
+    if (userId && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=is_admin&limit=1`, { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } });
+      const rows = await r.json();
+      if (!rows[0]?.is_admin) return res.status(401).json({ error: 'unauthorized' });
+    } else {
+      return res.status(401).json({ error: 'unauthorized' });
+    }
+  }
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
+  try {
+    const now = new Date();
+    // 26h window (not open-ended): pre-existing fired questions from before this
+    // feature shipped must not all blast out on the first run.
+    const since = new Date(now.getTime() - 26 * 3600 * 1000);
+    const qRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/sermon_content?kind=eq.daily_verse&delivered_at=is.null&scheduled_at=lte.${now.toISOString()}&scheduled_at=gte.${since.toISOString()}&select=id,body,sermon_id,sermons!inner(id,church_id,pastor_id,is_published)&sermons.is_published=eq.true&limit=50`,
+      { headers: h }
+    );
+    const questions = await qRes.json();
+    if (!Array.isArray(questions)) throw new Error('sermon_content query failed (delivered_at column missing? run 2026-07-10-daily-question-cron.sql)');
+
+    let notified = 0;
+    for (const q of questions) {
+      const churchId = q.sermons?.church_id;
+      const pastorId = q.sermons?.pastor_id;
+      if (!churchId) continue;
+
+      // Bump to the top of the church feed + mark delivered (idempotency gate).
+      const patch = await fetch(`${SUPABASE_URL}/rest/v1/sermon_content?id=eq.${q.id}&delivered_at=is.null`, {
+        method: 'PATCH',
+        headers: { ...h, Prefer: 'return=representation' },
+        body: JSON.stringify({ delivered_at: now.toISOString(), created_at: now.toISOString() }),
+      });
+      const patched = await patch.json();
+      if (!Array.isArray(patched) || patched.length === 0) continue; // another run got it first
+
+      const mRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?church_id=eq.${churchId}&select=id&limit=2000`, { headers: h });
+      const members = await mRes.json();
+      if (!Array.isArray(members)) continue;
+
+      const snippet = String(q.body ?? '').split('\n')[0].slice(0, 140);
+      const rows = members
+        .filter((m) => m.id !== pastorId)
+        .map((m) => ({
+          recipient_id: m.id,
+          actor_id: pastorId,
+          kind: 'church_daily_question',
+          target_type: 'sermon',
+          target_id: q.sermon_id,
+          data: { snippet, church_id: churchId, sermon_content_id: q.id },
+        }));
+      if (rows.length) {
+        const nRes = await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+          method: 'POST',
+          headers: { ...h, Prefer: 'return=minimal' },
+          body: JSON.stringify(rows),
+        });
+        if (nRes.ok) notified += rows.length;
+        else console.error('[daily-question] notification insert failed:', await nRes.text());
+      }
+    }
+
+    if (questions.length) console.log(`[daily-question] delivered ${questions.length} question(s), notified ${notified} member(s)`);
+    res.json({ ok: true, delivered: questions.length, notified });
+  } catch (e) {
+    console.error('[daily-question] error:', e?.message);
+    res.status(500).json({ error: e?.message ?? 'unknown' });
+  }
+});
+
 // ── kinwove persona — admin manual post ────────────────────────────────────
 // ── AI memory: update user profile after a conversation ─────────────────────
 app.post('/api/ai/update-memory', requireAuth, async (req, res) => {
@@ -3666,6 +3753,7 @@ const PUSH_KIND_TITLES = {
   friend_request_accepted: '🤝 Your friend request was accepted',
   follow:                  '👤 Someone started following you',
   sermon_published:        '📖 A new sermon has been published',
+  church_daily_question:   '📖 Today’s question from your church',
 };
 
 app.get('/api/push/vapid-key', (_req, res) => {
