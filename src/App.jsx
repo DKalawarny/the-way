@@ -3572,6 +3572,7 @@ export default function App() {
               onAddNote={(n) => addNote({ ...n, convId: currentConvId })}
               onOpenBoard={() => setBoardOpen(true)}
               onOpenCommunity={() => { setChatPanelOpen(false); setStage('feed'); }}
+              onUpgrade={() => setShowUpgrade(true)}
               onOpenPrayer={() => { setChatPanelOpen(false); setStage('prayer'); }}
               onOpenJourneys={() => setJourneysOpen(true)}
               onShare={handleShare}

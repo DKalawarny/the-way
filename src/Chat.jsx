@@ -875,6 +875,7 @@ export default function Chat({
   onConsumePrefill,
   autoSendPrompt,
   onConsumeAutoSend,
+  onUpgrade,
   profile,
   session,
   onSignUp,
@@ -1927,7 +1928,7 @@ export default function Chat({
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
                 <button
-                  onClick={() => { setShowNudge(false); aiUsage.atLimit || document.querySelector('[data-upgrade]')?.click(); }}
+                  onClick={() => { setShowNudge(false); onUpgrade?.(); }}
                   style={{
                     background: T.goldDark, color: T.cream, border: 'none',
                     borderRadius: 999, padding: '5px 12px',

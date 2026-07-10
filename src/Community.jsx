@@ -141,10 +141,12 @@ function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, 
   }, [session?.user?.id, userGroups]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    // Verified churches with member count — exclude user's own church
+    // All public churches with member count — exclude user's own church.
+    // (Do NOT filter verification_status — that regression hid every self-reported
+    // church, making the empty-feed Discover CTA a dead end. Show a "✓ verified"
+    // chip on verified rows instead; see CLAUDE.md fix #17.)
     supabase.from('churches')
       .select('id, name, city, country, denomination, verification_status, avatar_url, profiles!church_id(count)')
-      .eq('verification_status', 'verified')
       .eq('is_public', true)
       .neq('id', profile?.church_id ?? '00000000-0000-0000-0000-000000000000')
       .limit(40)
