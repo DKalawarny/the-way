@@ -65,12 +65,12 @@ function normaliseImageFile(file) {
   return { blob, contentType: type };
 }
 
-export async function uploadPostImage(file, _userId) {
-  if (!file) throw new Error('uploadPostImage: missing file');
-  // Bypass Supabase Storage entirely — resize on canvas and return a base64
-  // data URL stored directly in posts.body_data.image_urls (jsonb). Maintains
-  // the original aspect ratio, max 1000 px on the long edge, ~150–250 KB each.
-  const dataUrl = await new Promise((resolve, reject) => {
+// Resize a file on canvas (max 1000 px long edge) and return BOTH a base64
+// data URL (for moderation + fallback) and a clean JPEG Blob (for storage).
+// The canvas re-encode is also what makes iPhone HEIC uploads safe — the
+// blob is always image/jpeg regardless of the source file's type.
+function resizePostImage(file) {
+  return new Promise((resolve, reject) => {
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);
     img.onload = () => {
@@ -83,14 +83,46 @@ export async function uploadPostImage(file, _userId) {
       canvas.width  = w;
       canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', 0.82));
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      canvas.toBlob(
+        (blob) => (blob ? resolve({ dataUrl, blob }) : resolve({ dataUrl, blob: null })),
+        'image/jpeg', 0.82
+      );
     };
     img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Could not load image')); };
     img.src = objectUrl;
   });
+}
+
+// Upload a JPEG blob to the public 'post-images' bucket under the user's own
+// folder (storage RLS requires the first path segment == auth.uid()) and
+// return the public URL, or null on any failure so callers can fall back.
+async function uploadToStorage(blob, userId, subpath) {
+  if (!blob || !userId) return null;
+  try {
+    const path = `${userId}/${subpath}`;
+    const { error } = await supabase.storage
+      .from('post-images')
+      .upload(path, blob, { contentType: 'image/jpeg', upsert: false });
+    if (error) { console.warn('[storage] upload failed:', error.message); return null; }
+    const { data } = supabase.storage.from('post-images').getPublicUrl(path);
+    return data?.publicUrl ?? null;
+  } catch (e) {
+    console.warn('[storage] upload failed:', e?.message);
+    return null;
+  }
+}
+
+export async function uploadPostImage(file, userId) {
+  if (!file) throw new Error('uploadPostImage: missing file');
+  const { dataUrl, blob } = await resizePostImage(file);
   const approved = await moderateImage(dataUrl);
   if (!approved) throw new Error('This image was flagged as inappropriate and cannot be posted.');
-  return dataUrl;
+  // Storage first (a tiny URL in the row instead of ~200 KB of base64 —
+  // cacheable, and keeps feed JSON payloads small). Base64 fallback keeps
+  // posting working even if storage rejects the upload.
+  const url = await uploadToStorage(blob, userId, `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`);
+  return url ?? dataUrl;
 }
 
 // Upload a profile asset (avatar or banner). Reuses the post-images bucket
@@ -125,9 +157,17 @@ export function resizeImageToDataUrl(file, size = 200, quality = 0.82) {
 export async function uploadProfileImage(file, userId, kind = 'avatar') {
   if (!file || !userId) throw new Error('uploadProfileImage: missing file or userId');
   // 400 px gives the lightbox enough resolution to look sharp at 280 px display
-  // size while keeping the base64 payload comfortably under 100 KB.
+  // size while keeping the payload comfortably under 100 KB.
   const dataUrl = await resizeImageToDataUrl(file, 400, 0.82);
   const approved = await moderateImage(dataUrl);
   if (!approved) throw new Error('This photo was flagged as inappropriate. Please choose a different image.');
+  // Store in the bucket (profile subfolder) instead of base64-in-row; the
+  // avatar URL is hydrated into every feed/comment payload, so this is the
+  // highest-leverage byte savings. Falls back to base64 if storage fails.
+  try {
+    const blob = await (await fetch(dataUrl)).blob();
+    const url = await uploadToStorage(blob, userId, `profile/${kind}-${Date.now()}.jpg`);
+    if (url) return url;
+  } catch {}
   return dataUrl;
 }
