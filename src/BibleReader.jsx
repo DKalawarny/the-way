@@ -1246,6 +1246,17 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
       setVerses(parsed);
       // pendingVerseScroll is consumed by the useEffect below, AFTER React
       // commits the new verses to the DOM — do not query the DOM here.
+
+      // Prefetch the next chapter (fire-and-forget) — the service worker
+      // caches /api/bible/* responses, so "next" always opens instantly and
+      // keeps working offline.
+      try {
+        const idx = ALL_BOOKS.findIndex((b) => b.id === bookId);
+        const nb = chNum + 1 <= (ALL_BOOKS[idx]?.ch ?? 0)
+          ? { id: bookId, ch: chNum + 1 }
+          : (ALL_BOOKS[idx + 1] ? { id: ALL_BOOKS[idx + 1].id, ch: 1 } : null);
+        if (nb) authedFetch(`/api/bible/${bibleId}/chapters/${nb.id}.${nb.ch}`).catch(() => {});
+      } catch {}
     } catch (e) {
       setError('Could not load this chapter. Try again.');
     }

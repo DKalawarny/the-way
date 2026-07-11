@@ -1,6 +1,6 @@
 // Cache version — bump this string when you deploy a breaking change
 // so all clients immediately drop the old cache and fetch fresh assets.
-const CACHE = 'kinwove-v3';
+const CACHE = 'kinwove-v4';
 
 // ── Web Push (VAPID) ──────────────────────────────────────────────────────────
 // Handles push events when the app is closed (requires VAPID keys on server +
@@ -44,9 +44,12 @@ self.addEventListener('install', (e) => {
 });
 
 self.addEventListener('activate', (e) => {
-  // Nuke every cache so no stale Vite source files remain
+  // Nuke stale caches — but never the offline Bible (immutable chapter text;
+  // wiping it on every deploy would defeat offline reading).
   e.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+    caches.keys().then((keys) => Promise.all(
+      keys.filter((k) => k !== 'kinwove-bible-v1').map((k) => caches.delete(k))
+    ))
   );
   self.clients.claim();
 });
@@ -65,6 +68,26 @@ self.addEventListener('fetch', (e) => {
   if (url.hostname.includes('supabase.co')) return;
   if (url.hostname.includes('googleapis.com')) return;
   if (url.hostname.includes('quickchart.io')) return;
+
+  // Bible chapter text is immutable — cache-first makes read chapters (and the
+  // prefetched next chapter) work fully offline. Its own cache bucket so a
+  // CACHE version bump never wipes someone's offline Bible.
+  // (Audio/signed-URL endpoints live under /api/bible-audio/ — excluded.)
+  if (url.pathname.startsWith('/api/bible/')) {
+    e.respondWith(
+      caches.open('kinwove-bible-v1').then((cache) =>
+        cache.match(request).then((cached) => {
+          if (cached) return cached;
+          return fetch(request).then((res) => {
+            if (res.ok) cache.put(request, res.clone());
+            return res;
+          });
+        })
+      )
+    );
+    return;
+  }
+
   if (url.pathname.startsWith('/api/')) return;
 
   // Production only: cache hashed build assets (/assets/*.js, /assets/*.css).
