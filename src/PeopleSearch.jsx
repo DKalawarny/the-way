@@ -195,7 +195,21 @@ export default function PeopleSearch({ session, profile, onClose, onViewProfile,
   const runSearch = useCallback(async (q, city) => {
     const hasQuery = q.trim();
     const hasCity = (city || '').trim();
-    if (!hasQuery && !hasCity) { setResults([]); setLoading(false); return; }
+    if (!hasQuery && !hasCity) {
+      // Empty search = browse, not a dead end: show the newest members.
+      setLoading(true);
+      let browse = supabase
+        .from('profiles')
+        .select('id, display_name, avatar_config, avatar_url, person_type, city, country, tradition')
+        .not('display_name', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (session?.user?.id) browse = browse.neq('id', session.user.id);
+      const { data } = await browse;
+      setResults(data ?? []);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const uid = session?.user?.id;
     let req = supabase
@@ -215,6 +229,11 @@ export default function PeopleSearch({ session, profile, onClose, onViewProfile,
     setResults(data ?? []);
     setLoading(false);
   }, [session]);
+
+  // Load the browse list (newest members) as soon as the panel opens.
+  useEffect(() => {
+    runSearch('', '');
+  }, [runSearch]);
 
   const runChurchSearch = useCallback(async (q) => {
     const term = q.trim();
@@ -515,13 +534,13 @@ export default function PeopleSearch({ session, profile, onClose, onViewProfile,
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px 20px' }}>
           {tab === 'people' && (
             <>
-              {!isSearching && (
-                <div style={{ textAlign: 'center', padding: '40px 20px', color: T.inkMuted, fontSize: 14 }}>
-                  Start typing to find people by name.
-                </div>
-              )}
-              {isSearching && loading && (
+              {loading && (
                 <div style={{ textAlign: 'center', padding: '32px 0', color: T.inkMuted, fontSize: 14 }}>Searching…</div>
+              )}
+              {!isSearching && !loading && results.length > 0 && (
+                <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 10, letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 600 }}>
+                  New on kinwove
+                </div>
               )}
               {showPeopleEmpty && (
                 <div style={{ textAlign: 'center', padding: '40px 20px' }}>
@@ -542,7 +561,7 @@ export default function PeopleSearch({ session, profile, onClose, onViewProfile,
                   <div style={{ fontSize: 14, color: T.inkMuted }}>Try a different name or city.</div>
                 </div>
               )}
-              {isSearching && !loading && results.length > 0 && (
+              {!loading && results.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {results.map((p) => (
                     <PersonCard
