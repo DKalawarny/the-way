@@ -369,12 +369,15 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
   const DIMLO = 'rgba(253,248,240,0.38)';
   const RULE  = 'rgba(255,255,255,0.06)';
 
+  // These are enforced server-side (truthfulness rules on every AI surface,
+  // commentary grounding, live scripture-reference verification) — keep the
+  // copy in step with what the system actually guarantees.
   const trustPoints = [
-    'Strictly rooted in scripture — no invented theological positions',
-    'Every claim referenced back to the actual text, book and verse',
-    'Honest when scholars genuinely disagree — it tells you that',
-    'No denominational bias — you\'ll hear where traditions differ',
-    'Designed to guide people toward Jesus, never to push an agenda',
+    'Never invents quotes, statistics, or scripture — "I don\'t know" is built in',
+    'Commentary citations are quoted from real sources, never recalled from memory',
+    'Every scripture reference is checked against the actual Bible text',
+    'Honest when faithful Christians genuinely disagree — it tells you that',
+    'No denominational agenda — designed to point to Jesus, never to push',
   ];
 
   const whoCards = [

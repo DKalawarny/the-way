@@ -1201,7 +1201,10 @@ export function renderAnswerPage(a) {
     </div>
     ${related.length ? `<div class="related"><div class="cat">Keep exploring</div>${related.map((r) => `<a href="${SITE}/answers/${r.slug}">${esc(r.question)} →</a>`).join('')}</div>` : ''}
     <div class="updated">Last updated ${esc(a.updated)}</div>
-    <div class="foot"><a href="${SITE}/answers">All questions</a> · <a href="${SITE}">kinwove — honest answers to hard faith questions</a></div>`;
+    <div class="foot">
+      <p style="font-style:italic;line-height:1.7;margin:0 0 10px">kinwove's answers are designed never to invent quotes, statistics, or scripture — every Bible reference is verified against the actual text, and where faithful Christians genuinely disagree, we say so.</p>
+      <a href="${SITE}/answers">All questions</a> · <a href="${SITE}">kinwove — honest answers to hard faith questions</a>
+    </div>`;
   return shell({
     title: `${a.question} | kinwove`,
     description: a.answer.slice(0, 155),
