@@ -235,6 +235,12 @@ app.get('/api/health/crons', async (_req, res) => {
 const _errorAlertSeen = new Map(); // message → last-emailed epoch ms
 const ERROR_ALERT_COOLDOWN_MS = 30 * 60 * 1000; // 1 email per identical error / 30 min
 
+// Flood guard: a rotating error message defeats the per-message dedup, so cap
+// total alert emails per hour regardless of content. Reports still log.
+let _errorAlertHour = 0;
+let _errorAlertHourCount = 0;
+const ERROR_ALERTS_PER_HOUR = 12;
+
 app.post('/api/client-error', async (req, res) => {
   try {
     const { message, stack, url, userAgent, kind, componentStack } = req.body ?? {};
@@ -250,8 +256,11 @@ app.post('/api/client-error', async (req, res) => {
     if (alertTo && process.env.RESEND_API_KEY) {
       const key = msg.slice(0, 200);
       const now = Date.now();
-      if (now - (_errorAlertSeen.get(key) ?? 0) > ERROR_ALERT_COOLDOWN_MS) {
+      const hour = Math.floor(now / 3600000);
+      if (hour !== _errorAlertHour) { _errorAlertHour = hour; _errorAlertHourCount = 0; }
+      if (now - (_errorAlertSeen.get(key) ?? 0) > ERROR_ALERT_COOLDOWN_MS && _errorAlertHourCount < ERROR_ALERTS_PER_HOUR) {
         _errorAlertSeen.set(key, now);
+        _errorAlertHourCount++;
         const html = `<pre style="white-space:pre-wrap;font-size:13px;color:#333">${
           [`${kind ? `[${kind}] ` : ''}${msg}`, '', `URL: ${url ?? '—'}`, `Agent: ${userAgent ?? '—'}`, '', String(stack ?? '').slice(0, 2500)]
             .join('\n').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))
@@ -499,10 +508,38 @@ const ELEVEN_VOICES = {
   shimmer: '6rOxfAnZpbM3VIEhFaeV', // alias → Grace
 };
 
+// Server-side pastor gate for the expensive generator endpoints (client hid
+// them, but nothing stopped a non-pastor calling the API directly).
+async function requirePastor(req, res, next) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}&select=is_pastor&limit=1`,
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } });
+    const [p] = await r.json();
+    if (!p?.is_pastor) return res.status(403).json({ error: 'pastor access required' });
+    next();
+  } catch (e) {
+    console.error('[requirePastor]', e?.message);
+    res.status(500).json({ error: 'auth check failed' });
+  }
+}
+
 // ── Text-to-Speech (ElevenLabs) ───────────────────────────────────────────────
+// Monthly ceiling: ElevenLabs credits are finite (~40k chars/mo on Starter);
+// past the cap we 429 and the client falls back to the device voice — degraded,
+// never broken. In-memory, resets on deploy/month.
+const TTS_MONTHLY_CAP = parseInt(process.env.TTS_MONTHLY_CAP ?? '2500', 10);
+let _ttsMonth = '';
+let _ttsMonthCount = 0;
+
 app.post('/api/tts', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 60 }), async (req, res) => {
   const ELEVEN_KEY = process.env.ELEVENLABS_API_KEY;
   if (!ELEVEN_KEY) return res.status(503).json({ error: 'TTS not configured' });
+
+  const month = new Date().toISOString().slice(0, 7);
+  if (month !== _ttsMonth) { _ttsMonth = month; _ttsMonthCount = 0; }
+  if (_ttsMonthCount >= TTS_MONTHLY_CAP) return res.status(429).json({ error: 'tts monthly cap reached' });
+  _ttsMonthCount++;
 
   const { text, voice = 'onyx' } = req.body;
   if (!text || typeof text !== 'string') return res.status(400).json({ error: 'text required' });
@@ -1217,7 +1254,7 @@ const TARGET_KIND_INSTRUCTIONS = {
 // ── Walk generation ───────────────────────────────────────────────────────────
 // Dedicated endpoint so we can set max_tokens based on walk length
 // (the general /api/chat cap of 2048 is too low for anything > 3 days).
-app.post('/api/walk/generate', requireAuth, limitAuthed({ capacity: 6, refillPerSec: 6 / 600 }), async (req, res) => {
+app.post('/api/walk/generate', requireAuth, requirePastor, limitAuthed({ capacity: 6, refillPerSec: 6 / 600 }), async (req, res) => {
   const { title, theme, scripture, audience, length } = req.body ?? {};
   if (!title || !theme) return res.status(400).json({ error: 'title and theme required' });
   if (typeof length !== 'number' || length < 1 || length > 30) return res.status(400).json({ error: 'invalid length' });
@@ -1292,7 +1329,7 @@ Each must stand alone, quote scripture faithfully if quoted, and end warm — ne
 
 newsletter: subject ≤60 chars (no clickbait); body 120-200 words — what the sermon covered, one takeaway for the week, one line inviting people to the discussion. Write it so a church admin can paste it straight into their email.`;
 
-app.post('/api/sermon/repurpose', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 300 }), async (req, res) => {
+app.post('/api/sermon/repurpose', requireAuth, requirePastor, limitAuthed({ capacity: 8, refillPerSec: 8 / 300 }), async (req, res) => {
   const { title, scripture_ref, summary } = req.body ?? {};
   if (!summary || typeof summary !== 'string' || !summary.trim()) {
     return res.status(400).json({ error: 'summary required' });
@@ -1320,7 +1357,7 @@ app.post('/api/sermon/repurpose', requireAuth, limitAuthed({ capacity: 8, refill
   }
 });
 
-app.post('/api/sermon/generate', requireAuth, limitAuthed({ capacity: 12, refillPerSec: 12 / 300 }), async (req, res) => {
+app.post('/api/sermon/generate', requireAuth, requirePastor, limitAuthed({ capacity: 12, refillPerSec: 12 / 300 }), async (req, res) => {
   const { title, scripture_ref, summary, targetKind, singleDay, existingItems } = req.body ?? {};
   if (!summary || typeof summary !== 'string' || !summary.trim()) {
     return res.status(400).json({ error: 'summary required' });
@@ -1834,6 +1871,7 @@ app.post('/api/church/role-invite', requireAuth, limitAuthed({ capacity: 20, ref
   if (!church_id || !user_id || !role_key) {
     return res.status(400).json({ error: 'church_id, user_id, role_key required' });
   }
+  if (!isUuid(church_id) || !isUuid(user_id)) return res.status(400).json({ error: 'invalid id' });
 
   const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
 
@@ -2868,6 +2906,7 @@ app.post('/api/church/scrape-emails', requireAuth, limitAuthed({ capacity: 5, re
 app.post('/api/church/send-code', requireAuth, limitAuthed({ capacity: 3, refillPerSec: 3 / 300 }), async (req, res) => {
   const { application_id, email } = req.body ?? {};
   if (!application_id || !email) return res.status(400).json({ error: 'application_id and email required' });
+  if (!isUuid(application_id)) return res.status(400).json({ error: 'invalid id' });
   if (!/^[\w.+%-]+@[\w.-]+\.[a-z]{2,}$/i.test(email)) return res.status(400).json({ error: 'invalid email' });
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
   const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' };
@@ -2892,6 +2931,7 @@ app.post('/api/church/send-code', requireAuth, limitAuthed({ capacity: 3, refill
 app.post('/api/church/verify-code', requireAuth, limitAuthed({ capacity: 10, refillPerSec: 10 / 300 }), async (req, res) => {
   const { application_id, code } = req.body ?? {};
   if (!application_id || !code) return res.status(400).json({ error: 'application_id and code required' });
+  if (!isUuid(application_id)) return res.status(400).json({ error: 'invalid id' });
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
   const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' };
   const apps = await fetch(`${SUPABASE_URL}/rest/v1/pastor_applications?id=eq.${application_id}&user_id=eq.${req.userId}&select=*`, { headers: h }).then(r => r.json());
@@ -2938,6 +2978,7 @@ app.post('/api/church/verify-code', requireAuth, limitAuthed({ capacity: 10, ref
 app.post('/api/church/submit-unverified', requireAuth, limitAuthed({ capacity: 2, refillPerSec: 2 / 600 }), async (req, res) => {
   const { application_id } = req.body ?? {};
   if (!application_id) return res.status(400).json({ error: 'application_id required' });
+  if (!isUuid(application_id)) return res.status(400).json({ error: 'invalid id' });
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
   const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' };
   const apps = await fetch(`${SUPABASE_URL}/rest/v1/pastor_applications?id=eq.${application_id}&user_id=eq.${req.userId}&select=*`, { headers: h }).then(r => r.json());
@@ -2978,6 +3019,61 @@ app.post('/api/church/submit-unverified', requireAuth, limitAuthed({ capacity: 2
 // ── Delete own account ──────────────────────────────────────────────────────
 // Verifies the caller's JWT via requireAuth, then uses the service-role key to
 // remove the auth.users row. Profile + child rows cascade via FK constraints.
+// ── Church deletion (server-side) ─────────────────────────────────────────────
+// Was raw client-side Supabase deletes — RLS-fragile and never touched Stripe.
+// Verifies ownership, cancels the church subscription (billed to the pastor's
+// customer — guarded until STRIPE_SECRET_KEY exists), releases members, then
+// deletes roles/sermons/church.
+app.delete('/api/church/:churchId', requireAuth, limitAuthed({ capacity: 3, refillPerSec: 3 / 600 }), async (req, res) => {
+  const { churchId } = req.params;
+  if (!isUuid(churchId)) return res.status(400).json({ error: 'invalid id' });
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
+  try {
+    const cr = await fetch(`${SUPABASE_URL}/rest/v1/churches?id=eq.${churchId}&select=id,pastor_id&limit=1`, { headers: h });
+    const [church] = await cr.json();
+    if (!church) return res.status(404).json({ error: 'church not found' });
+    if (church.pastor_id !== req.userId) {
+      const rr = await fetch(`${SUPABASE_URL}/rest/v1/church_roles?church_id=eq.${churchId}&user_id=eq.${req.userId}&is_owner=eq.true&select=id&limit=1`, { headers: h });
+      const roles = await rr.json();
+      if (!Array.isArray(roles) || !roles.length) return res.status(403).json({ error: 'owner access required' });
+    }
+
+    // Cancel the church subscription (bills the pastor's personal customer).
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (stripeKey && church.pastor_id) {
+      try {
+        const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${church.pastor_id}&select=stripe_customer_id&limit=1`, { headers: h });
+        const [prof] = await pr.json();
+        if (prof?.stripe_customer_id) {
+          const sr = await fetch(`https://api.stripe.com/v1/subscriptions?customer=${encodeURIComponent(prof.stripe_customer_id)}&status=active&limit=100`,
+            { headers: { Authorization: `Bearer ${stripeKey}` } });
+          const subs = (await sr.json())?.data ?? [];
+          for (const s of subs) {
+            await fetch(`https://api.stripe.com/v1/subscriptions/${s.id}`,
+              { method: 'DELETE', headers: { Authorization: `Bearer ${stripeKey}` } });
+          }
+        }
+      } catch (e) { console.error('[church-delete] stripe cancel:', e?.message); }
+    }
+
+    // Release members (their accounts survive; they just lose the church link),
+    // then remove church data. FKs cascade the rest.
+    await fetch(`${SUPABASE_URL}/rest/v1/profiles?church_id=eq.${churchId}`, {
+      method: 'PATCH', headers: { ...h, Prefer: 'return=minimal' }, body: JSON.stringify({ church_id: null }),
+    });
+    await fetch(`${SUPABASE_URL}/rest/v1/church_roles?church_id=eq.${churchId}`, { method: 'DELETE', headers: h });
+    await fetch(`${SUPABASE_URL}/rest/v1/sermons?church_id=eq.${churchId}`, { method: 'DELETE', headers: h });
+    const dr = await fetch(`${SUPABASE_URL}/rest/v1/churches?id=eq.${churchId}`, { method: 'DELETE', headers: h });
+    if (!dr.ok) return res.status(500).json({ error: 'church delete failed' });
+
+    console.log(`[church-delete] ${churchId} deleted by ${req.userId}`);
+    res.json({ ok: true });
+  } catch (e) {
+    safeError(res, e, 'church-delete');
+  }
+});
+
 app.delete('/api/account', requireAuth, async (req, res) => {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
     return res.status(503).json({ error: 'account deletion not configured' });
@@ -3315,7 +3411,7 @@ If you're not sure where to start, just tap **Ask** (the ✦ in the bottom bar) 
 
 Glad you're here.`;
 
-app.post('/api/welcome-dm', requireAuth, async (req, res) => {
+app.post('/api/welcome-dm', requireAuth, limitAuthed({ capacity: 3, refillPerSec: 3 / 3600 }), async (req, res) => {
   const userId = req.userId;
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
     return res.status(503).json({ error: 'not configured' });
@@ -3486,6 +3582,7 @@ function escHtml(s) {
 app.post('/api/send-sermon-digest', requireAuth, async (req, res) => {
   const { churchId, sermonId } = req.body ?? {};
   if (!churchId || !sermonId) return res.status(400).json({ error: 'churchId and sermonId required' });
+  if (!isUuid(churchId) || !isUuid(sermonId)) return res.status(400).json({ error: 'invalid id' });
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
 
   const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
