@@ -3,6 +3,11 @@ import { supabase } from './supabase.js';
 import { churchHasAccess } from './planConfig.js';
 
 export const TRIAL_DAYS               = 35;
+
+// Payments go-live switch. Until Stripe is live, real users CANNOT pay —
+// so expired trials must not lock anyone out, and walls must not sell.
+// At Stripe go-live: set VITE_PAYMENTS_LIVE=true on Render and redeploy.
+export const PAYMENTS_LIVE = import.meta.env.VITE_PAYMENTS_LIVE === 'true';
 export const CHURCH_BASE_PRICE        = '$79 CAD/mo';
 export const CHURCH_PRO_PRICE         = '$149 CAD/mo';
 export const PRO_PRICE                = CHURCH_BASE_PRICE; // kept for legacy imports
@@ -68,9 +73,18 @@ export function usePlan(churchId) {
   const trialEnd = trialStartedAt
     ? new Date(trialStartedAt).getTime() + TRIAL_DAYS * MS_DAY
     : null;
-  const daysLeft     = trialEnd ? Math.max(0, Math.ceil((trialEnd - now) / MS_DAY)) : 0;
-  const trialExpired = plan === 'trial' && daysLeft === 0;
-  const hasAccess    = churchHasAccess(plan, daysLeft);
+  let daysLeft     = trialEnd ? Math.max(0, Math.ceil((trialEnd - now) / MS_DAY)) : 0;
+  let trialExpired = plan === 'trial' && daysLeft === 0;
+  let hasAccess    = churchHasAccess(plan, daysLeft);
+
+  // No payment path exists yet — an "expired" trial would be a dead end with
+  // an Upgrade button nobody can complete. Keep church tools open (and the
+  // countdown banners calm) until payments go live.
+  if (!PAYMENTS_LIVE && plan === 'trial') {
+    trialExpired = false;
+    hasAccess    = true;
+    daysLeft     = Math.max(daysLeft, 14);
+  }
 
   return { loading: false, plan, hasAccess, daysLeft, trialExpired, trialStartedAt };
 }

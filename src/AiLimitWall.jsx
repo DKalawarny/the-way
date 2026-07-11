@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { T } from './theme.js';
 import { TOPUP_MESSAGES, TOPUP_PRICE, PLAN_LIMITS } from './useAiUsage.js';
 import { supabase } from './supabase.js';
+import { PAYMENTS_LIVE } from './usePlan.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 // ── Promo code redemption ─────────────────────────────────────────────────────
@@ -265,18 +266,24 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
             </div>
           </div>
 
-          <button
-            onClick={() => handleUpgrade('premium')}
-            disabled={!!upgrading}
-            style={{
-              ...ctaStyle(T.ink),
-              border: 'none',
-              cursor: upgrading ? 'wait' : 'pointer',
-              opacity: upgrading ? 0.7 : 1,
-            }}
-          >
-            {upgrading === 'premium' ? 'Redirecting\u2026' : 'Upgrade now \u2192'}
-          </button>
+          {PAYMENTS_LIVE ? (
+            <button
+              onClick={() => handleUpgrade('premium')}
+              disabled={!!upgrading}
+              style={{
+                ...ctaStyle(T.ink),
+                border: 'none',
+                cursor: upgrading ? 'wait' : 'pointer',
+                opacity: upgrading ? 0.7 : 1,
+              }}
+            >
+              {upgrading === 'premium' ? 'Redirecting\u2026' : 'Upgrade now \u2192'}
+            </button>
+          ) : (
+            <div style={{ fontSize: 13, color: T.inkSoft, textAlign: 'center', lineHeight: 1.6, maxWidth: 280 }}>
+              Paid plans open soon. Your free questions come back every Monday \u2014 see you then, or drop a promo code below.
+            </div>
+          )}
 
           {!isChurchPlan && <PromoCodeInput onSuccess={onTopupSuccess ?? (() => window.location.reload())} />}
         </>
@@ -292,7 +299,7 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
             </div>
           </div>
 
-          <div style={{
+          {PAYMENTS_LIVE && <div style={{
             background: T.parchment, border: `1px solid ${T.goldLight}`,
             borderRadius: 14, padding: '16px 20px', width: '100%', maxWidth: 320,
             textAlign: 'center',
@@ -303,11 +310,17 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
             <div style={{ fontSize: 13, color: T.inkSoft, marginTop: 2 }}>
               {TOPUP_MESSAGES} more AI messages · added instantly
             </div>
-          </div>
+          </div>}
 
           {!isChurchPlan && <PromoCodeInput onSuccess={onTopupSuccess ?? (() => window.location.reload())} />}
 
-          <button
+          {!PAYMENTS_LIVE && (
+            <div style={{ fontSize: 13, color: T.inkSoft, textAlign: 'center', lineHeight: 1.6, maxWidth: 280 }}>
+              Top-ups open soon — your messages reset on your next cycle.
+            </div>
+          )}
+
+          {PAYMENTS_LIVE && <button
             onClick={handleTopup}
             disabled={!!upgrading}
             style={{
@@ -318,7 +331,7 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
             }}
           >
             {upgrading === 'topup' ? 'Redirecting\u2026' : `Top up ${TOPUP_PRICE} \u2192 ${TOPUP_MESSAGES} messages`}
-          </button>
+          </button>}
         </>
       )}
     </div>
