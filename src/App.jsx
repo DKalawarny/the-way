@@ -1634,7 +1634,37 @@ function Board({ open, onClose, notes, onRemove, onGoDeeper, onSharePublicly }) 
 // Full-width dark bar pinned to the very top of the viewport. Left segment
 // (240px, aligned with sidebar) holds the wordmark; right segment holds the
 // daily verse. The sidebar starts BELOW this bar at top:56px.
-function AppHeader({ onOpenBible, onVerseClick }) {
+// Live verse streak for the header chip — only counts if it's current
+// (last marked today or yesterday); a stale streak shows nothing.
+function currentStreak(profile) {
+  const n = profile?.verse_streak ?? 0;
+  if (n < 2 || !profile?.verse_streak_at) return 0;
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const today = iso(new Date());
+  const y = new Date(); y.setDate(y.getDate() - 1);
+  return (profile.verse_streak_at === today || profile.verse_streak_at === iso(y)) ? n : 0;
+}
+
+function StreakChip({ streak, onClick, compact = false }) {
+  if (!streak) return null;
+  return (
+    <button
+      onClick={onClick}
+      title={`${streak}-day verse streak — tap for today's verse`}
+      style={{
+        flexShrink: 0, display: 'flex', alignItems: 'center', gap: 3,
+        background: 'rgba(232,181,99,0.14)', border: '1px solid rgba(232,181,99,0.3)',
+        borderRadius: 999, padding: compact ? '3px 8px' : '4px 10px',
+        fontSize: compact ? 11 : 12, fontWeight: 700, color: T.honey,
+        cursor: 'pointer', whiteSpace: 'nowrap',
+      }}
+    >
+      🔥 {streak}
+    </button>
+  );
+}
+
+function AppHeader({ onOpenBible, onVerseClick, streak }) {
   const verse = getDailyVerse();
   return (
     <div style={{
@@ -1677,6 +1707,7 @@ function AppHeader({ onOpenBible, onVerseClick }) {
           textShadow: '0 1px 0 rgba(0,0,0,0.4)',
         }}>{verse.ref} ↗</span>
       </button>
+      <StreakChip streak={streak} onClick={onVerseClick} />
       {/* Reserved right gutter for the 3 FABs (3×44 + 2×8 gaps + 12px edge = 160px + 4px buffer) */}
       <div style={{ width: 164, flexShrink: 0 }} aria-hidden="true" />
     </div>
@@ -1686,7 +1717,7 @@ function AppHeader({ onOpenBible, onVerseClick }) {
 // ── Mobile global top header ────────────────────────────────────────────────
 // Mirrors AppHeader but for mobile — same dark walnut bar, ✦ kinwove, daily
 // verse. Shown on every page when logged in so the brand is always anchored.
-function MobileHeader({ onOpenBible, onVerseClick }) {
+function MobileHeader({ onOpenBible, onVerseClick, streak }) {
   const verse = getDailyVerse();
   return (
     <div style={{
@@ -1728,6 +1759,7 @@ function MobileHeader({ onOpenBible, onVerseClick }) {
           {verse.ref} ↗
         </span>
       </button>
+      <StreakChip streak={streak} onClick={onVerseClick} compact />
     </div>
   );
 }
@@ -3011,8 +3043,8 @@ export default function App() {
       {/* ── Global dark header (all devices when logged in) ─────────── */}
       {showNav && (
         isDesktop
-          ? <AppHeader onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }} onVerseClick={() => setShowVerseCard(true)} />
-          : <MobileHeader onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }} onVerseClick={() => setShowVerseCard(true)} />
+          ? <AppHeader onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }} onVerseClick={() => setShowVerseCard(true)} streak={currentStreak(profile)} />
+          : <MobileHeader onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }} onVerseClick={() => setShowVerseCard(true)} streak={currentStreak(profile)} />
       )}
 
       {/* ── Main stage ─────────────────────────────────────────────── */}
