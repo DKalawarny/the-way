@@ -2649,7 +2649,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                           <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap', background: dark ? '#1A0E07' : T.white, border: `1px solid ${C.border}`, borderRadius: 12, padding: '8px 10px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', margin: '4px 0 4px 4px' }}>
                             {/* Free-form ask — opens this book's chat with the input focused,
                                 no canned prompt. For "explain why…" or any question at all. */}
-                            <button onClick={() => { setSelectedVerse(null); setChatOpen(true); setTimeout(() => chatInputRef.current?.focus(), 300); }} style={{ background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`, border: '1px solid transparent', borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, color: T.cream, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                            <button onClick={() => { setSelectedVerse(null); setChatOpen(true); setTimeout(() => chatInputRef.current?.focus(), 300); }} style={{ background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`, border: '1px solid transparent', borderRadius: 999, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: T.cream, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                               💬 Ask
                             </button>
                             {/* Share/copy the verse — the #1 organic-growth action in a Bible app. */}
@@ -2661,7 +2661,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                                 if (navigator.share) { navigator.share({ text, url }).catch(() => {}); }
                                 else { navigator.clipboard?.writeText(`${text}\n${url}`).then(() => { setCopiedVerse(v.number); setTimeout(() => setCopiedVerse(null), 1500); }, () => {}); }
                               }}
-                              style={{ background: 'rgba(184,115,58,0.1)', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                              style={{ background: 'rgba(184,115,58,0.1)', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}
                             >
                               {copiedVerse === v.number ? '✓ Copied' : '⇪ Share'}
                             </button>
@@ -2674,7 +2674,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                                     onClick={() => toggleHighlight(v, name)}
                                     title={hlMap[v.number] === name ? 'Remove highlight' : `Highlight ${name}`}
                                     style={{
-                                      width: 20, height: 20, borderRadius: '50%', cursor: 'pointer', padding: 0,
+                                      width: 26, height: 26, borderRadius: '50%', cursor: 'pointer', padding: 0,
                                       background: tint.replace(/[\d.]+\)$/, '0.85)'),
                                       border: hlMap[v.number] === name ? `2px solid ${C.verse}` : `1px solid ${C.border}`,
                                     }}
@@ -2683,17 +2683,17 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                               </span>
                             )}
                             {QUICK_ACTIONS.map((a) => (
-                              <button key={a.id} onClick={() => sendQuickAction(a)} style={{ background: 'rgba(184,115,58,0.1)', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                              <button key={a.id} onClick={() => sendQuickAction(a)} style={{ background: 'rgba(184,115,58,0.1)', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                 {a.label}
                               </button>
                             ))}
                             {session && (
-                              <button onClick={() => openNote(v)} style={{ background: noteMap[v.number] ? 'rgba(184,115,58,0.18)' : 'transparent', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                              <button onClick={() => openNote(v)} style={{ background: noteMap[v.number] ? 'rgba(184,115,58,0.18)' : 'transparent', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                 {noteMap[v.number] ? '✏ Edit note' : '✏ Note'}
                               </button>
                             )}
                             {(rdTtsSupported || usingAudio) && (
-                              <button onClick={() => startReadingFrom(v.number)} style={{ background: 'transparent', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                              <button onClick={() => startReadingFrom(v.number)} style={{ background: 'transparent', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                 ▶ Read from here
                               </button>
                             )}
@@ -2701,7 +2701,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                               onClick={() => setSelectedVerse(null)}
                               aria-label="Close verse menu"
                               title="Close"
-                              style={{ background: 'transparent', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, width: 26, height: 26, padding: 0, fontSize: 13, fontWeight: 600, color: C.verse, cursor: 'pointer', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                              style={{ background: 'transparent', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, width: 34, height: 34, padding: 0, fontSize: 14, fontWeight: 600, color: C.verse, cursor: 'pointer', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                             >
                               ✕
                             </button>

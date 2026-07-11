@@ -1184,7 +1184,7 @@ export default function PostCard({
                 background: active ? r.activeBg : 'transparent',
                 border: `1px solid ${active ? r.activeBorder : 'rgba(26,17,8,0.13)'}`,
                 borderRadius: 999,
-                padding: '5px 12px',
+                padding: '9px 12px', // was 5px — ~40px tap target for older hands
                 fontSize: 12.5, fontWeight: active ? 600 : 400,
                 color: active ? r.activeText : '#6B5544',
                 cursor: 'pointer',

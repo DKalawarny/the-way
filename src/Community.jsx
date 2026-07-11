@@ -725,8 +725,9 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
           <PostImageGrid urls={post.body_data?.image_urls} />
         </div>
 
-        {/* Quiet reaction row — no pill backgrounds */}
-        <div style={{ padding: '10px 22px', borderTop: `1px solid ${T.line}`, display: 'flex', gap: 0, alignItems: 'center', flexWrap: 'wrap' }}>
+        {/* Quiet reaction row — no pill backgrounds. 11px vpad = ~40px tap
+            targets (a11y: the old 6px made ~30px, too small for older hands). */}
+        <div style={{ padding: '5px 22px', borderTop: `1px solid ${T.line}`, display: 'flex', gap: 0, alignItems: 'center', flexWrap: 'wrap' }}>
           {REACTIONS.map((r, i) => {
             const count  = post.reaction_counts?.[r.kind] ?? 0;
             const active = myReaction === r.kind;
@@ -734,9 +735,10 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
               <button
                 key={r.kind}
                 onClick={() => onReact(post.id, r.kind, active)}
+                title={r.label}
                 style={{
                   background: 'none', border: 'none',
-                  padding: i === 0 ? '6px 10px 6px 0' : '6px 10px',
+                  padding: i === 0 ? '11px 10px 11px 0' : '11px 10px',
                   fontSize: 13,
                   color: active ? T.gold : T.inkSoft,
                   cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -753,7 +755,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
             onClick={() => setShareOpen(true)}
             style={{
               background: 'none', border: 'none',
-              padding: '6px 8px', fontSize: 13,
+              padding: '11px 8px', fontSize: 13,
               color: T.inkSoft, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5,
               fontFamily: T.sans, transition: 'color 0.15s',
             }}
@@ -764,7 +766,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
           <button onClick={() => setCommentsOpen(true)} style={{
             background: 'none', border: 'none', color: T.inkMuted,
             fontSize: 13, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px',
+            display: 'flex', alignItems: 'center', gap: 4, padding: '11px 8px',
           }}>
             💬 {localReplies.length > 0 ? localReplies.length : 'Comment'}
           </button>

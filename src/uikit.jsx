@@ -22,7 +22,8 @@ const TOAST_PALETTE = {
   error:   { bg: '#7A2A1F',    fg: '#FCE8E2', rail: T.error   },
 };
 
-function ToastInternal({ text, kind = 'info', duration = 3200, onDone }) {
+// 7s (was 3.2s) — older readers need time; tap anywhere on it to dismiss early.
+function ToastInternal({ text, kind = 'info', duration = 7000, onDone }) {
   useEffect(() => {
     const t = setTimeout(() => onDone?.(), duration);
     return () => clearTimeout(t);
@@ -33,17 +34,19 @@ function ToastInternal({ text, kind = 'info', duration = 3200, onDone }) {
     <div
       role="status"
       aria-live="polite"
+      onClick={() => onDone?.()}
       style={{
         position: 'fixed', left: '50%', bottom: 28, transform: 'translateX(-50%)',
         zIndex: 200,
         background: palette.bg, color: palette.fg,
         borderLeft: `3px solid ${palette.rail}`,
         borderRadius: RADIUS.md,
-        padding: '11px 16px',
+        padding: '12px 16px',
         fontFamily: T.sans, fontSize: 13.5, fontWeight: 500, letterSpacing: 0.1,
         boxShadow: SHADOW.lift,
         maxWidth: 360, lineHeight: 1.4,
         animation: 'badgeSlideUp 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both',
+        cursor: 'pointer',
       }}
     >
       {text}
