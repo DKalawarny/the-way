@@ -4,6 +4,11 @@ services:
     runtime: node
     buildCommand: npm install && npm run build
     startCommand: node server.js
+    # Zero-downtime deploys: Render only switches traffic to a new deploy after
+    # this path returns 200 — a build that crashes on boot never replaces the
+    # healthy running version. (Also set this in the dashboard: Settings →
+    # Health Check Path, since dashboard-created services ignore render.yaml.)
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
