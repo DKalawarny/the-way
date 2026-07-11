@@ -605,19 +605,41 @@ const QUICK_ACTIONS = [
   { id: 'compare',  label: 'Compare versions',    compare: true },
 ];
 
+// Section-heading para styles in api.bible HTML (USFM classes): s/s1-s4 section
+// headings, ms* major sections, qa acrostic headings, sp speaker labels.
+// These are editorial titles, NOT scripture — they must never be glued into
+// verse text (which gets copied, read aloud, and sent to the AI).
+const HEADING_CLASS_RE = /^(s[1-4]?|ms[1-4]?|qa|sp)$/;
+// Cross-reference lines under headings ("(Matt 3:1–12)") — drop entirely.
+const SKIP_CLASS_RE = /^(mr|r)$/;
+
 function parseVerses(html) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(`<div>${html}</div>`, 'text/html');
   const verses = [];
   let current = null;
+  let pendingHeading = null;
   function walk(node) {
     if (node.nodeType === 1) {
       if (node.classList?.contains('note')) return;
+      const cls = [...(node.classList ?? [])];
+      if (cls.some((c) => SKIP_CLASS_RE.test(c))) return;
+      if (cls.some((c) => HEADING_CLASS_RE.test(c))) {
+        const t = node.textContent.trim();
+        if (t) pendingHeading = pendingHeading ? `${pendingHeading} — ${t}` : t;
+        return;
+      }
       const num = node.getAttribute?.('data-number');
       if (num && !isNaN(parseInt(num))) {
         if (current) verses.push({ ...current, text: current.text.trim() });
-        current = { number: parseInt(num), text: '' };
+        current = { number: parseInt(num), text: '', ...(pendingHeading ? { heading: pendingHeading } : {}) };
+        pendingHeading = null;
         return;
+      }
+      // Paragraph boundary inside a running verse (prose paragraphs, poetry
+      // q1/q2 lines) → keep a line break so copy/TTS don't flatten poetry.
+      if (node.tagName === 'P' && current && current.text && !current.text.endsWith('\n')) {
+        current.text += '\n';
       }
       for (const child of node.childNodes) walk(child);
     } else if (node.nodeType === 3 && current) {
@@ -2502,6 +2524,14 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                   const hl  = highlightVerse === v.number;
                   return (
                     <span key={v.number}>
+                      {v.heading && (
+                        <span style={{
+                          display: 'block', fontFamily: T.display, fontSize: 15.5, fontWeight: 700,
+                          color: C.verse, margin: '20px 0 4px', lineHeight: 1.3, letterSpacing: '-0.01em',
+                        }}>
+                          {v.heading}
+                        </span>
+                      )}
                       <span
                         data-verse={v.number}
                         onClick={() => tapVerse(v)}
