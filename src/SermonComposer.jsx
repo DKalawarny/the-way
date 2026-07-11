@@ -156,6 +156,36 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
   const [existingImageUrls, setExistingImageUrls] = useState([]);
   const imageDrafts = useImageDrafts(4);
   const [generating, setGenerating] = useState(false);
+  // Repurposing: social captions + newsletter blurb, copy-paste only (never stored)
+  const [repurposed, setRepurposed] = useState(null);
+  const [repBusy, setRepBusy]       = useState(false);
+  const [repError, setRepError]     = useState(null);
+  const [repCopied, setRepCopied]   = useState(null); // which item was just copied
+
+  async function handleRepurpose() {
+    if (!summary.trim() || repBusy) return;
+    setRepBusy(true); setRepError(null);
+    try {
+      const res = await authedFetch('/api/sermon/repurpose', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title.trim(), scripture_ref: scriptureRef.trim(), summary }),
+      });
+      if (!res.ok) throw new Error();
+      setRepurposed(await res.json());
+    } catch {
+      setRepError("Couldn't generate just now — try again in a moment.");
+    } finally {
+      setRepBusy(false);
+    }
+  }
+
+  function copyRep(key, text) {
+    navigator.clipboard?.writeText(text).then(() => {
+      setRepCopied(key);
+      setTimeout(() => setRepCopied(null), 1600);
+    }, () => {});
+  }
   const [sectionGenerating, setSectionGenerating] = useState(null); // kind string | null
   const [regeneratingIdx, setRegeneratingIdx] = useState(null);   // content array index | null
   const [saving, setSaving] = useState(false);
@@ -1059,6 +1089,60 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
               </>
             );
           })()}
+
+          {/* ── Repurpose — social captions + newsletter from the same outline ── */}
+          {summary.trim() && (
+            <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '16px 18px', marginTop: 22 }}>
+              <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 6 }}>
+                📣 Repurpose this sermon
+              </div>
+              <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>
+                Social captions and a newsletter blurb from the same outline — copy and paste them wherever your church shares.
+              </div>
+              {!repurposed && (
+                <button
+                  onClick={handleRepurpose}
+                  disabled={repBusy}
+                  style={{ background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`, color: T.cream, border: 'none', borderRadius: 999, padding: '10px 22px', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', opacity: repBusy ? 0.6 : 1 }}
+                >
+                  {repBusy ? 'Writing…' : 'Generate captions + newsletter'}
+                </button>
+              )}
+              {repError && <div style={{ fontSize: 13, color: '#a53f2b', marginTop: 8 }}>{repError}</div>}
+              {repurposed && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {(repurposed.social_posts ?? []).map((p, i) => (
+                    <div key={i} style={{ background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 10, padding: '12px 14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
+                        <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: T.inkMuted }}>
+                          {p.platform === 'short' ? 'Short — story / X' : p.platform === 'medium' ? 'Medium — Facebook / Instagram' : 'Long — reflection post'}
+                        </span>
+                        <button onClick={() => copyRep(`s${i}`, p.text)} style={{ marginLeft: 'auto', background: 'none', border: `1px solid ${T.line}`, borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 600, color: T.goldDark, cursor: 'pointer' }}>
+                          {repCopied === `s${i}` ? '✓ Copied' : 'Copy'}
+                        </button>
+                      </div>
+                      <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{p.text}</div>
+                    </div>
+                  ))}
+                  {repurposed.newsletter && (
+                    <div style={{ background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 10, padding: '12px 14px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
+                        <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: T.inkMuted }}>Newsletter</span>
+                        <button onClick={() => copyRep('nl', `${repurposed.newsletter.subject}\n\n${repurposed.newsletter.body}`)} style={{ marginLeft: 'auto', background: 'none', border: `1px solid ${T.line}`, borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 600, color: T.goldDark, cursor: 'pointer' }}>
+                          {repCopied === 'nl' ? '✓ Copied' : 'Copy'}
+                        </button>
+                      </div>
+                      <div style={{ fontSize: 13.5, fontWeight: 700, color: T.ink, marginBottom: 4 }}>{repurposed.newsletter.subject}</div>
+                      <div style={{ fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{repurposed.newsletter.body}</div>
+                    </div>
+                  )}
+                  <button onClick={handleRepurpose} disabled={repBusy} style={{ alignSelf: 'flex-start', background: 'none', border: `1px solid ${T.line}`, borderRadius: 999, padding: '6px 14px', fontSize: 12.5, color: T.inkSoft, cursor: 'pointer', opacity: repBusy ? 0.6 : 1 }}>
+                    {repBusy ? 'Writing…' : '↻ Regenerate'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
             <button

@@ -1268,6 +1268,58 @@ Return ONLY a valid JSON array of ${length} objects. No markdown, no explanation
   }
 });
 
+// ── Sermon repurposing — one outline in, the week's content out ───────────────
+// Generates ready-to-post social captions + a newsletter blurb from the sermon.
+// Results are returned for copy/paste only (never stored — sermon_content rows
+// would leak onto the church feed via the feed_items view).
+const REPURPOSE_SYSTEM = `You repurpose a pastor's sermon into shareable content. Same ground rules as all kinwove ministry writing: stay tightly inside the pastor's outline and passage — never introduce theology or examples they didn't cover. Never invent quotes, statistics, or attributions. Tone: warm, plain, honest — never church-brochure, never clickbait.
+
+Return ONLY valid JSON, no markdown fences, in exactly this shape:
+{
+  "social_posts": [
+    { "platform": "short", "text": "..." },
+    { "platform": "medium", "text": "..." },
+    { "platform": "long", "text": "..." }
+  ],
+  "newsletter": { "subject": "...", "body": "..." }
+}
+
+social_posts (3, escalating length):
+- "short": ≤200 chars — one arresting line or question from the sermon. No hashtags.
+- "medium": 2-4 sentences — the sermon's central tension + an invitation to think. At most 2 tasteful hashtags.
+- "long": 5-8 sentences telling the heart of the sermon as a mini-reflection someone could read on its own.
+Each must stand alone, quote scripture faithfully if quoted, and end warm — never with a hard sell.
+
+newsletter: subject ≤60 chars (no clickbait); body 120-200 words — what the sermon covered, one takeaway for the week, one line inviting people to the discussion. Write it so a church admin can paste it straight into their email.`;
+
+app.post('/api/sermon/repurpose', requireAuth, limitAuthed({ capacity: 8, refillPerSec: 8 / 300 }), async (req, res) => {
+  const { title, scripture_ref, summary } = req.body ?? {};
+  if (!summary || typeof summary !== 'string' || !summary.trim()) {
+    return res.status(400).json({ error: 'summary required' });
+  }
+  if (summary.length > 16000) return res.status(413).json({ error: 'summary too long' });
+  try {
+    const resp = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1400,
+      system: cachedSystem(REPURPOSE_SYSTEM),
+      messages: [{ role: 'user', content: `Title: ${title || '(untitled)'}\nScripture: ${scripture_ref || '(not specified)'}\n\nOutline / notes:\n${summary}` }],
+    });
+    trackAi(resp.usage);
+    const raw = resp.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) return res.status(500).json({ error: 'generation failed' });
+    const parsed = JSON.parse(match[0]);
+    if (!Array.isArray(parsed.social_posts) || !parsed.newsletter?.body) {
+      return res.status(500).json({ error: 'generation incomplete' });
+    }
+    res.json(parsed);
+  } catch (e) {
+    console.error('[sermon-repurpose]', e?.message);
+    res.status(500).json({ error: 'generation failed' });
+  }
+});
+
 app.post('/api/sermon/generate', requireAuth, limitAuthed({ capacity: 12, refillPerSec: 12 / 300 }), async (req, res) => {
   const { title, scripture_ref, summary, targetKind, singleDay, existingItems } = req.body ?? {};
   if (!summary || typeof summary !== 'string' || !summary.trim()) {
