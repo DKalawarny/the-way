@@ -613,6 +613,133 @@ function PlanCard({ plan, aiUsage, session, onUpgrade }) {
   );
 }
 
+// ── Account & security (About tab) ──────────────────────────────────────────
+// Change email / change password (previously impossible while logged in) and
+// the blocked-accounts list with unblock. Self-contained — owns its state.
+function AccountSecurityCard({ session, onViewProfile }) {
+  const [email, setEmail]       = useState(session?.user?.email ?? '');
+  const [pw, setPw]             = useState('');
+  const [pw2, setPw2]           = useState('');
+  const [busy, setBusy]         = useState(null);   // 'email' | 'password' | uuid being unblocked
+  const [msg, setMsg]           = useState(null);   // { kind: 'ok'|'err', text }
+  const [blocked, setBlocked]   = useState([]);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    supabase.from('blocked_users').select('blocked_id').eq('blocker_id', session.user.id)
+      .then(async ({ data }) => {
+        const ids = (data ?? []).map((r) => r.blocked_id);
+        if (!ids.length) { setBlocked([]); return; }
+        const { data: profs } = await supabase.from('profiles')
+          .select('id, display_name, avatar_config, avatar_url').in('id', ids);
+        setBlocked(profs ?? []);
+      });
+  }, [session?.user?.id]);
+
+  async function changeEmail() {
+    const next = email.trim();
+    if (!next || next === session?.user?.email) return;
+    setBusy('email'); setMsg(null);
+    const { error } = await supabase.auth.updateUser({ email: next });
+    setBusy(null);
+    setMsg(error
+      ? { kind: 'err', text: error.message }
+      : { kind: 'ok', text: 'Check both inboxes — confirmation links were sent to your old and new address.' });
+  }
+
+  async function changePassword() {
+    if (pw.length < 8) { setMsg({ kind: 'err', text: 'Password needs at least 8 characters.' }); return; }
+    if (pw !== pw2)    { setMsg({ kind: 'err', text: "Those passwords don't match." }); return; }
+    setBusy('password'); setMsg(null);
+    const { error } = await supabase.auth.updateUser({ password: pw });
+    setBusy(null);
+    if (error) { setMsg({ kind: 'err', text: error.message }); return; }
+    setPw(''); setPw2('');
+    setMsg({ kind: 'ok', text: 'Password updated.' });
+  }
+
+  async function unblock(uid) {
+    setBusy(uid);
+    await supabase.from('blocked_users').delete()
+      .eq('blocker_id', session.user.id).eq('blocked_id', uid);
+    setBlocked((b) => b.filter((p) => p.id !== uid));
+    setBusy(null);
+  }
+
+  const inputStyle = {
+    width: '100%', boxSizing: 'border-box', background: T.parchment,
+    border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 13px',
+    fontSize: 14, color: T.ink, outline: 'none', fontFamily: T.sans,
+  };
+  const btnStyle = (active) => ({
+    background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+    padding: '9px 20px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+    opacity: active ? 0.6 : 1, marginTop: 10,
+  });
+  const labelStyle = { fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.inkMuted, marginBottom: 8 };
+
+  return (
+    <div style={{ background: T.white, borderRadius: 14, border: `1px solid ${T.line}`, padding: '18px 18px 16px', marginBottom: 10 }}>
+      <div style={{ ...labelStyle, marginBottom: 14 }}>Account & security</div>
+
+      {msg && (
+        <div style={{
+          fontSize: 13, lineHeight: 1.5, borderRadius: 10, padding: '10px 13px', marginBottom: 14,
+          background: msg.kind === 'ok' ? 'rgba(46,122,72,0.08)' : 'rgba(165,63,43,0.08)',
+          color: msg.kind === 'ok' ? '#2e7a48' : '#a53f2b',
+        }}>
+          {msg.text}
+        </div>
+      )}
+
+      <div style={{ marginBottom: 18 }}>
+        <div style={labelStyle}>Email</div>
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} autoComplete="email" />
+        {email.trim() !== (session?.user?.email ?? '') && (
+          <button onClick={changeEmail} disabled={busy === 'email'} style={btnStyle(busy === 'email')}>
+            {busy === 'email' ? 'Saving…' : 'Update email'}
+          </button>
+        )}
+      </div>
+
+      <div style={{ marginBottom: blocked.length ? 18 : 4 }}>
+        <div style={labelStyle}>Change password</div>
+        <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="New password (8+ characters)" style={{ ...inputStyle, marginBottom: 8 }} autoComplete="new-password" />
+        <input type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} placeholder="Repeat new password" style={inputStyle} autoComplete="new-password" />
+        {pw.length > 0 && (
+          <button onClick={changePassword} disabled={busy === 'password'} style={btnStyle(busy === 'password')}>
+            {busy === 'password' ? 'Saving…' : 'Update password'}
+          </button>
+        )}
+      </div>
+
+      {blocked.length > 0 && (
+        <div>
+          <div style={labelStyle}>Blocked accounts</div>
+          {blocked.map((p) => (
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderTop: `1px solid ${T.line}` }}>
+              <Avatar name={p.display_name} avatarConfig={p.avatar_config} photoUrl={p.avatar_url} size={30} />
+              <button
+                onClick={() => onViewProfile?.(p.id)}
+                style={{ flex: 1, background: 'none', border: 'none', textAlign: 'left', fontSize: 14, color: T.ink, cursor: 'pointer', padding: 0 }}
+              >
+                {p.display_name ?? 'Someone'}
+              </button>
+              <button
+                onClick={() => unblock(p.id)}
+                disabled={busy === p.id}
+                style={{ background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999, padding: '5px 14px', fontSize: 12, fontWeight: 600, color: T.inkSoft, cursor: 'pointer', opacity: busy === p.id ? 0.5 : 1 }}
+              >
+                Unblock
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PlanLine({ plan, aiUsage, session, onUpgrade }) {
   const meta  = PLAN_LABELS[plan] ?? PLAN_LABELS.free;
   const cfg   = PLAN_LIMITS[plan]  ?? PLAN_LIMITS.free;
@@ -1961,6 +2088,8 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                 </button>
               </div>
             )}
+
+            <AccountSecurityCard session={session} onViewProfile={onViewProfile} />
 
           </div>
         )}
