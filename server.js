@@ -3891,7 +3891,7 @@ if (PUSH_ENABLED) {
 // SQL to run in Supabase to create get_platform_stats() — see MEMORY / README.
 app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
   try {
-    const [platformStats, topicRows, topQuestions, recentShared, pendingApps, recentFeedback, userReports, postReports] = await Promise.all([
+    const [platformStats, topicRows, topQuestions, recentShared, pendingApps, recentFeedback, userReports, postReports, promoCodes, promoRedemptions] = await Promise.all([
       adminRpc('get_platform_stats'),
       adminFetch('topic_counts', 'order=count.desc'),
       adminFetch('qa_cache', 'select=question_raw,hit_count&order=hit_count.desc&limit=15'),
@@ -3900,6 +3900,8 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
       adminFetch('ai_feedback', 'select=message_text,created_at&order=created_at.desc&limit=30'),
       adminFetch('user_reports', 'select=id,category,subject,body,status,admin_note,created_at,profiles!user_id(display_name)&status=eq.open&order=created_at.desc&limit=100'),
       adminFetch('post_reports', 'select=id,type,note,created_at,reporter_id,post_id,posts!post_id(body,author_id,profiles!author_id(display_name))&order=created_at.desc&limit=100'),
+      adminFetch('promo_codes', 'select=code,plan,months,uses,max_uses,active&order=uses.desc'),
+      adminFetch('profiles', 'select=display_name,plan,promo_redeemed_at&promo_redeemed_at=not.is.null&order=promo_redeemed_at.desc&limit=25'),
     ]);
 
     // Hydrate reporter names (reporter_id FKs auth.users, so no direct embed).
@@ -3913,6 +3915,8 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
 
     res.json({
       postReports: postReportsOut,
+      promoCodes: Array.isArray(promoCodes) ? promoCodes : [],
+      promoRedemptions: Array.isArray(promoRedemptions) ? promoRedemptions : [],
       stats: platformStats ?? {},
       topics: Array.isArray(topicRows) ? topicRows : [],
       topQuestions: Array.isArray(topQuestions) ? topQuestions : [],

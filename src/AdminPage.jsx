@@ -1181,6 +1181,45 @@ export default function AdminPage({ onBack }) {
               )
             }
 
+            {/* Promo codes */}
+            <SectionTitle>Promo codes</SectionTitle>
+            <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 14 }}>
+              Redemptions land here (you also get an email each time). Uses count against each code's cap.
+            </div>
+            {(dash.promoCodes ?? []).length === 0
+              ? <EmptyNote style={{ marginBottom: 16 }}>No promo codes configured.</EmptyNote>
+              : (
+                <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 12, padding: '6px 16px', marginBottom: 14 }}>
+                  {(dash.promoCodes ?? []).map((c) => (
+                    <div key={c.code} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: `1px solid ${T.line}`, flexWrap: 'wrap' }}>
+                      <code style={{ fontSize: 13, fontWeight: 700, color: T.ink, background: T.parchment, borderRadius: 6, padding: '3px 8px' }}>{c.code}</code>
+                      <span style={{ fontSize: 12.5, color: T.inkSoft }}>{c.months} mo of {c.plan}</span>
+                      {!c.active && <span style={{ fontSize: 11, fontWeight: 700, color: '#a53f2b' }}>INACTIVE</span>}
+                      <span style={{ marginLeft: 'auto', fontSize: 12.5, fontWeight: 700, color: c.uses >= c.max_uses ? '#a53f2b' : T.goldDark }}>
+                        {c.uses} / {c.max_uses} used
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )
+            }
+            {(dash.promoRedemptions ?? []).length > 0 && (
+              <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 12, padding: '6px 16px', marginBottom: 32 }}>
+                <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, padding: '10px 0 4px' }}>
+                  Recent redemptions
+                </div>
+                {(dash.promoRedemptions ?? []).map((r, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderTop: `1px solid ${T.line}` }}>
+                    <span style={{ fontSize: 13.5, color: T.ink, flex: 1 }}>{r.display_name ?? 'Unknown'}</span>
+                    <span style={{ fontSize: 12, color: T.inkSoft }}>{r.plan}</span>
+                    <span style={{ fontSize: 11.5, color: T.inkMuted }}>
+                      {r.promo_redeemed_at ? new Date(r.promo_redeemed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* AI feedback */}
             <SectionTitle>AI feedback flags</SectionTitle>
             <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 14 }}>

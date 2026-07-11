@@ -2702,6 +2702,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                               onClick={() => {
                                 const abbr = VERSIONS.find((x) => x.id === bibleId)?.abbr ?? 'KJV';
                                 const text = `"${selText}" — ${selRefLabel} (${abbr})\nhttps://www.kinwove.com`;
+                                track('verse_share', { ref: selRefLabel, verses: selVerses.length });
                                 if (navigator.share) { navigator.share({ text }).catch(() => {}); }
                                 else { navigator.clipboard?.writeText(text).then(() => { setCopiedVerse(v.number); setTimeout(() => setCopiedVerse(null), 1500); }, () => {}); }
                               }}
