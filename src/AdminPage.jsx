@@ -472,6 +472,30 @@ export default function AdminPage({ onBack }) {
     }
   }
 
+  // Post reports (community content flagged by members)
+  async function handlePostReport(reportId, action) {
+    if (action === 'remove_post' && !window.confirm('Remove this post for everyone? This cannot be undone.')) return;
+    setReportBusy(reportId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const r = await fetch(`/api/admin/post-reports/${reportId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      if (r.ok) {
+        const { removedPostId } = await r.json().catch(() => ({}));
+        setDash((prev) => ({
+          ...prev,
+          postReports: (prev.postReports ?? []).filter((rp) =>
+            removedPostId ? rp.post_id !== removedPostId : rp.id !== reportId),
+        }));
+      }
+    } finally {
+      setReportBusy(null);
+    }
+  }
+
   // ── Sponsors ────────────────────────────────────────────────────────────────
   async function loadSponsors() {
     setSponsorsLoading(true);
@@ -551,7 +575,8 @@ export default function AdminPage({ onBack }) {
 
   const hasAlerts = Number(s.dead_accounts) > 0 || Number(s.zombie_churches) > 0 || Number(s.pending_apps) > 0;
   const openReports = dash?.userReports ?? [];
-  const operationsBadge = (dash?.pendingApps?.length ?? 0) + (dash?.recentFeedback?.length ?? 0) + openReports.length;
+  const openPostReports = dash?.postReports ?? [];
+  const operationsBadge = (dash?.pendingApps?.length ?? 0) + (dash?.recentFeedback?.length ?? 0) + openReports.length + openPostReports.length;
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -1071,6 +1096,49 @@ export default function AdminPage({ onBack }) {
                 {getInsights('operations', s, dash).map((ins, i) => <InsightCard key={i} {...ins} />)}
               </div>
             )}
+
+            {/* Reported posts (community content) */}
+            <SectionTitle>Reported posts {openPostReports.length > 0 && <span style={{ background: '#a53f2b', color: '#fff', borderRadius: 999, fontSize: 10, padding: '1px 6px', marginLeft: 6, fontWeight: 700 }}>{openPostReports.length}</span>}</SectionTitle>
+            <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 14 }}>
+              Community posts members flagged via "Report post". Review the content, then remove it or dismiss the report.
+            </div>
+            {openPostReports.length === 0
+              ? <EmptyNote style={{ marginBottom: 32 }}>No reported posts — all clear ✓</EmptyNote>
+              : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 32 }}>
+                  {openPostReports.map((rp) => (
+                    <div key={rp.id} style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 12, padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, background: 'rgba(165,63,43,0.1)', color: '#a53f2b', borderRadius: 999, padding: '2px 9px', textTransform: 'capitalize' }}>{rp.type ?? 'report'}</span>
+                        <span style={{ fontSize: 12, color: T.inkMuted }}>reported by {rp.reporter_name ?? 'Unknown'}</span>
+                        <span style={{ fontSize: 11, color: T.inkMuted, marginLeft: 'auto' }}>
+                          {rp.created_at ? new Date(rp.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                        </span>
+                      </div>
+                      {rp.note && <div style={{ fontSize: 12.5, color: T.inkSoft, fontStyle: 'italic', marginBottom: 8 }}>"{rp.note}"</div>}
+                      <div style={{ background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 8, padding: '10px 12px', marginBottom: 12 }}>
+                        <div style={{ fontSize: 11, color: T.inkMuted, marginBottom: 4 }}>
+                          Post by {rp.posts?.profiles?.display_name ?? 'Unknown'}{!rp.posts && ' (post already deleted)'}
+                        </div>
+                        <div style={{ fontSize: 13.5, color: T.ink, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
+                          {String(rp.posts?.body ?? '').slice(0, 400) || '—'}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={() => handlePostReport(rp.id, 'remove_post')} disabled={reportBusy === rp.id || !rp.posts}
+                          style={{ background: 'rgba(165,63,43,0.1)', color: '#a53f2b', border: '1px solid rgba(165,63,43,0.25)', borderRadius: 999, padding: '5px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: reportBusy === rp.id || !rp.posts ? 0.5 : 1 }}>
+                          {reportBusy === rp.id ? '…' : 'Remove post'}
+                        </button>
+                        <button onClick={() => handlePostReport(rp.id, 'dismiss')} disabled={reportBusy === rp.id}
+                          style={{ background: 'transparent', color: T.inkMuted, border: `1px solid ${T.line}`, borderRadius: 999, padding: '5px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: reportBusy === rp.id ? 0.5 : 1 }}>
+                          Dismiss report
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            }
 
             {/* User Reports */}
             <SectionTitle>User reports {openReports.length > 0 && <span style={{ background: '#a53f2b', color: '#fff', borderRadius: 999, fontSize: 10, padding: '1px 6px', marginLeft: 6, fontWeight: 700 }}>{openReports.length}</span>}</SectionTitle>

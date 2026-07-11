@@ -3680,6 +3680,35 @@ app.patch('/api/admin/reports/:id', requireAdmin, async (req, res) => {
   }
 });
 
+// Admin: act on a POST report — dismiss it, or remove the reported post.
+// (post_reports had writers but no reader anywhere until 2026-07-10.)
+app.post('/api/admin/post-reports/:id', requireAdmin, async (req, res) => {
+  try {
+    const { action } = req.body ?? {};
+    if (!['dismiss', 'remove_post'].includes(action)) return res.status(400).json({ error: 'invalid action' });
+    if (!isUuid(req.params.id)) return res.status(400).json({ error: 'invalid id' });
+    const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
+
+    if (action === 'remove_post') {
+      const rr = await fetch(`${SUPABASE_URL}/rest/v1/post_reports?id=eq.${req.params.id}&select=post_id&limit=1`, { headers: h });
+      const [report] = await rr.json();
+      if (!report?.post_id) return res.status(404).json({ error: 'report not found' });
+      // Clear every report on this post first (in case the FK doesn't cascade),
+      // then delete the post itself.
+      await fetch(`${SUPABASE_URL}/rest/v1/post_reports?post_id=eq.${report.post_id}`, { method: 'DELETE', headers: h });
+      const dr = await fetch(`${SUPABASE_URL}/rest/v1/posts?id=eq.${report.post_id}`, { method: 'DELETE', headers: h });
+      if (!dr.ok) return res.status(500).json({ error: 'Failed to remove post' });
+      return res.json({ ok: true, removedPostId: report.post_id });
+    }
+
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/post_reports?id=eq.${req.params.id}`, { method: 'DELETE', headers: h });
+    if (!r.ok) return res.status(500).json({ error: 'Failed to dismiss report' });
+    res.json({ ok: true });
+  } catch (e) {
+    safeError(res, e, 'admin-post-reports');
+  }
+});
+
 // ── Admin church lookup + edit ────────────────────────────────────────────────
 app.get('/api/admin/church', requireAdmin, async (req, res) => {
   const { pastor_id } = req.query;
@@ -3861,7 +3890,7 @@ if (PUSH_ENABLED) {
 // SQL to run in Supabase to create get_platform_stats() — see MEMORY / README.
 app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
   try {
-    const [platformStats, topicRows, topQuestions, recentShared, pendingApps, recentFeedback, userReports] = await Promise.all([
+    const [platformStats, topicRows, topQuestions, recentShared, pendingApps, recentFeedback, userReports, postReports] = await Promise.all([
       adminRpc('get_platform_stats'),
       adminFetch('topic_counts', 'order=count.desc'),
       adminFetch('qa_cache', 'select=question_raw,hit_count&order=hit_count.desc&limit=15'),
@@ -3869,9 +3898,20 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
       adminFetch('pastor_applications', 'select=id,full_name,church_name,denomination,city,country,reason,status,created_at&status=eq.pending&order=created_at.desc'),
       adminFetch('ai_feedback', 'select=message_text,created_at&order=created_at.desc&limit=30'),
       adminFetch('user_reports', 'select=id,category,subject,body,status,admin_note,created_at,profiles!user_id(display_name)&status=eq.open&order=created_at.desc&limit=100'),
+      adminFetch('post_reports', 'select=id,type,note,created_at,reporter_id,post_id,posts!post_id(body,author_id,profiles!author_id(display_name))&order=created_at.desc&limit=100'),
     ]);
 
+    // Hydrate reporter names (reporter_id FKs auth.users, so no direct embed).
+    let postReportsOut = Array.isArray(postReports) ? postReports : [];
+    if (postReportsOut.length) {
+      const ids = [...new Set(postReportsOut.map((r) => r.reporter_id).filter(Boolean))];
+      const profs = await adminFetch('profiles', `select=id,display_name&id=in.(${ids.join(',')})`);
+      const nameById = Object.fromEntries((Array.isArray(profs) ? profs : []).map((p) => [p.id, p.display_name]));
+      postReportsOut = postReportsOut.map((r) => ({ ...r, reporter_name: nameById[r.reporter_id] ?? 'Unknown' }));
+    }
+
     res.json({
+      postReports: postReportsOut,
       stats: platformStats ?? {},
       topics: Array.isArray(topicRows) ? topicRows : [],
       topQuestions: Array.isArray(topQuestions) ? topQuestions : [],

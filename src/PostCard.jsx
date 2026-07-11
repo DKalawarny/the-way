@@ -864,7 +864,7 @@ export default function PostCard({
                         setMenuOpen(false);
                         if (blockedLocally || !item.author_id) return;
                         setBlockBusy(true);
-                        await supabase.from('blocks').insert({ blocker_id: sessionUserId, blocked_id: item.author_id }).then(null, () => {});
+                        await supabase.from('blocked_users').insert({ blocker_id: sessionUserId, blocked_id: item.author_id }).then(null, () => {});
                         setBlockBusy(false);
                         setBlockedLocally(true);
                       }}

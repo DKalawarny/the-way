@@ -28,6 +28,15 @@ export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessa
   const [rolesByUser, setRolesByUser] = useState({});  // { uid: [role rows] } per visible church scope
   const [commentCounts, setCommentCounts] = useState({}); // { post_id: n }
   const [savedPostIds, setSavedPostIds] = useState(new Set());
+  // Self-loaded blocked list — callers never passed the blockedUserIds prop,
+  // so blocking silently did nothing in every Feed. Prop still wins if given.
+  const [ownBlockedIds, setOwnBlockedIds] = useState([]);
+
+  useEffect(() => {
+    if (!sessionUserId) { setOwnBlockedIds([]); return; }
+    supabase.from('blocked_users').select('blocked_id').eq('blocker_id', sessionUserId)
+      .then(({ data }) => setOwnBlockedIds((data ?? []).map((r) => r.blocked_id)));
+  }, [sessionUserId, refreshKey]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -182,8 +191,9 @@ export default function Feed({ source, sessionUserId, refreshKey = 0, emptyMessa
 
   const showAds = (userPlan === 'free' || !userPlan) && sponsors.length > 0;
 
-  const visibleItems = blockedUserIds.length
-    ? items.filter((item) => !blockedUserIds.includes(item.author_id))
+  const effectiveBlocked = blockedUserIds.length ? blockedUserIds : ownBlockedIds;
+  const visibleItems = effectiveBlocked.length
+    ? items.filter((item) => !effectiveBlocked.includes(item.author_id))
     : items;
 
   if (visibleItems.length === 0) {
