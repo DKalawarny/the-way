@@ -2299,13 +2299,14 @@ app.post('/api/cron/daily-question', async (req, res) => {
       const patched = await patch.json();
       if (!Array.isArray(patched) || patched.length === 0) continue; // another run got it first
 
-      const mRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?church_id=eq.${churchId}&select=id&limit=2000`, { headers: h });
+      const mRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?church_id=eq.${churchId}&select=id,notif_prefs&limit=2000`, { headers: h });
       const members = await mRes.json();
       if (!Array.isArray(members)) continue;
 
       const snippet = String(q.body ?? '').split('\n')[0].slice(0, 140);
       const rows = members
-        .filter((m) => m.id !== pastorId)
+        // This insert bypasses add_notification(), so honor the per-kind mute here.
+        .filter((m) => m.id !== pastorId && m.notif_prefs?.church_daily_question !== false)
         .map((m) => ({
           recipient_id: m.id,
           actor_id: pastorId,

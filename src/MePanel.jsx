@@ -613,9 +613,21 @@ function PlanCard({ plan, aiUsage, session, onUpgrade }) {
   );
 }
 
+// Notification mute groups — each toggle writes {kind: false} for every kind
+// in its group into profiles.notif_prefs. add_notification() checks the flag
+// before inserting, so muting silences the bell AND web push at the source.
+// Care/safety alerts are deliberately not listed — those can't be muted.
+const NOTIF_GROUPS = [
+  { key: 'comments', label: '💬 Comments & reactions', kinds: ['post_reaction', 'post_comment', 'post_comment_reply'] },
+  { key: 'prayers',  label: '🙏 Prayer support',        kinds: ['prayer_support', 'prayer_encouragement'] },
+  { key: 'social',   label: '👋 Follows & friends',     kinds: ['follow', 'friend_request_received', 'friend_request_accepted'] },
+  { key: 'dms',      label: '✉️ Direct messages',       kinds: ['dm_message'] },
+  { key: 'church',   label: '📖 Church & sermons',      kinds: ['sermon_published', 'sermon_comment', 'church_daily_question', 'group_post', 'group_reply', 'group_invite'] },
+];
+
 // ── Account & security (About tab) ──────────────────────────────────────────
-// Change email / change password (previously impossible while logged in) and
-// the blocked-accounts list with unblock. Self-contained — owns its state.
+// Change email / change password (previously impossible while logged in),
+// notification preferences, and the blocked-accounts list with unblock.
 function AccountSecurityCard({ session, onViewProfile }) {
   const [email, setEmail]       = useState(session?.user?.email ?? '');
   const [pw, setPw]             = useState('');
@@ -623,6 +635,7 @@ function AccountSecurityCard({ session, onViewProfile }) {
   const [busy, setBusy]         = useState(null);   // 'email' | 'password' | uuid being unblocked
   const [msg, setMsg]           = useState(null);   // { kind: 'ok'|'err', text }
   const [blocked, setBlocked]   = useState([]);
+  const [notifPrefs, setNotifPrefs] = useState(null); // null until loaded
 
   useEffect(() => {
     if (!session?.user?.id) return;
@@ -634,7 +647,26 @@ function AccountSecurityCard({ session, onViewProfile }) {
           .select('id, display_name, avatar_config, avatar_url').in('id', ids);
         setBlocked(profs ?? []);
       });
+    supabase.from('profiles').select('notif_prefs').eq('id', session.user.id).single()
+      .then(({ data }) => setNotifPrefs(data?.notif_prefs ?? {}));
   }, [session?.user?.id]);
+
+  function groupEnabled(group) {
+    // A group is "on" unless every kind in it is muted (they're written together).
+    return !group.kinds.every((k) => notifPrefs?.[k] === false);
+  }
+
+  async function toggleGroup(group) {
+    if (!session?.user?.id || notifPrefs === null) return;
+    const nowOn = groupEnabled(group);
+    const next = { ...notifPrefs };
+    for (const k of group.kinds) {
+      if (nowOn) next[k] = false; else delete next[k];
+    }
+    setNotifPrefs(next);
+    await supabase.from('profiles').update({ notif_prefs: next }).eq('id', session.user.id)
+      .then(null, () => {});
+  }
 
   async function changeEmail() {
     const next = email.trim();
@@ -701,6 +733,37 @@ function AccountSecurityCard({ session, onViewProfile }) {
           </button>
         )}
       </div>
+
+      {notifPrefs !== null && (
+        <div style={{ marginBottom: 18 }}>
+          <div style={labelStyle}>Notifications</div>
+          {NOTIF_GROUPS.map((g) => {
+            const on = groupEnabled(g);
+            return (
+              <div key={g.key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0' }}>
+                <span style={{ flex: 1, fontSize: 14, color: T.ink }}>{g.label}</span>
+                <button
+                  onClick={() => toggleGroup(g)}
+                  role="switch"
+                  aria-checked={on}
+                  aria-label={`${g.label} notifications ${on ? 'on' : 'off'}`}
+                  style={{
+                    width: 42, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer',
+                    padding: 2, background: on ? T.gold : 'rgba(26,17,8,0.18)',
+                    display: 'flex', justifyContent: on ? 'flex-end' : 'flex-start',
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  <span style={{ width: 20, height: 20, borderRadius: '50%', background: T.white, boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
+                </button>
+              </div>
+            );
+          })}
+          <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 6, lineHeight: 1.5 }}>
+            Care team and safety alerts can't be muted.
+          </div>
+        </div>
+      )}
 
       <div style={{ marginBottom: blocked.length ? 18 : 4 }}>
         <div style={labelStyle}>Change password</div>
