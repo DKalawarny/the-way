@@ -1473,11 +1473,21 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
   // limit. feedLoadedRef keeps the full-feed spinner off during load-more.
   const [postLimit, setPostLimit] = useState(20);
   const feedLoadedRef = useRef(false);
-  const [sermonItems, setSermonItems] = useState([]);
-  const [pastorMap, setPastorMap] = useState({});
   const [churchMap, setChurchMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [feedError, setFeedError] = useState(false);
+  // Near-empty feed: surface real prayers (the only globally-alive content at
+  // small scale) so day-one users see life instead of a void.
+  const [feedPrayerTeasers, setFeedPrayerTeasers] = useState([]);
+  useEffect(() => {
+    if (loading || posts.length >= 3) { setFeedPrayerTeasers([]); return; }
+    supabase.from('personal_prayers')
+      .select('id, body, is_anonymous, created_at, profiles(display_name, avatar_config, avatar_url)')
+      .eq('is_public', true).is('church_id', null)
+      .order('created_at', { ascending: false }).limit(3)
+      .then(({ data }) => setFeedPrayerTeasers(data ?? []));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, posts.length]);
   const [filter, setFilter] = useState('all');
   // filterPersonalized removed — auto-filter by person_type was removed 2026-05-27
   const [blockedIds, setBlockedIds] = useState([]);
@@ -1503,20 +1513,25 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
   useEffect(() => {
     if (!session?.user?.id) return;
     const uid = session.user.id;
-    if (!profile?.church_id && !profile?.tradition) return;
-    const conditions = [];
-    if (profile.church_id) conditions.push(`church_id.eq.${profile.church_id}`);
-    if (profile.tradition) conditions.push(`tradition.eq."${profile.tradition.replace(/"/g, '')}"`);
-    supabase
+    let q = supabase
       .from('profiles')
       .select('id, display_name, city, country, tradition, person_type, avatar_config, avatar_url')
       .neq('id', uid)
-      .or(conditions.join(','))
       .neq('is_system_account', true)
       .not('display_name', 'is', null)
       .neq('display_name', '')
-      .limit(15)
-      .then(({ data }) => setSuggestedPeople(data ?? []));
+      .limit(15);
+    if (profile?.church_id || profile?.tradition) {
+      const conditions = [];
+      if (profile.church_id) conditions.push(`church_id.eq.${profile.church_id}`);
+      if (profile.tradition) conditions.push(`tradition.eq."${profile.tradition.replace(/"/g, '')}"`);
+      q = q.or(conditions.join(','));
+    } else {
+      // No church or tradition yet (brand-new user): everyone IS the list at
+      // this community's scale — suggest the newest members instead of no one.
+      q = q.order('created_at', { ascending: false });
+    }
+    q.then(({ data }) => setSuggestedPeople(data ?? []));
   }, [session?.user?.id, profile?.church_id, profile?.tradition]);
 useEffect(() => {
     if (!session?.user?.id) return;
@@ -1622,16 +1637,6 @@ useEffect(() => {
     if (filter !== 'all') query = query.eq('person_type', filter);
 
     // Sermon items live in their own tables — feed_items unions them in.
-    // Person-type filter doesn't apply (sermons aren't authored by a persona),
-    // so when a filter is active we drop sermons.
-    const sermonPromise = filter === 'all'
-      ? supabase
-          .from('feed_items')
-          .select('id, author_id, scope_id, body, created_at')
-          .eq('source', 'sermon_item')
-          .order('created_at', { ascending: false })
-          .limit(20)
-      : Promise.resolve({ data: [] });
 
     // Pastor posts + sermon teasers from followed churches.
     // Followers see: (a) pastor-authored public posts and (b) the latest
@@ -1667,7 +1672,7 @@ useEffect(() => {
           })
       : Promise.resolve({ data: [], sermonTeasers: [] });
 
-    const [{ data: postData, error: postErr }, { data: sermonData }, { data: churchPostData, sermonTeasers: churchSermonTeasers = [] }] = await Promise.all([query, sermonPromise, churchPostPromise]);
+    const [{ data: postData, error: postErr }, { data: churchPostData, sermonTeasers: churchSermonTeasers = [] }] = await Promise.all([query, churchPostPromise]);
     if (postErr || !postData) { setFeedError(true); setLoading(false); return; }
 
     // Merge: community posts + pastor church posts + sermon teasers (sorted newest first)
@@ -1695,25 +1700,7 @@ useEffect(() => {
       return { ...p, reaction_counts: counts, my_reaction: myReaction, reply_count: p.post_comments?.length ?? 0 };
     });
 
-    // Hydrate pastor profiles + church names for sermon feed_items
-    const sermons = sermonData ?? [];
-    const pastorIds = [...new Set(sermons.map((s) => s.author_id).filter(Boolean))];
-    const churchIds = [...new Set(sermons.map((s) => s.scope_id).filter(Boolean))];
-    const [{ data: pastors }, { data: churches }] = await Promise.all([
-      pastorIds.length
-        ? supabase.from('profiles').select('id, display_name, avatar_config, avatar_url').in('id', pastorIds)
-        : Promise.resolve({ data: [] }),
-      churchIds.length
-        ? supabase.from('churches').select('id, name').in('id', churchIds)
-        : Promise.resolve({ data: [] }),
-    ]);
-    const pMap = {}; (pastors ?? []).forEach((p) => { pMap[p.id] = p; });
-    const cMap = {}; (churches ?? []).forEach((c) => { cMap[c.id] = c; });
-
     setPosts(enriched);
-    setSermonItems(sermons);
-    setPastorMap(pMap);
-    setChurchMap(cMap);
     setLoading(false);
     feedLoadedRef.current = true;
   }, [filter, session, profile?.church_id, postLimit]);
@@ -2294,7 +2281,7 @@ useEffect(() => {
                             {...sponsors[Math.floor(i / 10) % sponsors.length]}
                           />
                         )}
-                        {i === 3 && session && (() => {
+                        {(i === 3 || (filtered.length < 4 && i === filtered.length - 1)) && session && (() => {
                           const suggestions = suggestedPeople
                             .filter((sp) => !following.has(sp.id) && !blockedIds.includes(sp.id))
                             .slice(0, 4);
@@ -2366,6 +2353,30 @@ useEffect(() => {
                     ));
                   })()}
                 </div>
+                {/* Near-empty feed → real prayers from the wall, so there's life here */}
+                {!loading && filtered.length < 3 && feedPrayerTeasers.length > 0 && (
+                  <div style={{ marginTop: 14, background: T.white, border: `1px solid ${T.line}`, borderRadius: 16, padding: '16px 18px' }}>
+                    <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.gold, fontWeight: 700, marginBottom: 12 }}>
+                      🙏 From the prayer wall
+                    </div>
+                    {feedPrayerTeasers.map((p) => (
+                      <div key={p.id} style={{ padding: '10px 0', borderTop: `1px solid ${T.line}` }}>
+                        <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 3 }}>
+                          {p.is_anonymous ? 'Someone' : (p.profiles?.display_name ?? 'A member')} asked for prayer
+                        </div>
+                        <div style={{ fontFamily: T.serif, fontSize: 14.5, color: T.ink, lineHeight: 1.6 }}>
+                          {String(p.body ?? '').slice(0, 160)}{(p.body?.length ?? 0) > 160 ? '…' : ''}
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => setFeedType('prayers')}
+                      style={{ marginTop: 12, background: 'none', border: `1.5px solid ${T.gold}`, borderRadius: 999, padding: '9px 20px', fontSize: 13, fontWeight: 600, color: T.goldDark, cursor: 'pointer' }}
+                    >
+                      Pray with them →
+                    </button>
+                  </div>
+                )}
                 {/* Load more — shown while the last fetch filled its limit (more likely exists) */}
                 {!loading && posts.length >= postLimit && (
                   <button

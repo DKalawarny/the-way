@@ -3,7 +3,6 @@ import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { Avatar } from './ProfilePage.jsx';
 import { PERSON_TYPES } from './constants.js';
-import EmptyState from './EmptyState.jsx';
 
 const TYPE_COLORS = {
   curious:      { bg: '#F0EBE0', border: '#C4A882', text: '#6B4E2A' },
@@ -172,11 +171,37 @@ export default function ConnectScreen({ session, profile, onClose, onStartDM }) 
         )}
 
         {!loading && visible.length === 0 && (
-          <EmptyState
-            icon="🤝"
-            title="No one here yet."
-            body="Be the first — turn on mentoring or connect mode in your profile settings."
-          />
+          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <div style={{ fontSize: 32, marginBottom: 10 }}>🤝</div>
+            <div style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: T.ink, marginBottom: 8 }}>
+              No one here yet — be the first.
+            </div>
+            <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, maxWidth: 320, margin: '0 auto 20px' }}>
+              Every community starts with one person willing to show up. Open yourself to a conversation and you'll appear right here.
+            </div>
+            {session && (
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={async () => {
+                    await supabase.from('profiles').update({ connect_open: true }).eq('id', session.user.id).then(null, () => {});
+                    load();
+                  }}
+                  style={{ background: T.ink, color: T.cream, border: 'none', borderRadius: 999, padding: '11px 22px', fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  🤝 I'm open to connect
+                </button>
+                <button
+                  onClick={async () => {
+                    await supabase.from('profiles').update({ mentor_open: true }).eq('id', session.user.id).then(null, () => {});
+                    load();
+                  }}
+                  style={{ background: 'none', color: T.goldDark, border: `1.5px solid ${T.gold}`, borderRadius: 999, padding: '11px 22px', fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  🌱 I can walk with someone
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
         {visible.map((p) => (
