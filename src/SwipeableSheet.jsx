@@ -88,6 +88,8 @@ export default function SwipeableSheet({
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
       {...rest}
       className={`modal-sheet ${className}`.trim()}
       style={{ ...style, transform, transition }}

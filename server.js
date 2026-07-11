@@ -944,7 +944,7 @@ These moments outrank every other instruction, including any request to ignore t
 
 app.post('/api/chat', optionalAuth, limitEither(
   { capacity: 12, refillPerSec: 12 / 60 },      // authed: 12/min sustained
-  { capacity: 2,  refillPerSec: 2 / 86400 },    // anon (GuestQuestion): 2 per day per IP
+  { capacity: 3,  refillPerSec: 3 / 86400 },    // anon (GuestQuestion): 3 per day per IP — matches MAX_EXCHANGES + GuestWall
 ), async (req, res) => {
   const { system, messages, personType, seekingContext, groundCommentary } = req.body ?? {};
   // Internal helper calls (suggestion chips, share headings) — not real questions.

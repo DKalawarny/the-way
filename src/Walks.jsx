@@ -276,7 +276,7 @@ function WalkOverview({ walk, progress, steps, onStart, onResume, onOpenDay, onB
   );
 }
 
-function WalkDay({ walk, step, progress, day, onAdvance, onPrev, onNext, onBack, busy, total }) {
+function WalkDay({ walk, step, progress, day, onAdvance, onPrev, onNext, onBack, busy, total, onOpenBible }) {
   if (!step) {
     return (
       <div>
@@ -310,8 +310,18 @@ function WalkDay({ walk, step, progress, day, onAdvance, onPrev, onNext, onBack,
           background: 'rgba(184,115,58,0.06)', borderLeft: `4px solid ${T.gold}`,
           borderRadius: 10, padding: '14px 18px', marginBottom: 18,
         }}>
-          <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 6 }}>
-            {step.scripture_ref}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700 }}>
+              {step.scripture_ref}
+            </div>
+            {onOpenBible && (
+              <button
+                onClick={() => onOpenBible(step.scripture_ref)}
+                style={{ marginLeft: 'auto', background: 'none', border: `1px solid rgba(184,115,58,0.3)`, borderRadius: 999, padding: '4px 12px', fontSize: 11.5, fontWeight: 600, color: T.goldDark, cursor: 'pointer', whiteSpace: 'nowrap' }}
+              >
+                Open in Bible →
+              </button>
+            )}
           </div>
           {step.scripture_body && (
             <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 16, color: T.ink, lineHeight: 1.75 }}>
@@ -388,7 +398,7 @@ function WalkDay({ walk, step, progress, day, onAdvance, onPrev, onNext, onBack,
   );
 }
 
-export default function Walks({ session, onClose }) {
+export default function Walks({ session, onClose, onOpenBible }) {
   const [view, setView] = useState('library');     // 'library' | 'overview' | 'day'
   const scrollRef = useRef(null);
   const [walks, setWalks] = useState([]);
@@ -619,6 +629,7 @@ export default function Walks({ session, onClose }) {
             onPrev={() => setDay((d) => Math.max(1, d - 1))}
             onNext={() => setDay((d) => Math.min(selected.length_days, d + 1))}
             onBack={() => setView('overview')}
+            onOpenBible={onOpenBible}
           />
         )}
       </div>

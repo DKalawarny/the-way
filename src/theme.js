@@ -72,7 +72,7 @@ export const TYPE = {
   headline:{ fontFamily: "'Fraunces', Georgia, serif", fontWeight: 600, letterSpacing: '-0.015em', lineHeight: 1.18 },
   title:   { fontFamily: "'Lora', Georgia, serif", fontWeight: 700, letterSpacing: '-0.005em', lineHeight: 1.25 },
   body:    { fontFamily: "'Lora', Georgia, serif", fontSize: 15.5, lineHeight: 1.65, fontWeight: 400 },
-  meta:    { fontFamily: "'Inter', sans-serif", fontSize: 12.5, color: '#7A6B58', letterSpacing: 0.1 },
+  meta:    { fontFamily: "'Inter', sans-serif", fontSize: 13.5, color: '#6E5F4C', letterSpacing: 0.1 }, // a11y: 12.5→13.5 + AA-passing ink
 };
 
 // ── Semantic palette ────────────────────────────────────────────────

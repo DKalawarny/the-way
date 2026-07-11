@@ -321,7 +321,7 @@ function GuestWall({ onSignUp }) {
           This conversation is worth keeping.
         </div>
         <div style={{ fontSize: 15, color: 'rgba(253,248,240,0.5)', lineHeight: 1.7, marginBottom: 32 }}>
-          You've had 5 free exchanges. Create a free account to keep going, save your notes, and join the community.
+          You've had 3 free exchanges. Create a free account to keep going, save your notes, and join the community.
         </div>
         <button onClick={onSignUp} style={{ background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '15px 0', fontSize: 15, fontWeight: 600, cursor: 'pointer', width: '100%', marginBottom: 12, boxShadow: '0 4px 20px rgba(184,115,58,0.4)' }}>
           Create a free account
@@ -929,7 +929,7 @@ export default function Chat({
     if (typeof window === 'undefined') return 0;
     return parseInt(localStorage.getItem(GUEST_COUNT_KEY) ?? '0', 10);
   });
-  const showGuestWall = !session && guestCount >= 5;
+  const showGuestWall = !session && guestCount >= 3;
   const [suggestions, setSuggestions] = useState([]);
   const listRef = useRef(null);
   const taRef = useRef(null);

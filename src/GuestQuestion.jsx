@@ -3,7 +3,9 @@ import { T } from './theme.js';
 import { authedFetch } from './supabase.js';
 import ShareSheet from './ShareSheet.jsx';
 
-const MAX_EXCHANGES = 2;
+// Keep in sync with server.js anon /api/chat limit (3/day) and Chat.jsx
+// GuestWall — the audit found three different numbers promised (5/2/2).
+const MAX_EXCHANGES = 3;
 const STORAGE_KEY = 'kinwove:guest-exchanges';
 
 function getTodayKey() {

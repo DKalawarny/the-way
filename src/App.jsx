@@ -1126,7 +1126,7 @@ function BottomNav({ stage, authStage, session, profile, chatOpen,
   });
 
   const labelStyle = (id) => ({
-    fontSize: 11, fontWeight: active === id ? 600 : 500, letterSpacing: 0.25, fontFamily: T.serif,
+    fontSize: 12.5, fontWeight: active === id ? 600 : 500, letterSpacing: 0.25, fontFamily: T.serif, // a11y: 11→12.5
   });
 
   // Accent rail at top edge of active tab, coloured per section
@@ -3417,6 +3417,7 @@ export default function App() {
         <Walks
           session={session}
           onClose={() => goBack('me')}
+          onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }}
         />
       )}
       {stage === 'talk-to-someone' && session && viewingChurchId && (
