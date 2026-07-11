@@ -765,6 +765,18 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState(null);
   const [dark,    setDark]    = useState(() => localStorage.getItem('rdr_dark') === '1');
+  // Reader text size (a11y: older readers + OS Larger-Text doesn't reach inline px).
+  // Tapping Aa cycles the steps; persisted per device.
+  const FONT_SCALES = [1, 1.15, 1.3, 1.5];
+  const [fontScale, setFontScale] = useState(() => {
+    const s = parseFloat(localStorage.getItem('kinwove:readerScale') ?? '1');
+    return FONT_SCALES.includes(s) ? s : 1;
+  });
+  function cycleFontScale() {
+    const next = FONT_SCALES[(FONT_SCALES.indexOf(fontScale) + 1) % FONT_SCALES.length];
+    setFontScale(next);
+    try { localStorage.setItem('kinwove:readerScale', String(next)); } catch {}
+  }
   const [chatDark, setChatDark] = useState(() => localStorage.getItem('rdr_chat_dark') === '1');
   const [selectedVerse, setSelectedVerse] = useState(null);
   // Tap a second verse while one is selected → the selection becomes a range
@@ -2510,6 +2522,15 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
             style={{ width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', background: searchOpen ? C.inputBg : 'none', border: `1px solid ${searchOpen ? C.border : 'transparent'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.muted, transition: 'all 0.15s', WebkitTapHighlightColor: 'transparent' }}
             title="Go to verse"
           ><Search size={15} strokeWidth={2} /></button>
+          <button
+            onClick={cycleFontScale}
+            title={`Text size (${Math.round(fontScale * 100)}%) — tap to change`}
+            aria-label="Change text size"
+            style={{ width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', background: fontScale !== 1 ? C.inputBg : 'none', border: `1px solid ${fontScale !== 1 ? C.border : 'transparent'}`, display: 'flex', alignItems: 'baseline', justifyContent: 'center', color: C.muted, paddingTop: 7, WebkitTapHighlightColor: 'transparent' }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 700, fontFamily: T.serif, lineHeight: 1 }}>A</span>
+            <span style={{ fontSize: 9.5, fontWeight: 700, fontFamily: T.serif, lineHeight: 1 }}>a</span>
+          </button>
           {DarkToggle}
           <button
             data-tour-id="bible-ai-chat"
@@ -2655,7 +2676,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                 style={{ marginBottom: 20 }}
               />
 
-              <div style={{ fontFamily: T.serif, fontSize: 18, lineHeight: 1.9, color: C.text }}>
+              <div style={{ fontFamily: T.serif, fontSize: Math.round(18 * fontScale), lineHeight: 1.9, color: C.text }}>
                 {verses.map((v) => {
                   const sel = selectedVerse != null && v.number >= selLo && v.number <= selHi;
                   const showMenu = selectedVerse != null && v.number === selHi;
@@ -2664,7 +2685,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                     <span key={v.number}>
                       {v.heading && (
                         <span style={{
-                          display: 'block', fontFamily: T.display, fontSize: 15.5, fontWeight: 700,
+                          display: 'block', fontFamily: T.display, fontSize: Math.round(15.5 * fontScale), fontWeight: 700,
                           color: C.verse, margin: '20px 0 4px', lineHeight: 1.3, letterSpacing: '-0.01em',
                         }}>
                           {v.heading}
@@ -2683,7 +2704,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                           transition: 'background 0.4s', display: 'inline',
                         }}
                       >
-                        <sup style={{ fontSize: 10, fontWeight: 700, color: C.verse, marginRight: 3, verticalAlign: 'super', lineHeight: 1 }}>{v.number}</sup>
+                        <sup style={{ fontSize: Math.round(10 * fontScale), fontWeight: 700, color: C.verse, marginRight: 3, verticalAlign: 'super', lineHeight: 1 }}>{v.number}</sup>
                         {v.text}
                       </span>
                       {' '}
