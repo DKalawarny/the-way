@@ -2697,6 +2697,14 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                                 ▶ Read from here
                               </button>
                             )}
+                            <button
+                              onClick={() => setSelectedVerse(null)}
+                              aria-label="Close verse menu"
+                              title="Close"
+                              style={{ background: 'transparent', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, width: 26, height: 26, padding: 0, fontSize: 13, fontWeight: 600, color: C.verse, cursor: 'pointer', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                              ✕
+                            </button>
                           </span>
                         </span>
                       )}

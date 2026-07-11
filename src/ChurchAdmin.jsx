@@ -1673,7 +1673,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
                           ``,
                           `Hi!`,
                           ``,
-                          `You're invited to join the ${churchName} youth group on kinwove — a place for young people to explore faith, ask questions, and connect with their church community.`,
+                          `You're invited to join the ${churchName} youth group on kinwove — a place for young people to explore faith, ask questions, and connect with their church community. Youth accounts can only exchange private messages with members of ${churchName}.`,
                           ``,
                           `Join here: ${youthJoinUrl}`,
                           ``,
@@ -1696,7 +1696,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
                     >🖨️ Print</button>
                   </div>
                   <p style={{ fontFamily: T.serif, fontSize: 12.5, color: T.inkMuted, lineHeight: 1.5, margin: '10px 0 0' }}>
-                    A separate invite code for members under 17.
+                    For members under 17 — private messages restricted to your church, auto-unlocks at 17.
                   </p>
                 </div>
               </div>
@@ -1708,7 +1708,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
         })() : (
           <>
             <p style={{ fontFamily: T.serif, fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, margin: '0 0 12px' }}>
-              A separate invite code for members under 17.
+              A separate invite code for members under 17. Youth accounts can only exchange private messages within your church, and auto-unlock when they turn 17.
             </p>
             <button
               disabled={youthCodeBusy}
