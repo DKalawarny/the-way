@@ -1467,6 +1467,10 @@ export default function Community({ session, profile, onClose, onOpenChat, hideH
   const TAB_COLOR = accentColor ?? '#A85530';
   const TAB_TEXT  = accentColor ?? '#8E5528'; // slightly darker for text legibility
   const [posts, setPosts] = useState([]);
+  // Paginated: first paint fetches 20; "Load more" re-queries with a bigger
+  // limit. feedLoadedRef keeps the full-feed spinner off during load-more.
+  const [postLimit, setPostLimit] = useState(20);
+  const feedLoadedRef = useRef(false);
   const [sermonItems, setSermonItems] = useState([]);
   const [pastorMap, setPastorMap] = useState({});
   const [churchMap, setChurchMap] = useState({});
@@ -1574,7 +1578,7 @@ useEffect(() => {
   }
 
   const loadPosts = useCallback(async () => {
-    setLoading(true);
+    if (!feedLoadedRef.current) setLoading(true);
     setFeedError(false);
 
     const myId = session?.user?.id;
@@ -1607,7 +1611,7 @@ useEffect(() => {
       .eq('scope', 'me')        // community feed = personal posts only; church posts stay in church
       .eq('visibility', 'public')
       .order('created_at', { ascending: false })
-      .limit(60);
+      .limit(postLimit);
 
     // Only show posts from the user's social graph (self + following + church).
     // .in() with an empty array returns nothing, which is correct for new users.
@@ -1709,7 +1713,8 @@ useEffect(() => {
     setPastorMap(pMap);
     setChurchMap(cMap);
     setLoading(false);
-  }, [filter, session, profile?.church_id]);
+    feedLoadedRef.current = true;
+  }, [filter, session, profile?.church_id, postLimit]);
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 
@@ -2359,6 +2364,20 @@ useEffect(() => {
                     ));
                   })()}
                 </div>
+                {/* Load more — shown while the last fetch filled its limit (more likely exists) */}
+                {!loading && posts.length >= postLimit && (
+                  <button
+                    onClick={() => setPostLimit((l) => l + 20)}
+                    style={{
+                      display: 'block', margin: '18px auto 6px',
+                      background: 'none', border: `1.5px solid ${T.gold}`,
+                      borderRadius: 999, padding: '10px 26px',
+                      fontSize: 14, fontWeight: 600, color: T.goldDark, cursor: 'pointer',
+                    }}
+                  >
+                    Load more
+                  </button>
+                )}
               </>
             );
           })()}
