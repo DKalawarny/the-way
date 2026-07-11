@@ -1,0 +1,24 @@
+# Free uptime monitor: GitHub runs this on a schedule and EMAILS the repo owner
+# automatically whenever a run fails — i.e. whenever kinwove is down or the
+# daily background jobs have silently stopped. No external service needed.
+# (Schedules can lag 5-15 min under load; good enough for a founder pager.)
+name: uptime
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Site is up
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 https://www.kinwove.com/api/health)
+          echo "api/health → $code"
+          [ "$code" = "200" ]
+      - name: Daily jobs are alive
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 https://www.kinwove.com/api/health/crons)
+          echo "api/health/crons → $code"
+          [ "$code" = "200" ]
