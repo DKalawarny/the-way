@@ -31,6 +31,24 @@ const TOPUP_MESSAGES = 150;
 
 const CHURCH_PLANS = new Set(['church_base', 'church_pro']);
 
+// Seat-block subscription (quantity-based, each = +100 members). These events
+// must NEVER touch profiles.plan — they only sync churches.seat_blocks.
+const SEAT_PRICE = Deno.env.get('STRIPE_PRICE_CHURCH_SEATS') ?? '__seats__';
+
+async function syncSeatBlocks(userIdOrCustomer: { userId?: string; customerId?: string }, blocks: number) {
+  let userId = userIdOrCustomer.userId;
+  if (!userId && userIdOrCustomer.customerId) {
+    const { data: prof } = await supabase.from('profiles')
+      .select('id').eq('stripe_customer_id', userIdOrCustomer.customerId).maybeSingle();
+    userId = prof?.id;
+  }
+  if (!userId) return;
+  const { data: role } = await supabase.from('church_roles')
+    .select('church_id').eq('user_id', userId).eq('is_owner', true).maybeSingle();
+  if (!role?.church_id) return;
+  await supabase.from('churches').update({ seat_blocks: blocks }).eq('id', role.church_id);
+}
+
 async function syncChurchVerification(userId: string, plan: string, isActive: boolean) {
   if (!CHURCH_PLANS.has(plan)) return;
   const { data: role } = await supabase
@@ -162,12 +180,17 @@ Deno.serve(async (req) => {
           ? session.subscription : session.subscription?.id;
         if (subscriptionId) {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-          const priceId = subscription.items.data[0]?.price.id ?? '';
-          const plan = PRICE_TO_PLAN[priceId] ?? 'premium';
-          await supabase.from('profiles')
-            .update({ plan, stripe_subscription_id: subscriptionId })
-            .eq('id', userId);
-          await syncChurchVerification(userId, plan, true);
+          const item = subscription.items.data[0];
+          const priceId = item?.price.id ?? '';
+          if (priceId === SEAT_PRICE) {
+            await syncSeatBlocks({ userId }, item?.quantity ?? 1);
+          } else {
+            const plan = PRICE_TO_PLAN[priceId] ?? 'premium';
+            await supabase.from('profiles')
+              .update({ plan, stripe_subscription_id: subscriptionId })
+              .eq('id', userId);
+            await syncChurchVerification(userId, plan, true);
+          }
         }
       }
 
@@ -175,28 +198,37 @@ Deno.serve(async (req) => {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = typeof subscription.customer === 'string'
         ? subscription.customer : subscription.customer.id;
-      const priceId = subscription.items.data[0]?.price.id ?? '';
+      const item = subscription.items.data[0];
+      const priceId = item?.price.id ?? '';
       const isActive = subscription.status === 'active' || subscription.status === 'trialing';
-      const plan = isActive ? (PRICE_TO_PLAN[priceId] ?? 'premium') : 'free';
-      const { data: profile } = await supabase.from('profiles')
-        .update({ plan, stripe_subscription_id: isActive ? subscription.id : null })
-        .eq('stripe_customer_id', customerId)
-        .select('id')
-        .maybeSingle();
-      if (profile?.id) await syncChurchVerification(profile.id, plan, isActive);
+      if (priceId === SEAT_PRICE) {
+        await syncSeatBlocks({ customerId }, isActive ? (item?.quantity ?? 1) : 0);
+      } else {
+        const plan = isActive ? (PRICE_TO_PLAN[priceId] ?? 'premium') : 'free';
+        const { data: profile } = await supabase.from('profiles')
+          .update({ plan, stripe_subscription_id: isActive ? subscription.id : null })
+          .eq('stripe_customer_id', customerId)
+          .select('id')
+          .maybeSingle();
+        if (profile?.id) await syncChurchVerification(profile.id, plan, isActive);
+      }
 
     } else if (event.type === 'customer.subscription.deleted') {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = typeof subscription.customer === 'string'
         ? subscription.customer : subscription.customer.id;
       const priceId = subscription.items.data[0]?.price.id ?? '';
-      const plan = PRICE_TO_PLAN[priceId] ?? 'free';
-      const { data: profile } = await supabase.from('profiles')
-        .update({ plan: 'free', stripe_subscription_id: null })
-        .eq('stripe_customer_id', customerId)
-        .select('id')
-        .maybeSingle();
-      if (profile?.id) await syncChurchVerification(profile.id, plan, false);
+      if (priceId === SEAT_PRICE) {
+        await syncSeatBlocks({ customerId }, 0);
+      } else {
+        const plan = PRICE_TO_PLAN[priceId] ?? 'free';
+        const { data: profile } = await supabase.from('profiles')
+          .update({ plan: 'free', stripe_subscription_id: null })
+          .eq('stripe_customer_id', customerId)
+          .select('id')
+          .maybeSingle();
+        if (profile?.id) await syncChurchVerification(profile.id, plan, false);
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {

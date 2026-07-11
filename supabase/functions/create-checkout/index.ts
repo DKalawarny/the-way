@@ -15,6 +15,7 @@ const PRICE_MAP: Record<string, string | undefined> = {
   premium_plus: Deno.env.get('STRIPE_PRICE_INDIVIDUAL_PRO'),
   church_base:  Deno.env.get('STRIPE_PRICE_CHURCH_BASE'),
   church_pro:   Deno.env.get('STRIPE_PRICE_CHURCH_PRO'),
+  church_seats: Deno.env.get('STRIPE_PRICE_CHURCH_SEATS'), // quantity-based +100-member blocks
 };
 
 const CORS = {
@@ -29,7 +30,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { price_plan, user_id, user_email, return_url } = await req.json();
+    const { price_plan, user_id, user_email, return_url, quantity } = await req.json();
 
     if (!price_plan || !user_id || !user_email || !return_url) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
@@ -67,7 +68,11 @@ Deno.serve(async (req) => {
       customer: customerId,
       client_reference_id: user_id,
       mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
+      // Seat blocks are quantity-based (each = +100 members); everything else is qty 1.
+      line_items: [{
+        price: priceId,
+        quantity: price_plan === 'church_seats' ? Math.min(Math.max(parseInt(quantity, 10) || 1, 1), 20) : 1,
+      }],
       allow_promotion_codes: true,   // show a "Add promotion code" field at checkout
       success_url: `${return_url}?stripe_success=1`,
       cancel_url:  `${return_url}?stripe_cancel=1`,
