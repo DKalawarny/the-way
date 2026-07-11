@@ -1268,7 +1268,10 @@ export default function Chat({
       const res = await authedFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ system, messages: apiMessages, personType, seekingContext, plan: aiPlan }),
+        // groundCommentary: when the question names a passage, the server pulls
+        // real public-domain commentary text so citations are quoted, not
+        // recalled. No-op (and no cost) for non-passage questions.
+        body: JSON.stringify({ system, messages: apiMessages, personType, seekingContext, plan: aiPlan, groundCommentary: true }),
         signal: controller.signal,
       });
 
