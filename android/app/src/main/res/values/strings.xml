@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">kinwove</string>
+    <string name="title_activity_main">kinwove</string>
+    <string name="package_name">com.kinwove.app</string>
+    <string name="custom_url_scheme">com.kinwove.app</string>
+</resources>
