@@ -62,11 +62,18 @@ function bookGroupComplete(bookIds, completedSet, bibleId) {
   return true;
 }
 
-function countForVersion(completedSet, bibleId) {
-  let n = 0;
-  const prefix = `${bibleId}:`;
-  for (const k of completedSet) if (k.startsWith(prefix)) n++;
-  return n;
+// Progress is translation-agnostic (keys are `BOOK:CH`): switching NIV→KJV
+// used to zero out progress and badges because keys were prefixed by bibleId.
+function countForVersion(completedSet, _bibleId) {
+  return completedSet.size;
+}
+
+// Old localStorage keys were `bibleId:BOOK:CH` — collapse to `BOOK:CH` once.
+function normalizeProgressKeys(keys) {
+  return [...new Set(keys.map((k) => {
+    const parts = String(k).split(':');
+    return parts.length === 3 ? `${parts[1]}:${parts[2]}` : k;
+  }))];
 }
 
 const BADGES = [
@@ -609,6 +616,14 @@ const QUICK_ACTIONS = [
 // headings, ms* major sections, qa acrostic headings, sp speaker labels.
 // These are editorial titles, NOT scripture — they must never be glued into
 // verse text (which gets copied, read aloud, and sent to the AI).
+// Highlight palette — warm tints that read on both parchment and dark mode.
+const HL_COLORS = {
+  gold: 'rgba(212,162,74,0.32)',
+  rose: 'rgba(196,86,86,0.26)',
+  sage: 'rgba(107,153,92,0.26)',
+  sky:  'rgba(92,133,168,0.26)',
+};
+
 const HEADING_CLASS_RE = /^(s[1-4]?|ms[1-4]?|qa|sp)$/;
 // Cross-reference lines under headings ("(Matt 3:1–12)") — drop entirely.
 const SKIP_CLASS_RE = /^(mr|r)$/;
@@ -780,9 +795,17 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const [noteSaving, setNoteSaving] = useState(false);
   const [completed, setCompleted] = useState(() => {
     const _uid = session?.user?.id ?? 'guest';
-    try { return new Set(JSON.parse(localStorage.getItem(`rdr_done:${_uid}`) ?? '[]')); }
+    try {
+      const raw = JSON.parse(localStorage.getItem(`rdr_done:${_uid}`) ?? '[]');
+      const normalized = normalizeProgressKeys(raw);
+      if (normalized.length !== raw.length || normalized.some((k, i) => k !== raw[i])) {
+        localStorage.setItem(`rdr_done:${_uid}`, JSON.stringify(normalized));
+      }
+      return new Set(normalized);
+    }
     catch { return new Set(); }
   });
+  const [hlMap, setHlMap] = useState({}); // verseNum → highlight color name (this chapter)
   const [newBadge, setNewBadge] = useState(null); // badge just earned → show toast
   const [showBibleTour,     setShowBibleTour]     = useState(() => !isPageTourDone(BIBLE_TOUR_KEY));
   const [showBibleReadTour, setShowBibleReadTour] = useState(() => !isPageTourDone(BIBLE_READ_TOUR_KEY));
@@ -956,7 +979,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const C = dark ? DARK : LIGHT;
   const CC = chatDark ? DARK : LIGHT;
   const book  = ALL_BOOKS.find((b) => b.id === bookId) ?? ALL_BOOKS[0];
-  const isDone = completed.has(`${bibleId}:${bookId}:${chNum}`);
+  const isDone = completed.has(`${bookId}:${chNum}`);
   const hasHistory = localStorage.getItem('rdr_book') !== null;
   const earnedBadgeIds = useMemo(
     () => new Set(BADGES.filter((b) => b.check(completed, bibleId)).map((b) => b.id)),
@@ -968,15 +991,11 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const bookDoneMap = useMemo(() => {
     const map = {};
     for (const k of completed) {
-      const colon1 = k.indexOf(':');
-      const colon2 = k.indexOf(':', colon1 + 1);
-      if (k.slice(0, colon1) === bibleId) {
-        const bid = k.slice(colon1 + 1, colon2);
-        map[bid] = (map[bid] ?? 0) + 1;
-      }
+      const bid = k.slice(0, k.indexOf(':'));
+      map[bid] = (map[bid] ?? 0) + 1;
     }
     return map;
-  }, [completed, bibleId]);
+  }, [completed]);
 
   const bookDone  = (b) => bookDoneMap[b.id] ?? 0;
   const bookPct   = (b) => Math.round((bookDone(b) / b.ch) * 100);
@@ -984,10 +1003,17 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
 
   function resetBooks(bookIds) {
     const newCompleted = new Set(
-      [...completed].filter((k) => !bookIds.some((id) => k.startsWith(`${bibleId}:${id}:`)))
+      [...completed].filter((k) => !bookIds.some((id) => k.startsWith(`${id}:`)))
     );
     setCompleted(newCompleted);
     localStorage.setItem(`rdr_done:${uid}`, JSON.stringify([...newCompleted]));
+    if (session?.user?.id) {
+      for (const id of bookIds) {
+        supabase.from('bible_progress').delete()
+          .eq('user_id', session.user.id).like('chapter_id', `${id}.%`)
+          .then(null, () => {});
+      }
+    }
     // Nullify refs so toasts can re-fire when books are re-completed
     prevBookDoneRef.current = null;
     prevEarnedRef.current   = null;
@@ -1029,6 +1055,69 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     localStorage.setItem('rdr_dark',  dark ? '1' : '0');
     localStorage.setItem('rdr_chat_dark', chatDark ? '1' : '0');
   }, [bibleId, bookId, chNum, dark, chatDark]);
+
+  // One-time cloud sync: merge bible_progress rows with local, push local-only
+  // rows up. Progress now survives new devices and cleared caches.
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.from('bible_progress').select('chapter_id').eq('user_id', userId);
+      if (cancelled || !Array.isArray(data)) return;
+      const cloud = new Set(data.map((r) => r.chapter_id.replace('.', ':')));
+      setCompleted((local) => {
+        const merged = new Set([...local, ...cloud]);
+        const localOnly = [...local].filter((k) => !cloud.has(k));
+        if (localOnly.length) {
+          supabase.from('bible_progress')
+            .upsert(
+              localOnly.map((k) => ({ user_id: userId, chapter_id: k.replace(':', '.') })),
+              { onConflict: 'user_id,chapter_id', ignoreDuplicates: true }
+            )
+            .then(null, () => {});
+        }
+        if (merged.size !== local.size) {
+          localStorage.setItem(`rdr_done:${userId}`, JSON.stringify([...merged]));
+          return merged;
+        }
+        return local;
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [session?.user?.id]);
+
+  // Load this chapter's highlights (translation-agnostic, synced).
+  useEffect(() => {
+    setHlMap({});
+    const userId = session?.user?.id;
+    if (!userId || view !== 'reading') return;
+    let cancelled = false;
+    supabase.from('bible_highlights').select('verse_num, color')
+      .eq('user_id', userId).eq('chapter_id', `${bookId}.${chNum}`)
+      .then(({ data }) => {
+        if (cancelled || !Array.isArray(data)) return;
+        setHlMap(Object.fromEntries(data.map((r) => [r.verse_num, r.color])));
+      });
+    return () => { cancelled = true; };
+  }, [session?.user?.id, bookId, chNum, view]);
+
+  async function toggleHighlight(v, color) {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    const chapterId = `${bookId}.${chNum}`;
+    if (hlMap[v.number] === color) {
+      setHlMap((m) => { const n = { ...m }; delete n[v.number]; return n; });
+      await supabase.from('bible_highlights').delete()
+        .eq('user_id', userId).eq('chapter_id', chapterId).eq('verse_num', v.number)
+        .then(null, () => {});
+    } else {
+      setHlMap((m) => ({ ...m, [v.number]: color }));
+      await supabase.from('bible_highlights')
+        .upsert({ user_id: userId, chapter_id: chapterId, verse_num: v.number, color }, { onConflict: 'user_id,chapter_id,verse_num' })
+        .then(null, () => {});
+    }
+  }
 
   // Load persisted chat + last verse whenever chapter changes; auto-open if history exists
   useEffect(() => {
@@ -1141,11 +1230,17 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   }
 
   function markDone() {
-    const key = `${bibleId}:${bookId}:${chNum}`;
+    const key = `${bookId}:${chNum}`;
     if (completed.has(key)) { goChapter(chNum + 1); return; }
     const next = new Set([...completed, key]);
     setCompleted(next);
     localStorage.setItem(`rdr_done:${uid}`, JSON.stringify([...next]));
+    // Sync to the cloud so progress survives new devices / cleared caches.
+    if (session?.user?.id) {
+      supabase.from('bible_progress')
+        .upsert({ user_id: session.user.id, chapter_id: `${bookId}.${chNum}` }, { onConflict: 'user_id,chapter_id', ignoreDuplicates: true })
+        .then(null, () => {});
+    }
 
     // Detect book completion synchronously — before goChapter() batches a bookId change.
     // bookDoneMap doesn't include `key` yet, so prevDone+1 = new total for this book.
@@ -2536,7 +2631,10 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                         data-verse={v.number}
                         onClick={() => tapVerse(v)}
                         style={{
-                          background: sel ? 'rgba(184,115,58,0.15)' : hl ? 'rgba(184,115,58,0.28)' : 'transparent',
+                          background: sel ? 'rgba(184,115,58,0.15)'
+                            : hl ? 'rgba(184,115,58,0.28)'
+                            : hlMap[v.number] ? (HL_COLORS[hlMap[v.number]] ?? HL_COLORS.gold)
+                            : 'transparent',
                           borderRadius: 4, cursor: 'pointer',
                           padding: (sel || hl) ? '2px 4px' : '2px 0',
                           transition: 'background 0.4s', display: 'inline',
@@ -2567,6 +2665,23 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                             >
                               {copiedVerse === v.number ? '✓ Copied' : '⇪ Share'}
                             </button>
+                            {/* Highlight swatches — tap a color to highlight, tap again to clear. */}
+                            {session && (
+                              <span style={{ display: 'inline-flex', gap: 5, alignItems: 'center', padding: '0 2px' }}>
+                                {Object.entries(HL_COLORS).map(([name, tint]) => (
+                                  <button
+                                    key={name}
+                                    onClick={() => toggleHighlight(v, name)}
+                                    title={hlMap[v.number] === name ? 'Remove highlight' : `Highlight ${name}`}
+                                    style={{
+                                      width: 20, height: 20, borderRadius: '50%', cursor: 'pointer', padding: 0,
+                                      background: tint.replace(/[\d.]+\)$/, '0.85)'),
+                                      border: hlMap[v.number] === name ? `2px solid ${C.verse}` : `1px solid ${C.border}`,
+                                    }}
+                                  />
+                                ))}
+                              </span>
+                            )}
                             {QUICK_ACTIONS.map((a) => (
                               <button key={a.id} onClick={() => sendQuickAction(a)} style={{ background: 'rgba(184,115,58,0.1)', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                 {a.label}
