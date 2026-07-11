@@ -767,6 +767,9 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const [dark,    setDark]    = useState(() => localStorage.getItem('rdr_dark') === '1');
   const [chatDark, setChatDark] = useState(() => localStorage.getItem('rdr_chat_dark') === '1');
   const [selectedVerse, setSelectedVerse] = useState(null);
+  // Tap a second verse while one is selected → the selection becomes a range
+  // (share/highlight/ask a whole passage, not just one verse).
+  const [selEnd, setSelEnd] = useState(null);
   const [lastVerse,     setLastVerse]     = useState(null); // persists after deselect for quick actions
   const [copiedVerse,   setCopiedVerse]   = useState(null); // verse # just copied (transient share feedback)
   const [chatOpen,      setChatOpen]      = useState(false);
@@ -980,6 +983,39 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const CC = chatDark ? DARK : LIGHT;
   const book  = ALL_BOOKS.find((b) => b.id === bookId) ?? ALL_BOOKS[0];
   const isDone = completed.has(`${bookId}:${chNum}`);
+
+  // Selection range (single verse or passage). All verse actions use these.
+  const selLo = selectedVerse ? Math.min(selectedVerse.number, selEnd ?? selectedVerse.number) : null;
+  const selHi = selectedVerse ? Math.max(selectedVerse.number, selEnd ?? selectedVerse.number) : null;
+  const selVerses = selectedVerse ? verses.filter((x) => x.number >= selLo && x.number <= selHi) : [];
+  const selText = selVerses.map((x) => x.text).join(' ');
+  const selRefLabel = selectedVerse
+    ? `${book.name} ${chNum}:${selLo}${selHi !== selLo ? `-${selHi}` : ''}`
+    : '';
+
+  // Highlight every verse in the selection with one color; if the whole
+  // selection already wears that color, a second tap clears it.
+  async function applyHighlightRange(color) {
+    const userId = session?.user?.id;
+    if (!userId || !selVerses.length) return;
+    const chapterId = `${bookId}.${chNum}`;
+    const targets = selVerses.map((x) => x.number);
+    const allSame = targets.every((n) => hlMap[n] === color);
+    if (allSame) {
+      setHlMap((m) => { const n = { ...m }; targets.forEach((t) => delete n[t]); return n; });
+      await supabase.from('bible_highlights').delete()
+        .eq('user_id', userId).eq('chapter_id', chapterId).in('verse_num', targets)
+        .then(null, () => {});
+    } else {
+      setHlMap((m) => ({ ...m, ...Object.fromEntries(targets.map((t) => [t, color])) }));
+      await supabase.from('bible_highlights')
+        .upsert(
+          targets.map((t) => ({ user_id: userId, chapter_id: chapterId, verse_num: t, color })),
+          { onConflict: 'user_id,chapter_id,verse_num' }
+        )
+        .then(null, () => {});
+    }
+  }
   const hasHistory = localStorage.getItem('rdr_book') !== null;
   const earnedBadgeIds = useMemo(
     () => new Set(BADGES.filter((b) => b.check(completed, bibleId)).map((b) => b.id)),
@@ -1189,7 +1225,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
 
   // ── Reading logic ───────────────────────────────────────────────────────────
   async function loadChapter() {
-    setLoading(true); setError(null); setSelectedVerse(null);
+    setLoading(true); setError(null); setSelectedVerse(null); setSelEnd(null);
     readAreaRef.current?.scrollTo(0, 0);
     try {
       const data = await fetchChapter(bibleId, bookId, chNum);
@@ -1339,8 +1375,14 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
 
   function tapVerse(v) {
     if (window.getSelection()?.toString().trim()) return;
+    if (selectedVerse && v.number !== selectedVerse.number) {
+      // Extend (or shrink) the selection into a range anchored on the first tap.
+      setSelEnd(v.number === selEnd ? null : v.number);
+      return;
+    }
     const next = selectedVerse?.number === v.number ? null : v;
     setSelectedVerse(next);
+    setSelEnd(null);
     if (next) setLastVerse(next);
   }
 
@@ -2615,7 +2657,8 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
 
               <div style={{ fontFamily: T.serif, fontSize: 18, lineHeight: 1.9, color: C.text }}>
                 {verses.map((v) => {
-                  const sel = selectedVerse?.number === v.number;
+                  const sel = selectedVerse != null && v.number >= selLo && v.number <= selHi;
+                  const showMenu = selectedVerse != null && v.number === selHi;
                   const hl  = highlightVerse === v.number;
                   return (
                     <span key={v.number}>
@@ -2644,67 +2687,77 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                         {v.text}
                       </span>
                       {' '}
-                      {sel && (
+                      {showMenu && (
                         <span style={{ display: 'inline-block', verticalAlign: 'top' }}>
-                          <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap', background: dark ? '#1A0E07' : T.white, border: `1px solid ${C.border}`, borderRadius: 12, padding: '8px 10px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', margin: '4px 0 4px 4px' }}>
+                          <span style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', background: dark ? '#1A0E07' : T.white, border: `1px solid ${C.border}`, borderRadius: 12, padding: '8px 10px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', margin: '4px 0 4px 4px' }}>
                             {/* Free-form ask — opens this book's chat with the input focused,
                                 no canned prompt. For "explain why…" or any question at all. */}
-                            <button onClick={() => { setSelectedVerse(null); setChatOpen(true); setTimeout(() => chatInputRef.current?.focus(), 300); }} style={{ background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`, border: '1px solid transparent', borderRadius: 999, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: T.cream, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                            <button onClick={() => { setSelectedVerse(null); setSelEnd(null); setChatOpen(true); setTimeout(() => chatInputRef.current?.focus(), 300); }} style={{ background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`, border: '1px solid transparent', borderRadius: 999, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: T.cream, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                               💬 Ask
                             </button>
-                            {/* Share/copy the verse — the #1 organic-growth action in a Bible app. */}
+                            {/* Share/copy the selection — the #1 organic-growth action in a Bible app.
+                                Text + url merged into one string: iOS drops `text` when `url` is
+                                a separate field, so recipients only got a bare link. */}
                             <button
                               onClick={() => {
                                 const abbr = VERSIONS.find((x) => x.id === bibleId)?.abbr ?? 'KJV';
-                                const text = `"${v.text}" — ${book.name} ${chNum}:${v.number} (${abbr})`;
-                                const url = 'https://www.kinwove.com';
-                                if (navigator.share) { navigator.share({ text, url }).catch(() => {}); }
-                                else { navigator.clipboard?.writeText(`${text}\n${url}`).then(() => { setCopiedVerse(v.number); setTimeout(() => setCopiedVerse(null), 1500); }, () => {}); }
+                                const text = `"${selText}" — ${selRefLabel} (${abbr})\nhttps://www.kinwove.com`;
+                                if (navigator.share) { navigator.share({ text }).catch(() => {}); }
+                                else { navigator.clipboard?.writeText(text).then(() => { setCopiedVerse(v.number); setTimeout(() => setCopiedVerse(null), 1500); }, () => {}); }
                               }}
                               style={{ background: 'rgba(184,115,58,0.1)', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}
                             >
                               {copiedVerse === v.number ? '✓ Copied' : '⇪ Share'}
                             </button>
-                            {/* Highlight swatches — tap a color to highlight, tap again to clear. */}
+                            {/* Highlight swatches — tap a color to highlight the whole selection,
+                                tap the same color again to clear it. */}
                             {session && (
                               <span style={{ display: 'inline-flex', gap: 5, alignItems: 'center', padding: '0 2px' }}>
-                                {Object.entries(HL_COLORS).map(([name, tint]) => (
-                                  <button
-                                    key={name}
-                                    onClick={() => toggleHighlight(v, name)}
-                                    title={hlMap[v.number] === name ? 'Remove highlight' : `Highlight ${name}`}
-                                    style={{
-                                      width: 26, height: 26, borderRadius: '50%', cursor: 'pointer', padding: 0,
-                                      background: tint.replace(/[\d.]+\)$/, '0.85)'),
-                                      border: hlMap[v.number] === name ? `2px solid ${C.verse}` : `1px solid ${C.border}`,
-                                    }}
-                                  />
-                                ))}
+                                {Object.entries(HL_COLORS).map(([name, tint]) => {
+                                  const activeAll = selVerses.length > 0 && selVerses.every((x) => hlMap[x.number] === name);
+                                  return (
+                                    <button
+                                      key={name}
+                                      onClick={() => applyHighlightRange(name)}
+                                      title={activeAll ? 'Remove highlight' : `Highlight ${name}`}
+                                      style={{
+                                        width: 26, height: 26, borderRadius: '50%', cursor: 'pointer', padding: 0,
+                                        background: tint.replace(/[\d.]+\)$/, '0.85)'),
+                                        border: activeAll ? `2px solid ${C.verse}` : `1px solid ${C.border}`,
+                                      }}
+                                    />
+                                  );
+                                })}
                               </span>
                             )}
                             {QUICK_ACTIONS.map((a) => (
-                              <button key={a.id} onClick={() => sendQuickAction(a)} style={{ background: 'rgba(184,115,58,0.1)', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                              <button key={a.id} onClick={() => sendQuickAction(a, { number: selLo === selHi ? selLo : `${selLo}-${selHi}`, text: selText })} style={{ background: 'rgba(184,115,58,0.1)', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                 {a.label}
                               </button>
                             ))}
                             {session && (
-                              <button onClick={() => openNote(v)} style={{ background: noteMap[v.number] ? 'rgba(184,115,58,0.18)' : 'transparent', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                {noteMap[v.number] ? '✏ Edit note' : '✏ Note'}
+                              <button onClick={() => openNote(selectedVerse)} style={{ background: noteMap[selectedVerse.number] ? 'rgba(184,115,58,0.18)' : 'transparent', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                {noteMap[selectedVerse.number] ? '✏ Edit note' : '✏ Note'}
                               </button>
                             )}
                             {(rdTtsSupported || usingAudio) && (
-                              <button onClick={() => startReadingFrom(v.number)} style={{ background: 'transparent', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                              <button onClick={() => startReadingFrom(selLo)} style={{ background: 'transparent', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, color: C.verse, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                 ▶ Read from here
                               </button>
                             )}
                             <button
-                              onClick={() => setSelectedVerse(null)}
+                              onClick={() => { setSelectedVerse(null); setSelEnd(null); }}
                               aria-label="Close verse menu"
                               title="Close"
                               style={{ background: 'transparent', border: `1px solid rgba(184,115,58,0.25)`, borderRadius: 999, width: 34, height: 34, padding: 0, fontSize: 14, fontWeight: 600, color: C.verse, cursor: 'pointer', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
                             >
                               ✕
                             </button>
+                            {selLo === selHi && (
+                              <span style={{ flexBasis: '100%', fontSize: 11, color: T.inkMuted, paddingTop: 2 }}>
+                                Tip: tap another verse to select a passage
+                              </span>
+                            )}
                           </span>
                         </span>
                       )}

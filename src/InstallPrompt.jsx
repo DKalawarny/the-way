@@ -172,8 +172,11 @@ export default function InstallPrompt({ triggerNow = false }) {
 
   return (
     <div style={{
-      position: 'fixed', bottom: 74, left: '50%', transform: 'translateX(-50%)',
-      zIndex: 90, width: 'calc(100% - 32px)', maxWidth: 420,
+      // Centered via left/right+margin, NOT translateX — the fadeUp animation's
+      // final transform frame replaces inline transforms, which pushed the
+      // banner half off-screen (buttons unreachable) on mobile.
+      position: 'fixed', bottom: 74, left: 16, right: 16, margin: '0 auto',
+      zIndex: 90, maxWidth: 420,
       background: T.ink, borderRadius: 16,
       boxShadow: '0 8px 32px rgba(44,24,16,0.28)',
       padding: '14px 18px',
