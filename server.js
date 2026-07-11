@@ -3864,6 +3864,65 @@ app.post('/api/admin/post-reports/:id', requireAdmin, async (req, res) => {
   }
 });
 
+// ── Admin user management ─────────────────────────────────────────────────────
+// Search users, comp a plan, suspend (auth-level ban: login + token refresh
+// stop working; no schema needed). Powers the AdminPage Users tab.
+const COMPABLE_PLANS = ['free', 'premium', 'premium_plus'];
+
+app.get('/api/admin/users', requireAdmin, async (req, res) => {
+  const q = String(req.query.q ?? '').trim().replace(/[%,()]/g, '');
+  if (!q) return res.json({ users: [] });
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?display_name=ilike.*${encodeURIComponent(q)}*&select=id,display_name,plan,church_id,created_at,is_pastor,verse_streak&limit=10`,
+      { headers: h }
+    );
+    const rows = await r.json();
+    if (!Array.isArray(rows)) return res.json({ users: [] });
+    // Hydrate email + ban status from the auth admin API (≤10 lookups).
+    const users = await Promise.all(rows.map(async (p) => {
+      try {
+        const ur = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${p.id}`, { headers: h });
+        const u = await ur.json();
+        return { ...p, email: u?.email ?? null, banned_until: u?.banned_until ?? null };
+      } catch { return { ...p, email: null, banned_until: null }; }
+    }));
+    res.json({ users });
+  } catch (e) { safeError(res, e, 'admin-users-search'); }
+});
+
+app.post('/api/admin/users/:id/plan', requireAdmin, async (req, res) => {
+  const { plan } = req.body ?? {};
+  if (!isUuid(req.params.id)) return res.status(400).json({ error: 'invalid id' });
+  if (!COMPABLE_PLANS.includes(plan)) return res.status(400).json({ error: 'invalid plan' });
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.params.id}`, {
+      method: 'PATCH',
+      headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ plan }),
+    });
+    if (!r.ok) return res.status(500).json({ error: 'plan update failed' });
+    res.json({ ok: true });
+  } catch (e) { safeError(res, e, 'admin-users-plan'); }
+});
+
+app.post('/api/admin/users/:id/ban', requireAdmin, async (req, res) => {
+  const { banned } = req.body ?? {};
+  if (!isUuid(req.params.id)) return res.status(400).json({ error: 'invalid id' });
+  if (req.params.id === req.userId) return res.status(400).json({ error: "You can't suspend yourself." });
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${req.params.id}`, {
+      method: 'PUT',
+      headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' },
+      // ~100 years, or 'none' to lift. Auth-level: login + refresh stop working.
+      body: JSON.stringify({ ban_duration: banned ? '876000h' : 'none' }),
+    });
+    if (!r.ok) return res.status(500).json({ error: 'ban update failed' });
+    res.json({ ok: true });
+  } catch (e) { safeError(res, e, 'admin-users-ban'); }
+});
+
 // ── Admin church lookup + edit ────────────────────────────────────────────────
 app.get('/api/admin/church', requireAdmin, async (req, res) => {
   const { pastor_id } = req.query;

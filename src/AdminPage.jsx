@@ -324,11 +324,108 @@ const TABS = [
   { id: 'ai',         label: 'AI & Topics' },
   { id: 'geo',        label: 'Geography' },
   { id: 'churches',   label: 'Churches' },
+  { id: 'users',      label: 'Users' },
   { id: 'content',    label: 'Content' },
   { id: 'operations', label: 'Operations' },
   { id: 'sponsors',   label: 'Sponsors' },
   { id: 'voice',      label: '✦ Posts' },
 ];
+
+const COMPABLE_PLANS = ['free', 'premium', 'premium_plus'];
+
+// ── Users tab — search, comp a plan, suspend ─────────────────────────────────
+function UsersPanel() {
+  const [query, setQuery]     = useState('');
+  const [results, setResults] = useState(null); // null = idle
+  const [busy, setBusy]       = useState(null); // uid while acting
+  const [searching, setSearching] = useState(false);
+
+  async function runSearch() {
+    const q = query.trim();
+    if (!q) return;
+    setSearching(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const r = await fetch(`/api/admin/users?q=${encodeURIComponent(q)}`, {
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      const json = await r.json();
+      setResults(json.users ?? []);
+    } catch { setResults([]); }
+    setSearching(false);
+  }
+
+  async function act(uid, path, body, patch) {
+    setBusy(uid);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const r = await fetch(`/api/admin/users/${uid}/${path}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (r.ok) setResults((rs) => rs.map((u) => u.id === uid ? { ...u, ...patch } : u));
+    } finally { setBusy(null); }
+  }
+
+  const isBanned = (u) => u.banned_until && new Date(u.banned_until) > new Date();
+
+  return (
+    <div>
+      <SectionTitle>Users</SectionTitle>
+      <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 14 }}>
+        Search by name. Comp a plan for friends and partners; suspend blocks sign-in entirely (existing sessions lapse within the hour).
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && runSearch()}
+          placeholder="Search users by name…"
+          style={{ flex: 1, padding: '11px 14px', borderRadius: 10, border: `1px solid ${T.line}`, fontSize: 14, background: T.white, color: T.ink, outline: 'none' }}
+        />
+        <button onClick={runSearch} disabled={searching} style={{ background: T.ink, color: T.cream, border: 'none', borderRadius: 10, padding: '11px 20px', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', opacity: searching ? 0.6 : 1 }}>
+          {searching ? '…' : 'Search'}
+        </button>
+      </div>
+      {results !== null && results.length === 0 && <EmptyNote>No users match "{query}".</EmptyNote>}
+      {(results ?? []).map((u) => (
+        <div key={u.id} style={{ background: T.white, border: `1px solid ${isBanned(u) ? 'rgba(165,63,43,0.4)' : T.line}`, borderRadius: 12, padding: '14px 16px', marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+            <span style={{ fontSize: 15, fontWeight: 600, color: T.ink }}>{u.display_name ?? 'No name'}</span>
+            {u.is_pastor && <span style={{ fontSize: 10.5, fontWeight: 700, background: 'rgba(184,115,58,0.12)', color: T.goldDark, borderRadius: 999, padding: '2px 8px' }}>PASTOR</span>}
+            {isBanned(u) && <span style={{ fontSize: 10.5, fontWeight: 700, background: 'rgba(165,63,43,0.12)', color: '#a53f2b', borderRadius: 999, padding: '2px 8px' }}>SUSPENDED</span>}
+            <span style={{ marginLeft: 'auto', fontSize: 11.5, color: T.inkMuted }}>
+              joined {u.created_at ? new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+            </span>
+          </div>
+          <div style={{ fontSize: 12.5, color: T.inkSoft, marginBottom: 10 }}>{u.email ?? 'email unavailable'}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <select
+              value={u.plan ?? 'free'}
+              onChange={(e) => act(u.id, 'plan', { plan: e.target.value }, { plan: e.target.value })}
+              disabled={busy === u.id}
+              style={{ padding: '7px 10px', borderRadius: 8, border: `1px solid ${T.line}`, fontSize: 12.5, background: T.parchment, color: T.ink }}
+            >
+              {COMPABLE_PLANS.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
+            <button
+              onClick={() => {
+                const banned = !isBanned(u);
+                if (banned && !window.confirm(`Suspend ${u.display_name ?? 'this user'}? They won't be able to sign in until unsuspended.`)) return;
+                act(u.id, 'ban', { banned }, { banned_until: banned ? new Date(Date.now() + 3.15e12).toISOString() : null });
+              }}
+              disabled={busy === u.id}
+              style={{ background: isBanned(u) ? 'rgba(46,122,72,0.1)' : 'rgba(165,63,43,0.1)', color: isBanned(u) ? '#2e7a48' : '#a53f2b', border: `1px solid ${isBanned(u) ? 'rgba(46,122,72,0.25)' : 'rgba(165,63,43,0.25)'}`, borderRadius: 999, padding: '7px 16px', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', opacity: busy === u.id ? 0.5 : 1 }}
+            >
+              {busy === u.id ? '…' : isBanned(u) ? 'Unsuspend' : 'Suspend'}
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const EMPTY_FORM = {
   sponsor_name: '', title: '', body: '', cta_text: '', cta_url: '',
@@ -1265,6 +1362,8 @@ export default function AdminPage({ onBack }) {
         )}
 
         {/* ── SPONSORS ──────────────────────────────────────────────────────── */}
+        {tab === 'users' && <UsersPanel />}
+
         {tab === 'sponsors' && (
           <div>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, gap: 12 }}>
