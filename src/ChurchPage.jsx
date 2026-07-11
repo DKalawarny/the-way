@@ -1661,6 +1661,24 @@ export default function ChurchPage({
               </a>
             )}
 
+            {/* Give — links to the church's own giving provider; no money touches kinwove */}
+            {church.giving_url && (
+              <a
+                href={church.giving_url.startsWith('http') ? church.giving_url : `https://${church.giving_url}`}
+                target="_blank" rel="noreferrer"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  padding: '12px 18px', marginBottom: 16,
+                  background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`,
+                  borderRadius: 12, textDecoration: 'none',
+                  color: T.cream, fontSize: 14.5, fontWeight: 600,
+                  boxShadow: '0 4px 14px rgba(184,115,58,0.3)',
+                }}
+              >
+                💛 Give to {church.name}
+              </a>
+            )}
+
             {/* About — longer description if the pastor wrote one */}
             {church.about && (
               <div style={{ marginBottom: 16, padding: '18px 20px', background: T.white, border: `1px solid ${T.line}`, borderRadius: 14 }}>

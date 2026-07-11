@@ -232,6 +232,7 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
   // by default. Renders as a single row on the public page when present.
   const [serviceDraft, setServiceDraft] = useState(church?.service_info ?? '');
   const [addressDraft, setAddressDraft] = useState(church?.street_address ?? '');
+  const [givingDraft, setGivingDraft]   = useState(church?.giving_url ?? '');
   const [savingVisit, setSavingVisit]   = useState(false);
 
   // Countries we serve — up to 2 ISO codes.
@@ -248,7 +249,8 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
 
   const dirty      = (pinDraft.trim() || '') !== (church?.pinned_post ?? '');
   const visitDirty = (serviceDraft.trim() || '') !== (church?.service_info ?? '')
-                  || (addressDraft.trim() || '') !== (church?.street_address ?? '');
+                  || (addressDraft.trim() || '') !== (church?.street_address ?? '')
+                  || (givingDraft.trim() || '') !== (church?.giving_url ?? '');
 
   async function savePin() {
     if (!churchId) return;
@@ -269,13 +271,14 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
     setSavingVisit(true);
     const nextService = serviceDraft.trim() || null;
     const nextAddress = addressDraft.trim() || null;
+    const nextGiving  = givingDraft.trim() || null;
     const { error } = await supabase
       .from('churches')
-      .update({ service_info: nextService, street_address: nextAddress })
+      .update({ service_info: nextService, street_address: nextAddress, giving_url: nextGiving })
       .eq('id', churchId);
     setSavingVisit(false);
     if (error) { showToast(`Couldn't save: ${error.message}`, 'error'); return; }
-    onChurchUpdate?.({ service_info: nextService, street_address: nextAddress });
+    onChurchUpdate?.({ service_info: nextService, street_address: nextAddress, giving_url: nextGiving });
     showToast('Visit info saved.', 'success');
   }
 
@@ -525,9 +528,28 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
             width: '100%', boxSizing: 'border-box',
             border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 12px',
             fontFamily: T.serif, fontSize: 14, color: T.ink,
+            background: T.cream, outline: 'none', marginBottom: 10,
+          }}
+        />
+
+        <label style={{ display: 'block', fontSize: 12, color: T.inkSoft, fontWeight: 600, marginBottom: 4 }}>
+          Online giving link
+        </label>
+        <input
+          type="url"
+          value={givingDraft}
+          onChange={(e) => setGivingDraft(e.target.value.slice(0, 300))}
+          placeholder="e.g. tithe.ly, PushPay, or your church's giving page"
+          style={{
+            width: '100%', boxSizing: 'border-box',
+            border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 12px',
+            fontFamily: T.serif, fontSize: 14, color: T.ink,
             background: T.cream, outline: 'none',
           }}
         />
+        <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 6 }}>
+          When set, a 💛 Give button appears on your church page. Payments happen on your provider's site — kinwove never touches the money.
+        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', marginTop: 12, gap: 8 }}>
           <div style={{ flex: 1 }} />
@@ -535,6 +557,7 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
             <button onClick={() => {
               setServiceDraft(church?.service_info ?? '');
               setAddressDraft(church?.street_address ?? '');
+              setGivingDraft(church?.giving_url ?? '');
             }} style={{
               background: 'none', border: `1px solid ${T.line}`, borderRadius: 999,
               padding: '7px 14px', fontSize: 13, color: T.inkMuted, cursor: 'pointer',
