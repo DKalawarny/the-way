@@ -10,6 +10,7 @@ import { verseCountFor } from './bibleVerseCounts.js';
 import { useAiUsage } from './useAiUsage.js';
 import AiLimitWall, { AiUsageWarning } from './AiLimitWall.jsx';
 import { track } from './analytics.js';
+import { READING_PLANS, planProgress, planNextDay } from './readingPlans.js';
 import Tip from './Tip.jsx';
 
 // Bible API is proxied through /api/bible to keep the key server-side
@@ -1852,6 +1853,61 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
             </div>
           </div>
         )}
+
+        {/* ── Reading plans ── */}
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontFamily: T.display, fontSize: 16, fontWeight: 600, color: C.text, letterSpacing: '-0.01em', marginBottom: 4 }}>
+            Reading plans
+          </div>
+          <div style={{ fontSize: 12.5, color: C.muted, marginBottom: 12 }}>
+            A guided path, one chapter a day. Chapters you've already read count.
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {READING_PLANS.map((plan) => {
+              const prog = planProgress(plan, completed);
+              const next = planNextDay(plan, completed);
+              const nextBook = next ? ALL_BOOKS.find((b) => b.id === next.b) : null;
+              return (
+                <div key={plan.id} style={{ background: C.section, border: `1px solid ${C.border}`, borderRadius: 14, padding: '14px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                    <div style={{ fontSize: 22, lineHeight: 1, marginTop: 2 }}>{plan.emoji}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: T.serif, fontSize: 16.5, fontWeight: 600, color: C.text, marginBottom: 3 }}>
+                        {plan.title}
+                        <span style={{ fontSize: 12, fontWeight: 600, color: C.muted, marginLeft: 8 }}>{plan.days.length} days</span>
+                      </div>
+                      <div style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.55 }}>{plan.tagline}</div>
+                      {prog.done > 0 && (
+                        <div style={{ marginTop: 8 }}>
+                          <div style={{ height: 4, background: C.border, borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${prog.pct}%`, background: `linear-gradient(90deg, ${T.gold}, #c47020)`, borderRadius: 2 }} />
+                          </div>
+                          <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>{prog.done}/{prog.total} chapters</div>
+                        </div>
+                      )}
+                    </div>
+                    {next && nextBook ? (
+                      <button
+                        onClick={() => { track('plan_open', { plan: plan.id }); openChapter(nextBook, next.c); }}
+                        style={{
+                          background: prog.done > 0 ? `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)` : 'transparent',
+                          color: prog.done > 0 ? T.cream : C.verse,
+                          border: prog.done > 0 ? 'none' : `1px solid rgba(184,115,58,0.35)`,
+                          borderRadius: 999, padding: '9px 16px', fontSize: 13, fontWeight: 700,
+                          cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, alignSelf: 'center',
+                        }}
+                      >
+                        {prog.done > 0 ? 'Continue →' : 'Start →'}
+                      </button>
+                    ) : (
+                      <span style={{ fontSize: 13, fontWeight: 700, color: C.verse, flexShrink: 0, alignSelf: 'center' }}>✓ Done</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
         {/* ── Badges ── */}
         {(() => {
