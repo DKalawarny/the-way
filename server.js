@@ -2343,6 +2343,99 @@ app.post('/api/cron/daily-question', async (req, res) => {
   }
 });
 
+// ── Pastor weekly rhythm ──────────────────────────────────────────────────────
+// The audit's church finding: a pastor's only email ever was the day-3
+// onboarding note. Two beats keep them engaged (one endpoint, kind param;
+// pg_cron hits it Thu + Mon — scripts/2026-07-10-pastor-rhythm-cron.sql):
+//   kind=nudge  (Thu): no sermon loaded for the coming week → "Sunday's coming"
+//   kind=digest (Mon): posts / prayers / new members from the last 7 days
+app.post('/api/cron/pastor-rhythm', async (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  const cronOk = !!secret && req.headers['x-cron-secret'] === secret;
+  if (!cronOk) {
+    const userId = await attachUser(req);
+    if (userId && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=is_admin&limit=1`, { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } });
+      const rows = await r.json();
+      if (!rows[0]?.is_admin) return res.status(401).json({ error: 'unauthorized' });
+    } else {
+      return res.status(401).json({ error: 'unauthorized' });
+    }
+  }
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+
+  const kind = req.body?.kind;
+  if (!['nudge', 'digest'].includes(kind)) return res.status(400).json({ error: 'kind must be nudge or digest' });
+
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+  try {
+    const cRes = await fetch(`${SUPABASE_URL}/rest/v1/churches?pastor_id=not.is.null&select=id,name,pastor_id&limit=200`, { headers: h });
+    const churches = await cRes.json();
+    if (!Array.isArray(churches)) throw new Error('churches query failed');
+
+    let sent = 0;
+    for (const church of churches) {
+      // Global email suppression applies to pastors too.
+      const pRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${church.pastor_id}&select=display_name,daily_verse_opt_out&limit=1`, { headers: h });
+      const [pastor] = await pRes.json();
+      if (!pastor || pastor.daily_verse_opt_out) continue;
+      const email = await getUserEmail(church.pastor_id);
+      if (!email || isInternalEmail(email)) continue;
+
+      const firstName = (pastor.display_name ?? '').split(' ')[0] || 'Pastor';
+      const churchUrl = `https://www.kinwove.com/?church=${church.id}`;
+      const unsubUrl = `https://www.kinwove.com/api/email/unsubscribe?u=${church.pastor_id}&t=${emailToken(church.pastor_id)}`;
+
+      if (kind === 'nudge') {
+        // Skip if any sermon already covers the coming week (Sun within 4 days of Thu).
+        const soon = new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10);
+        const today = new Date().toISOString().slice(0, 10);
+        const sRes = await fetch(`${SUPABASE_URL}/rest/v1/sermons?church_id=eq.${church.id}&week_starts_on=gte.${today}&week_starts_on=lte.${soon}&select=id&limit=1`, { headers: h });
+        const upcoming = await sRes.json();
+        if (Array.isArray(upcoming) && upcoming.length > 0) continue;
+
+        await sendEmail(email, `Sunday's coming — ${church.name}`, emailWrap(`
+          <p style="font-size:16px;line-height:1.7">Hi ${escHtml(firstName)},</p>
+          <p style="font-size:16px;line-height:1.7">Sunday's on its way, and there's no sermon loaded for ${escHtml(church.name)} yet. Paste your outline into the composer and kinwove drafts the whole week — daily discussion questions, going-deeper notes, all of it — in about two minutes.</p>
+          <p style="margin:26px 0"><a href="${churchUrl}" style="display:inline-block;background:#2C1810;color:#FDF8F0;text-decoration:none;border-radius:999px;padding:13px 28px;font-size:15px;font-weight:600">Open the sermon composer →</a></p>
+        `, unsubUrl), { 'List-Unsubscribe': `<${unsubUrl}>` }).then(() => sent++).catch((e) => console.error('[pastor-rhythm] nudge send:', e.message));
+      } else {
+        // Monday digest: the last 7 days at their church.
+        const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+        const count = async (path) => {
+          const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: { ...h, Prefer: 'count=exact', Range: '0-0' } });
+          return parseInt(r.headers.get('content-range')?.split('/')[1] ?? '0', 10) || 0;
+        };
+        const [posts, newMembers] = await Promise.all([
+          count(`posts?scope=eq.church&scope_id=eq.${church.id}&created_at=gte.${weekAgo}&select=id`),
+          count(`profiles?church_id=eq.${church.id}&created_at=gte.${weekAgo}&select=id`),
+        ]);
+        // Prayers need the church join — fetch small and filter.
+        const prRes = await fetch(`${SUPABASE_URL}/rest/v1/personal_prayers?is_public=eq.true&created_at=gte.${weekAgo}&select=id,profiles!user_id(church_id)&limit=200`, { headers: h });
+        const prayers = ((await prRes.json()) ?? []).filter((p) => p.profiles?.church_id === church.id).length;
+
+        if (posts + prayers + newMembers === 0) continue; // nothing to report — stay quiet
+
+        const line = (n, word) => `<td style="padding:14px 18px;text-align:center"><div style="font-size:30px;font-weight:700;font-family:Georgia,serif;color:#2C1810">${n}</div><div style="font-size:12px;color:#6B5344;margin-top:2px">${word}</div></td>`;
+        await sendEmail(email, `Your congregation this week — ${church.name}`, emailWrap(`
+          <p style="font-size:16px;line-height:1.7">Hi ${escHtml(firstName)},</p>
+          <p style="font-size:16px;line-height:1.7">Here's what happened at ${escHtml(church.name)} on kinwove this past week:</p>
+          <table style="width:100%;background:#FDF8F0;border:1px solid #E8D5BB;border-radius:14px;margin:18px 0"><tr>
+            ${line(posts, posts === 1 ? 'post' : 'posts')}${line(prayers, prayers === 1 ? 'prayer' : 'prayers')}${line(newMembers, newMembers === 1 ? 'new member' : 'new members')}
+          </tr></table>
+          <p style="margin:26px 0"><a href="${churchUrl}" style="display:inline-block;background:#2C1810;color:#FDF8F0;text-decoration:none;border-radius:999px;padding:13px 28px;font-size:15px;font-weight:600">See your church →</a></p>
+        `, unsubUrl), { 'List-Unsubscribe': `<${unsubUrl}>` }).then(() => sent++).catch((e) => console.error('[pastor-rhythm] digest send:', e.message));
+      }
+    }
+
+    console.log(`[pastor-rhythm] ${kind}: sent ${sent} of ${churches.length} churches`);
+    res.json({ ok: true, kind, sent, churches: churches.length });
+  } catch (e) {
+    console.error('[pastor-rhythm] error:', e?.message);
+    res.status(500).json({ error: e?.message ?? 'unknown' });
+  }
+});
+
 // ── kinwove persona — admin manual post ────────────────────────────────────
 // ── AI memory: update user profile after a conversation ─────────────────────
 app.post('/api/ai/update-memory', requireAuth, async (req, res) => {
