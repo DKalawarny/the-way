@@ -2721,7 +2721,12 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
             {!loading && !error && verses.length > 0 && (
               <div style={{ marginTop: 48, paddingTop: 32, borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>
                 {isDone ? (
-                  <div style={{ color: C.verse, fontFamily: T.serif, fontSize: 16 }}>✓ Chapter read — well done</div>
+                  <>
+                    <div style={{ color: C.verse, fontFamily: T.serif, fontSize: 16, marginBottom: 14 }}>✓ Chapter read — well done</div>
+                    <button onClick={() => goChapter(chNum + 1)} style={{ background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`, color: T.cream, border: 'none', borderRadius: 999, padding: '14px 36px', fontSize: 15, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 20px rgba(184,115,58,0.35)' }}>
+                      Next chapter →
+                    </button>
+                  </>
                 ) : (
                   <button onClick={markDone} style={{ background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`, color: T.cream, border: 'none', borderRadius: 999, padding: '14px 36px', fontSize: 15, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 20px rgba(184,115,58,0.35)' }}>
                     Mark read → next chapter

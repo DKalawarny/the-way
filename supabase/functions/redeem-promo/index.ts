@@ -25,9 +25,12 @@ Deno.serve(async (req) => {
     const normalised = String(code).trim().toUpperCase();
 
     // Check the user hasn't already redeemed a promo code.
+    // NOTE: select only columns that exist — this previously selected
+    // stripe_subscription_id (nonexistent), which errored the whole lookup
+    // and silently BYPASSED the already-redeemed check for everyone.
     const { data: profile } = await supabase
       .from('profiles')
-      .select('promo_redeemed_at, plan, stripe_subscription_id')
+      .select('promo_redeemed_at, plan')
       .eq('id', user_id)
       .maybeSingle();
 
@@ -67,7 +70,9 @@ Deno.serve(async (req) => {
       .eq('id', promo.id);
 
     const now = new Date();
-    const alreadyPaid = profile?.stripe_subscription_id || profile?.plan === 'premium_plus';
+    // Already on a paid individual tier → bonus messages instead of a
+    // redundant plan write (no personal Stripe columns exist pre-go-live).
+    const alreadyPaid = profile?.plan === 'premium' || profile?.plan === 'premium_plus';
     if (alreadyPaid) {
       // Paid user: add 200 bonus messages to this month's topup instead of changing plan
       const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;

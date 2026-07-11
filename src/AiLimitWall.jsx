@@ -32,6 +32,9 @@ export function PromoCodeInput({ onSuccess }) {
       if (json.success) {
         setStatus('ok');
         onSuccess?.();
+        // The new plan lives on the profile — a reload is the one sure way
+        // every surface (walls, counters, model tier) picks it up.
+        setTimeout(() => window.location.reload(), 1600);
       } else {
         setStatus(json.error ?? 'Something went wrong.');
       }
@@ -154,6 +157,9 @@ export function AiUsageWarning({ remaining, limit = 0, plan }) {
 
 // ── Full limit wall — replaces the input when at limit ───────────────────────
 export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
+  // Promo codes upgrade the PERSONAL plan — on church-plan walls (Study tab
+  // etc.) they can't unlock anything, so offering one there just confuses.
+  const isChurchPlan = ['trial', 'church_base', 'church_pro'].includes(plan);
   const isFree = plan === 'free' || !plan;
   const [session, setSession] = useState(null);
   const [upgrading, setUpgrading] = useState(null); // null | 'premium' | 'premium_plus' | 'topup'
@@ -272,7 +278,7 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
             {upgrading === 'premium' ? 'Redirecting\u2026' : 'Upgrade now \u2192'}
           </button>
 
-          <PromoCodeInput onSuccess={onTopupSuccess ?? (() => window.location.reload())} />
+          {!isChurchPlan && <PromoCodeInput onSuccess={onTopupSuccess ?? (() => window.location.reload())} />}
         </>
       ) : (
         // ── Paid user hit monthly cap — offer top-up ─────────────────────────
@@ -299,7 +305,7 @@ export default function AiLimitWall({ plan, panelMode, onTopupSuccess }) {
             </div>
           </div>
 
-          <PromoCodeInput onSuccess={onTopupSuccess ?? (() => window.location.reload())} />
+          {!isChurchPlan && <PromoCodeInput onSuccess={onTopupSuccess ?? (() => window.location.reload())} />}
 
           <button
             onClick={handleTopup}
