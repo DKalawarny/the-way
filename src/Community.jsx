@@ -560,7 +560,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                     aria-label="Post options"
                     style={{
                       background: 'none', border: 'none', cursor: 'pointer',
-                      fontSize: 18, color: T.inkMuted, padding: '4px 6px', lineHeight: 1,
+                      fontSize: 18, color: T.inkMuted, padding: '10px 12px', lineHeight: 1,
                     }}
                   >⋯</button>
                   {menuOpen && (
