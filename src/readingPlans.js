@@ -14,7 +14,7 @@ export const READING_PLANS = [
     id: 'meet-jesus',
     emoji: '🕊',
     title: 'Meet Jesus',
-    tagline: 'The Gospel of John in 21 days — the clearest portrait of who Jesus is, written so you can believe.',
+    tagline: 'The Gospel of John in 21 days — the closest look at Jesus there is. Come and see for yourself.',
     days: range('JHN', 1, 21),
   },
   {
@@ -28,7 +28,7 @@ export const READING_PLANS = [
     id: 'the-story-begins',
     emoji: '🌅',
     title: 'The Story Begins',
-    tagline: 'Eighteen chapters through Genesis — creation, the fall, the flood, and the family God chose to bless the world through.',
+    tagline: 'Eighteen chapters through Genesis — how it all starts: creation, the flood, and one family whose story shapes everything after.',
     days: [...range('GEN', 1, 3), ...range('GEN', 6, 9), { b: 'GEN', c: 12 }, { b: 'GEN', c: 15 }, { b: 'GEN', c: 22 }, { b: 'GEN', c: 37 }, ...range('GEN', 39, 45), { b: 'GEN', c: 50 }].slice(0, 18),
   },
   {

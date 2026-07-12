@@ -70,11 +70,26 @@ function humanDuration(days) {
     : `about ${y} ${y === 1 ? 'year' : 'years'}`;
 }
 
-function WholeBibleCard({ C, completed, openChapter }) {
+function WholeBibleCard({ C, completed, openChapter, session }) {
   const [pace, setPace] = useState(() => {
     const p = Number(localStorage.getItem(PACE_KEY));
     return [1, 2, 3, 5].includes(p) ? p : 1;
   });
+  // Actual recent pace — a mirror, never a judge. Deliberately no "behind"
+  // state: the finish date slides, it never breaks. Only shows once there's
+  // enough recent reading (4+ chapters in 28 days) to say something true.
+  const [recentCount, setRecentCount] = useState(null);
+  useEffect(() => {
+    const uid = session?.user?.id;
+    if (!uid) return;
+    const since = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString();
+    supabase
+      .from('bible_progress')
+      .select('chapter_id', { count: 'exact', head: true })
+      .eq('user_id', uid)
+      .gte('completed_at', since)
+      .then(({ count }) => { if (typeof count === 'number') setRecentCount(count); }, () => {});
+  }, [session?.user?.id, completed.size]);
   const done = ALL_BOOKS.reduce((s, b) => {
     let n = 0;
     for (let c = 1; c <= b.ch; c++) if (completed.has(`${b.id}:${c}`)) n++;
@@ -132,6 +147,17 @@ function WholeBibleCard({ C, completed, openChapter }) {
             At {pace} {pace === 1 ? 'chapter' : 'chapters'} a day, you'll have read the whole Bible in{' '}
             <strong>{humanDuration(days)}</strong> — finishing around <strong>{finishLabel}</strong>.
           </div>
+          {recentCount >= 4 && (() => {
+            const perWeek = Math.max(1, Math.round(recentCount / 4));
+            const actualDays = Math.ceil(remaining / (recentCount / 28));
+            const actualFinish = new Date(Date.now() + actualDays * 24 * 60 * 60 * 1000)
+              .toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            return (
+              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, marginTop: 6 }}>
+                Your pace lately: about {perWeek} {perWeek === 1 ? 'chapter' : 'chapters'} a week — kept up, that finishes around {actualFinish}.
+              </div>
+            );
+          })()}
         </div>
         {nextBook && (
           <button
@@ -2018,7 +2044,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                 </div>
               );
             })}
-            <WholeBibleCard C={C} completed={completed} openChapter={openChapter} />
+            <WholeBibleCard C={C} completed={completed} openChapter={openChapter} session={session} />
           </div>
         </div>
 
