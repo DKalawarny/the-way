@@ -1074,7 +1074,11 @@ export default function AdminPage({ onBack }) {
                     <div key={c.id} style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 12, padding: '13px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 600, color: T.ink }}>{c.name}</div>
-                        {c.city && <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2 }}>{c.city}</div>}
+                        {(c.city || c.created_at) && (
+                          <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2 }}>
+                            {c.city}{c.city && c.created_at ? ' · ' : ''}{c.created_at ? `joined ${new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
+                          </div>
+                        )}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                         <span style={{ fontSize: 13, fontWeight: 700, color: T.goldDark }}>

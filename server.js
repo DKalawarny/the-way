@@ -4086,6 +4086,21 @@ app.patch('/api/admin/church/:churchId', requireAdmin, async (req, res) => {
   } catch (e) { safeError(res, e, 'admin-church-patch'); }
 });
 
+// Has the other participant read this DM conversation? Read state is derived
+// from their dm_message notifications: opening a conversation stamps read_at
+// (MessagesInbox.openConversation), so no extra schema is needed. Admin-only —
+// this is founder outreach tracking, not a general read-receipts feature.
+app.get('/api/admin/dm-seen', requireAdmin, async (req, res) => {
+  const { conversationId, otherId } = req.query;
+  if (!isUuid(conversationId) || !isUuid(otherId)) return res.status(400).json({ error: 'conversationId and otherId required' });
+  try {
+    const rows = await adminFetch('notifications', `select=read_at,created_at&recipient_id=eq.${otherId}&kind=eq.dm_message&target_id=eq.${conversationId}&order=created_at.desc&limit=50`);
+    if (!Array.isArray(rows) || rows.length === 0) return res.json({ tracked: false, seen: false, seenAt: null });
+    const seenAt = rows.map((r) => r.read_at).filter(Boolean).sort().pop() ?? null;
+    res.json({ tracked: true, seen: rows.every((r) => r.read_at), seenAt });
+  } catch (e) { safeError(res, e, 'admin-dm-seen'); }
+});
+
 // ── Web push (VAPID) ──────────────────────────────────────────────────────────
 // True "app closed" push. The client stores a PushSubscription via
 // /api/push/subscribe; a lightweight poller watches the notifications table and
@@ -4349,11 +4364,21 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
       postReportsOut = postReportsOut.map((r) => ({ ...r, reporter_name: nameById[r.reporter_id] ?? 'Unknown' }));
     }
 
+    // The get_platform_stats RPC doesn't return church created_at — hydrate it
+    // so the dashboard can show when each church joined.
+    const statsOut = platformStats ?? {};
+    if (Array.isArray(statsOut.top_churches) && statsOut.top_churches.length) {
+      const churchIds = statsOut.top_churches.map((c) => c.id).filter(Boolean);
+      const churchRows = await adminFetch('churches', `select=id,created_at&id=in.(${churchIds.join(',')})`);
+      const joinedById = Object.fromEntries((Array.isArray(churchRows) ? churchRows : []).map((c) => [c.id, c.created_at]));
+      statsOut.top_churches = statsOut.top_churches.map((c) => ({ ...c, created_at: joinedById[c.id] ?? null }));
+    }
+
     res.json({
       postReports: postReportsOut,
       promoCodes: Array.isArray(promoCodes) ? promoCodes : [],
       promoRedemptions: Array.isArray(promoRedemptions) ? promoRedemptions : [],
-      stats: platformStats ?? {},
+      stats: statsOut,
       topics: Array.isArray(topicRows) ? topicRows : [],
       topQuestions: Array.isArray(topQuestions) ? topQuestions : [],
       recentShared: Array.isArray(recentShared) ? recentShared : [],

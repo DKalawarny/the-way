@@ -174,6 +174,9 @@ export default function DMConversation({ session, profile, conversationId, other
   const [aiQuery, setAiQuery] = useState('');
   const [aiThread, setAiThread] = useState([]);
   const [aiLoading, setAiLoading] = useState(false);
+  // Admin-only outreach tracking: has the other person read this conversation?
+  // Server derives it from their dm_message notifications' read_at.
+  const [seenInfo, setSeenInfo] = useState(null);
   const bottomRef = useRef(null);
   const editRef = useRef(null);
   const inputRef = useRef(null);
@@ -262,6 +265,22 @@ export default function DMConversation({ session, profile, conversationId, other
     }).select().single();
     if (newMsg) setMessages((prev) => prev.map((m) => m.id === tempId ? newMsg : m));
   }
+
+  // Seen-state poll (admins only) — refreshes every 30s while the thread is
+  // open so "Seen" appears without reopening the conversation.
+  useEffect(() => {
+    if (!profile?.is_admin || !conversationId || !other?.id) return;
+    let cancelled = false;
+    const load = () => {
+      authedFetch(`/api/admin/dm-seen?conversationId=${conversationId}&otherId=${other.id}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (!cancelled && d?.tracked) setSeenInfo(d); })
+        .catch(() => {});
+    };
+    load();
+    const t = setInterval(load, 30000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, [profile?.is_admin, conversationId, other?.id, messages.length]);
 
   useEffect(() => {
     if (!conversationId) return;
@@ -579,6 +598,13 @@ export default function DMConversation({ session, profile, conversationId, other
             </div>
           );
         })}
+        {seenInfo && messages.length > 0 && messages[messages.length - 1].sender_id === session?.user?.id && (
+          <div style={{ fontSize: 11, color: seenInfo.seen ? T.goldDark : T.inkMuted, textAlign: 'right', paddingRight: 2, marginTop: -2, marginBottom: 6, fontWeight: 500 }}>
+            {seenInfo.seen
+              ? `✓ Seen${seenInfo.seenAt ? ` · ${timeAgo(seenInfo.seenAt)}` : ''}`
+              : 'Not seen yet'}
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 
