@@ -4316,7 +4316,9 @@ async function dmEmailSweep() {
       const recent = dmEmailRecent.get(key);
       if (recent && Date.now() - recent < 24 * 60 * 60 * 1000) { await stampDmRows(group, 'skipped'); continue; }
       const email = await getUserEmail(last.recipient_id);
-      if (!email) { await stampDmRows(group, 'skipped'); continue; }
+      // isInternalEmail skips @kinwove.com accounts (demo/system) — no mailboxes
+      // exist there yet, and bouncing hurts Resend sender reputation.
+      if (!email || isInternalEmail(email)) { await stampDmRows(group, 'skipped'); continue; }
       const senderName = adminNames.get(last.actor_id) || 'Daniel';
       const snippet = String(last.data?.snippet ?? '').slice(0, 200) || 'You have a new message waiting.';
       const unsubUrl = `https://www.kinwove.com/api/email/unsubscribe?u=${last.recipient_id}&t=${emailToken(last.recipient_id)}`;
