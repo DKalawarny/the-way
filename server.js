@@ -4218,6 +4218,108 @@ if (PUSH_ENABLED) {
   setInterval(() => pushSweep().catch((e) => console.error('[kinwove] push sweep failed:', e?.message)), 15000);
 }
 
+// ── DM email nudge (founder/admin messages only) ──────────────────────────────
+// New users rarely enable push, so a DM from Daniel can sit unseen for days.
+// Every 5 min: find dm_message notifications whose SENDER is an admin account,
+// unread for 30+ minutes, and email the recipient — one email per conversation,
+// max one per recipient+conversation per 24 h. Each processed row gets
+// data.emailed stamped so a redeploy never double-sends. Deliberately NOT for
+// user↔user DMs: that would burn the 100/day Resend cap on chatter.
+function dmNudgeEmailHtml(senderName, snippet) {
+  return emailWrap(`
+    <h1 style="font-size:26px;font-weight:600;margin:0 0 14px;letter-spacing:-0.02em;color:#2C1810">${escHtml(senderName)} sent you a message.</h1>
+    <div style="background:#FDF8F0;border:1px solid #E8D5BB;border-radius:10px;padding:16px 18px;margin:0 0 8px;font-size:15.5px;font-style:italic;color:#6B5344;line-height:1.7">&ldquo;${escHtml(snippet)}&rdquo;</div>
+    ${btnHtml('Read & reply', 'https://www.kinwove.com')}
+    <p style="font-size:13px;color:#9C7B5E;margin:0">Open kinwove and tap Messages to see the whole conversation.</p>
+  `);
+}
+
+// recipient|conversation → last email time. In-memory: worst case after a
+// deploy is one extra email, which is acceptable.
+const dmEmailRecent = new Map();
+
+async function stampDmRows(rows, value) {
+  for (const row of rows) {
+    await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${row.id}`, {
+      method: 'PATCH',
+      headers: { ...pushSvcHeaders(), Prefer: 'return=minimal' },
+      body: JSON.stringify({ data: { ...(row.data ?? {}), emailed: value } }),
+    }).catch(() => {});
+  }
+}
+
+async function dmEmailSweep() {
+  const oldest = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const newest = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+  const rowsRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/notifications?kind=eq.dm_message&read_at=is.null&data->>emailed=is.null&created_at=gte.${encodeURIComponent(oldest)}&created_at=lte.${encodeURIComponent(newest)}&select=id,recipient_id,actor_id,data,created_at&order=created_at.asc&limit=100`,
+    { headers: pushSvcHeaders() }
+  );
+  const rows = await rowsRes.json();
+  if (!Array.isArray(rows) || rows.length === 0) return;
+
+  // Which senders are admins? Non-admin rows get stamped 'skipped' so they
+  // stop matching the sweep query instead of clogging the 100-row window.
+  const actorIds = [...new Set(rows.map((r) => r.actor_id).filter(Boolean))];
+  const adminsRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/profiles?id=in.(${actorIds.join(',')})&is_admin=eq.true&select=id,display_name`,
+    { headers: pushSvcHeaders() }
+  );
+  const admins = await adminsRes.json();
+  const adminNames = new Map((Array.isArray(admins) ? admins : []).map((a) => [a.id, a.display_name || 'Daniel']));
+  // The system account is is_admin too, but it welcome-DMs every signup — those
+  // must never become emails (the welcome EMAIL already covers that moment).
+  const systemId = await getOrCreateSystemAccount().catch(() => null);
+  if (systemId) adminNames.delete(systemId);
+  const fromAdmin = rows.filter((r) => adminNames.has(r.actor_id));
+  await stampDmRows(rows.filter((r) => !adminNames.has(r.actor_id)), 'skipped');
+  if (!fromAdmin.length) return;
+
+  // Respect the account-email opt-out, same flag the other nudges use.
+  const recipientIds = [...new Set(fromAdmin.map((r) => r.recipient_id))];
+  const optRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/profiles?id=in.(${recipientIds.join(',')})&select=id,daily_verse_opt_out`,
+    { headers: pushSvcHeaders() }
+  );
+  const optRows = await optRes.json();
+  const optedOut = new Set((Array.isArray(optRows) ? optRows : []).filter((p) => p.daily_verse_opt_out).map((p) => p.id));
+
+  // One email per recipient+conversation; latest message wins the snippet.
+  const groups = new Map();
+  for (const row of fromAdmin) {
+    const key = `${row.recipient_id}|${row.data?.conversation_id ?? row.id}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(row);
+  }
+
+  let sent = 0;
+  for (const [key, group] of groups) {
+    if (sent >= 20) break; // per-sweep safety cap; the rest go next sweep
+    const last = group[group.length - 1];
+    try {
+      if (optedOut.has(last.recipient_id)) { await stampDmRows(group, 'skipped'); continue; }
+      const recent = dmEmailRecent.get(key);
+      if (recent && Date.now() - recent < 24 * 60 * 60 * 1000) { await stampDmRows(group, 'skipped'); continue; }
+      const email = await getUserEmail(last.recipient_id);
+      if (!email) { await stampDmRows(group, 'skipped'); continue; }
+      const senderName = adminNames.get(last.actor_id) || 'Daniel';
+      const snippet = String(last.data?.snippet ?? '').slice(0, 200) || 'You have a new message waiting.';
+      const unsubUrl = `https://www.kinwove.com/api/email/unsubscribe?u=${last.recipient_id}&t=${emailToken(last.recipient_id)}`;
+      await sendEmail(email, `${senderName} sent you a message on kinwove`, dmNudgeEmailHtml(senderName, snippet), { 'List-Unsubscribe': `<${unsubUrl}>` });
+      dmEmailRecent.set(key, Date.now());
+      await stampDmRows(group, true);
+      sent++;
+    } catch (e) {
+      // Leave the rows unstamped so a transient send failure retries next sweep.
+      console.error('[dm-email-nudge]', e?.message);
+    }
+  }
+  if (sent) console.log(`[dm-email-nudge] sent ${sent}`);
+}
+if (SUPABASE_URL && SUPABASE_SERVICE_KEY && process.env.RESEND_API_KEY) {
+  setInterval(() => dmEmailSweep().catch((e) => console.error('[kinwove] dm email sweep failed:', e?.message)), 5 * 60 * 1000);
+}
+
 // ── Platform admin dashboard ──────────────────────────────────────────────────
 // Single endpoint that returns everything the AdminPage needs.
 // Calls the get_platform_stats() Supabase RPC for aggregate counts + trends,
