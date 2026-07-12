@@ -158,6 +158,17 @@ function WholeBibleCard({ C, completed, openChapter, session }) {
               </div>
             );
           })()}
+          {(() => {
+            // Ties the badge ladder to the pace: the next milestone gets an ETA.
+            const next = [1, 10, 25, 50, 100, 250, 500, 1000, 1189].find((m) => m > done);
+            if (!next || done === 0) return null;
+            const away = Math.ceil((next - done) / pace);
+            return (
+              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, marginTop: 4 }}>
+                Next milestone: {next.toLocaleString()} chapters — {humanDuration(away)} away at your pace.
+              </div>
+            );
+          })()}
         </div>
         {nextBook && (
           <button
@@ -212,6 +223,7 @@ const BADGES = [
   { id: 'devoted',       name: 'A Hundredfold',            req: 'Read 100 chapters',                     desc: '"Other seeds fell on good soil and produced grain, a hundredfold." — Matt 13:8', check: (c, id) => countForVersion(c, id) >= 100 },
   { id: 'scholar',       name: 'Great Is Thy Faithfulness',req: 'Read 250 chapters',                     desc: '"His mercies never come to an end; they are new every morning." — Lam 3:23', check: (c, id) => countForVersion(c, id) >= 250 },
   { id: 'scribe',        name: 'Lamp to My Feet',          req: 'Read 500 chapters',                     desc: '"Your word is a lamp to my feet and a light to my path." — Ps 119:105',        check: (c, id) => countForVersion(c, id) >= 500 },
+  { id: 'thousand',      name: 'A Thousand Generations',   req: 'Read 1,000 chapters',                   desc: '"He remembers his covenant forever, the word he commanded, for a thousand generations." — Ps 105:8', check: (c, id) => countForVersion(c, id) >= 1000 },
   { id: 'genesis',       name: 'In the Beginning',         req: 'Complete Genesis',                      desc: '"In the beginning, God…" — Complete Genesis, the foundation of all things',     check: (c, id) => bookGroupComplete(['GEN'], c, id) },
   { id: 'the_law',       name: 'The Law of Moses',         req: 'Complete the 5 books of Moses',         desc: '"Be careful to obey all the law my servant Moses gave you." — Josh 1:7',        check: (c, id) => bookGroupComplete(['GEN','EXO','LEV','NUM','DEU'], c, id) },
   { id: 'the_psalms',    name: 'Praise the Lord',          req: 'Complete all 150 Psalms',               desc: '"Let everything that has breath praise the Lord." — Psalm 150:6',               check: (c, id) => bookGroupComplete(['PSA'], c, id) },
