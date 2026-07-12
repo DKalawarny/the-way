@@ -890,7 +890,7 @@ const BIBLE_READ_TOUR_STEPS = [
   },
 ];
 
-export default function BibleReader({ session, profile, homeKey = 0, onClose, onOpenChat, jumpRef, topOffset = 0 }) {
+export default function BibleReader({ session, profile, homeKey = 0, onClose, onOpenChat, jumpRef, topOffset = 0, fillParent = false }) {
   const uid = session?.user?.id ?? 'guest';
 
   // ── Navigation state ────────────────────────────────────────────────────────
@@ -2682,7 +2682,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
   );
 
   return (
-    <div style={{ height: `calc(100vh - ${62 + topOffset}px)`, background: C.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div style={{ ...(fillParent ? { flex: 1, minHeight: 0 } : { height: `calc(100vh - ${62 + topOffset}px)` }), background: C.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Bible sub-header — sits directly below the global app header */}
       <div style={{
         background: C.bg, borderBottom: `1px solid ${C.border}`,

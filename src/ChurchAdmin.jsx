@@ -2510,11 +2510,17 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
           </div>
         )}
         {tab === 'bible' && (
-          <BibleReader
-            session={session}
-            profile={profile ? { ...profile, plan: aiPlan ?? 'church_base' } : profile}
-            topOffset={145}
-          />
+          /* Scroll wrapper: the home view (books/plans/badges) is taller than the
+             shell's clipped fullBleed area, so it needs a scroll container here.
+             The reading view uses fillParent to fit this flex column exactly. */
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden' }}>
+            <BibleReader
+              session={session}
+              profile={profile ? { ...profile, plan: aiPlan ?? 'church_base' } : profile}
+              topOffset={145}
+              fillParent
+            />
+          </div>
         )}
         {tab === 'sermons' && (
           <SermonComposer
