@@ -6,7 +6,9 @@ import { supabase } from './supabase.js';
 import { PLAN_LIMITS } from './planConfig.js';
 export { PLAN_LIMITS };
 
-export const TOPUP_MESSAGES = 100;
+// Must match TOPUP_MESSAGES in supabase/functions/stripe-webhook (what the
+// webhook actually grants) — costing OK'd at 150/$6.99 on 2026-07-11.
+export const TOPUP_MESSAGES = 150;
 export const TOPUP_PRICE    = '$6.99 CAD';
 
 function currentPeriod(type) {
