@@ -1194,6 +1194,42 @@ export default function AdminPage({ onBack }) {
               </div>
             )}
 
+            {/* Ops alerts (service warnings + app errors) */}
+            <SectionTitle>Ops alerts {(dash.opsAlerts ?? []).length > 0 && <span style={{ background: '#a53f2b', color: '#fff', borderRadius: 999, fontSize: 10, padding: '1px 6px', marginLeft: 6, fontWeight: 700 }}>{(dash.opsAlerts ?? []).length}</span>}</SectionTitle>
+            <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 14 }}>
+              Service warnings and app errors the system flagged — the same events that trigger alert emails.
+              The list clears on each deploy; anything still broken re-fires and reappears on its own.
+              {dash.opsAlertEmailSet === false && (
+                <span style={{ display: 'block', marginTop: 4, color: '#a53f2b', fontWeight: 600 }}>
+                  ⚠️ Alert emails are off (ERROR_ALERT_EMAIL not set on the server) — these warnings only appear here.
+                </span>
+              )}
+            </div>
+            {(dash.opsAlerts ?? []).length === 0
+              ? <EmptyNote style={{ marginBottom: 32 }}>No service warnings — all clear ✓</EmptyNote>
+              : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 32 }}>
+                  {(dash.opsAlerts ?? []).map((a) => (
+                    <div key={`${a.kind}:${a.key}`} style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 12, padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 9px',
+                          background: a.kind === 'client-error' ? 'rgba(165,63,43,0.1)' : 'rgba(184,115,58,0.12)',
+                          color: a.kind === 'client-error' ? '#a53f2b' : T.goldDark }}>
+                          {a.kind === 'client-error' ? 'App error' : 'Service'}
+                        </span>
+                        {a.count > 1 && <span style={{ fontSize: 11, fontWeight: 700, color: T.inkMuted }}>×{a.count}</span>}
+                        <span style={{ fontSize: 11, color: T.inkMuted, marginLeft: 'auto' }}>
+                          {a.lastAt ? new Date(a.lastAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''}
+                        </span>
+                      </div>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: T.ink, marginBottom: 4 }}>{a.subject}</div>
+                      <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{a.detail}</div>
+                    </div>
+                  ))}
+                </div>
+              )
+            }
+
             {/* Reported posts (community content) */}
             <SectionTitle>Reported posts {openPostReports.length > 0 && <span style={{ background: '#a53f2b', color: '#fff', borderRadius: 999, fontSize: 10, padding: '1px 6px', marginLeft: 6, fontWeight: 700 }}>{openPostReports.length}</span>}</SectionTitle>
             <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 14 }}>

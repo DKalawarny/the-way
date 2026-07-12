@@ -235,6 +235,26 @@ app.get('/api/health/crons', async (_req, res) => {
 const _errorAlertSeen = new Map(); // message → last-emailed epoch ms
 const ERROR_ALERT_COOLDOWN_MS = 30 * 60 * 1000; // 1 email per identical error / 30 min
 
+// Staff-visible ops log (admin → Operations → Ops alerts). Every alertOps()
+// fire and client-error report lands here even when alert emails aren't
+// configured, so staff can see service warnings without being on the email.
+// In-memory like the usage counters — resets on deploy, which is fine:
+// anything still broken re-fires and reappears within minutes.
+const OPS_LOG_MAX = 50;
+const _opsAlertLog = []; // { kind, key, subject, detail, count, firstAt, lastAt }
+function logOpsAlert(kind, key, subject, detail) {
+  const now = new Date().toISOString();
+  const existing = _opsAlertLog.find((a) => a.kind === kind && a.key === key);
+  if (existing) {
+    existing.count++;
+    existing.lastAt = now;
+    existing.detail = detail;
+    return;
+  }
+  _opsAlertLog.unshift({ kind, key, subject, detail, count: 1, firstAt: now, lastAt: now });
+  if (_opsAlertLog.length > OPS_LOG_MAX) _opsAlertLog.pop();
+}
+
 // Flood guard: a rotating error message defeats the per-message dedup, so cap
 // total alert emails per hour regardless of content. Reports still log.
 let _errorAlertHour = 0;
@@ -251,6 +271,9 @@ app.post('/api/client-error', async (req, res) => {
     if (stack)          console.error('  stack:', String(stack).split('\n').slice(0, 6).join('\n  '));
     if (componentStack) console.error('  react:', String(componentStack).split('\n').slice(0, 4).join('\n  '));
     if (url)            console.error('  url:', url);
+
+    logOpsAlert('client-error', msg.slice(0, 200), `${kind ? `[${kind}] ` : ''}${msg.slice(0, 120)}`,
+      `${msg}${url ? `\nURL: ${url}` : ''}`);
 
     const alertTo = process.env.ERROR_ALERT_EMAIL;
     if (alertTo && process.env.RESEND_API_KEY) {
@@ -657,6 +680,7 @@ function trackAi(usage) { aiUsage.calls++; if (usage) { aiUsage.inTokens += usag
 // so you get a heads-up, not a flood. No-op unless ERROR_ALERT_EMAIL is set.
 const OPS_ALERT_COOLDOWN_MS = 12 * 60 * 60 * 1000; // one email per issue / 12h
 function alertOps(key, subject, detail) {
+  logOpsAlert('service', key, subject, detail);
   const to = process.env.ERROR_ALERT_EMAIL;
   if (!to || !process.env.RESEND_API_KEY) return;
   const now = Date.now();
@@ -4235,6 +4259,8 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
       recentFeedback: Array.isArray(recentFeedback) ? recentFeedback : [],
       userReports: Array.isArray(userReports) ? userReports : [],
       bibleApi: { ...bibleApiUsage, monthlyLimit: BIBLE_MONTHLY_LIMIT },
+      opsAlerts: [..._opsAlertLog].sort((a, b) => b.lastAt.localeCompare(a.lastAt)),
+      opsAlertEmailSet: !!(process.env.ERROR_ALERT_EMAIL && process.env.RESEND_API_KEY),
       services: {
         email: { ...emailUsage, dailyLimit: RESEND_DAILY_LIMIT },
         tts:   { ...ttsUsage },
