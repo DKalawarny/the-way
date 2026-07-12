@@ -134,9 +134,9 @@ export function TrialBanner({ daysLeft, session }) {
     <div style={{
       background: bg,
       border: `1px solid ${borderColor}`,
-      borderRadius: 14,
-      padding: '16px 18px',
-      marginBottom: 24,
+      borderRadius: 12,
+      padding: '10px 16px',
+      marginBottom: 16,
       position: 'relative',
       overflow: 'hidden',
     }}>
@@ -144,24 +144,24 @@ export function TrialBanner({ daysLeft, session }) {
       <div style={{
         position: 'absolute', top: 0, left: 0, bottom: 0, width: 3,
         background: `linear-gradient(180deg, ${accentColor} 0%, rgba(184,115,58,0.3) 100%)`,
-        borderRadius: '14px 0 0 14px',
+        borderRadius: '12px 0 0 12px',
       }} />
 
       <div style={{ paddingLeft: 10 }}>
-        {/* Top row: label + CTA */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
-          <div>
-            <div style={{
-              fontSize: 12, letterSpacing: 1.6, textTransform: 'uppercase',
-              fontWeight: 700, color: accentColor, marginBottom: 3,
+        {/* Single row: label + short copy + CTA */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 0 }}>
+            <span style={{
+              fontSize: 11.5, letterSpacing: 1.4, textTransform: 'uppercase',
+              fontWeight: 700, color: accentColor,
             }}>
               {dayLabel}
-            </div>
-            <div style={{ fontSize: 13.5, color: T.ink, lineHeight: 1.5, maxWidth: 340 }}>
+            </span>
+            <span style={{ fontSize: 12.5, color: T.inkSoft, marginLeft: 8 }}>
               {urgent
-                ? "Your congregation's tools are about to go offline. Keep them running — upgrade before your trial ends."
-                : 'Your first 30 days are on us. Upgrade anytime to keep your pastor tools and congregation features running.'}
-            </div>
+                ? '— upgrade before your tools go offline.'
+                : '— your first 30 days are on us.'}
+            </span>
           </div>
 
           <button
@@ -179,8 +179,8 @@ export function TrialBanner({ daysLeft, session }) {
               color: '#FDF8EE',
               border: 'none',
               borderRadius: 999,
-              padding: '9px 20px',
-              fontSize: 13,
+              padding: '6px 15px',
+              fontSize: 12.5,
               fontWeight: 600,
               fontFamily: 'inherit',
               textDecoration: 'none',
@@ -188,9 +188,6 @@ export function TrialBanner({ daysLeft, session }) {
               display: 'inline-block',
               cursor: busy ? 'default' : 'pointer',
               opacity: busy ? 0.7 : 1,
-              boxShadow: urgent
-                ? '0 3px 12px rgba(165,63,43,0.3)'
-                : '0 3px 12px rgba(184,115,58,0.3)',
               letterSpacing: '-0.01em',
               whiteSpace: 'nowrap',
             }}
@@ -201,7 +198,7 @@ export function TrialBanner({ daysLeft, session }) {
 
         {/* Progress bar: shows how much of the trial has elapsed */}
         <div style={{
-          height: 4, borderRadius: 2,
+          height: 3, borderRadius: 2, marginTop: 8,
           background: 'rgba(44,24,16,0.08)',
           overflow: 'hidden',
         }}>

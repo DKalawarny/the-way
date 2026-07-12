@@ -2455,7 +2455,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
           />
         )}
         {tab === 'ask' && (
-          <div style={{ display: 'flex', height: '100%', overflow: 'hidden', position: 'relative', alignItems: 'stretch' }}>
+          <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative', alignItems: 'stretch' }}>
             {/* Chat — takes remaining width */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <ChurchAiChat

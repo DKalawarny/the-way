@@ -119,7 +119,11 @@ export default function ChurchModeShell({
       </div>
 
       {/* Public/visitor view renders full-bleed — ChurchPage owns its own layout */}
-      <div style={{ minWidth: 0, minHeight: 0, overflow: fullBleed ? 'hidden' : 'auto', paddingBottom: (!fullBleed && isVisitorView) ? 80 : 0 }}>
+      {/* fullBleed is a flex column so a banner above the tab (e.g. TrialBanner)
+          takes its own height and the tab flexes into the rest — otherwise the
+          tab's height:100% overflows past the clipped container and the bottom
+          is unreachable. */}
+      <div style={{ minWidth: 0, minHeight: 0, overflow: fullBleed ? 'hidden' : 'auto', display: fullBleed ? 'flex' : undefined, flexDirection: fullBleed ? 'column' : undefined, paddingBottom: (!fullBleed && isVisitorView) ? 80 : 0 }}>
         {isVisitorView || fullBleed
           ? children
           : <div style={{ maxWidth: bodyMaxWidth, margin: '0 auto', padding: '20px 20px 80px', width: '100%', boxSizing: 'border-box' }}>{children}</div>
