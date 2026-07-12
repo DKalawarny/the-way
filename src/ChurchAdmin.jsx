@@ -2127,7 +2127,7 @@ const PASTOR_TOUR_STEPS = [
 ];
 
 // ── NotesPanel ───────────────────────────────────────────────────────────────
-function NotesPanel({ session, churchId }) {
+function NotesPanel({ session, churchId, onOpenSession }) {
   const userId = session?.user?.id;
   const [notes, setNotes]               = useState([]);
   const [loading, setLoading]           = useState(true);
@@ -2270,7 +2270,17 @@ function NotesPanel({ session, churchId }) {
                       {label && <span style={{ fontSize: 11, color: T.inkMuted, background: 'rgba(26,17,8,0.06)', borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap', flexShrink: 0 }}>{label}</span>}
                     </div>
                     {note.title && <div style={{ fontSize: 13, color: T.inkMuted, marginTop: 4, lineHeight: 1.4 }}>{note.body.slice(0, 100)}{note.body.length > 100 ? '…' : ''}</div>}
-                    <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 6 }}>{dateStr}</div>
+                    <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span>{dateStr}</span>
+                      {note.series && onOpenSession && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onOpenSession(note.series); }}
+                          style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, color: T.goldDark, cursor: 'pointer', fontWeight: 600 }}
+                        >
+                          Open session: {note.series} →
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   // Expanded + editable
@@ -2359,6 +2369,8 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
   const [isWide, setIsWide] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 900);
   const [mobileDeskPanel, setMobileDeskPanel] = useState(null); // null | 'bible' | 'notes'
   const [notesRefreshKey, setNotesRefreshKey] = useState(0);
+  // Note → thread: series title queued for ChurchAiChat to load (cleared once loaded)
+  const [studySessionToOpen, setStudySessionToOpen] = useState(null);
   const [deskWidth, setDeskWidth] = useState(() => {
     const saved = localStorage.getItem('kw_desk_width');
     return saved ? Math.max(280, Math.min(700, parseInt(saved, 10))) : 480;
@@ -2466,6 +2478,8 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
                 onOpenDesk={isWide ? null : setMobileDeskPanel}
                 inSplit={isWide}
                 onNoteSaved={() => setNotesRefreshKey(k => k + 1)}
+                openSessionTitle={studySessionToOpen}
+                onSessionOpened={() => setStudySessionToOpen(null)}
               />
             </div>
 
@@ -2474,7 +2488,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
               <>
                 <DividerHandle onMouseDown={onDeskDragStart} />
                 <Suspense fallback={null}>
-                  <DeskPanel session={session} profile={profile} churchId={churchId} width={deskWidth} refreshKey={notesRefreshKey} />
+                  <DeskPanel session={session} profile={profile} churchId={churchId} width={deskWidth} refreshKey={notesRefreshKey} onOpenSession={setStudySessionToOpen} />
                 </Suspense>
               </>
             )}
@@ -2502,6 +2516,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
                       initialTab={mobileDeskPanel}
                       onClose={() => setMobileDeskPanel(null)}
                       refreshKey={notesRefreshKey}
+                      onOpenSession={(title) => { setStudySessionToOpen(title); setMobileDeskPanel(null); }}
                     />
                   </Suspense>
                 </div>
@@ -2534,7 +2549,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
           />
         )}
         {tab === 'notes' && (
-          <NotesPanel session={session} churchId={churchId} />
+          <NotesPanel session={session} churchId={churchId} onOpenSession={(title) => { setStudySessionToOpen(title); setTab('ask'); }} />
         )}
         {tab === 'settings' && (
           <SettingsPanel

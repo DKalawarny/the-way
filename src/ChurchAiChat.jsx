@@ -242,7 +242,7 @@ function HistoryModal({ open, onClose, conversations, onLoad, onDelete, onNew })
 }
 
 // ── Main component ───────────────────────────────────────────────────────────
-export default function ChurchAiChat({ session, profile, churchId, churchPlan, onOpenDesk, inSplit, onNoteSaved }) {
+export default function ChurchAiChat({ session, profile, churchId, churchPlan, onOpenDesk, inSplit, onNoteSaved, openSessionTitle, onSessionOpened }) {
   const userId  = session?.user?.id;
   const plan    = churchPlan ?? 'church_base';
   const ttsVoice = profile?.tts_voice ?? 'onyx';
@@ -462,6 +462,17 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
     setHistory((prev) => { const next = prev.filter((c) => c.id !== id); writeConvs(userId, churchId, next); return next; });
   }
   const isEmpty = messages.length === 0;
+
+  // Note → thread: a saved note's series is its session title. Load that
+  // session on request; if it isn't in this browser's history (sessions are
+  // per-device), open the history picker instead of failing silently.
+  useEffect(() => {
+    if (!openSessionTitle) return;
+    const conv = history.find((c) => c.title === openSessionTitle);
+    if (conv) loadConversation(conv);
+    else setHistoryOpen(true);
+    onSessionOpened?.();
+  }, [openSessionTitle]);
 
   return (
     <>

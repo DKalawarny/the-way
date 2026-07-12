@@ -84,7 +84,7 @@ function printAllNotes(notes) {
 }
 
 // ── Notes section ─────────────────────────────────────────────────────────────
-function NotesSection({ session, churchId, refreshKey = 0 }) {
+function NotesSection({ session, churchId, refreshKey = 0, onOpenSession }) {
   const userId = session?.user?.id;
   const [notes, setNotes]         = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -306,6 +306,15 @@ function NotesSection({ session, churchId, refreshKey = 0 }) {
                       {key || 'Unsorted'}
                     </span>
                     <div style={{ flex: 1, height: 1, background: key ? `rgba(184,115,58,0.25)` : 'rgba(26,17,8,0.08)' }} />
+                    {key && onOpenSession && (
+                      <button
+                        onClick={() => onOpenSession(key)}
+                        title="Reopen this research session in the chat"
+                        style={{ background: 'none', border: 'none', padding: 0, fontSize: 11, color: T.goldDark, cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}
+                      >
+                        Open session →
+                      </button>
+                    )}
                   </div>
                 )}
                 {group.map(note => {
@@ -456,7 +465,7 @@ function NotesSection({ session, churchId, refreshKey = 0 }) {
 // matches DeskPanel content area: calc(100vh-130px) minus ~58px tab bar.
 const BIBLE_TOP_OFFSET = 126;
 
-export default function DeskPanel({ session, profile, churchId, onClose, isMobile, initialTab, width = 480, refreshKey = 0 }) {
+export default function DeskPanel({ session, profile, churchId, onClose, isMobile, initialTab, width = 480, refreshKey = 0, onOpenSession }) {
   const [activeTab, setActiveTab] = useState(initialTab ?? 'bible');
 
   // Plan-enriched profile for BibleReader
@@ -525,7 +534,7 @@ export default function DeskPanel({ session, profile, churchId, onClose, isMobil
             </div>
           </Suspense>
         )}
-        {activeTab === 'notes' && <NotesSection session={session} churchId={churchId} refreshKey={refreshKey} />}
+        {activeTab === 'notes' && <NotesSection session={session} churchId={churchId} refreshKey={refreshKey} onOpenSession={onOpenSession} />}
       </div>
     </div>
   );
