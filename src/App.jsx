@@ -1653,7 +1653,7 @@ function StreakChip({ streak, onClick, compact = false }) {
   return (
     <button
       onClick={onClick}
-      title={`${streak}-day verse streak — tap for today's verse`}
+      title={`${streak}-day streak — days in a row you've asked, read, or shared. Tap for today's verse`}
       style={{
         flexShrink: 0, display: 'flex', alignItems: 'center', gap: 3,
         background: 'rgba(232,181,99,0.14)', border: '1px solid rgba(232,181,99,0.3)',

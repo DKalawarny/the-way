@@ -3,6 +3,7 @@ import { Smile } from 'lucide-react';
 import SwipeableSheet from './SwipeableSheet.jsx';
 import { supabase, uploadProfileImage, directProfileUpdate } from './supabase.js';
 import { T, SEMANTIC } from './theme.js';
+import { markEngaged } from './streak.js';
 import { PERSON_TYPES } from './constants.js';
 import { Avatar, BANNER_PRESETS, bannerBackground } from './ProfilePage.jsx';
 import AvatarPicker from './AvatarPicker.jsx';
@@ -1000,6 +1001,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
     e.preventDefault();
     if (!prayerText.trim() || prayerSubmitting) return;
     setPrayerSubmitting(true);
+    markEngaged();
     const { data, error } = await supabase.from('personal_prayers').insert({
       user_id: session.user.id, body: prayerText.trim(), is_public: false,
     }).select().single();

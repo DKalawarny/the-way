@@ -4,6 +4,7 @@ import { Smile, Bookmark } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { useUiKit } from './uikit.jsx';
 import { T, tintFor, SEMANTIC } from './theme.js';
+import { markEngaged } from './streak.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { KinwoveWordmark } from './components/brand/KinwoveWordmark.jsx';
 import { PERSON_TYPES } from './constants.js';
@@ -1766,6 +1767,7 @@ useEffect(() => {
     // post_comments is the privacy-gated canonical table (see
     // scripts/2026-05-01-private-comments.sql). The legacy 'replies' table
     // is wide-open to any authed user and should not be written anymore.
+    markEngaged();
     await supabase.from('post_comments').insert({ post_id: postId, author_id: session.user.id, body: cleanText(body) });
     loadPosts();
   }
@@ -1780,6 +1782,7 @@ useEffect(() => {
     const authorName = post.profiles?.display_name ?? 'Someone';
 
     if (target === 'feed') {
+      markEngaged();
       const { error } = await supabase.from('posts').insert({
         author_id: session.user.id,
         scope: 'me',

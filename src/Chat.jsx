@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { T } from './theme.js';
+import { markEngaged } from './streak.js';
 import { KinwoveWordmark } from './components/brand/KinwoveWordmark.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { PERSON_TYPES, STARTERS, DEEPER_STARTERS, ADS } from './constants.js';
@@ -1214,6 +1215,7 @@ export default function Chat({
     if (!prompt && !img) return;
     if (busy) return;
     if (aiUsage.atLimit) return; // hard gate — UI should prevent this anyway
+    markEngaged();
     resetScroll();
     setInput('');
     setError(null);

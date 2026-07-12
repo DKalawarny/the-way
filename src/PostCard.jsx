@@ -3,6 +3,7 @@ import { Bookmark, Smile } from 'lucide-react';
 import { track } from './analytics.js';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
+import { markEngaged } from './streak.js';
 import { BadgeList, presetForRole } from './Badge.jsx';
 import { Avatar } from './ProfilePage.jsx';
 import { relativeTime, exactTime } from './time.js';
@@ -540,6 +541,7 @@ export default function PostCard({
       if (error) { showToast(`Couldn't post: ${error.message}`, 'error'); }
       else { setModalText(''); setModalAnon(false); setModalRefreshKey((k) => k + 1); }
     } else {
+      markEngaged();
       const { error } = await supabase.from('post_comments').insert({
         post_id: item.id, author_id: sessionUserId,
         body: modalText.trim(), is_anonymous: modalAnon,

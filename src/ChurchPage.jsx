@@ -2,6 +2,7 @@ import { useEffect, useState, lazy, Suspense } from 'react';
 import { ArrowLeft, Share2, Check, ExternalLink, Globe } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T, SHADOW, RADIUS, SEMANTIC, SPACE } from './theme.js';
+import { markEngaged } from './streak.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import PageTour, { isPageTourDone } from './PageTour.jsx';
 import { presetForRole } from './Badge.jsx';
@@ -1286,6 +1287,7 @@ export default function ChurchPage({
                       onClick={async () => {
                         if (!prayText.trim() || !session?.user?.id) return;
                         setPraySubmitting(true);
+                        markEngaged();
                         const { data, error: prayErr } = await supabase.from('personal_prayers').insert({
                           user_id: session.user.id,
                           body: prayText.trim(),

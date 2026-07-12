@@ -1,56 +1,7 @@
 import { useState, useEffect } from 'react';
 import { T } from './theme.js';
-import { supabase } from './supabase.js';
-import { getDailyVerse, getTodayKey, getYesterdayKey } from './dailyVerse.js';
-
-// ISO local dates for the SERVER streak (profiles.verse_streak_at is a
-// Postgres date, 'YYYY-MM-DD'). getTodayKey() is 0-indexed-month legacy —
-// only used for the localStorage keys, never compared against the DB.
-function isoDay(d) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-// Server-backed streak: merge with the local count so nobody's existing
-// streak regresses, then persist to profiles so it survives new devices.
-async function syncStreakToServer(localCount) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const uid = session?.user?.id;
-  if (!uid) return localCount;
-  const today = isoDay(new Date());
-  const y = new Date(); y.setDate(y.getDate() - 1);
-  const yesterday = isoDay(y);
-
-  const { data } = await supabase.from('profiles')
-    .select('verse_streak, verse_streak_at').eq('id', uid).single();
-  const at = data?.verse_streak_at ?? '';
-  let next = data?.verse_streak ?? 0;
-  if (at !== today) next = (at === yesterday ? next + 1 : 1);
-  next = Math.max(next, localCount);
-
-  if (next !== (data?.verse_streak ?? 0) || at !== today) {
-    supabase.from('profiles').update({ verse_streak: next, verse_streak_at: today })
-      .eq('id', uid).then(null, () => {});
-  }
-  try { localStorage.setItem('kinwove:verseStreak', JSON.stringify({ count: next, lastKey: getTodayKey() })); } catch {}
-  return next;
-}
-
-function getStreak() {
-  try {
-    const { count = 0, lastKey = '' } = JSON.parse(localStorage.getItem('kinwove:verseStreak') ?? '{}');
-    return { count, lastKey };
-  } catch { return { count: 0, lastKey: '' }; }
-}
-
-function bumpStreak() {
-  const today = getTodayKey();
-  const yesterday = getYesterdayKey();
-  const { count, lastKey } = getStreak();
-  if (lastKey === today) return count;
-  const newCount = lastKey === yesterday ? count + 1 : 1;
-  try { localStorage.setItem('kinwove:verseStreak', JSON.stringify({ count: newCount, lastKey: today })); } catch {}
-  return newCount;
-}
+import { getDailyVerse, getTodayKey } from './dailyVerse.js';
+import { currentLocalStreak, markEngaged } from './streak.js';
 
 export function shouldShowDailyVerse() {
   try { return localStorage.getItem('kinwove:verseSeen') !== getTodayKey(); }
@@ -65,11 +16,11 @@ export default function DailyVerseCard({ onReflect, onOpenBible, onClose }) {
   const verse = getDailyVerse();
   const [streak, setStreak] = useState(0);
 
+  // Seeing the popup no longer bumps the streak — only interacting does
+  // (Reflect / Read in context here, or asking/reading/posting anywhere).
   useEffect(() => {
-    const local = bumpStreak();
-    setStreak(local);
+    setStreak(currentLocalStreak());
     markVerseAsSeen();
-    syncStreakToServer(local).then((n) => setStreak(n)).catch(() => {});
   }, []);
 
   return (
@@ -138,7 +89,7 @@ export default function DailyVerseCard({ onReflect, onOpenBible, onClose }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <button
-            onClick={() => { onReflect(verse); onClose(); }}
+            onClick={() => { markEngaged(); onReflect(verse); onClose(); }}
             style={{
               background: T.ink, color: T.cream, border: 'none',
               borderRadius: 999, padding: '13px 20px',
@@ -149,7 +100,7 @@ export default function DailyVerseCard({ onReflect, onOpenBible, onClose }) {
             Reflect with others →
           </button>
           <button
-            onClick={() => { onOpenBible?.(verse.ref); onClose(); }}
+            onClick={() => { markEngaged(); onOpenBible?.(verse.ref); onClose(); }}
             style={{
               background: 'transparent', color: T.goldDark,
               border: `1px solid ${T.goldLight}`, borderRadius: 999,

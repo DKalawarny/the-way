@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { ArrowLeft, ChevronLeft, ChevronRight, X, Search } from 'lucide-react';
 import { T } from './theme.js';
+import { markEngaged } from './streak.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import PageTour, { isPageTourDone } from './PageTour.jsx';
 import { useSpeechRecognition } from './useSpeechRecognition.js';
@@ -1434,6 +1435,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     const next = new Set([...completed, key]);
     setCompleted(next);
     localStorage.setItem(`rdr_done:${uid}`, JSON.stringify([...next]));
+    markEngaged();
     // Sync to the cloud so progress survives new devices / cleared caches.
     if (session?.user?.id) {
       supabase.from('bible_progress')
