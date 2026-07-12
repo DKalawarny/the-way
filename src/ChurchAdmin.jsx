@@ -2396,7 +2396,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
     let active = true;
     supabase
       .from('churches')
-      .select('id, name, city, region, invite_code, invite_code_rotated_at, countries_open_to')
+      .select('id, name, city, region, invite_code, invite_code_rotated_at, countries_open_to, seat_blocks')
       .eq('id', churchId)
       .single()
       .then(({ data }) => { if (active) setChurch(data); });
@@ -2430,7 +2430,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
             <TrialBanner daysLeft={daysLeft} session={session} />
           </div>
         )}
-        {hasAccess && <SeatNudge churchId={churchId} plan={plan} session={session} />}
+        {hasAccess && <SeatNudge churchId={churchId} plan={plan} session={session} seatBlocks={church?.seat_blocks ?? 0} />}
         {tab === 'overview' && (
           <PastorDashboard
             embedded
