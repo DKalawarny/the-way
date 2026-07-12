@@ -51,6 +51,107 @@ const NT = [
 const ALL_BOOKS = [...OT, ...NT];
 const TOTAL_CHAPTERS = ALL_BOOKS.reduce((s, b) => s + b.ch, 0); // 1189
 
+// ── Whole-Bible pace card ─────────────────────────────────────────────────────
+// Makes 1,189 chapters feel finishable: pick a pace, see a real finish date.
+// Rides the same completed-chapter set as everything else — no plan state to
+// track beyond the chosen pace (localStorage).
+const PACE_KEY = 'kinwove:bible-pace';
+
+function humanDuration(days) {
+  if (days < 45) return `${days} days`;
+  if (days < 360) {
+    const m = Math.round(days / 30.4);
+    return `about ${m} months`;
+  }
+  const y = Math.floor(days / 365);
+  const m = Math.round((days - y * 365) / 30.4);
+  return m > 0
+    ? `about ${y} ${y === 1 ? 'year' : 'years'}, ${m} ${m === 1 ? 'month' : 'months'}`
+    : `about ${y} ${y === 1 ? 'year' : 'years'}`;
+}
+
+function WholeBibleCard({ C, completed, openChapter }) {
+  const [pace, setPace] = useState(() => {
+    const p = Number(localStorage.getItem(PACE_KEY));
+    return [1, 2, 3, 5].includes(p) ? p : 1;
+  });
+  const done = ALL_BOOKS.reduce((s, b) => {
+    let n = 0;
+    for (let c = 1; c <= b.ch; c++) if (completed.has(`${b.id}:${c}`)) n++;
+    return s + n;
+  }, 0);
+  const remaining = TOTAL_CHAPTERS - done;
+  if (remaining <= 0) return null;
+
+  const days = Math.ceil(remaining / pace);
+  const finish = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+  const finishLabel = finish.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  // First unread chapter in canonical order — "today's chapter" for this path.
+  let nextBook = null, nextCh = null;
+  outer: for (const b of ALL_BOOKS) {
+    for (let c = 1; c <= b.ch; c++) {
+      if (!completed.has(`${b.id}:${c}`)) { nextBook = b; nextCh = c; break outer; }
+    }
+  }
+
+  const chip = (n) => (
+    <button
+      key={n}
+      onClick={() => { setPace(n); localStorage.setItem(PACE_KEY, String(n)); }}
+      style={{
+        background: pace === n ? `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)` : 'transparent',
+        color: pace === n ? T.cream : C.verse,
+        border: pace === n ? 'none' : `1px solid rgba(184,115,58,0.35)`,
+        borderRadius: 999, padding: '5px 13px', fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
+      }}
+    >
+      {n}
+    </button>
+  );
+
+  return (
+    <div style={{ background: C.section, border: `1px solid ${C.border}`, borderRadius: 14, padding: '14px 16px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{ fontSize: 22, lineHeight: 1, marginTop: 2 }}>🌾</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: T.serif, fontSize: 16.5, fontWeight: 600, color: C.text, marginBottom: 3 }}>
+            The Whole Bible
+            <span style={{ fontSize: 12, fontWeight: 600, color: C.muted, marginLeft: 8 }}>
+              {done > 0 ? `${remaining.toLocaleString()} chapters to go` : `${TOTAL_CHAPTERS.toLocaleString()} chapters`}
+            </span>
+          </div>
+          <div style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.55, marginBottom: 10 }}>
+            It looks like a mountain, but it's really just a pace. Pick yours:
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+            {[1, 2, 3, 5].map(chip)}
+            <span style={{ fontSize: 12, color: C.muted }}>chapters a day</span>
+          </div>
+          <div style={{ fontSize: 13, color: C.text, lineHeight: 1.55 }}>
+            At {pace} {pace === 1 ? 'chapter' : 'chapters'} a day, you'll have read the whole Bible in{' '}
+            <strong>{humanDuration(days)}</strong> — finishing around <strong>{finishLabel}</strong>.
+          </div>
+        </div>
+        {nextBook && (
+          <button
+            onClick={() => { track('plan_open', { plan: 'whole-bible' }); openChapter(nextBook, nextCh); }}
+            style={{
+              background: done > 0 ? `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)` : 'transparent',
+              color: done > 0 ? T.cream : C.verse,
+              border: done > 0 ? 'none' : `1px solid rgba(184,115,58,0.35)`,
+              borderRadius: 999, padding: '9px 16px', fontSize: 13, fontWeight: 700,
+              cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, alignSelf: 'center',
+            }}
+          >
+            {done > 0 ? 'Continue →' : 'Start →'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Achievement badges ────────────────────────────────────────────────────────
 function bookGroupComplete(bookIds, completedSet, bibleId) {
   for (const bid of bookIds) {
@@ -1917,6 +2018,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                 </div>
               );
             })}
+            <WholeBibleCard C={C} completed={completed} openChapter={openChapter} />
           </div>
         </div>
 

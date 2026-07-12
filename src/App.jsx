@@ -3669,7 +3669,9 @@ export default function App() {
           setProfile((p) => ({ ...p, sync_conversations: val }));
         } : undefined}
       />
-      <InstallPrompt triggerNow={installTrigger} />
+      {/* suppressed while reading scripture — mid-chapter is the wrong moment
+          to interrupt; the banner shows once they navigate elsewhere */}
+      <InstallPrompt triggerNow={installTrigger} suppressed={stage === 'read'} />
       <PastorPrompt
         open={showPastorPrompt}
         onApply={() => { setShowPastorPrompt(false); setStage('pastor-apply'); }}

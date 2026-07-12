@@ -46,7 +46,7 @@ function IosShareIcon({ size = 18 }) {
   );
 }
 
-export default function InstallPrompt({ triggerNow = false }) {
+export default function InstallPrompt({ triggerNow = false, suppressed = false }) {
   const [visible, setVisible]       = useState(false);
   const [installing, setInstalling] = useState(false);
   const [iosSheet, setIosSheet]     = useState(false);
@@ -111,7 +111,7 @@ export default function InstallPrompt({ triggerNow = false }) {
     }
   }
 
-  if (!visible) return null;
+  if (suppressed || !visible) return null;
 
   // ── iOS instruction sheet ──
   if (iosSheet) {
