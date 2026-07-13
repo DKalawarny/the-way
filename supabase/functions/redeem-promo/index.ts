@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
         body: JSON.stringify({
           from:    resendFrom,
-          to:      ['dkalawarny@hotmail.com'],
+          to:      ['hello@kinwove.com'],
           subject: `Promo code redeemed — ${normalised}`,
           text:    `Someone just used the promo code ${normalised}.\n\nUser: ${userEmail}\nPlan: ${promo.plan} for ${promo.months} months\nExpires: ${expiresAt.toDateString()}\nTotal uses: ${promo.uses + 1} / ${promo.max_uses}`,
         }),
