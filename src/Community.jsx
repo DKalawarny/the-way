@@ -1974,7 +1974,7 @@ useEffect(() => {
         {[
           { id: 'posts',      label: '📝 Posts'     },
           { id: 'prayers',    label: '🙏 Prayers'   },
-          { id: 'discover',   label: <><KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 4, flexShrink: 0 }} /> Discover</> },
+          { id: 'discover',   label: <><KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 4, flexShrink: 0 }} /> Circles</> },
           { id: 'milestones', label: <><KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 4, flexShrink: 0 }} /> Milestones</> },
         ].map(t => {
           const isActive = feedType === t.id;
@@ -2218,7 +2218,7 @@ useEffect(() => {
                     </div>
                     <div style={{ fontSize: 14, color: T.inkSoft, lineHeight: 1.65, maxWidth: 280, margin: '0 auto 22px' }}>
                       {!profile?.church_id
-                        ? 'Join your church or follow people to fill your feed. Or browse Discover to find churches and voices worth following.'
+                        ? 'Join your church or follow people to fill your feed. Or browse Circles to find study groups and churches worth joining.'
                         : 'Follow people or explore Discover to find more voices worth following.'}
                     </div>
                     <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
