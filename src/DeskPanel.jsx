@@ -348,6 +348,9 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession }) {
                     <TBtn label="¶" title="Normal paragraph" cmd="formatBlock" val="p" />
                     <div style={{ width: 1, height: 16, background: 'rgba(26,17,8,0.15)', margin: '0 2px' }} />
                     <TBtn label="•" title="Bullet list" cmd="insertUnorderedList" />
+                    <div style={{ width: 1, height: 16, background: 'rgba(26,17,8,0.15)', margin: '0 2px' }} />
+                    <TBtn label="🖍" title="Highlight selection" cmd="hiliteColor" val="rgba(212,162,74,0.4)" />
+                    <TBtn label="🖍✕" title="Remove highlight" cmd="hiliteColor" val="transparent" style={{ fontSize: 10 }} />
                   </div>
                   {/* contentEditable body */}
                   <div

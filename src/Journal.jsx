@@ -47,6 +47,137 @@ function sourceLabel(source) {
   return 'Note';
 }
 
+// ── Note highlighting ─────────────────────────────────────────────────────────
+// Select any passage of a note → a Highlight chip appears → the selection is
+// wrapped in ==markers== stored in the note text itself. Markers show as plain
+// == while editing and render as a gold tint in view mode.
+const HL_TINT = 'rgba(212,162,74,0.38)';
+
+function renderHighlighted(text) {
+  const s = String(text ?? '');
+  if (!s.includes('==')) return s;
+  const parts = s.split(/==([^=]+)==/g);
+  if (parts.length === 1) return s;
+  return parts.map((p, i) => (i % 2
+    ? <span key={i} style={{ background: HL_TINT, borderRadius: 3, padding: '0 1px' }}>{p}</span>
+    : p));
+}
+
+function stripHl(text) { return String(text ?? '').replace(/==([^=]+)==/g, '$1'); }
+
+// Parse raw text into { stripped, ranges } where ranges are highlight spans
+// over the stripped (marker-free) text.
+function hlRanges(raw) {
+  const ranges = [];
+  const s = String(raw ?? '');
+  const re = /==([^=]+)==/g;
+  let stripped = '', m, last = 0;
+  while ((m = re.exec(s))) {
+    stripped += s.slice(last, m.index);
+    ranges.push([stripped.length, stripped.length + m[1].length]);
+    stripped += m[1];
+    last = m.index + m[0].length;
+  }
+  stripped += s.slice(last);
+  return { stripped, ranges };
+}
+
+// Toggle a highlight over [start,end) of the stripped text → new raw text.
+// A selection fully inside an existing highlight removes (splits) it; anything
+// else becomes highlighted, merging any overlaps.
+function toggleHl(raw, start, end) {
+  const { stripped, ranges } = hlRanges(raw);
+  const covered = ranges.some(([a, b]) => a <= start && end <= b);
+  let next = [];
+  if (covered) {
+    for (const [a, b] of ranges) {
+      if (a <= start && end <= b) {
+        if (a < start) next.push([a, start]);
+        if (end < b)   next.push([end, b]);
+      } else next.push([a, b]);
+    }
+  } else {
+    next = [...ranges, [start, end]].sort((x, y) => x[0] - y[0]);
+    const merged = [];
+    for (const r of next) {
+      const prev = merged[merged.length - 1];
+      if (prev && r[0] <= prev[1]) prev[1] = Math.max(prev[1], r[1]);
+      else merged.push([...r]);
+    }
+    next = merged;
+  }
+  let out = '', pos = 0;
+  for (const [a, b] of next) {
+    if (b <= a) continue;
+    out += stripped.slice(pos, a) + '==' + stripped.slice(a, b) + '==';
+    pos = b;
+  }
+  return out + stripped.slice(pos);
+}
+
+// Current selection inside this rendered container, in stripped-text offsets.
+function selectionIn(el) {
+  const sel = window.getSelection();
+  if (!el || !sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
+  const range = sel.getRangeAt(0);
+  if (!el.contains(range.startContainer) || !el.contains(range.endContainer)) return null;
+  const pre = range.cloneRange();
+  pre.selectNodeContents(el);
+  pre.setEnd(range.startContainer, range.startOffset);
+  const start = pre.toString().length;
+  const len = range.toString().length;
+  if (!len) return null;
+  return { start, end: start + len, rect: range.getBoundingClientRect() };
+}
+
+// Note body that renders highlights and offers a chip while text is selected.
+function HighlightableBody({ text, onChange, style }) {
+  const ref = useRef(null);
+  const [chip, setChip] = useState(null);
+
+  function showChip() {
+    setTimeout(() => {
+      const info = selectionIn(ref.current);
+      if (!info || !ref.current) { setChip(null); return; }
+      const { ranges } = hlRanges(text);
+      const covered = ranges.some(([a, b]) => a <= info.start && info.end <= b);
+      const host = ref.current.getBoundingClientRect();
+      setChip({
+        start: info.start, end: info.end, covered,
+        x: Math.min(Math.max(info.rect.left - host.left + info.rect.width / 2, 56), Math.max(host.width - 56, 56)),
+        y: info.rect.top - host.top,
+      });
+    }, 0);
+  }
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <div ref={ref} onMouseUp={showChip} onTouchEnd={showChip} style={style}>
+        {renderHighlighted(text)}
+      </div>
+      {chip && (
+        <button
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onChange(toggleHl(text, chip.start, chip.end));
+            setChip(null);
+            try { window.getSelection()?.removeAllRanges(); } catch { /* ignore */ }
+          }}
+          style={{
+            position: 'absolute', top: chip.y - 36, left: chip.x, transform: 'translateX(-50%)',
+            background: T.ink, color: T.cream, border: 'none', borderRadius: 999,
+            padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            boxShadow: '0 2px 10px rgba(26,17,8,0.25)', zIndex: 5, whiteSpace: 'nowrap',
+          }}
+        >
+          {chip.covered ? 'Remove highlight' : '🖍 Highlight'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function UserNoteCard({ note, onDelete, onSave, onContinueChat }) {
   const [expanded,  setExpanded]  = useState(false);
   const [editing,   setEditing]   = useState(false);
@@ -159,26 +290,32 @@ function UserNoteCard({ note, onDelete, onSave, onContinueChat }) {
             </div>
           </>
         ) : (
-          <div onClick={() => !editing && setExpanded((v) => !v)} style={{ cursor: 'pointer' }}>
+          <div onClick={() => { if (!editing && window.getSelection()?.isCollapsed !== false) setExpanded((v) => !v); }} style={{ cursor: 'pointer' }}>
             {note.title && (
               <div style={{ fontFamily: T.serif, fontSize: 14, fontWeight: 600, color: T.ink, marginBottom: 6 }}>
                 {note.title}
               </div>
             )}
-            <div style={{
-              fontFamily: T.display, fontSize: 14, color: T.inkSoft,
-              lineHeight: 1.6, whiteSpace: 'pre-wrap',
-              ...(expanded ? {} : { display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical', overflow: 'hidden' }),
-            }}>
-              {note.body}
-            </div>
+            <HighlightableBody
+              text={note.body}
+              onChange={async (newBody) => {
+                await supabase.from('user_notes').update({ body: newBody, updated_at: new Date().toISOString() }).eq('id', note.id);
+                setDraftBody(newBody);
+                onSave(note.id, newBody, note.title ?? '');
+              }}
+              style={{
+                fontFamily: T.display, fontSize: 14, color: T.inkSoft,
+                lineHeight: 1.6, whiteSpace: 'pre-wrap',
+                ...(expanded ? {} : { display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical', overflow: 'hidden' }),
+              }}
+            />
             {!expanded && note.body?.length > 300 && (
               <div style={{ fontSize: 12, color: T.gold, marginTop: 4 }}>Tap to read more</div>
             )}
             {isAiSave && expanded && onContinueChat && (
               <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${T.line}` }}>
                 <button
-                  onClick={(e) => { e.stopPropagation(); onContinueChat(note.body); }}
+                  onClick={(e) => { e.stopPropagation(); onContinueChat(stripHl(note.body)); }}
                   style={{
                     background: T.ink, color: T.cream, border: 'none',
                     borderRadius: 999, padding: '7px 16px', fontSize: 13,
@@ -304,15 +441,20 @@ function NoteCard({ note, onOpenBible, onAskVerse, onSave, onDelete }) {
             </div>
           </>
         ) : (
-          <div
-            onClick={() => setExpanded((v) => !v)}
-            style={{
-              fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.65,
-              whiteSpace: 'pre-wrap', cursor: 'pointer',
-              ...(expanded ? {} : { display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden' }),
-            }}
-          >
-            {note.note_text}
+          <div onClick={() => { if (window.getSelection()?.isCollapsed !== false) setExpanded((v) => !v); }} style={{ cursor: 'pointer' }}>
+            <HighlightableBody
+              text={note.note_text}
+              onChange={async (newText) => {
+                await supabase.from('bible_notes').update({ note_text: newText, updated_at: new Date().toISOString() }).eq('id', note.id);
+                setDraftText(newText);
+                onSave(note.id, newText);
+              }}
+              style={{
+                fontFamily: T.serif, fontSize: 14, color: T.ink, lineHeight: 1.65,
+                whiteSpace: 'pre-wrap',
+                ...(expanded ? {} : { display: '-webkit-box', WebkitLineClamp: 5, WebkitBoxOrient: 'vertical', overflow: 'hidden' }),
+              }}
+            />
           </div>
         )}
 
