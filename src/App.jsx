@@ -2007,6 +2007,9 @@ export default function App() {
   const [seekingContext, setSeekingContext] = useState(null);
   const [peopleSearchOpen, setPeopleSearchOpen] = useState(false);
   const [boardOpen, setBoardOpen] = useState(false);
+  // The board is a floating overlay — navigating anywhere (Bible, feed, …)
+  // should dismiss it instead of staying stacked over the new screen.
+  useEffect(() => { setBoardOpen(false); }, [stage]);
   const [chatPanelOpen, setChatPanelOpen] = useState(false);
   const [viewingUserId, setViewingUserId] = useState(null);
   const [viewingChurchId, setViewingChurchId] = useState(null);
