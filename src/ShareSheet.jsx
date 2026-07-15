@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { T } from './theme.js';
+import { isNativeApp, openMailto } from './native.js';
 
 export default function ShareSheet({
   body,
@@ -127,7 +128,7 @@ export default function ShareSheet({
       dismiss();
     } catch (e) {
       if (e.name !== 'AbortError') {
-        window.open(`mailto:?subject=${encodeURIComponent(title ?? 'From kinwove')}&body=${encodeURIComponent(fullText)}`);
+        openMailto(`mailto:?subject=${encodeURIComponent(title ?? 'From kinwove')}&body=${encodeURIComponent(fullText)}`);
       }
     }
   }
@@ -135,7 +136,7 @@ export default function ShareSheet({
   function handleEmail() {
     const subject = encodeURIComponent(title ?? "Thought you'd find this");
     const bodyParam = encodeURIComponent(fullText);
-    window.open(`mailto:?subject=${subject}&body=${bodyParam}`);
+    openMailto(`mailto:?subject=${subject}&body=${bodyParam}`);
     dismiss();
   }
 
@@ -185,9 +186,11 @@ export default function ShareSheet({
   const externalApps = [
     // Text — always visible (sms: works on Mac via Messages + all mobile)
     { id: 'sms', icon: '💬', label: 'Text', bg: '#34C759', onClick: handleSMS },
-    { id: 'whatsapp', icon: '📲', label: 'WhatsApp', bg: '#25D366', onClick: handleWhatsApp },
-    { id: 'messenger', icon: '💬', label: messengerNote ? (isMobile ? 'Opening…' : 'Copied') : 'Messenger', bg: '#0099FF', onClick: handleMessenger, done: messengerNote },
-    { id: 'facebook', icon: '📘', label: 'Facebook', bg: '#1877F2', onClick: handleFacebook },
+    // Web-intent buttons use window.open, which returns null inside the native
+    // webview — there the system share sheet ("More") covers these apps instead.
+    !isNativeApp && { id: 'whatsapp', icon: '📲', label: 'WhatsApp', bg: '#25D366', onClick: handleWhatsApp },
+    !isNativeApp && { id: 'messenger', icon: '💬', label: messengerNote ? (isMobile ? 'Opening…' : 'Copied') : 'Messenger', bg: '#0099FF', onClick: handleMessenger, done: messengerNote },
+    !isNativeApp && { id: 'facebook', icon: '📘', label: 'Facebook', bg: '#1877F2', onClick: handleFacebook },
     canNativeShare && { id: 'more', icon: '📱', label: 'More', bg: T.gold, onClick: handleNativeShare },
     !canNativeShare && { id: 'email', icon: '✉️', label: 'Email', bg: T.gold, onClick: handleEmail },
   ].filter(Boolean);

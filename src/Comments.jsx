@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Smile } from 'lucide-react';
-import { supabase } from './supabase.js';
+import { supabase, authedFetch } from './supabase.js';
 import { track } from './analytics.js';
 import { T } from './theme.js';
 import { presetForRole } from './Badge.jsx';
@@ -29,8 +29,30 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
   const [profMap, setProfMap]   = useState({});
   const [rolesMap, setRolesMap] = useState({});
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const [reportedIds, setReportedIds] = useState(new Set());
   const inputRef = useRef(null);
   const { showToast, askConfirm, ui: uikitUi } = useUiKit();
+
+  // App Store UGC 1.2 — comments must be reportable, not just posts.
+  async function reportComment(c) {
+    if (reportedIds.has(c.id)) return;
+    setReportedIds((s) => new Set(s).add(c.id));
+    try {
+      const r = await authedFetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: 'content',
+          subject: `Report comment${item?.id ? ` on post ${item.id}` : ''}`,
+          body: `Comment id: ${c.id}\nAuthor id: ${c.author_id}\nText: ${String(c.body ?? '').slice(0, 500)}`,
+        }),
+      });
+      if (r.ok) showToast('Reported — our team will review.');
+      else setReportedIds((s) => { const n = new Set(s); n.delete(c.id); return n; });
+    } catch {
+      setReportedIds((s) => { const n = new Set(s); n.delete(c.id); return n; });
+    }
+  }
 
   function insertEmoji(emoji) {
     const el = inputRef.current;
@@ -162,6 +184,9 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
                     <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 4, paddingLeft: 10, display: 'flex', gap: 10 }}>
                       <span>{relativeTime(c.created_at)}</span>
                       {isMine && <TextButton onClick={() => remove(c.id)} danger>delete</TextButton>}
+                      {!isMine && sessionUserId && (
+                        <TextButton onClick={() => reportComment(c)}>{reportedIds.has(c.id) ? 'reported' : 'report'}</TextButton>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -221,11 +246,14 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
                       {c.body}
                     </div>
                   </div>
-                  {/* Timestamp + delete */}
+                  {/* Timestamp + delete/report */}
                   <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 4, paddingLeft: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span>{relativeTime(c.created_at)}</span>
                     {isMine && (
                       <TextButton onClick={() => remove(c.id)} danger>delete</TextButton>
+                    )}
+                    {!isMine && sessionUserId && (
+                      <TextButton onClick={() => reportComment(c)}>{reportedIds.has(c.id) ? 'reported' : 'report'}</TextButton>
                     )}
                   </div>
                 </div>

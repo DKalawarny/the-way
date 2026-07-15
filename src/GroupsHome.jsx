@@ -168,7 +168,6 @@ export default function GroupsHome({ userGroups, session, profile, onOpenGroup, 
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
         background: '#1e1208',
-        paddingTop: 'env(safe-area-inset-top, 0px)',
         boxShadow: '0 1px 0 rgba(255,255,255,0.05)',
       }}>
         <div style={{

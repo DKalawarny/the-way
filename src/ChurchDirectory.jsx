@@ -62,7 +62,6 @@ export default function ChurchDirectory({ session, profile, onBack, onOpenChurch
       <header style={{
         background: T.white, borderBottom: `1px solid ${T.line}`,
         position: 'sticky', top: 0, zIndex: 10,
-        paddingTop: 'env(safe-area-inset-top, 0px)',
       }}>
         <div style={{ padding: '0 16px', height: 56, display: 'flex', alignItems: 'center' }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 14, cursor: 'pointer', padding: '0 12px', minHeight: 44, display: 'flex', alignItems: 'center' }}>

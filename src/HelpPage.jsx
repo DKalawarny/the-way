@@ -402,7 +402,6 @@ export default function HelpPage({ onClose, onOpenTour }) {
         background: '#1e1208',
         borderBottom: 'none',
           boxShadow: '0 1px 0 rgba(255,255,255,0.04)',
-        paddingTop: 'env(safe-area-inset-top, 0px)',
       }}><div style={{ height: 56, padding: '0 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
         <button
           onClick={onClose}
@@ -524,10 +523,10 @@ export default function HelpPage({ onClose, onOpenTour }) {
                 Still need help?
               </div>
               <a
-                href="mailto:hello@kinwove.app"
+                href="mailto:hello@kinwove.com"
                 style={{ fontSize: 12.5, color: '#A85530', fontWeight: 600, textDecoration: 'none' }}
               >
-                hello@kinwove.app
+                hello@kinwove.com
               </a>
             </div>
           </nav>

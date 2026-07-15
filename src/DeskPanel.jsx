@@ -29,6 +29,7 @@ function toEditorHtml(raw) {
 // ── Print a single note in a clean new window ─────────────────────────────────
 function printNote(note) {
   const w = window.open('', '_blank', 'width=820,height=700');
+  if (!w) return; // popup blocked / native webview — window.open can return null
   const date = new Date(note.updated_at ?? Date.now()).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
   const bodyHtml = toEditorHtml(note.body);
   const titleHtml = (note.title || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -55,6 +56,7 @@ function printNote(note) {
 
 function printAllNotes(notes) {
   const w = window.open('', '_blank', 'width=820,height=700');
+  if (!w) return; // popup blocked / native webview — window.open can return null
   const blocks = notes.map(n => {
     const date = new Date(n.updated_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
     const bodyHtml = toEditorHtml(n.body);

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import { captureUtm } from './utm.js';
 import { reportClientError, installGlobalErrorReporting } from './errorReport.js';
+import { isNativeApp } from './native.js';
 
 // Capture UTM / referral params immediately — before React mounts.
 // First-touch attribution: only stored if nothing is already saved.
@@ -67,7 +68,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 // Only register the service worker in production — in dev mode the SW
 // caches Vite's source files and serves stale versions after code changes,
 // causing persistent white screens that survive hard refreshes.
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+// Skip it in the native app too: the bundle there is baked into the binary,
+// so the SW would only add a second stale-cache layer under capacitor://.
+if (import.meta.env.PROD && !isNativeApp && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   });

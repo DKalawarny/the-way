@@ -4,6 +4,7 @@ import { supabase, resizeImageToDataUrl, authedFetch } from './supabase.js';
 import { moderateImage } from './moderation.js';
 import { T } from './theme.js';
 import PageTour, { isPageTourDone } from './PageTour.jsx';
+import { isTourDone } from './FeatureTour.jsx';
 import Badge, { INVITABLE_ROLES, presetForRole } from './Badge.jsx';
 import { useUiKit, EmptyState, TextButton } from './uikit.jsx';
 import ChurchModeShell from './ChurchModeShell.jsx';
@@ -1587,6 +1588,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
                     <button
                       onClick={() => {
                         const w = window.open('', '_blank');
+                        if (!w) return; // popup blocked / native webview
                         w.document.write(`<!DOCTYPE html><html><head><title>Join ${church?.name ?? 'our church'} on kinwove</title><style>
                           body{font-family:Georgia,serif;background:#FDF8F0;color:#2C1810;margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;}
                           .card{border:2px solid #A85530;border-radius:18px;padding:48px 56px;max-width:480px;text-align:center;}
@@ -1693,6 +1695,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
                     <button
                       onClick={() => {
                         const w = window.open('', '_blank');
+                        if (!w) return; // popup blocked / native webview
                         w.document.write(`<!DOCTYPE html><html><head><title>Join ${church?.name ?? 'our church'} Youth on kinwove</title><style>body{font-family:Georgia,serif;background:#FDF8F0;color:#2C1810;margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;}.card{border:2px solid #A85530;border-radius:18px;padding:48px 56px;max-width:480px;text-align:center;}.eyebrow{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#A85530;font-weight:700;margin-bottom:16px;}h1{font-size:28px;font-weight:600;margin:0 0 8px;letter-spacing:-0.5px;}.sub{font-size:15px;color:#5A4733;line-height:1.6;margin-bottom:28px;}.code{font-family:monospace;font-size:36px;font-weight:700;letter-spacing:6px;border:1.5px solid #D9C9A8;border-radius:10px;padding:10px 20px;display:inline-block;margin-bottom:20px;}.url{font-size:13px;color:#8E5528;word-break:break-all;margin-bottom:32px;}img{border-radius:8px;border:1px solid #D9C9A8;}.footer{font-size:11px;color:#A89070;margin-top:32px;letter-spacing:1px;}@media print{body{background:#fff;}.card{border-color:#ccc;}}</style></head><body><div class="card"><div class="eyebrow">kinwove · Youth Group</div><h1>${church?.name ?? 'Our Church'}</h1><p class="sub">Scan the QR code or enter the code below<br>to join the youth group on kinwove.</p><img src="${qrUrl(youthJoinUrl)}" width="200" height="200" /><br><br><div class="code">${youthCode}</div><div class="url">${youthJoinUrl}</div><div class="footer">kinwove.com</div></div></body></html>`);
                         w.document.close(); w.focus(); setTimeout(() => w.print(), 600);
                       }}
@@ -2348,6 +2351,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
   // We fire after church is loaded + a short rAF-style delay for the re-render.
   useEffect(() => {
     if (!church) return; // wait for data
+    if (!isTourDone()) return; // defer while the app-wide welcome tour is up — they stack otherwise
     if (isPageTourDone(PASTOR_TOUR_KEY)) return;
     const t = setTimeout(() => setShowPastorTour(true), 120);
     return () => clearTimeout(t);

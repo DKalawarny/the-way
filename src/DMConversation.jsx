@@ -409,7 +409,6 @@ export default function DMConversation({ session, profile, conversationId, other
         background: isSystem ? T.parchment : T.white,
         borderBottom: `1px solid ${isSystem ? T.gold + '44' : T.line}`,
         flexShrink: 0,
-        paddingTop: 'env(safe-area-inset-top, 0px)',
       }}><div style={{ height: 56, display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px' }}>
         <button onClick={onBack} style={{
           background: 'none', border: 'none', color: T.goldDark, fontSize: 20,

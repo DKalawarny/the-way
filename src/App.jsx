@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, lazy, Suspense, Component } from 'react';
 import { T, globalCss } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
+import { isNativeApp } from './native.js';
 import { KinwoveWordmark } from './components/brand/KinwoveWordmark.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { KinwoveAppIcon } from './components/brand/KinwoveAppIcon.jsx';
@@ -28,11 +29,13 @@ class PageErrorBoundary extends Component {
       <div style={{ minHeight: '100vh', background: T.cream, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
         <KinwoveWordmark size={22} textColor={T.ink} starColor={T.honey} />
         <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink }}>
-          {isChunkError ? 'New version available' : 'Something went wrong'}
+          {isChunkError && !isNativeApp ? 'New version available' : 'Something went wrong'}
         </div>
         <div style={{ fontSize: 14, color: T.inkSoft, textAlign: 'center', maxWidth: 320, lineHeight: 1.6 }}>
           {isChunkError
-            ? 'A new version of kinwove was deployed. Reload the page to get it.'
+            ? (isNativeApp
+                ? 'The app hit a snag loading this screen. Reloading usually sorts it out.'
+                : 'A new version of kinwove was deployed. Reload the page to get it.')
             : error.message}
         </div>
         <button
@@ -70,10 +73,10 @@ class RouteErrorBoundary extends Component {
         justifyContent: 'center', gap: 12, padding: 40, textAlign: 'center',
       }}>
         <div style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 600, color: T.ink }}>
-          {isChunkError ? 'New version — reload to continue' : 'This screen hit an error'}
+          {isChunkError && !isNativeApp ? 'New version — reload to continue' : 'This screen hit an error'}
         </div>
         <div style={{ fontSize: 13, color: T.inkSoft, maxWidth: 300, lineHeight: 1.6 }}>
-          {isChunkError ? 'A new build was deployed.' : 'Try going back or reloading.'}
+          {isChunkError && !isNativeApp ? 'A new build was deployed.' : 'Try going back or reloading.'}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
@@ -3805,7 +3808,9 @@ export default function App() {
         )
       ) : (
         <>
-          {showNav && !chatPanelOpen && <CoachMark />}
+          {/* Hold coach-marks while the FeatureTour spotlight is active — both
+              carry overlapping copy and they visually stack otherwise. */}
+          {showNav && !chatPanelOpen && !showTour && <CoachMark />}
           <BottomNav
             stage={stage}
             authStage={authStage}

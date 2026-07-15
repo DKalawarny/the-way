@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase.js';
 import { churchHasAccess } from './planConfig.js';
+import { isNativeApp } from './native.js';
 
 export const TRIAL_DAYS               = 35;
 
 // Payments go-live switch. Until Stripe is live, real users CANNOT pay —
 // so expired trials must not lock anyone out, and walls must not sell.
 // At Stripe go-live: set VITE_PAYMENTS_LIVE=true on Render and redeploy.
-export const PAYMENTS_LIVE = import.meta.env.VITE_PAYMENTS_LIVE === 'true';
+// Always off in the native app: Stripe can't round-trip back into the app
+// shell, and App Store rules require IAP for digital subscriptions.
+export const PAYMENTS_LIVE = import.meta.env.VITE_PAYMENTS_LIVE === 'true' && !isNativeApp;
 export const CHURCH_BASE_PRICE        = '$79 CAD/mo';
 export const CHURCH_PRO_PRICE         = '$149 CAD/mo';
 export const PRO_PRICE                = CHURCH_BASE_PRICE; // kept for legacy imports
-export const UPGRADE_EMAIL            = 'hello@kinwove.app'; // swap for Stripe link when ready
+export const UPGRADE_EMAIL            = 'hello@kinwove.com'; // swap for Stripe link when ready
 export const CHURCH_BASE_MEMBER_LIMIT = 150;
 
 export function usePlan(churchId) {

@@ -530,7 +530,7 @@ function PlanCard({ plan, aiUsage, session, onUpgrade }) {
       const { url } = await res.json();
       if (url) window.location.href = url;
     } catch {
-      window.open('mailto:hello@kinwove.app?subject=Manage%20my%20subscription');
+      window.open('mailto:hello@kinwove.com?subject=Manage%20my%20subscription');
     } finally {
       setOpeningPortal(false);
     }
@@ -826,10 +826,10 @@ function PlanLine({ plan, aiUsage, session, onUpgrade }) {
       if (json.url) {
         window.location.href = json.url;
       } else {
-        setPortalError(json.error ?? 'Could not open billing portal. Email hello@kinwove.app for help.');
+        setPortalError(json.error ?? 'Could not open billing portal. Email hello@kinwove.com for help.');
       }
     } catch (e) {
-      setPortalError('Could not reach billing portal. Email hello@kinwove.app for help.');
+      setPortalError('Could not reach billing portal. Email hello@kinwove.com for help.');
     } finally {
       setOpening(false);
     }

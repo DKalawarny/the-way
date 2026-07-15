@@ -5,6 +5,7 @@ import { T, SHADOW, RADIUS, SEMANTIC, SPACE } from './theme.js';
 import { markEngaged } from './streak.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import PageTour, { isPageTourDone } from './PageTour.jsx';
+import { isTourDone } from './FeatureTour.jsx';
 import { presetForRole } from './Badge.jsx';
 import { useUiKit } from './uikit.jsx';
 import JoinByCode from './JoinByCode.jsx';
@@ -102,8 +103,11 @@ export default function ChurchPage({
 
   // Show church member tour once — only for actual members (not pastors, who get
   // their own tour in ChurchAdmin), and only on their first visit to this church.
+  // Deferred while the app-wide welcome FeatureTour hasn't been finished yet —
+  // the two tours otherwise render stacked on top of each other. Not marking
+  // the page tour done means it simply shows on the next visit instead.
   useEffect(() => {
-    if (!loading && isMember && !isPastor && !isPageTourDone(CHURCH_TOUR_KEY)) {
+    if (!loading && isMember && !isPastor && isTourDone() && !isPageTourDone(CHURCH_TOUR_KEY)) {
       setShowChurchTour(true);
     }
   }, [loading, isMember, isPastor]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -527,7 +531,7 @@ export default function ChurchPage({
   }
 
   return (
-    <div className="scene" style={{ minHeight: '100vh', paddingBottom: 80, paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+    <div className="scene" style={{ minHeight: '100vh', paddingBottom: 80 }}>
       {uikitUi}
 
       {/* Visitor-view notice removed — ChurchModeShell header already shows

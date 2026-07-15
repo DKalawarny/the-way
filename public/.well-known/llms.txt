@@ -126,8 +126,8 @@ with no noise and no algorithm pushing irrelevant content.
 ## Contact and links
 
 - Website: https://www.kinwove.com
-- Email: hello@kinwove.app
-- Support: hello@kinwove.app
+- Email: hello@kinwove.com
+- Support: hello@kinwove.com
 - X / Twitter: https://x.com/kinwove
 - Instagram: https://www.instagram.com/kinwove
 - Facebook: https://www.facebook.com/kinwove

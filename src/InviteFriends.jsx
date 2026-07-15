@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { T } from './theme.js';
+import { isNativeApp, openMailto } from './native.js';
 
 const DEFAULT_MESSAGE = 'Thought of you — kinwove is a place for the big questions: life, meaning, faith, doubt. Honest conversation, no pressure, no agenda. Wherever you\u2019re at.';
 
@@ -95,7 +96,7 @@ export default function InviteFriends({ onClose, profile }) {
     const subject = encodeURIComponent("Something I've been using — thought of you");
     const text = `${message}\n\n${taggedUrl('email')}`;
     const body = encodeURIComponent(text);
-    window.open(`mailto:?subject=${subject}&body=${body}`);
+    openMailto(`mailto:?subject=${subject}&body=${body}`);
   }
 
   async function copyLink() {
@@ -142,7 +143,9 @@ export default function InviteFriends({ onClose, profile }) {
       bg: '#34C759',
       onClick: () => openSMS(),
     },
-    {
+    // Web-intent channels use window.open, which returns null inside the
+    // native webview — there "More apps…" (system share) covers them instead.
+    !isNativeApp && {
       id: 'whatsapp',
       icon: '🟢',
       label: 'WhatsApp',
@@ -150,7 +153,7 @@ export default function InviteFriends({ onClose, profile }) {
       bg: '#25D366',
       onClick: openWhatsApp,
     },
-    {
+    !isNativeApp && {
       id: 'messenger',
       icon: '💬',
       label: 'Messenger',
@@ -158,7 +161,7 @@ export default function InviteFriends({ onClose, profile }) {
       bg: '#0099FF',
       onClick: openMessenger,
     },
-    {
+    !isNativeApp && {
       id: 'facebook',
       icon: '📘',
       label: 'Post to Facebook',
@@ -166,7 +169,7 @@ export default function InviteFriends({ onClose, profile }) {
       bg: '#1877F2',
       onClick: openFacebook,
     },
-    {
+    !isNativeApp && {
       id: 'x',
       icon: '𝕏',
       label: 'Post to X',
@@ -174,7 +177,7 @@ export default function InviteFriends({ onClose, profile }) {
       bg: '#000000',
       onClick: openX,
     },
-    {
+    !isNativeApp && {
       id: 'linkedin',
       icon: '🔷',
       label: 'Share on LinkedIn',

@@ -121,7 +121,6 @@ export default function ConnectScreen({ session, profile, onClose, onStartDM }) 
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
         background: T.white, borderBottom: `1px solid ${T.line}`,
-        paddingTop: 'env(safe-area-inset-top, 0px)',
       }}>
         <div style={{ height: 56, padding: '0 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 20, cursor: 'pointer', padding: 0 }}>

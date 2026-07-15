@@ -3,6 +3,7 @@ import { supabase } from './supabase.js';
 import { T } from './theme.js';
 import { getStoredUtm, clearStoredUtm } from './utm.js';
 import { Turnstile, TURNSTILE_ENABLED } from './Turnstile.jsx';
+import { isNativeApp } from './native.js';
 
 function Field({ label, children }) {
   return (
@@ -262,7 +263,10 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
         <div style={eyebrow}>kinwove</div>
         <h2 style={title}>{mode === 'signin' ? 'Welcome back' : 'Join the journey'}</h2>
 
-        <button
+        {/* Google blocks OAuth inside embedded webviews (disallowed_useragent)
+            and the redirect can't land back in the app shell — email-only
+            sign-in in the native app until a system-browser flow ships. */}
+        {!isNativeApp && <button
           type="button"
           onClick={handleGoogle}
           disabled={loading}
@@ -280,13 +284,13 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
             <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.46 3.44 1.35l2.58-2.58C13.47.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/>
           </svg>
           Continue with Google
-        </button>
+        </button>}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '18px 0' }}>
+        {!isNativeApp && <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '18px 0' }}>
           <div style={{ flex: 1, height: 1, background: T.line }} />
           <span style={{ fontSize: 12, color: T.inkMuted }}>or</span>
           <div style={{ flex: 1, height: 1, background: T.line }} />
-        </div>
+        </div>}
 
         <form onSubmit={mode === 'signin' ? handleSignIn : handleSignUp}>
           <Field label="Email">

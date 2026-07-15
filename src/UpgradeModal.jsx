@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { T } from './theme.js';
+import { isNativeApp } from './native.js';
 
 const PLANS = [
   {
@@ -36,6 +37,44 @@ const PLANS = [
 export default function UpgradeModal({ session, onClose }) {
   const [loading, setLoading] = useState(null); // plan id while loading
   const [error, setError] = useState(null);
+
+  // Stripe checkout can't round-trip back into the app shell, and App Store
+  // rules don't allow selling subscriptions outside IAP — no plans in native.
+  if (isNativeApp) {
+    return (
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 450,
+          background: 'rgba(26,17,8,0.55)',
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        }}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            background: T.parchment, borderRadius: '20px 20px 0 0',
+            padding: '28px 22px calc(40px + env(safe-area-inset-bottom, 0px))',
+            width: '100%', maxWidth: 480, textAlign: 'center',
+          }}
+        >
+          <div style={{ width: 36, height: 4, background: T.line, borderRadius: 999, margin: '0 auto 24px' }} />
+          <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, marginBottom: 8 }}>
+            Upgrades aren't available in the app yet
+          </div>
+          <div style={{ fontSize: 14, color: T.inkSoft, lineHeight: 1.6, marginBottom: 22 }}>
+            Everything you already have keeps working right here.
+          </div>
+          <button
+            onClick={onClose}
+            style={{ background: T.ink, color: T.cream, border: 'none', borderRadius: 999, padding: '12px 28px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+          >
+            Got it
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   async function startCheckout(planId) {
     if (!session?.user) return;

@@ -313,6 +313,7 @@ export default function PastorApply({ session, profile, onClose, onBecamePastor 
                 onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 onKeyDown={e => { if (e.key === 'Enter' && code.length === 6) handleVerifyCode(); }}
                 placeholder="6-digit code"
+                className="keep-font-size"
                 style={{ ...input, fontSize: 28, fontFamily: 'monospace', letterSpacing: 10, textAlign: 'center' }}
               />
               {verifyError && (

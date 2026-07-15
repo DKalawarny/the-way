@@ -4,6 +4,7 @@ import { T } from './theme.js';
 import { markEngaged } from './streak.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import PageTour, { isPageTourDone } from './PageTour.jsx';
+import { isTourDone } from './FeatureTour.jsx';
 import { useSpeechRecognition } from './useSpeechRecognition.js';
 import { useTextToSpeech } from './useTextToSpeech.js';
 import { authedFetch, supabase } from './supabase.js';
@@ -963,8 +964,9 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   });
   const [hlMap, setHlMap] = useState({}); // verseNum → highlight color name (this chapter)
   const [newBadge, setNewBadge] = useState(null); // badge just earned → show toast
-  const [showBibleTour,     setShowBibleTour]     = useState(() => !isPageTourDone(BIBLE_TOUR_KEY));
-  const [showBibleReadTour, setShowBibleReadTour] = useState(() => !isPageTourDone(BIBLE_READ_TOUR_KEY));
+  // Deferred while the app-wide welcome tour is unfinished — they stack otherwise.
+  const [showBibleTour,     setShowBibleTour]     = useState(() => isTourDone() && !isPageTourDone(BIBLE_TOUR_KEY));
+  const [showBibleReadTour, setShowBibleReadTour] = useState(() => isTourDone() && !isPageTourDone(BIBLE_READ_TOUR_KEY));
 
   // ── AI usage gate ───────────────────────────────────────────────────────────
   const aiUsage = useAiUsage(session?.user?.id, profile?.plan ?? 'free');

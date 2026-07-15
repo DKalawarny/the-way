@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { T } from './theme.js';
+import { isNativeApp, openMailto } from './native.js';
 import { markEngaged } from './streak.js';
 import { KinwoveWordmark } from './components/brand/KinwoveWordmark.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
@@ -493,7 +494,7 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
       onClose();
     } catch (e) {
       if (e.name !== 'AbortError') {
-        window.open(`mailto:?subject=${encodeURIComponent(heading || 'From kinwove')}&body=${encodeURIComponent(getBody())}`);
+        openMailto(`mailto:?subject=${encodeURIComponent(heading || 'From kinwove')}&body=${encodeURIComponent(getBody())}`);
       }
     }
   }
@@ -584,15 +585,17 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
       icon: '⛪', label: groupShared ? 'Shared ✓' : `Share to ${userGroup.group.name}`,
       sub: 'Visible to group members only', onClick: handleGroupShare, done: groupShared,
     },
-    {
+    // Web-intent items use window.open, which returns null inside the native
+    // webview — there "Send via…" (system share) covers these apps instead.
+    !isNativeApp && {
       icon: '📘', label: 'Share to Facebook',
       sub: 'Post to your timeline or to a group', onClick: handleFacebook, done: false,
     },
-    {
+    !isNativeApp && {
       icon: '💬', label: messengerNote ? 'Copied — paste in Messenger' : 'Send via Messenger',
       sub: 'Opens Messenger; text is copied to paste', onClick: handleMessenger, done: messengerNote,
     },
-    {
+    !isNativeApp && {
       icon: '🟢', label: 'Send via WhatsApp',
       sub: 'Pick a contact, message is pre-filled', onClick: handleWhatsApp, done: false,
     },

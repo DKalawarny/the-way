@@ -38,12 +38,17 @@ function placeTooltip(rect) {
   const cx  = rect.left + rect.width  / 2;
   const cy  = rect.top  + rect.height / 2;
 
+  // TIP_H_APPROX is only an estimate — long step copy on narrow phones renders
+  // far taller, pushing the action button below the screen edge with no way to
+  // finish the tour. A hard maxHeight + internal scroll keeps it reachable.
+  const fit = (top) => ({ maxHeight: vh - top - 12, overflowY: 'auto' });
+
   // Left sidebar → tooltip to the RIGHT
   if (rect.right < vw * 0.38) {
     const top      = Math.max(12, Math.min(cy - 72, vh - 200));
     const arrowTop = cy - top - 8;
     return {
-      style: { position: 'fixed', left: rect.right + TIP_GAP, top, width: TIP_W },
+      style: { position: 'fixed', left: rect.right + TIP_GAP, top, width: TIP_W, ...fit(top) },
       arrowStyle: {
         position: 'absolute', left: -8,
         top: Math.max(14, Math.min(arrowTop, 100)),
@@ -65,7 +70,7 @@ function placeTooltip(rect) {
     // Tooltip BELOW the element — clamp so it doesn't fall off the bottom
     const topVal = Math.min(rect.bottom + TIP_GAP, vh - TIP_H_APPROX - 12);
     return {
-      style: { position: 'fixed', left, top: topVal, width: TIP_W },
+      style: { position: 'fixed', left, top: topVal, width: TIP_W, ...fit(topVal) },
       arrowStyle: {
         position: 'absolute', top: -8, left: arrL,
         borderLeft: '8px solid transparent', borderRight: '8px solid transparent',
@@ -82,7 +87,7 @@ function placeTooltip(rect) {
     // Not enough room above — fall back to below
     const topVal = Math.min(rect.bottom + TIP_GAP, vh - TIP_H_APPROX - 12);
     return {
-      style: { position: 'fixed', left, top: topVal, width: TIP_W },
+      style: { position: 'fixed', left, top: topVal, width: TIP_W, ...fit(topVal) },
       arrowStyle: {
         position: 'absolute', top: -8, left: arrL,
         borderLeft: '8px solid transparent', borderRight: '8px solid transparent',
@@ -93,7 +98,7 @@ function placeTooltip(rect) {
   }
 
   return {
-    style: { position: 'fixed', left, bottom: bottomVal, width: TIP_W },
+    style: { position: 'fixed', left, bottom: bottomVal, width: TIP_W, maxHeight: vh - bottomVal - 12, overflowY: 'auto' },
     arrowStyle: {
       position: 'absolute', bottom: -8, left: arrL,
       borderLeft: '8px solid transparent', borderRight: '8px solid transparent',

@@ -407,8 +407,16 @@ export const globalCss = `
 
   /* ── Mobile base fixes ─────────────────────────────────────────── */
   /* iOS Safari zooms the viewport on focus when input font-size < 16px.
-     Clamping to max(16px, 1em) prevents the zoom while preserving theme size. */
+     Clamping to max(16px, 1em) prevents the zoom while preserving theme size.
+     Several composers set smaller sizes via inline styles, which beat this
+     rule — so on touch widths it must win with !important. Inputs that are
+     intentionally large (verify-code) opt out via .keep-font-size. */
   input, textarea, select { font-size: max(16px, 1em); }
+  @media (max-width: 1023px) {
+    input:not(.keep-font-size), textarea, select, [contenteditable="true"] {
+      font-size: max(16px, 1em) !important;
+    }
+  }
 
   /* Prevent rubber-band overscroll on iOS — the app is SPA-modal, not a
      traditional document, so native bounce feels wrong. */

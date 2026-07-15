@@ -3912,7 +3912,9 @@ app.post('/api/reports', requireAuth, async (req, res) => {
     if (!category || !subject?.trim() || !body?.trim()) {
       return res.status(400).json({ error: 'category, subject, and body are required' });
     }
-    const valid = ['bug', 'ai', 'complaint', 'suggestion', 'other'];
+    // 'user' and 'content' come from the in-app "Report user" / "Report comment"
+    // actions (App Store UGC guideline 1.2) — same review queue as app feedback.
+    const valid = ['bug', 'ai', 'complaint', 'suggestion', 'other', 'user', 'content'];
     if (!valid.includes(category)) return res.status(400).json({ error: 'invalid category' });
 
     const r = await fetch(`${SUPABASE_URL}/rest/v1/user_reports`, {
@@ -4792,7 +4794,7 @@ if (process.env.NODE_ENV !== 'development') {
   <footer class="cv-footer-bar">
     <p>
       <a href="https://www.kinwove.com/">kinwove</a> · AI Bible Study &amp; Christian Community ·
-      <a href="mailto:hello@kinwove.app">hello@kinwove.app</a>
+      <a href="mailto:hello@kinwove.com">hello@kinwove.com</a>
     </p>
     <p style="margin-top:4px">Only conversations users explicitly shared are shown here.</p>
   </footer>

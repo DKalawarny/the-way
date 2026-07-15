@@ -5,12 +5,16 @@ import { CHURCH_BASE_PRICE, CHURCH_PRO_PRICE, UPGRADE_EMAIL, TRIAL_DAYS } from '
 import { TRIAL_MSG_LIMIT } from './useSermonAiUsage.js';
 import { includedMembers, seatBlocksNeeded, SEAT_BLOCK_SIZE, SEAT_BLOCK_PRICE } from './planConfig.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
+import { isNativeApp } from './native.js';
 
 // Starts a Stripe Checkout for a church plan ('church_base' | 'church_pro').
 // Mirrors UpgradeModal.startCheckout — the create-checkout edge function +
 // stripe-webhook already handle church plans (sets pastor's profiles.plan and
 // marks the church verified). Redirects on success; returns { error } on failure.
 export async function startChurchCheckout(session, plan) {
+  // Stripe checkout can't round-trip back into the native app shell — church
+  // plans are managed on the web until an IAP/native flow exists.
+  if (isNativeApp) return { error: "Upgrades aren't available in the app yet." };
   if (!session?.user) return { error: 'Please sign in again.' };
   try {
     const res = await fetch(

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, lazy, Suspense } from 'react';
-import { supabase } from './supabase.js';
+import { supabase, authedFetch } from './supabase.js';
 import { T } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
 import { Avatar, bannerBackground } from './ProfilePage.jsx';
@@ -25,6 +25,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
   const [feedRefresh, setFeedRefresh] = useState(0);
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockBusy, setBlockBusy] = useState(false);
+  const [reportState, setReportState] = useState('idle'); // idle | busy | done
   const [blockedByThem, setBlockedByThem] = useState(false);
   const [publicPrayers, setPublicPrayers] = useState([]);
   const [prayedFor, setPrayedFor] = useState(new Set());
@@ -390,6 +391,37 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
                       >
                         <span style={{ fontSize: 16 }}>🙏</span>
                         {prayingFor ? 'Added to prayer list' : `Pray for ${firstName}`}
+                      </button>
+                      {/* Report (App Store UGC 1.2 — users must be reportable) */}
+                      <button
+                        onClick={async () => {
+                          if (reportState !== 'idle') return;
+                          setReportState('busy');
+                          try {
+                            const r = await authedFetch('/api/reports', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                category: 'user',
+                                subject: `Report user: ${profile?.display_name ?? userId}`,
+                                body: `Reported from profile menu. User id: ${userId}`,
+                              }),
+                            });
+                            setReportState(r.ok ? 'done' : 'idle');
+                          } catch { setReportState('idle'); }
+                        }}
+                        disabled={reportState !== 'idle'}
+                        style={{
+                          width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                          borderBottom: `1px solid ${T.line}`,
+                          padding: '13px 16px', fontSize: 13.5,
+                          color: reportState === 'done' ? T.inkMuted : T.ink,
+                          cursor: reportState === 'idle' ? 'pointer' : 'default',
+                          display: 'flex', alignItems: 'center', gap: 10,
+                        }}
+                      >
+                        <span style={{ fontSize: 16 }}>🚩</span>
+                        {reportState === 'done' ? 'Reported — our team will review' : `Report ${firstName}`}
                       </button>
                       {/* Block */}
                       <button
