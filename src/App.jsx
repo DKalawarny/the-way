@@ -391,7 +391,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
     <div style={{ minHeight: '100vh', background: '#1A110A', display: 'flex', flexDirection: 'column', fontFamily: T.sans }}>
 
       {/* ── Nav ── */}
-      <header style={{ padding: '18px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${RULE}` }}>
+      <header style={{ padding: 'calc(18px + env(safe-area-inset-top, 0px)) 32px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${RULE}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
           <KinwoveWordmark size={26} textColor={T.cream} starColor={T.honey} />
         </div>
@@ -1722,6 +1722,18 @@ function AppHeader({ onOpenBible, onVerseClick, streak }) {
 // verse. Shown on every page when logged in so the brand is always anchored.
 function MobileHeader({ onOpenBible, onVerseClick, streak }) {
   const verse = getDailyVerse();
+  // The header also hosts 3 overlaid FABs (164px reserved right padding), so on
+  // phone widths there's no room for the verse chip — it was clipping mid-word
+  // ("Psal"). Degrade: quote+ref ≥620px, ref-only ≥500px, hidden below (the
+  // verse stays reachable via the streak chip, which opens the same card).
+  const [winW, setWinW] = useState(window.innerWidth);
+  useEffect(() => {
+    const onResize = () => setWinW(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const showVerse = winW >= 500;
+  const showQuote = winW >= 620;
   return (
     <div style={{
       position: 'fixed',
@@ -1738,30 +1750,36 @@ function MobileHeader({ onOpenBible, onVerseClick, streak }) {
       <div style={{ flexShrink: 0 }}>
         <KinwoveWordmark size={32} textColor="#f4e9d4" starColor={T.honey} starEm={0.38} />
       </div>
-      <button
-        onClick={() => onVerseClick ? onVerseClick() : onOpenBible?.(verse.ref)}
-        title="Today's verse — tap to reflect"
-        style={{
-          flex: 1, minWidth: 0,
-          display: 'flex', alignItems: 'baseline', gap: 7,
-          background: 'none', border: 'none',
-          paddingLeft: 12,
-          borderLeft: '1px solid rgba(232,181,99,0.22)',
-          cursor: 'pointer',
-          textAlign: 'left', overflow: 'hidden',
-        }}
-      >
-        <span style={{
-          fontFamily: T.serif, fontStyle: 'italic', fontSize: 12.5, color: '#e8dcc2',
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          minWidth: 0, flex: 1,
-        }}>
-          &ldquo;{verse.text}&rdquo;
-        </span>
-        <span style={{ fontSize: 10.5, fontWeight: 700, color: T.honey, letterSpacing: '0.06em', flexShrink: 0 }}>
-          {verse.ref} ↗
-        </span>
-      </button>
+      {showVerse ? (
+        <button
+          onClick={() => onVerseClick ? onVerseClick() : onOpenBible?.(verse.ref)}
+          title="Today's verse — tap to reflect"
+          style={{
+            flex: 1, minWidth: 0,
+            display: 'flex', alignItems: 'baseline', gap: 7,
+            background: 'none', border: 'none',
+            paddingLeft: 12,
+            borderLeft: '1px solid rgba(232,181,99,0.22)',
+            cursor: 'pointer',
+            textAlign: 'left', overflow: 'hidden',
+          }}
+        >
+          {showQuote && (
+            <span style={{
+              fontFamily: T.serif, fontStyle: 'italic', fontSize: 12.5, color: '#e8dcc2',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              minWidth: 0, flex: 1,
+            }}>
+              &ldquo;{verse.text}&rdquo;
+            </span>
+          )}
+          <span style={{ fontSize: 10.5, fontWeight: 700, color: T.honey, letterSpacing: '0.06em', flexShrink: 0, whiteSpace: 'nowrap' }}>
+            {verse.ref} ↗
+          </span>
+        </button>
+      ) : (
+        <div style={{ flex: 1 }} />
+      )}
       <StreakChip streak={streak} onClick={onVerseClick} compact />
     </div>
   );
@@ -2337,11 +2355,26 @@ export default function App() {
         else if (initialChurchId) { setViewingChurchId(initialChurchId); setStage('church'); loadProfile(data.session.user.id); }
         else {
           const local = localStorage.getItem('kw:stage');
-          if (local && STAGE_SAFE.has(local)) { setStage(local); loadProfile(data.session.user.id); }
+          if (local && STAGE_SAFE.has(local)) {
+            setStage(local);
+            // 'church' needs a paired viewingChurchId that isn't persisted —
+            // fall back to the user's own church, or home if they have none.
+            loadProfile(data.session.user.id).then((prof) => {
+              if (local === 'church') {
+                if (prof?.church_id) setViewingChurchId(prof.church_id);
+                else setStage('home');
+              }
+            });
+          }
           else {
             loadProfile(data.session.user.id).then((prof) => {
               const local2 = localStorage.getItem('kw:stage');
-              if (!local2 && prof?.last_stage && STAGE_SAFE.has(prof.last_stage)) setStage(prof.last_stage);
+              if (!local2 && prof?.last_stage && STAGE_SAFE.has(prof.last_stage)) {
+                if (prof.last_stage === 'church') {
+                  if (prof?.church_id) { setViewingChurchId(prof.church_id); setStage('church'); }
+                  else setStage('home');
+                } else setStage(prof.last_stage);
+              }
               else if (!local2) setStage('home');
             });
           }
@@ -2388,7 +2421,13 @@ export default function App() {
             const local = localStorage.getItem('kw:stage');
             if (local && STAGE_SAFE.has(local)) {
               setStage(local);
-              loadProfile(s.user.id);
+              // Same church fallback as the getSession restore path above.
+              loadProfile(s.user.id).then((prof) => {
+                if (local === 'church') {
+                  if (prof?.church_id) setViewingChurchId(prof.church_id);
+                  else setStage('home');
+                }
+              });
             } else {
               loadProfile(s.user.id).then((prof) => {
                 // New user — no profile yet, OR profile was auto-created by a
@@ -2400,7 +2439,10 @@ export default function App() {
                 }
                 const local2 = localStorage.getItem('kw:stage');
                 if (!local2 && prof?.last_stage && STAGE_SAFE.has(prof.last_stage)) {
-                  setStage(prof.last_stage);
+                  if (prof.last_stage === 'church') {
+                    if (prof?.church_id) { setViewingChurchId(prof.church_id); setStage('church'); }
+                    else setStage('home');
+                  } else setStage(prof.last_stage);
                 } else if (!local2) {
                   setStage('home');
                 }
@@ -3554,9 +3596,9 @@ export default function App() {
           )}
           <div style={{
             position: 'fixed',
-            top: isDesktop && showNav ? HEADER_H : 0,
+            top: isDesktop && showNav ? HEADER_H : 'env(safe-area-inset-top, 0px)',
             right: 0,
-            height: isDesktop && showNav ? `calc(100vh - ${HEADER_H}px)` : 'calc(100vh - 62px - env(safe-area-inset-bottom, 0px))',
+            height: isDesktop && showNav ? `calc(100vh - ${HEADER_H}px)` : 'calc(100vh - 62px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
             width: Math.min(chatPanelWidth, winW - (isDesktop && showNav ? SIDEBAR_W : 0)),
             zIndex: isDocked ? 101 : 150,
             transform: chatPanelOpen ? 'translateX(0)' : 'translateX(100%)',
