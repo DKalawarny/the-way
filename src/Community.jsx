@@ -728,7 +728,11 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
 
         {/* Quiet reaction row — no pill backgrounds. 11px vpad = ~40px tap
             targets (a11y: the old 6px made ~30px, too small for older hands). */}
+        {/* Two subgroups so narrow screens wrap into two intentional rows
+            (reactions / actions) instead of three ragged ones with an
+            orphaned bookmark. On wide cards both fit one line as before. */}
         <div style={{ padding: '5px 22px', borderTop: `1px solid ${T.line}`, display: 'flex', gap: 0, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', flexShrink: 0 }}>
           {REACTIONS.map((r, i) => {
             const count  = post.reaction_counts?.[r.kind] ?? 0;
             const active = myReaction === r.kind;
@@ -752,6 +756,8 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
               </button>
             );
           })}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 220 }}>
           <button
             onClick={() => setShareOpen(true)}
             style={{
@@ -785,6 +791,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
               <Bookmark size={15} strokeWidth={2} fill={isSaved ? tabText : 'none'} />
             </button>
           )}
+          </div>
         </div>
       </div>
 

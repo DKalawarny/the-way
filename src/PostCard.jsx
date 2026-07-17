@@ -1171,8 +1171,9 @@ export default function PostCard({
         </div>
       )}
 
-      {/* Action bar — pill buttons matching Community.jsx style */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, borderTop: `1px solid ${T.line}`, paddingTop: 10, flexWrap: 'nowrap' }}>
+      {/* Action bar — pill buttons matching Community.jsx style. Wraps on
+          phone widths: the four labeled pills alone exceed a 402pt card. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, rowGap: 8, borderTop: `1px solid ${T.line}`, paddingTop: 10, flexWrap: 'wrap' }}>
         {isPostLike && REACTIONS.map((r) => {
           const count = reactions[r.id] ?? 0;
           const active = !!mine[r.id];

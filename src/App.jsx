@@ -1740,14 +1740,18 @@ function MobileHeader({ onOpenBible, onVerseClick, streak }) {
   return (
     <div style={{
       position: 'fixed',
-      top: 'env(safe-area-inset-top, 0px)',
+      top: 0,
       left: 0, right: 0,
-      height: 56, zIndex: 110,
+      // Extend behind the status bar — with top: env(inset) the notch strip was
+      // transparent and scrolled content showed through behind the clock.
+      height: 'calc(56px + env(safe-area-inset-top, 0px))',
+      paddingTop: 'env(safe-area-inset-top, 0px)',
+      zIndex: 110,
       background: '#1e1208',
       borderBottom: 'none',
       boxShadow: '0 1px 0 rgba(255,255,255,0.04)',
       display: 'flex', alignItems: 'center',
-      padding: '0 164px 0 16px', // right: room for 3 FABs (3×44 + 2×8 gaps + 12px edge)
+      paddingRight: 164, paddingLeft: 16, // right: room for 3 FABs (3×44 + 2×8 gaps + 12px edge)
       gap: 12,
     }}>
       <div style={{ flexShrink: 0 }}>
