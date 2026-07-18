@@ -479,18 +479,22 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
         </div>
       </section>
 
+      {/* ── Social proof — live community activity (folded into the community story) ── */}
+      <CommunityPreview onBegin={onBegin} />
+
       <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
 
       {/* ── AI trust ── */}
       <section style={{ padding: '88px 32px 92px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 48 }}>
-          <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 18 }}>AI built differently</div>
+          <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 18 }}>Why not just ask ChatGPT?</div>
           <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(26px, 3.6vw, 40px)', color: T.cream, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.022em', lineHeight: 1.12, maxWidth: 640 }}>
             We know you might not trust AI<br />with something this important.
           </h2>
           <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, maxWidth: 540, lineHeight: 1.75, margin: 0 }}>
-            Most AI makes things up. For a question about God, scripture, and faith — that's not acceptable.
-            kinwove's AI was built with one rule at its core: if it's not in the text, we don't say it.
+            Most AI will invent a Bible verse before it will admit it doesn't know.
+            For a question about God, that's not acceptable. kinwove was built with one
+            rule at its core: <em style={{ color: T.cream, fontStyle: 'italic' }}>if it's not in the text, we don't say it.</em>
           </p>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12, maxWidth: 800, margin: '0 auto' }}>
@@ -501,71 +505,25 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
             </div>
           ))}
         </div>
-        <div style={{ textAlign: 'center', marginTop: 36 }}>
-          <p style={{ fontFamily: T.serif, fontSize: 15, color: DIMLO, fontStyle: 'italic', lineHeight: 1.7, maxWidth: 500, margin: '0 auto' }}>
-            "When we don't know, we say so. When scholars genuinely disagree, we tell you that too.
-            You deserve honesty more than you deserve comfortable answers."
+        <div style={{ maxWidth: 480, margin: '40px auto 0', padding: '32px 28px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.18)', borderRadius: 20 }}>
+          <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.gold, marginBottom: 12, letterSpacing: '-0.005em' }}>No judgment. No pressure.</div>
+          <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.75, margin: '0 0 18px' }}>
+            Some questions you'd never say out loud to a pastor or a friend.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
+            {[
+              'Is God even real?',
+              'Why do I feel nothing when I pray?',
+              'I want to believe — I just don\'t know if I do.',
+            ].map((q) => (
+              <div key={q} style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 14.5, color: T.cream, opacity: 0.72, paddingLeft: 14, borderLeft: '2px solid rgba(184,115,58,0.35)', textAlign: 'left' }}>{q}</div>
+            ))}
+          </div>
+          <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.75, margin: 0 }}>
+            Ask anything here. Nobody flinches. Just an honest conversation, at whatever pace feels right.
           </p>
         </div>
       </section>
-
-      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
-
-      {/* ── Why not Google / ChatGPT ── */}
-      <section style={{ padding: '88px 32px 92px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: 52 }}>
-          <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 18 }}>Why not Google or ChatGPT?</div>
-          <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(26px, 3.6vw, 40px)', color: T.cream, fontWeight: 600, margin: '0 auto 20px', letterSpacing: '-0.022em', lineHeight: 1.12, maxWidth: 660 }}>
-            Google gives you a list.<br />ChatGPT gives you an answer.<br /><em style={{ color: T.gold, fontStyle: 'italic', fontWeight: 500 }}>kinwove gives you a conversation.</em>
-          </h2>
-          <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, maxWidth: 480, margin: '0 auto', lineHeight: 1.75 }}>
-            One that knows what it's talking about — and knows why you're really asking.
-          </p>
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, maxWidth: 820, margin: '0 auto', justifyContent: 'center' }}>
-          <div style={{ flex: '1 1 280px', maxWidth: 380, padding: '32px 28px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.18)', borderRadius: 20 }}>
-            <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.gold, marginBottom: 12, letterSpacing: '-0.005em' }}>No judgment. No pressure.</div>
-            <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.75, margin: '0 0 18px' }}>
-              Some questions you'd never say out loud to a pastor or a friend.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
-              {[
-                'Is God even real?',
-                'Why do I feel nothing when I pray?',
-                'I want to believe — I just don\'t know if I do.',
-              ].map((q) => (
-                <div key={q} style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 14.5, color: T.cream, opacity: 0.72, paddingLeft: 14, borderLeft: '2px solid rgba(184,115,58,0.35)' }}>{q}</div>
-              ))}
-            </div>
-            <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.75, margin: 0 }}>
-              Ask anything here. Nobody flinches. Just an honest conversation, at whatever pace feels right.
-            </p>
-          </div>
-          <div style={{ flex: '1 1 280px', maxWidth: 380, padding: '32px 28px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.18)', borderRadius: 20 }}>
-            <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.gold, marginBottom: 12, letterSpacing: '-0.005em' }}>Built for this conversation.</div>
-            <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.75, margin: '0 0 18px' }}>
-              General AI tools weren't trained to sit with scripture. kinwove was.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {[
-                { icon: '📖', label: 'Stays in the text' },
-                { icon: '🤝', label: 'Honest when scholars disagree' },
-                { icon: '🧭', label: 'Points toward Jesus, not itself' },
-              ].map((p) => (
-                <div key={p.label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 16 }}>{p.icon}</span>
-                  <span style={{ fontFamily: T.sans, fontSize: 13.5, color: DIM, lineHeight: 1.5 }}>{p.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
-
-      {/* ── Social proof — live community activity ── */}
-      <CommunityPreview onBegin={onBegin} />
 
       <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
 
@@ -612,7 +570,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
             {[
               { icon: '📖', t: 'A page for every Sunday', d: 'Sermon content, scripture, daily verses, kids version — all in one place.' },
               { icon: '💬', t: 'Real discussion, not dead chat', d: 'Threaded conversations under each sermon. Members reply, wrestle, and come back to Sunday more ready.' },
-              { icon: '🙏', t: 'Prayer that stays personal', d: 'Requests anchored to the people in your congregation — not a feed of strangers.' },
+              { icon: '📚', t: 'Sermon research in one brief', d: 'Calvin, Wesley, N.T. Wright, the modern commentaries — original language first, honest where they disagree. Hours of prep, in minutes.' },
               { icon: '🛡', t: 'Your church profile — free', d: 'Get your church on kinwove at no cost. The tools that genuinely replace your time cost money. The presence doesn\'t.' },
             ].map((f) => (
               <div key={f.t} style={{ flex: '1 1 200px', maxWidth: 240, padding: '20px 18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, textAlign: 'left' }}>
@@ -630,42 +588,6 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
           <div style={{ marginTop: 12, fontSize: 12, color: DIMLO }}>Instant when your email matches your church domain. Others reviewed by hand.</div>
         </section>
       )}
-
-      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
-
-      {/* ── Sermon research ── */}
-      <section style={{ padding: '88px 32px 92px', maxWidth: 900, margin: '0 auto', width: '100%', textAlign: 'center' }}>
-        <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 18 }}>For church leaders</div>
-        <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(26px, 3.6vw, 40px)', color: T.cream, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.022em', lineHeight: 1.12 }}>
-          Hours of commentary research.<br />In one brief.
-        </h2>
-        <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, maxWidth: 560, margin: '0 auto 48px', lineHeight: 1.75 }}>
-          Ask about any passage and kinwove surfaces what Calvin, Wesley, N.T. Wright, Chrysostom,
-          and the modern academic commentaries actually say — original language first, then where
-          scholars agree, where they split, and what that means for how you preach it.
-        </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 14, maxWidth: 780, margin: '0 auto 40px' }}>
-          {[
-            { icon: '📜', t: 'Original Greek & Hebrew', d: 'Word-level context before anything else — what the text actually says before interpretation begins.' },
-            { icon: '📚', t: 'Named scholars, not a blend', d: 'Calvin. Wesley. N.T. Wright. Chrysostom. WBC. IVP. Each voice is kept distinct so you can weigh them.' },
-            { icon: '⚖️', t: 'Where traditions disagree', d: 'Reformed, Wesleyan, Anglican, Catholic — the honest places they split, and why it matters for your congregation.' },
-            { icon: '🎙', t: 'Preaching angles — you decide', d: 'Multiple ways to land the passage with your specific people. You choose the angle; kinwove does the groundwork.' },
-          ].map((f) => (
-            <div key={f.t} style={{ flex: '1 1 180px', maxWidth: 220, padding: '22px 18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.18)', borderRadius: 16, textAlign: 'left' }}>
-              <div style={{ fontSize: 22, marginBottom: 12 }}>{f.icon}</div>
-              <div style={{ fontFamily: T.display, fontSize: 14.5, fontWeight: 600, color: T.cream, marginBottom: 8, letterSpacing: '-0.005em', lineHeight: 1.3 }}>{f.t}</div>
-              <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.65 }}>{f.d}</div>
-            </div>
-          ))}
-        </div>
-        {onPastorIntent && !pastorChurchId && (
-          <button onClick={onPastorIntent}
-            style={{ background: 'transparent', color: T.gold, border: `1px solid ${T.gold}`, borderRadius: 999, padding: '13px 32px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(184,115,58,0.12)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-          >Try sermon research free</button>
-        )}
-      </section>
 
       <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
 
