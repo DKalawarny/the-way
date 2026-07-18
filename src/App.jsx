@@ -2039,6 +2039,30 @@ export default function App() {
   const [viewingUserId, setViewingUserId] = useState(null);
   const [viewingChurchId, setViewingChurchId] = useState(null);
   const [winW, setWinW] = useState(() => window.innerWidth);
+  // {height, offsetTop} of the visual viewport while the on-screen keyboard is open.
+  // iOS Safari never shrinks 100vh for the keyboard — it scrolls the layout viewport
+  // instead, which strands position:fixed panels mid-screen. Pinning the chat panel
+  // to the visual viewport keeps the composer sitting on top of the keyboard.
+  const [kbViewport, setKbViewport] = useState(null);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onChange = () => {
+      const kbOpen = document.documentElement.clientHeight - vv.height > 80;
+      setKbViewport((prev) => {
+        const next = kbOpen ? { height: Math.round(vv.height), offsetTop: Math.round(vv.offsetTop) } : null;
+        if (!prev && !next) return prev;
+        if (prev && next && prev.height === next.height && prev.offsetTop === next.offsetTop) return prev;
+        return next;
+      });
+    };
+    vv.addEventListener('resize', onChange);
+    vv.addEventListener('scroll', onChange);
+    return () => {
+      vv.removeEventListener('resize', onChange);
+      vv.removeEventListener('scroll', onChange);
+    };
+  }, []);
   const [journeysOpen, setJourneysOpen] = useState(false);
   const [journeyProgress, setJourneyProgress] = useState({});
   const [autoSendPrompt, setAutoSendPrompt] = useState(null);
@@ -3603,9 +3627,13 @@ export default function App() {
           )}
           <div style={{
             position: 'fixed',
-            top: isDesktop && showNav ? HEADER_H : 'env(safe-area-inset-top, 0px)',
+            top: isDesktop && showNav ? HEADER_H
+              : (chatPanelOpen && kbViewport) ? `calc(${kbViewport.offsetTop}px + env(safe-area-inset-top, 0px))`
+              : 'env(safe-area-inset-top, 0px)',
             right: 0,
-            height: isDesktop && showNav ? `calc(100vh - ${HEADER_H}px)` : 'calc(100vh - 62px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+            height: isDesktop && showNav ? `calc(100vh - ${HEADER_H}px)`
+              : (chatPanelOpen && kbViewport) ? `calc(${kbViewport.height}px - env(safe-area-inset-top, 0px))`
+              : 'calc(100vh - 62px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
             width: Math.min(chatPanelWidth, winW - (isDesktop && showNav ? SIDEBAR_W : 0)),
             zIndex: isDocked ? 101 : 150,
             transform: chatPanelOpen ? 'translateX(0)' : 'translateX(100%)',
