@@ -36,7 +36,7 @@ export const PERSON_TYPES = [
     id: 'deeper',
     emoji: '📖',
     label: 'Going Deeper',
-    description: 'Know the stories. Now I want the history, language, and layers.',
+    description: 'Know the stories. Now I want the history, language, and layers — even the books beyond the 66.',
   },
   {
     id: 'inter-faith',
