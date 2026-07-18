@@ -506,9 +506,9 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
           ))}
         </div>
         <div style={{ maxWidth: 480, margin: '40px auto 0', padding: '32px 28px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.18)', borderRadius: 20 }}>
-          <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.gold, marginBottom: 12, letterSpacing: '-0.005em' }}>No judgment. No pressure.</div>
+          <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.gold, marginBottom: 12, letterSpacing: '-0.005em' }}>Somewhere safe to ask.</div>
           <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.75, margin: '0 0 18px' }}>
-            Some questions you'd never say out loud to a pastor or a friend.
+            Some questions wait a long time for a safe place to land.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
             {[
@@ -520,7 +520,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
             ))}
           </div>
           <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.75, margin: 0 }}>
-            Ask anything here. Nobody flinches. Just an honest conversation, at whatever pace feels right.
+            Bring them here. You'll be met with warmth and honesty — at whatever pace feels right.
           </p>
         </div>
       </section>
