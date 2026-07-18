@@ -5,6 +5,7 @@ import { supabase } from './supabase.js';
 import { useUiKit } from './uikit.jsx';
 import { T, tintFor, SEMANTIC } from './theme.js';
 import { markEngaged } from './streak.js';
+import { usePullToRefresh, PullToRefreshIndicator } from './usePullToRefresh.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { KinwoveWordmark } from './components/brand/KinwoveWordmark.jsx';
 import { PERSON_TYPES } from './constants.js';
@@ -1900,9 +1901,17 @@ useEffect(() => {
   // On desktop the global AppHeader takes 56px — subtract from scene height.
   const sceneH = hideHeader ? 'calc(100dvh - 56px)' : '100dvh';
 
+  // Pull-to-refresh on the feed scroll area (touch devices only by nature).
+  const feedScrollRef = useRef(null);
+  const ptrRefresh = useCallback(async () => {
+    await Promise.all([loadPosts(), loadCommunityPrayers()]);
+  }, [loadPosts, loadCommunityPrayers]);
+  const { pull: ptrPull, refreshing: ptrRefreshing } = usePullToRefresh(ptrRefresh, feedScrollRef);
+
   return (
     <div className="scene" style={{ height: sceneH, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {communityToastUi}
+      <PullToRefreshIndicator pull={ptrPull} refreshing={ptrRefreshing} />
       {!hideHeader && (
         <>
           {/* App top bar — deep walnut "leather cover" so the page has an
@@ -2085,7 +2094,7 @@ useEffect(() => {
         );
       })()}
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '28px 32px 90px' }}>
+      <div ref={feedScrollRef} style={{ flex: 1, overflowY: 'auto', padding: '28px 32px 90px' }}>
         <div style={{ maxWidth: 740, margin: '0 auto' }}>
 
           {/* Compose pill — first item in the feed column. Tapping it expands

@@ -400,6 +400,8 @@ export const globalCss = `
   }
   .float-in { animation: floatIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
+  @keyframes kwPtrSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
   @keyframes askPulse {
     0%, 100% { box-shadow: 0 6px 20px rgba(168,85,48,0.30), 0 0 0 0 rgba(168,85,48,0); }
     50%      { box-shadow: 0 6px 20px rgba(168,85,48,0.30), 0 0 0 10px rgba(168,85,48,0.12); }
