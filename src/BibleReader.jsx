@@ -1310,22 +1310,27 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     }
   }
 
-  // Load persisted chat + last verse whenever chapter changes; auto-open if history exists
+  // Load the persisted chat once per user — one continuous conversation that
+  // follows the reader across chapters (the system prompt always carries the
+  // current passage). Auto-open if history exists.
   useEffect(() => {
-    const chatKey  = `rdr_chat_${uid}:${bibleId}:${bookId}:${chNum}`;
-    const verseKey = `rdr_verse_${uid}:${bibleId}:${bookId}:${chNum}`;
     try {
-      const saved = JSON.parse(localStorage.getItem(chatKey) ?? '[]');
+      const saved = JSON.parse(localStorage.getItem(`rdr_chat_${uid}`) ?? '[]');
       setChatMsgs(saved);
       if (saved.length > 0) setChatOpen(true);
     } catch { setChatMsgs([]); }
+  }, [uid]);
+
+  // Load last tapped verse whenever chapter changes (verse context is per-chapter)
+  useEffect(() => {
+    const verseKey = `rdr_verse_${uid}:${bibleId}:${bookId}:${chNum}`;
     try { setLastVerse(JSON.parse(localStorage.getItem(verseKey) ?? 'null')); } catch { setLastVerse(null); }
   }, [bibleId, bookId, chNum, uid]);
 
-  // Save chat whenever messages change
+  // Save chat whenever messages change; cap stored history so it can't grow unbounded
   useEffect(() => {
     if (chatMsgs.length === 0) return;
-    localStorage.setItem(`rdr_chat_${uid}:${bibleId}:${bookId}:${chNum}`, JSON.stringify(chatMsgs));
+    localStorage.setItem(`rdr_chat_${uid}`, JSON.stringify(chatMsgs.slice(-60)));
   }, [chatMsgs]);
 
   // Save last verse whenever it changes
@@ -1673,6 +1678,14 @@ ${tapped}
 Answer questions about this passage clearly and honestly. Offer plain-language explanations, historical context, cross-references, and original language insights when relevant. Keep answers readable on a phone screen — short paragraphs, no walls of text. Don't be preachy.${langInstruction}`;
   }, [verses, book, chNum, bibleId, profile?.preferred_language, lastVerse]);
 
+  // Send only the recent tail of a long-running conversation; the API requires
+  // the first message to be from the user, so drop any leading assistant turns.
+  function trimHistory(msgs) {
+    const tail = msgs.slice(-20);
+    while (tail[0]?.role === 'assistant') tail.shift();
+    return tail;
+  }
+
   async function sendChat(text) {
     const prompt = (text ?? chatInput).trim();
     if (!prompt || chatBusy) return;
@@ -1688,7 +1701,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
       const res = await authedFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ system: getSystemPrompt(), messages: [...chatMsgs, userMsg], personType: profile?.person_type ?? 'curious' }),
+        body: JSON.stringify({ system: getSystemPrompt(), messages: [...trimHistory(chatMsgs), userMsg], personType: profile?.person_type ?? 'curious' }),
       });
       if (!res.ok || !res.body) throw new Error();
       const reader = res.body.getReader();
