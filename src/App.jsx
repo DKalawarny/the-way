@@ -564,13 +564,16 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
           </h2>
           <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, maxWidth: 540, margin: '0 auto 40px', lineHeight: 1.75 }}>
             Sunday is one hour. kinwove is the other six days —
-            where your members keep wrestling with what was preached, ask the questions they won't raise in the lobby, and pray for each other by name.
+            where your members keep wrestling with what was preached, ask the questions they won't raise in the lobby,
+            and pray for each other by name. And where someone new can get to know your church before they ever walk through the door.
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 14, maxWidth: 780, margin: '0 auto 40px' }}>
             {[
               { icon: '📖', t: 'A page for every Sunday', d: 'Sermon content, scripture, daily verses, kids version — all in one place.' },
               { icon: '💬', t: 'Real discussion, not dead chat', d: 'Threaded conversations under each sermon. Members reply, wrestle, and come back to Sunday more ready.' },
               { icon: '📚', t: 'Sermon research in one brief', d: 'Calvin, Wesley, N.T. Wright, the modern commentaries — original language first, honest where they disagree. Hours of prep, in minutes.' },
+              { icon: '🌱', t: 'A study tool for the whole week', d: 'Members read scripture, highlight, follow reading plans, and ask honest questions right in the text — study that carries your Sunday into Tuesday.' },
+              { icon: '👋', t: 'A front door before the front door', d: 'Someone new or nervous can meet your church here first — read along, listen in, ask quietly — and walk in on Sunday already feeling at home.' },
               { icon: '🛡', t: 'Your church profile — free', d: 'Get your church on kinwove at no cost. The tools that genuinely replace your time cost money. The presence doesn\'t.' },
             ].map((f) => (
               <div key={f.t} style={{ flex: '1 1 200px', maxWidth: 240, padding: '20px 18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, textAlign: 'left' }}>
