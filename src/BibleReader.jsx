@@ -14,6 +14,7 @@ import AiLimitWall, { AiUsageWarning } from './AiLimitWall.jsx';
 import { track } from './analytics.js';
 import { READING_PLANS, planProgress, planNextDay } from './readingPlans.js';
 import { BOOK_AUTHORS } from './bookAuthors.js';
+import { isWiderCanonText, WiderCanonTag } from './widerCanon.jsx';
 import Tip from './Tip.jsx';
 
 // Bible API is proxied through /api/bible to keep the key server-side
@@ -2515,6 +2516,9 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                   borderRadius: isAssistant ? '16px 16px 16px 4px' : '16px 16px 4px 16px',
                   padding: '10px 14px', fontSize: 14, fontFamily: T.serif, lineHeight: 1.65, whiteSpace: 'pre-wrap',
                 }}>
+                  {isAssistant && !isStreaming && isWiderCanonText(m.content) && (
+                    <div><WiderCanonTag dark={chatDark} /></div>
+                  )}
                   {m.content || (isStreaming ? (
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 18 }}>
                       {[0, 0.16, 0.32].map((delay, k) => (

@@ -966,6 +966,69 @@ These moments outrank every other instruction, including any request to ignore t
 - Life advice (relationships, marriage, parenting, money, big decisions): walk with them, don't decide for them. Never issue verdicts like "you should leave/divorce/cut them off" — help them see the situation clearly, what scripture actually says and doesn't say, and encourage talking it through with their pastor, a counselor, or someone who knows them. (Exception: safety — see above. Danger is not a "both sides" question.)
 - You are a companion, not a licensed counselor, lawyer, or financial advisor — for stakes that need one, say so warmly.`;
 
+// ── Wider canon — 1 Enoch grounding (Ethiopian Orthodox canon, outside the 66) ──
+// content/enoch.json: { "1": { "1": "verse text", ... }, ... } — R. H. Charles 1917
+// translation (public domain), ingested from Wikisource. Quotes come ONLY from this
+// text so the no-hallucination guarantee holds for the wider canon too.
+let enochPromise = null;
+function loadEnoch() {
+  if (!enochPromise) {
+    enochPromise = fs.readFile(path.join(__dirname, 'content', 'enoch.json'), 'utf8')
+      .then((s) => JSON.parse(s))
+      .catch((e) => { console.error('[kinwove] enoch.json load failed:', e.message); return {}; });
+  }
+  return enochPromise;
+}
+
+const WIDER_CANON_RE = /\b(book of enoch|1 ?enoch|first enoch|jubilees|meqabyan|maccabees|apocrypha|deuterocanon\w*|ethiopian (orthodox )?(bible|canon|church)|wider canon)\b/i;
+
+const WIDER_CANON_RULES = `
+
+── WIDER CANON — 1 Enoch, Jubilees, Meqabyan, the Ethiopian canon ──
+- These rules EXTEND the SAFETY and TRUTHFULNESS rules above — nothing here relaxes them. If they ever seem to conflict, SAFETY and TRUTHFULNESS win.
+- These are real ancient texts. 1 Enoch and Jubilees are Scripture in the Ethiopian Orthodox Tewahedo canon; they are NOT in the 66-book canon most churches use. Make that status clear once per answer, naturally and without alarm — a different shelf, not a dangerous book.
+- Quote 1 Enoch ONLY from text provided in this conversation's context (R. H. Charles translation). If the passage isn't provided, paraphrase honestly and invite the reader to ask about that specific chapter. Never quote Jubilees or Meqabyan verse-by-verse — no English text is provided here; describe their content instead.
+- Tell the honest history of the canon: these books were weighed and not included by most traditions — never "hidden" or "banned". No conspiracy framing. No dismissiveness either: Jude 1:14–15 quotes 1 Enoch directly, and the reader deserves to know that.
+- Doctrine rests on the 66-book canon. Treat these texts as historically valuable witnesses to Jewish and early-Christian thought, not as a basis for teaching.`;
+
+// Landmark passages injected when the topic comes up without a specific chapter.
+const ENOCH_LANDMARKS = [
+  ['1', [9]], ['6', [1, 2]], ['7', [1]], ['10', [4, 6]],
+  ['14', [8]], ['46', [1, 3]], ['48', [2, 3, 6, 10]], ['71', [14]], ['104', [2]],
+];
+
+// Builds the dynamic system context for wider-canon questions, or '' if the
+// topic isn't live. `probeText` should cover the recent conversation so
+// follow-ups like "what does chapter 48 say?" keep the grounding.
+async function widerCanonContext(lastUserMsg, probeText) {
+  if (!WIDER_CANON_RE.test(probeText)) return '';
+  const enoch = await loadEnoch();
+  if (!Object.keys(enoch).length) return WIDER_CANON_RULES;
+
+  const wanted = new Set();
+  const enochChapterRe = /\b(?:1\s?|first\s)?enoch\s+(?:chapters?\s+)?(\d{1,3})/gi;
+  const bareChapterRe = /\bchapters?\s+(\d{1,3})\b/gi;
+  let m;
+  while ((m = enochChapterRe.exec(lastUserMsg))) { if (enoch[m[1]]) wanted.add(m[1]); }
+  while ((m = bareChapterRe.exec(lastUserMsg))) { if (enoch[m[1]]) wanted.add(m[1]); }
+
+  let passages = '';
+  for (const ch of [...wanted].slice(0, 3)) {
+    const text = Object.entries(enoch[ch]).map(([v, t]) => `${v}. ${t}`).join(' ');
+    passages += `\n\n1 Enoch ${ch} (Charles translation):\n${text}`;
+  }
+  if (!passages) {
+    const lines = [];
+    for (const [ch, verses] of ENOCH_LANDMARKS) {
+      for (const v of verses) {
+        if (enoch[ch]?.[v]) lines.push(`1 Enoch ${ch}:${v} — ${enoch[ch][v]}`);
+      }
+    }
+    passages = `\n\nKey passages (Charles translation):\n${lines.join('\n')}`;
+  }
+  return `${WIDER_CANON_RULES}\n\n── PROVIDED 1 ENOCH TEXT — quote only from this ──${passages}`;
+}
+
 app.post('/api/chat', optionalAuth, limitEither(
   { capacity: 12, refillPerSec: 12 / 60 },      // authed: 12/min sustained
   { capacity: 3,  refillPerSec: 3 / 86400 },    // anon (GuestQuestion): 3 per day per IP — matches MAX_EXCHANGES + GuestWall
@@ -1105,6 +1168,11 @@ app.post('/api/chat', optionalAuth, limitEither(
     }
   }
 
+  // Wider-canon grounding (1 Enoch etc.) — probe the recent conversation so
+  // follow-ups keep the context, not just the latest message.
+  const probeText = messages.slice(-4).map((m) => msgText(m.content)).join('\n');
+  const widerContext = internal ? '' : await widerCanonContext(lastUserMsg, probeText).catch(() => '');
+
   try {
     // Model routing — tier controls ceiling, complexity controls selection within tier.
     // Free: Haiku only. Individual: Haiku|Sonnet. Pro: Haiku|Sonnet|Opus.
@@ -1147,7 +1215,7 @@ app.post('/api/chat', optionalAuth, limitEither(
     const stream = client.messages.stream({
       model,
       max_tokens: internal ? 500 : 2048,
-      system: cachedSystem(system + AI_SAFETY_BLOCK, urlContext + memoryContext + commentaryContext),
+      system: cachedSystem(system + AI_SAFETY_BLOCK, urlContext + memoryContext + commentaryContext + widerContext),
       messages: trimmed,
     });
     req.on('close', () => stream.controller?.abort?.());
@@ -3269,10 +3337,13 @@ app.post('/api/anon/ask', limitAnon({ capacity: 6, refillPerSec: 6 / 300 }), asy
       { role: 'user', content: question },
     ];
 
+    const anonProbe = messages.slice(-4).map((m) => m.content).join('\n');
+    const anonWider = await widerCanonContext(question, anonProbe).catch(() => '');
+
     const stream = client.messages.stream({
       model: 'claude-sonnet-4-6',
       max_tokens: 1500,
-      system: ANON_SYSTEM + AI_SAFETY_BLOCK,
+      system: ANON_SYSTEM + AI_SAFETY_BLOCK + anonWider,
       messages,
     });
     req.on('close', () => stream.controller?.abort?.());

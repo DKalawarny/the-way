@@ -1110,6 +1110,30 @@ export const ANSWERS = [
     ],
     related: ['why-should-i-go-to-church', 'how-do-i-become-a-christian', 'what-is-baptism'],
   },
+
+  {
+    slug: 'what-is-the-book-of-enoch',
+    question: `What is the Book of Enoch, and why isn't it in the Bible?`,
+    category: 'Bible',
+    updated: '2026-07-18',
+    answer:
+      `1 Enoch is a real ancient Jewish text — visions of angels, judgment, and a coming "Son of Man" — written centuries before Jesus. It was never hidden or banned: most Jewish and Christian traditions weighed it and did not include it in Scripture, though the Ethiopian Orthodox Church still does. Jude even quotes it.`,
+    body: [
+      { h: `What the book actually is`, p: `1 Enoch is a collection of Jewish writings from roughly the third century BC onward, attributed to the Enoch of Genesis 5 who "walked with God." Its most famous sections describe angels ("Watchers") who abandoned heaven, the giants that followed, cosmic journeys, and a glorious "Son of Man" who judges the earth. It was widely read in the centuries around Jesus — fragments were found among the Dead Sea Scrolls.` },
+      { h: `It was weighed, not hidden`, p: `The internet loves the idea of "books the church banned," but the history is less cinematic. Ancient communities knew Enoch well and most concluded it was valuable but not Scripture — it never appears in the Hebrew Bible's canon lists, and the early church largely reached the same judgment. The Ethiopian Orthodox Tewahedo Church is the notable exception: its canon includes 1 Enoch to this day. Different shelf, not a locked vault.` },
+      { h: `Why it still matters for readers of the 66 books`, p: `Jude 1:14–15 quotes 1 Enoch directly, and the New Testament's world — its language about angels, judgment, and the Son of Man — is easier to understand when you know what people were reading at the time. You can take Enoch seriously as history without treating it as doctrine. That is exactly how kinwove's AI companion handles it: it can quote the real text, clearly labeled as outside the 66-book canon.` },
+    ],
+    scriptures: [
+      { ref: `Jude 1:14–15`, text: `Enoch, the seventh from Adam, prophesied about them: "See, the Lord is coming with thousands upon thousands of his holy ones to judge everyone."` },
+      { ref: `Genesis 5:24`, text: `Enoch walked faithfully with God; then he was no more, because God took him away.` },
+    ],
+    faqs: [
+      { q: `Was the Book of Enoch removed from the Bible?`, a: `No — it was never in the canon most traditions use, so there was nothing to remove. It circulated widely, was weighed by Jewish and Christian communities, and was not included, though the Ethiopian Orthodox Church does count it as Scripture.` },
+      { q: `Is it wrong to read the Book of Enoch?`, a: `No. Many pastors and scholars read it for historical background. The key is reading it as an ancient witness to what people believed, not as a basis for doctrine — the same way you might read other writings from the period.` },
+      { q: `Why does Jude quote it if it isn't Scripture?`, a: `Quoting a text approvingly doesn't make the whole text Scripture — Paul quotes pagan poets in Acts 17. Jude cites a line his readers knew to make a true point about judgment.` },
+    ],
+    related: ['can-i-trust-the-bible', 'do-christians-take-the-bible-literally', 'how-do-i-read-the-bible-as-a-beginner'],
+  },
 ];
 
 export const ANSWERS_BY_SLUG = Object.fromEntries(ANSWERS.map((a) => [a.slug, a]));

@@ -18,6 +18,7 @@ import { track } from './analytics.js';
 import Tip from './Tip.jsx';
 import { extractRefs, parseRef, toApiVerseId, VALIDATION_BIBLE_ID } from './bibleRefUtils.js';
 import { cleanText } from './moderation.js';
+import { isWiderCanonText, WiderCanonTag } from './widerCanon.jsx';
 
 const GUEST_COUNT_KEY = 'kinwove:guest_count';
 
@@ -1799,6 +1800,7 @@ export default function Chat({
                   {isStreaming ? <TypingDots /> : (
                     m.content && m.content !== '(image)' ? (
                       <div style={{ padding: m._imagePreview ? '2px 8px 8px' : undefined }}>
+                        {m.role === 'assistant' && isWiderCanonText(m.content) && <WiderCanonTag />}
                         <MsgText
                           text={m.content}
                           onRefClick={handleRefClick}
