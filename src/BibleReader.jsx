@@ -13,6 +13,7 @@ import { useAiUsage } from './useAiUsage.js';
 import AiLimitWall, { AiUsageWarning } from './AiLimitWall.jsx';
 import { track } from './analytics.js';
 import { READING_PLANS, planProgress, planNextDay } from './readingPlans.js';
+import { BOOK_AUTHORS } from './bookAuthors.js';
 import Tip from './Tip.jsx';
 
 // Bible API is proxied through /api/bible to keep the key server-side
@@ -2803,9 +2804,14 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
         {/* Reading area */}
         <div ref={readAreaRef} style={{ flex: 1, overflowY: 'auto', padding: isDesktop ? '32px 40px 120px' : '24px 20px 200px' }}>
           <div style={{ maxWidth: '65ch', margin: '0 auto' }}>
-            <div style={{ fontFamily: T.serif, fontSize: 13, letterSpacing: 3, textTransform: 'uppercase', color: C.verse, fontWeight: 600, marginBottom: 24 }}>
+            <div style={{ fontFamily: T.serif, fontSize: 13, letterSpacing: 3, textTransform: 'uppercase', color: C.verse, fontWeight: 600, marginBottom: BOOK_AUTHORS[bookId] ? 6 : 24 }}>
               {book.name} · Chapter {chNum}
             </div>
+            {BOOK_AUTHORS[bookId] && (
+              <div style={{ fontFamily: T.serif, fontSize: 13.5, fontStyle: 'italic', color: C.muted, marginBottom: 24 }}>
+                {BOOK_AUTHORS[bookId]}
+              </div>
+            )}
 
             {loading && (
               <div style={{ textAlign: 'center', padding: '60px 0', color: C.muted, fontFamily: T.serif, fontSize: 16 }}>Loading…</div>
