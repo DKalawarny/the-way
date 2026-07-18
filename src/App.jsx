@@ -587,8 +587,11 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
             style={{ background: 'transparent', color: T.gold, border: `1px solid ${T.gold}`, borderRadius: 999, padding: '13px 32px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
             onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(184,115,58,0.12)')}
             onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-          >Bring your church — it's free</button>
-          <div style={{ marginTop: 12, fontSize: 12, color: DIMLO }}>Instant when your email matches your church domain. Others reviewed by hand.</div>
+          >Bring your church — free to start</button>
+          <div style={{ marginTop: 12, fontSize: 12, color: DIMLO, lineHeight: 1.7 }}>
+            Your church page is free forever. Pastor tools are free for 35 days — no card needed.<br />
+            Instant when your email matches your church domain; others reviewed by hand.
+          </div>
         </section>
       )}
 
@@ -624,7 +627,9 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
 
       <footer style={{ padding: '20px 40px', textAlign: 'center', fontSize: 12, color: 'rgba(253,248,240,0.2)', borderTop: `1px solid ${RULE}`, letterSpacing: '0.04em' }}>
         <KinwoveWordmark size={13} textColor="rgba(253,248,240,0.3)" starColor="rgba(212,162,74,0.35)" /> &nbsp;·&nbsp; {new Date().getFullYear()}
-        <br />
+        <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 12.5, color: 'rgba(253,248,240,0.35)', margin: '6px 0 4px', letterSpacing: '0.01em' }}>
+          Real answers to hard faith questions.
+        </div>
         <span style={{ fontSize: 11.5 }}>
           <a href="/privacy" style={{ color: 'rgba(253,248,240,0.35)', textDecoration: 'none' }}>Privacy</a> &nbsp;·&nbsp;
           <a href="/terms" style={{ color: 'rgba(253,248,240,0.35)', textDecoration: 'none' }}>Terms</a> &nbsp;·&nbsp;
