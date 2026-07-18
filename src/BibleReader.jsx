@@ -2651,7 +2651,29 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
       ) : (
         <div style={{ flexShrink: 0 }}>
           <AiUsageWarning remaining={aiUsage.remaining} limit={aiUsage.limit} plan={profile?.plan ?? 'free'} />
-          <div style={{ padding: '10px 12px 14px', borderTop: `1px solid ${chatDark ? CC.border : 'rgba(184,115,58,0.2)'}`, background: chatDark ? 'transparent' : '#FAF3E4' }}>
+          {/* Chapter-context starter chips — one tap of orientation for readers new to the passage */}
+          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', WebkitOverflowScrolling: 'touch', padding: '8px 12px 8px', borderTop: `1px solid ${chatDark ? CC.border : 'rgba(184,115,58,0.2)'}`, background: chatDark ? 'transparent' : '#FAF3E4' }}>
+            {[
+              { label: "What's happening here?", prompt: `What's happening in ${book.name} ${chNum}? Set the scene simply — who wrote this, who it's for, and what's going on.` },
+              { label: 'Explain it simply', prompt: `Explain ${book.name} ${chNum} simply, like I'm brand new to the Bible.` },
+            ].map((c) => (
+              <button
+                key={c.label}
+                onClick={() => sendChat(c.prompt)}
+                style={{
+                  background: 'transparent',
+                  border: `1px solid ${chatDark ? CC.border : 'rgba(184,115,58,0.35)'}`,
+                  borderRadius: 999,
+                  padding: '6px 13px',
+                  fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0,
+                  color: chatDark ? CC.muted : '#8E5528', cursor: 'pointer',
+                }}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+          <div style={{ padding: '0 12px 14px', background: chatDark ? 'transparent' : '#FAF3E4' }}>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', background: chatDark ? CC.inputBg : '#FDF8EE', borderRadius: 999, border: `1px solid ${chatDark ? CC.border : 'rgba(184,115,58,0.3)'}`, padding: '6px 6px 6px 14px' }}>
               <input
                 ref={chatInputRef}
