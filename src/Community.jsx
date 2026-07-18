@@ -115,13 +115,9 @@ function getComposePrompt() {
 // with negative offset so it sits in the gap rather than adding height.
 // ── Discover section ────────────────────────────────────────────────────────
 function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, onViewProfile, userGroups = [], onOpenGroups, onOpenGroup }) {
-  const [churches,  setChurches]  = useState([]);
   const [people,    setPeople]    = useState([]);
-  const [chLoading, setChLoading] = useState(true);
   const [peLoading, setPeLoading] = useState(true);
-  const [churchFollows, setChurchFollows] = useState(new Set());
   const [unreadMap, setUnreadMap] = useState({});
-  const [churchSearch, setChurchSearch] = useState('');
 
   useEffect(() => {
     const myId = session?.user?.id;
@@ -143,58 +139,16 @@ function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, 
   }, [session?.user?.id, userGroups]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    // All public churches with member count — exclude user's own church.
-    // (Do NOT filter verification_status — that regression hid every self-reported
-    // church, making the empty-feed Discover CTA a dead end. Show a "✓ verified"
-    // chip on verified rows instead; see CLAUDE.md fix #17.)
-    supabase.from('churches')
-      .select('id, name, city, country, denomination, verification_status, avatar_url, profiles!church_id(count)')
-      .eq('is_public', true)
-      .neq('id', profile?.church_id ?? '00000000-0000-0000-0000-000000000000')
-      .limit(40)
-      .then(({ data }) => {
-        const userCity    = (profile?.city    ?? '').toLowerCase().trim();
-        const userCountry = (profile?.country ?? '').toLowerCase().trim();
-        const enriched = (data ?? []).map((c) => ({
-          ...c,
-          memberCount: c.profiles?.[0]?.count ?? 0,
-          _sameCity:    userCity    && c.city?.toLowerCase().trim()    === userCity,
-          _sameCountry: userCountry && c.country?.toLowerCase().trim() === userCountry,
-        }));
-        enriched.sort((a, b) => {
-          if (a._sameCity !== b._sameCity)    return a._sameCity    ? -1 : 1;
-          if (a._sameCountry !== b._sameCountry) return a._sameCountry ? -1 : 1;
-          return b.memberCount - a.memberCount;
-        });
-        setChurches(enriched);
-        setChLoading(false);
-      });
-
-    // Verified pastors / notable people not yet followed
+    // Verified pastors / notable people not yet followed. (The churches
+    // directory used to live here too — moved out 2026-07-18: circles are
+    // private groups, and church-finding belongs under the Find button.)
     supabase.from('profiles')
       .select('id, display_name, city, country, tradition, person_type, avatar_config, avatar_url, is_pastor')
       .eq('is_pastor', true)
       .neq('id', session?.user?.id ?? '00000000-0000-0000-0000-000000000000')
       .limit(12)
       .then(({ data }) => { setPeople(data ?? []); setPeLoading(false); });
-
-    // Which churches the user already follows
-    if (session?.user?.id) {
-      supabase.from('church_follows').select('church_id').eq('user_id', session.user.id)
-        .then(({ data }) => setChurchFollows(new Set(data?.map((r) => r.church_id) ?? [])));
-    }
-  }, [session?.user?.id, profile?.church_id, profile?.city, profile?.country]);
-
-  async function toggleChurchFollow(churchId) {
-    if (!session?.user?.id) return;
-    if (churchFollows.has(churchId)) {
-      await supabase.from('church_follows').delete().eq('church_id', churchId).eq('user_id', session.user.id);
-      setChurchFollows((prev) => { const s = new Set(prev); s.delete(churchId); return s; });
-    } else {
-      await supabase.from('church_follows').insert({ church_id: churchId, user_id: session.user.id });
-      setChurchFollows((prev) => new Set([...prev, churchId]));
-    }
-  }
+  }, [session?.user?.id]);
 
   const unfollowedPeople = people.filter((p) => !following.has(p.id));
 
@@ -257,53 +211,6 @@ function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, 
         )}
       </div>
 
-      {/* Churches to follow */}
-      <div style={{ padding: '0 16px', marginBottom: 28 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: T.inkMuted, fontFamily: T.sans, marginBottom: 10 }}>
-          Churches
-        </div>
-        <input
-          type="text"
-          value={churchSearch}
-          onChange={(e) => setChurchSearch(e.target.value)}
-          placeholder="Search by name, city, or denomination…"
-          style={{ width: '100%', boxSizing: 'border-box', border: `1px solid ${T.line}`, borderRadius: 10, padding: '9px 14px', fontSize: 14, background: T.white, color: T.ink, fontFamily: T.sans, outline: 'none', marginBottom: 12 }}
-        />
-        {chLoading && <div style={{ color: T.inkMuted, fontSize: 14, padding: '12px 0' }}>Loading…</div>}
-        {!chLoading && churches.length === 0 && (
-          <div style={{ color: T.inkMuted, fontSize: 14, lineHeight: 1.6 }}>No verified churches yet — check back soon.</div>
-        )}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {churches.filter((c) => {
-            if (!churchSearch.trim()) return true;
-            const q = churchSearch.toLowerCase();
-            return c.name?.toLowerCase().includes(q) || c.city?.toLowerCase().includes(q) || c.country?.toLowerCase().includes(q) || c.denomination?.toLowerCase().includes(q);
-          }).map((c) => (
-            <div key={c.id} style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 44, height: 44, borderRadius: '50%', background: T.parchment, border: `1px solid ${T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0, overflow: 'hidden' }}>
-                {c.avatar_url ? <img src={c.avatar_url} alt={c.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '⛪'}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: T.ink, fontFamily: T.serif, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</div>
-                  {c._sameCity && <span style={{ fontSize: 10, fontWeight: 700, color: T.gold, background: `${T.gold}18`, border: `1px solid ${T.gold}40`, borderRadius: 999, padding: '1px 7px', whiteSpace: 'nowrap' }}>Near you</span>}
-                </div>
-                <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2 }}>
-                  {[c.denomination, [c.city, c.country].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}
-                  {c.memberCount > 0 && <span style={{ marginLeft: 6, color: T.inkMuted }}>· {c.memberCount.toLocaleString()} {c.memberCount === 1 ? 'member' : 'members'}</span>}
-                </div>
-              </div>
-              <button
-                onClick={() => toggleChurchFollow(c.id)}
-                style={{ flexShrink: 0, background: churchFollows.has(c.id) ? 'transparent' : T.gold, color: churchFollows.has(c.id) ? T.inkMuted : T.cream, border: `1px solid ${churchFollows.has(c.id) ? T.line : T.gold}`, borderRadius: 999, padding: '6px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-              >
-                {churchFollows.has(c.id) ? '✓ Following' : '+ Follow'}
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* People to follow */}
       {unfollowedPeople.length > 0 && (
         <div style={{ padding: '0 16px' }}>
@@ -340,7 +247,7 @@ function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, 
         </div>
       )}
 
-      {!chLoading && !peLoading && churches.length === 0 && unfollowedPeople.length === 0 && (
+      {!peLoading && unfollowedPeople.length === 0 && (
         <div style={{ textAlign: 'center', padding: '40px 24px', color: T.inkMuted, fontFamily: T.serif, fontSize: 16 }}>
           You're already following everyone here. Check back as kinwove grows.
         </div>
