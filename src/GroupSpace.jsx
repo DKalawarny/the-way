@@ -5,6 +5,7 @@ import { Avatar } from './ProfilePage.jsx';
 import ShareSheet from './ShareSheet.jsx';
 import PostImageGrid from './PostImageGrid.jsx';
 import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
+import { reportClientError } from './errorReport.js';
 
 const MEMBER_PALETTE = [
   '#A85530','#6B7C5E','#5B6E8A','#7A4A6B',
@@ -341,6 +342,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   const [threadText, setThreadText] = useState('');
   const [posting, setPosting]       = useState(false);
   const [postError, setPostError]   = useState('');
+  const [threadsError, setThreadsError] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [memberCount, setMemberCount] = useState(0);
   const [inviteOpen, setInviteOpen]   = useState(false);
@@ -444,6 +446,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
       .order('created_at', { ascending: false })
       .limit(50);
     if (error) console.error('[loadThreads]', error.message, error.details, error.hint);
+    setThreadsError(!!error);
     const threads = data ?? [];
     if (threads.length === 0) { setThreads([]); return; }
     const { data: replyCounts } = await supabase
@@ -455,25 +458,42 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
     setThreads(threads.map((t) => ({ ...t, reply_count: countMap[t.id] ?? 0 })));
   }
 
+  // Network-level failures (Safari: "Load failed", Chrome: "Failed to fetch")
+  // should read as a connection problem, not a raw TypeError.
+  function friendlyPostError(message) {
+    if (/load failed|failed to fetch|network/i.test(message ?? '')) {
+      return "Couldn't reach the server — check your connection and tap Post again.";
+    }
+    return message || 'Something went wrong — please try again.';
+  }
+
   async function postThread(e) {
     e.preventDefault();
     if (!threadText.trim() && imageDrafts.drafts.length === 0) return;
     setPosting(true);
     setPostError('');
-    const image_urls = await imageDrafts.uploadAll(myId);
-    const { error: insertErr } = await supabase
-      .from('group_posts')
-      .insert({ group_id: group.id, author_id: myId, body: threadText.trim(), image_urls });
-    if (insertErr) {
-      console.error('[postThread] insert:', insertErr.message, insertErr.details, insertErr.hint);
-      setPostError(insertErr.message);
+    try {
+      const image_urls = await imageDrafts.uploadAll(myId);
+      const { error: insertErr } = await supabase
+        .from('group_posts')
+        .insert({ group_id: group.id, author_id: myId, body: threadText.trim(), image_urls });
+      if (insertErr) {
+        console.error('[postThread] insert:', insertErr.message, insertErr.details, insertErr.hint);
+        reportClientError(new Error(`group post insert failed: ${insertErr.message}`), { where: 'GroupSpace.postThread' });
+        setPostError(friendlyPostError(insertErr.message));
+        setPosting(false);
+        return;
+      }
+      setThreadText('');
+      imageDrafts.clear();
+      loadThreads();
+    } catch (err) {
+      console.error('[postThread]', err);
+      reportClientError(err, { where: 'GroupSpace.postThread' });
+      setPostError(friendlyPostError(err?.message));
+    } finally {
       setPosting(false);
-      return;
     }
-    setThreadText('');
-    imageDrafts.clear();
-    setPosting(false);
-    loadThreads();
   }
 
   async function deleteThread(id) {
@@ -620,7 +640,17 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
             </form>
 
             {/* Thread feed */}
-            {threads.length === 0 && (
+            {threads.length === 0 && threadsError && (
+              <div style={{ textAlign: 'center', padding: '48px 20px', fontFamily: T.serif, fontSize: 15, color: T.inkMuted, lineHeight: 1.7 }}>
+                Couldn't load discussions — check your connection.
+                <div style={{ marginTop: 12 }}>
+                  <button onClick={loadThreads} style={{ background: 'transparent', border: `1px solid ${T.line}`, color: T.inkSoft, borderRadius: 999, padding: '7px 18px', fontSize: 13, cursor: 'pointer' }}>
+                    Try again
+                  </button>
+                </div>
+              </div>
+            )}
+            {threads.length === 0 && !threadsError && (
               <div style={{ textAlign: 'center', padding: '48px 20px', fontFamily: T.serif, fontSize: 15, color: T.inkMuted, lineHeight: 1.7 }}>
                 No discussions yet.<br />Start one above.
               </div>

@@ -172,7 +172,7 @@ function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, 
 
     // Verified pastors / notable people not yet followed
     supabase.from('profiles')
-      .select('id, display_name, city, country, denomination, tradition, person_type, avatar_config, avatar_url, is_pastor')
+      .select('id, display_name, city, country, tradition, person_type, avatar_config, avatar_url, is_pastor')
       .eq('is_pastor', true)
       .neq('id', session?.user?.id ?? '00000000-0000-0000-0000-000000000000')
       .limit(12)
