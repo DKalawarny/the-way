@@ -494,9 +494,38 @@ function NoteCard({ note, onOpenBible, onAskVerse, onSave, onDelete }) {
   );
 }
 
+// Read-only card for church Study-tab notes: they belong to the church's prep
+// space, but the author sees them here so all their study lands in one place.
+function PrepNoteCard({ note }) {
+  const [expanded, setExpanded] = useState(false);
+  const body = note.body ?? '';
+  const clamped = !expanded && body.length > 280;
+  return (
+    <div
+      onClick={() => setExpanded((v) => !v)}
+      style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: '14px 16px', cursor: body.length > 280 ? 'pointer' : 'default' }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+        <div style={{ fontFamily: T.serif, fontSize: 14.5, fontWeight: 700, color: T.ink, flex: 1, minWidth: 160 }}>{note.title || 'Untitled'}</div>
+        <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: T.goldDark, background: 'rgba(184,115,58,0.1)', border: '1px solid rgba(184,115,58,0.22)', borderRadius: 999, padding: '2px 9px', flexShrink: 0 }}>
+          Study tab{note.series ? ` · ${note.series}` : ''}
+        </span>
+      </div>
+      <div style={{ fontFamily: T.serif, fontSize: 14, color: T.inkSoft, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+        {clamped ? `${body.slice(0, 280)}…` : body}
+      </div>
+      {clamped && <div style={{ fontSize: 12, color: T.goldDark, marginTop: 6 }}>Show more</div>}
+      <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 8 }}>
+        {note.created_at ? new Date(note.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''} · edit in your church Study tab
+      </div>
+    </div>
+  );
+}
+
 export default function Journal({ session, onClose, onOpenBible, onAskVerse, onContinueChat }) {
   const [verseNotes, setVerseNotes] = useState([]);
   const [userNotes,  setUserNotes]  = useState([]);
+  const [prepNotes,  setPrepNotes]  = useState([]); // church Study-tab notes I authored
   const [loading,    setLoading]    = useState(true);
   const [query,      setQuery]      = useState('');
   const [newOpen,    setNewOpen]    = useState(false);
@@ -511,9 +540,14 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse, onC
     Promise.all([
       supabase.from('bible_notes').select('*').eq('user_id', uid),
       supabase.from('user_notes').select('*').eq('user_id', uid).order('created_at', { ascending: false }),
-    ]).then(([{ data: bn }, { data: un }]) => {
+      // Sermon-prep notes saved in the church Study tab stay church-scoped in
+      // storage, but they're still YOUR notes — surface them here so every
+      // scripture insight lands in one place (Daniel, 7/19).
+      supabase.from('church_notes').select('*').eq('author_id', uid).order('created_at', { ascending: false }),
+    ]).then(([{ data: bn }, { data: un }, { data: cn }]) => {
       setVerseNotes(bn ?? []);
       setUserNotes(un ?? []);
+      setPrepNotes(cn ?? []);
       setLoading(false);
     });
   }, [session?.user?.id]);
@@ -558,6 +592,9 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse, onC
   const filteredBookmarks = verseBookmarks.filter((n) =>
     !q || n.title?.toLowerCase().includes(q) || n.body?.toLowerCase().includes(q)
   );
+  const filteredPrep = prepNotes.filter((n) =>
+    !q || n.title?.toLowerCase().includes(q) || n.body?.toLowerCase().includes(q) || n.series?.toLowerCase().includes(q)
+  );
 
   // Group bible_notes + verse bookmarks by book
   const grouped = [];
@@ -580,7 +617,7 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse, onC
     bookMap[key].bookmarks.sort((a, b) => { const [ac, av] = parseChVerse(a.title); const [bc, bv] = parseChVerse(b.title); return ac - bc || av - bv; });
   }
 
-  const totalCount = verseNotes.length + userNotes.length;
+  const totalCount = verseNotes.length + userNotes.length + prepNotes.length;
 
   return (
     <div style={{ minHeight: '100vh', background: T.parchment, fontFamily: T.sans, display: 'flex', flexDirection: 'column' }}>
@@ -701,7 +738,7 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse, onC
               Tap "+ New note" to write one, save an AI response<br />from Ask or Bible chat, or tap ✏ Note on any verse.
             </div>
           </div>
-        ) : filteredSaved.length === 0 && filteredVerse.length === 0 && filteredBookmarks.length === 0 ? (
+        ) : filteredSaved.length === 0 && filteredVerse.length === 0 && filteredBookmarks.length === 0 && filteredPrep.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0', color: T.inkMuted, fontFamily: T.serif, fontSize: 15 }}>No results for "{query}"</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -725,6 +762,25 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse, onC
                       onSave={(id, body, title) => setUserNotes((prev) => prev.map((n) => n.id === id ? { ...n, body, title, updated_at: new Date().toISOString() } : n))}
                       onContinueChat={onContinueChat}
                     />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sermon-prep notes from the church Study tab (read-only here —
+                they live with the church; edit them in the Study tab) */}
+            {filteredPrep.length > 0 && (
+              <div>
+                <div style={{
+                  fontFamily: T.serif, fontSize: 12, fontWeight: 700,
+                  color: T.goldDark, letterSpacing: 1.5, textTransform: 'uppercase',
+                  marginBottom: 10, paddingBottom: 6, borderBottom: `1px solid rgba(184,115,58,0.2)`,
+                }}>
+                  Sermon prep
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {filteredPrep.map((note) => (
+                    <PrepNoteCard key={note.id} note={note} />
                   ))}
                 </div>
               </div>
