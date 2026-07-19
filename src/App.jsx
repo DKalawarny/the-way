@@ -3292,6 +3292,16 @@ export default function App() {
           }}
           onContinueChat={(noteBody) => {
             const question = noteBody?.match(/^Q:\s*(.+?)(?:\n\n[\s\S]*)?$/s)?.[1]?.trim() ?? noteBody?.slice(0, 200) ?? '';
+            // Resume the conversation this note came from when it still exists —
+            // re-asking the same question loses the thread and burns quota.
+            const original = conversations
+              .filter((c) => c.messages?.some((m) => m.role === 'user' && m.content?.trim() === question))
+              .sort((a, b) => new Date(b.updatedAt ?? b.createdAt ?? 0) - new Date(a.updatedAt ?? a.createdAt ?? 0))[0];
+            if (original) {
+              setCurrentConvId(original.id);
+              setChatPanelOpen(true);
+              return;
+            }
             const conv = createConv(personType);
             setCurrentConvId(conv.id);
             setPrefilledInput(question);

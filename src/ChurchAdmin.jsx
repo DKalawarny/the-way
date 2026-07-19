@@ -2538,6 +2538,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
               profile={profile ? { ...profile, plan: aiPlan ?? 'church_base' } : profile}
               topOffset={145}
               fillParent
+              churchNoteContext={churchId}
             />
           </div>
         )}

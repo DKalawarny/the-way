@@ -894,7 +894,7 @@ const BIBLE_READ_TOUR_STEPS = [
   },
 ];
 
-export default function BibleReader({ session, profile, homeKey = 0, onClose, onOpenChat, jumpRef, topOffset = 0, fillParent = false }) {
+export default function BibleReader({ session, profile, homeKey = 0, onClose, onOpenChat, jumpRef, topOffset = 0, fillParent = false, churchNoteContext = null }) {
   const uid = session?.user?.id ?? 'guest';
 
   // ── Navigation state ────────────────────────────────────────────────────────
@@ -952,6 +952,17 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const searchRef = useRef(null);
   const [noteText,   setNoteText]   = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
+  // Church Study context: notes go to the church's prep notes (with a series
+  // picker) instead of private bible_notes — the pastor's Bible tab is sermon
+  // prep, not personal journaling (Daniel, 7/19).
+  const [noteSeries, setNoteSeries]       = useState('');
+  const [newSeriesMode, setNewSeriesMode] = useState(false);
+  const [seriesOptions, setSeriesOptions] = useState([]);
+  useEffect(() => {
+    if (!churchNoteContext) return;
+    supabase.from('church_notes').select('series').eq('church_id', churchNoteContext).not('series', 'is', null)
+      .then(({ data }) => setSeriesOptions([...new Set((data ?? []).map((r) => r.series).filter(Boolean))]));
+  }, [churchNoteContext]);
   const [completed, setCompleted] = useState(() => {
     const _uid = session?.user?.id ?? 'guest';
     try {
@@ -1585,6 +1596,17 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     if (!session?.user?.id || !noteVerse) return;
     setNoteSaving(true);
     const verseRef = `${book?.name ?? bookId} ${chNum}:${noteVerse.number}`;
+    if (churchNoteContext) {
+      const verseText = noteVerse.text?.replace(/^["\u201c\u201d]+|["\u201c\u201d]+$/g, '').trim() ?? '';
+      const body = [verseText ? `"${verseText}" — ${verseRef}` : verseRef, noteText.trim()].filter(Boolean).join('\n\n');
+      await supabase.from('church_notes').insert({
+        church_id: churchNoteContext, author_id: session.user.id,
+        title: verseRef, body, series: noteSeries.trim() || null, source: 'bible',
+      });
+      setNoteSaving(false);
+      setNoteOpen(false);
+      return;
+    }
     if (noteText.trim()) {
       // Save verse + reflection to bible_notes
       const payload = {
@@ -2545,9 +2567,14 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                       const verseMatch = question.match(/^Tell me about (.+? \d+:\d+)/);
                       const title = verseMatch ? verseMatch[1] : (question.slice(0, 70) || m.content.slice(0, 70));
                       const body = question ? `Q: ${question}\n\n${m.content}` : m.content;
-                      const { error } = await supabase.from('user_notes').insert({
-                        user_id: session.user.id, title, body, source: 'bible',
-                      });
+                      const { error } = churchNoteContext
+                        ? await supabase.from('church_notes').insert({
+                            church_id: churchNoteContext, author_id: session.user.id,
+                            title, body, series: noteSeries.trim() || null, source: 'bible',
+                          })
+                        : await supabase.from('user_notes').insert({
+                            user_id: session.user.id, title, body, source: 'bible',
+                          });
                       if (!error) setRdSavedIdx((prev) => ({ ...prev, [i]: true }));
                     }}
                     title={rdSavedIdx[i] ? 'Saved to Notes' : 'Save to Notes'}
@@ -3203,6 +3230,31 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                 lineHeight: 1.6,
               }}
             />
+            {churchNoteContext && (
+              <div style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: T.inkMuted, letterSpacing: 0.5, textTransform: 'uppercase' }}>Series</span>
+                {!newSeriesMode ? (
+                  <select
+                    value={noteSeries}
+                    onChange={(e) => { if (e.target.value === '__new__') { setNewSeriesMode(true); setNoteSeries(''); } else setNoteSeries(e.target.value); }}
+                    style={{ border: `1px solid ${T.line}`, borderRadius: 8, padding: '7px 10px', fontSize: 13, background: T.white, color: T.ink, fontFamily: T.sans }}
+                  >
+                    <option value="">No series</option>
+                    {seriesOptions.map((s) => <option key={s} value={s}>{s}</option>)}
+                    <option value="__new__">+ New series…</option>
+                  </select>
+                ) : (
+                  <input
+                    autoFocus
+                    value={noteSeries}
+                    onChange={(e) => setNoteSeries(e.target.value)}
+                    placeholder="Series name…"
+                    style={{ border: `1px solid ${T.gold}`, borderRadius: 8, padding: '7px 10px', fontSize: 13, background: T.white, color: T.ink, fontFamily: T.sans, minWidth: 180 }}
+                  />
+                )}
+                <span style={{ fontSize: 11.5, color: T.inkMuted }}>Saves to your church's Notes</span>
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 10, marginTop: 12, justifyContent: 'flex-end' }}>
               {noteMap[noteVerse.number] && (
                 <button
