@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { acquireOverlay, releaseOverlay, overlayHolder, subscribeOverlay } from './overlayCoordinator.js';
+import { syncUiFlag } from './uiFlags.js';
 import { T } from './theme.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -50,6 +51,7 @@ function getSeen() {
 }
 function saveSeen(set) {
   try { localStorage.setItem(SEEN_KEY, JSON.stringify([...set])); } catch {}
+  syncUiFlag(SEEN_KEY, JSON.stringify([...set]));
 }
 
 export function incrementLoginCount() {

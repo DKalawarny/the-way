@@ -18,11 +18,13 @@ import { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { T } from './theme.js';
 import { acquireOverlay, releaseOverlay, overlayHolder, subscribeOverlay } from './overlayCoordinator.js';
+import { syncUiFlag } from './uiFlags.js';
 
 export function isPageTourDone(storageKey) {
   try { return localStorage.getItem(storageKey) === '1'; } catch { return false; }
 }
 export function markPageTourDone(storageKey) {
+  syncUiFlag(storageKey, '1');
   try { localStorage.setItem(storageKey, '1'); } catch {}
 }
 
@@ -269,9 +271,21 @@ export default function PageTour({ steps = [], storageKey, onClose }) {
         >
           <div style={arrowStyle} />
 
+          <button
+            onClick={handleClose}
+            aria-label="Close tour"
+            style={{
+              position: 'absolute', top: 8, right: 8, width: 30, height: 30,
+              background: 'rgba(26,17,8,0.05)', border: 'none', borderRadius: '50%',
+              color: T.inkMuted, fontSize: 15, lineHeight: 1, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >×</button>
+
           <div style={{
             fontSize: 10, fontWeight: 700, letterSpacing: '0.12em',
             color: s.color, textTransform: 'uppercase', marginBottom: 5, fontFamily: T.sans,
+            paddingRight: 30,
           }}>
             {step + 1} of {total}
           </div>

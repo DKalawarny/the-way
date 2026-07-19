@@ -1,5 +1,6 @@
 import { useState, useEffect, useLayoutEffect } from 'react';
 import { acquireOverlay, releaseOverlay } from './overlayCoordinator.js';
+import { syncUiFlag } from './uiFlags.js';
 import { T } from './theme.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { KinwoveAppIcon } from './components/brand/KinwoveAppIcon.jsx';
@@ -53,7 +54,7 @@ const STEPS = [
 ];
 
 const STORAGE_KEY = 'tour_v1_done';
-export function markTourDone() { try { localStorage.setItem(STORAGE_KEY, '1'); } catch {} }
+export function markTourDone() { try { localStorage.setItem(STORAGE_KEY, '1'); } catch {} syncUiFlag(STORAGE_KEY, '1'); }
 export function isTourDone()   { try { return localStorage.getItem(STORAGE_KEY) === '1'; } catch { return false; } }
 
 // True when the welcome tour appeared at any point this browser session —

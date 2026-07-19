@@ -116,6 +116,7 @@ import { useChurchPlanReadOnly } from './usePlan.js';
 import InstallPrompt from './InstallPrompt.jsx';
 import { usePushNotifications, requestNotificationPermission } from './usePushNotifications.js';
 import { ensureNativePush } from './nativePush.js';
+import { applyUiFlags } from './uiFlags.js';
 
 const Community         = lazy(() => import('./Community.jsx'));
 const ConnectScreen     = lazy(() => import('./ConnectScreen.jsx'));
@@ -2673,6 +2674,9 @@ export default function App() {
       }
     }
     setProfile(data ?? null);
+    // Account-synced tour flags: apply before deciding to show the welcome
+    // tour so a new device/browser doesn't replay onboarding (uiFlags.js).
+    applyUiFlags(data?.notif_prefs?.ui);
     if (!isTourDone()) setShowTour(true);
     await Promise.all([loadGroup(userId), loadChurchRoles(userId)]);
     return data ?? null;
