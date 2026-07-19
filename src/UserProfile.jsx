@@ -227,10 +227,12 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
       background: T.cream,
     }}>
 
-      {/* Sticky header */}
+      {/* Sticky header — safe-area padding keeps the back button below the
+          notch/status bar in the native app and installed PWA */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 10,
         background: T.white, borderBottom: `1px solid ${T.line}`,
+        paddingTop: isDesktop ? 0 : 'env(safe-area-inset-top, 0px)',
       }}>
         <div style={{
           maxWidth: 760, margin: '0 auto', height: 52,

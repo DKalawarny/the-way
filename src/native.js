@@ -8,6 +8,27 @@ export const isNativeApp =
   (window.Capacitor?.isNativePlatform?.() === true ||
     window.location.protocol === 'capacitor:');
 
+// In the native app the page is served from capacitor://localhost, so every
+// relative '/api/…' fetch resolves to a dead capacitor URL — the Bible reader,
+// AI chat, TTS, and every other backend feature silently fails. Rewriting at
+// the fetch layer fixes all call sites at once; the server's CORS allowlist
+// already includes capacitor://localhost.
+const API_ORIGIN = 'https://www.kinwove.com';
+if (isNativeApp && typeof window.fetch === 'function') {
+  const origFetch = window.fetch.bind(window);
+  window.fetch = (input, init) => {
+    if (typeof input === 'string' && input.startsWith('/api/')) {
+      input = API_ORIGIN + input;
+    } else if (input instanceof Request) {
+      const u = new URL(input.url);
+      if (u.protocol === 'capacitor:' && u.pathname.startsWith('/api/')) {
+        input = new Request(API_ORIGIN + u.pathname + u.search, input);
+      }
+    }
+    return origFetch(input, init);
+  };
+}
+
 // window.open('mailto:…') returns null inside the native webview and the
 // email never opens. Main-frame navigation works there — Capacitor's
 // navigation delegate hands mailto:/tel:/sms: to the system and cancels

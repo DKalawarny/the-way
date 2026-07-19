@@ -421,7 +421,9 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
           <div onClick={(e) => e.stopPropagation()} style={{
             position: 'absolute',
             top: isDesktop ? 56 : 'calc(env(safe-area-inset-top, 0px) + 56px)',
-            right: bellRight,
+            // Mobile: anchor to the screen edge — anchoring to the bell pushed
+            // the 380px panel off the left edge of phone screens.
+            right: isDesktop ? bellRight : 12,
             background: T.white, borderRadius: 16, border: `1px solid ${T.line}`,
             boxShadow: '0 8px 40px rgba(0,0,0,0.16)',
             width: 380, maxWidth: 'calc(100vw - 24px)',
@@ -438,6 +440,11 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
                 <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 700, color: T.ink, letterSpacing: '-0.02em' }}>
                   Notifications
                 </div>
+                <button
+                  onClick={() => setOpen(false)}
+                  aria-label="Close notifications"
+                  style={{ background: 'rgba(26,17,8,0.06)', border: 'none', borderRadius: 999, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: T.inkSoft, fontSize: 16, lineHeight: 1, marginLeft: 'auto', flexShrink: 0 }}
+                >×</button>
                 {notifs.some(n => !n.read_at) && (
                   <button onClick={markAllRead} style={{
                     background: 'none', border: 'none', color: T.goldDark,

@@ -265,13 +265,14 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
         }}><ArrowLeft size={15} strokeWidth={2} /> Back</button>
 
         <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 8 }}>
-          Ask someone
+          Talk to someone
         </div>
         <h1 style={{ fontFamily: T.serif, fontSize: 32, fontWeight: 600, color: T.ink, margin: '0 0 8px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-          What's on your mind?
+          Carrying something heavy?
         </h1>
         <p style={{ color: T.inkSoft, fontSize: 14.5, lineHeight: 1.65, margin: '0 0 18px' }}>
-          Pick a topic and a person — or let anyone available pick it up. {churchName && <>People at <strong>{churchName}</strong> who said they're here to listen.</>}
+          Doubt. Grief. A marriage under strain. A season you can't name yet.
+          Some things need a person, not a post — {churchName ? <>these are people at <strong>{churchName}</strong> who said they're here to listen.</> : <>reach out to someone who said they're here to listen.</>}
         </p>
 
         <PrivacyHeader />

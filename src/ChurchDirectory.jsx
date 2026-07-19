@@ -70,10 +70,12 @@ export default function ChurchDirectory({ session, profile, onBack, onOpenChurch
         <div style={{ marginLeft: 12, fontFamily: T.display, fontSize: 20, fontWeight: 600, color: T.ink, letterSpacing: '-0.015em' }}>
           Churches
         </div>
-        {/* Push pastor CTA away from the fixed FAB cluster (bell + messages + search + menu ≈ 200px from right) */}
+        {/* Desktop: push pastor CTA away from the fixed FAB cluster (bell + messages + search + menu).
+            Mobile: the FABs live in the dark header above this row, so no offset —
+            the 164px margin was shoving the chip onto the "Churches" title. */}
         {onApply && (
           <button onClick={onApply} style={{
-            marginLeft: 'auto', marginRight: 164, background: T.parchment, border: `1px solid ${T.line}`,
+            marginLeft: 'auto', marginRight: window.innerWidth >= 1024 ? 164 : 0, background: T.parchment, border: `1px solid ${T.line}`,
             borderRadius: 999, padding: '6px 14px', fontSize: 13, color: T.goldDark, fontWeight: 600, cursor: 'pointer',
             flexShrink: 0,
           }}>

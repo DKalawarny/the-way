@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { T } from './theme.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
+import { isNativeApp } from './native.js';
 
 /**
  * PWA "Add to Home Screen" nudge.
@@ -47,6 +48,9 @@ function IosShareIcon({ size = 18 }) {
 }
 
 export default function InstallPrompt({ triggerNow = false, suppressed = false }) {
+  // Already the native app — an "add to home screen" banner is nonsense here
+  // and it covers the DM composer and bottom nav.
+  if (isNativeApp) return null;
   const [visible, setVisible]       = useState(false);
   const [installing, setInstalling] = useState(false);
   const [iosSheet, setIosSheet]     = useState(false);

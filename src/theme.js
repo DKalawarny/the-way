@@ -487,6 +487,8 @@ export const globalCss = `
       height: 100dvh !important;
       width: 100% !important;
       margin: 0 !important;
+      /* keep the modal header (and its close button) below the notch */
+      padding-top: env(safe-area-inset-top, 0px) !important;
       padding-bottom: env(safe-area-inset-bottom, 0px) !important;
       animation: fadeIn 0.2s ease both !important;
     }
