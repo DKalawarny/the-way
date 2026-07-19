@@ -37,3 +37,11 @@ export function openMailto(href) {
   if (isNativeApp) window.location.href = href;
   else window.open(href);
 }
+
+// External web links (YouTube, church websites…): window.open is a null no-op
+// in the webview, but main-frame navigation to a foreign host gets handed to
+// the system browser by Capacitor's navigation delegate.
+export function openExternal(url) {
+  if (isNativeApp) window.location.href = url;
+  else window.open(url, '_blank', 'noopener');
+}

@@ -138,7 +138,6 @@ export default function SermonView({ session, profile, sermonId, onBack, onChang
         <header style={{
           background: T.white, borderBottom: `1px solid ${T.line}`,
           position: 'sticky', top: 0, zIndex: 10,
-          paddingTop: 'env(safe-area-inset-top, 0px)',
         }}>
           <div style={{ padding: '0 16px', height: 56, display: 'flex', alignItems: 'center' }}>
             <button onClick={onBack} style={{
@@ -179,7 +178,7 @@ export default function SermonView({ session, profile, sermonId, onBack, onChang
             </div>
           )}
           {sermon.summary && (
-            <p style={{ fontFamily: T.serif, fontSize: 15.5, color: T.inkSoft, lineHeight: 1.7, margin: 0 }}>
+            <p style={{ fontFamily: T.serif, fontSize: 15.5, color: T.inkSoft, lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap' }}>
               {sermon.summary}
             </p>
           )}

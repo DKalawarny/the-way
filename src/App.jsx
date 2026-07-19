@@ -1979,6 +1979,14 @@ export default function App() {
     if (!vv) return;
     const onChange = () => {
       const kbOpen = document.documentElement.clientHeight - vv.height > 80;
+      // Expose the visual viewport height as a CSS var so full-screen modals
+      // (comments, sermon threads) shrink above the keyboard — the composer
+      // pinned at their bottom stays visible, Facebook-style.
+      if (kbOpen) {
+        document.documentElement.style.setProperty('--vvh', `${Math.round(vv.height)}px`);
+      } else {
+        document.documentElement.style.removeProperty('--vvh');
+      }
       setKbViewport((prev) => {
         const next = kbOpen ? { height: Math.round(vv.height), offsetTop: Math.round(vv.offsetTop) } : null;
         if (!prev && !next) return prev;

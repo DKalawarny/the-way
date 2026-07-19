@@ -484,7 +484,9 @@ export const globalCss = `
       border-radius: 0 !important;
       max-width: 100% !important;
       max-height: 100% !important;
-      height: 100dvh !important;
+      /* --vvh = visual viewport height, set while the keyboard is open —
+         shrinks the modal so its bottom-pinned composer sits on the keyboard */
+      height: var(--vvh, 100dvh) !important;
       width: 100% !important;
       margin: 0 !important;
       /* keep the modal header (and its close button) below the notch */

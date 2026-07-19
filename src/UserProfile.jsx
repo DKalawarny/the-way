@@ -220,7 +220,9 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
       top: isDesktop ? 56 : 0,
       left: isDesktop ? 240 : 0,
       right: 0,
-      bottom: 0,
+      // Mobile: stop above the bottom tab bar (z 100, below this overlay's 150)
+      // so Feed/Church/Ask/Bible stay visible and tappable from a profile.
+      bottom: isDesktop ? 0 : 'calc(62px + env(safe-area-inset-bottom, 0px))',
       zIndex: 150,
       overflowY: 'auto',
       paddingBottom: 80,
@@ -236,7 +238,9 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
       }}>
         <div style={{
           maxWidth: 760, margin: '0 auto', height: 52,
-          padding: '0 16px',
+          // Mobile: leave room on the right for the fixed FAB cluster
+          // (bell + messages + menu) so the name doesn't crowd under it.
+          padding: isDesktop ? '0 16px' : '0 160px 0 16px',
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
           <button onClick={onClose} style={{

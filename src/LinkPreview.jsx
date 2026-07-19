@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { T } from './theme.js';
+import { isNativeApp, openExternal } from './native.js';
 
 // ── URL extraction ────────────────────────────────────────────────────────────
 const URL_RE = /https?:\/\/[^\s<>"')\]]+/g;
@@ -59,7 +60,7 @@ function YouTubePreview({ url, videoId }) {
 
   return (
     <div
-      onClick={() => setPlaying(true)}
+      onClick={() => { if (isNativeApp) { openExternal(url); return; } setPlaying(true); }}
       role="button"
       style={{
         display: 'flex', alignItems: 'stretch',
