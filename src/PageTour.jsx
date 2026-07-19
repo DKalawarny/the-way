@@ -17,6 +17,7 @@
 import { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { T } from './theme.js';
+import { acquireOverlay, releaseOverlay, overlayHolder, subscribeOverlay } from './overlayCoordinator.js';
 
 export function isPageTourDone(storageKey) {
   try { return localStorage.getItem(storageKey) === '1'; } catch { return false; }
@@ -112,6 +113,18 @@ export default function PageTour({ steps = [], storageKey, onClose }) {
   const [step,       setStep]       = useState(0);
   const [exiting,    setExiting]    = useState(false);
   const [targetRect, setTargetRect] = useState(null);
+  const slotId = `page-tour:${storageKey ?? 'anon'}`;
+  // One overlay at a time: wait until the shared slot frees up (e.g. the
+  // welcome tour or a coach mark), then claim it.
+  const [granted, setGranted] = useState(() => acquireOverlay(slotId));
+  useEffect(() => {
+    if (granted) return undefined;
+    const unsub = subscribeOverlay(() => {
+      if (!overlayHolder()) setGranted(acquireOverlay(slotId));
+    });
+    return unsub;
+  }, [granted, slotId]);
+  useEffect(() => () => releaseOverlay(slotId), [slotId]);
 
   const s      = steps[step] ?? steps[0];
   const isLast = step === steps.length - 1;
@@ -177,6 +190,7 @@ export default function PageTour({ steps = [], storageKey, onClose }) {
   }
 
   if (!s) return null;
+  if (!granted) return null;
 
   const { style: tipStyle, arrowStyle } = placeTooltip(targetRect);
 

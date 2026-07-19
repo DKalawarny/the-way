@@ -115,6 +115,7 @@ import ChurchModeShell from './ChurchModeShell.jsx';
 import { useChurchPlanReadOnly } from './usePlan.js';
 import InstallPrompt from './InstallPrompt.jsx';
 import { usePushNotifications, requestNotificationPermission } from './usePushNotifications.js';
+import { ensureNativePush } from './nativePush.js';
 
 const Community         = lazy(() => import('./Community.jsx'));
 const ConnectScreen     = lazy(() => import('./ConnectScreen.jsx'));
@@ -154,7 +155,7 @@ const HelpPage          = lazy(() => import('./HelpPage.jsx'));
 const UpgradeModal      = lazy(() => import('./UpgradeModal.jsx'));
 const GuestPostView     = lazy(() => import('./GuestPostView.jsx'));
 import { getJourneyProgress, advanceJourneyProgress } from './journeys.js';
-import FeatureTour, { isTourDone } from './FeatureTour.jsx';
+import FeatureTour, { isTourDone, tourRanThisSession } from './FeatureTour.jsx';
 import CoachMark, { incrementLoginCount } from './CoachMark.jsx';
 import DailyVerseCard, { shouldShowDailyVerse, markVerseAsSeen } from './DailyVerseCard.jsx';
 import { GlobalTooltip } from './Tooltip.jsx';
@@ -2108,6 +2109,8 @@ export default function App() {
   // Browser push notifications — fires OS-level alerts for prayers, DMs, etc.
   // even when the tab is in the background. No VAPID keys needed.
   usePushNotifications(session?.user?.id);
+  // Native app: register for APNs once signed in (no-op on the web).
+  useEffect(() => { if (session?.user?.id) ensureNativePush(); }, [session?.user?.id]);
 
   // UI is in English — always keep <html lang="en"> so browsers correctly
   // detect the page language and offer their native auto-translate to users
@@ -3899,7 +3902,7 @@ export default function App() {
               setPendingGroupCode(n.data?.invite_code ?? null);
               setStage('groups');
             }
-            else if (n.kind === 'group_post' || n.kind === 'group_reply') {
+            else if (n.kind === 'group_post' || n.kind === 'group_reply' || n.kind === 'group_joined') {
               const gId = n.data?.group_id;
               if (gId) {
                 const entry = userGroups.find((g) => g.group.id === gId);
@@ -4029,7 +4032,9 @@ export default function App() {
           Also require profile?.person_type so brand-new users don't see
           the verse (set at auth time from old localStorage) before the
           profile wizard runs and the pastor prompt is set. */}
-      {showVerseCard && !showTour && !showPastorPrompt && session && profile?.person_type && (
+      {/* tourRanThisSession(): if the welcome tour appeared this session (even
+          skipped), the verse card waits for the user's next visit — no pileup. */}
+      {showVerseCard && !showTour && !showPastorPrompt && !tourRanThisSession() && session && profile?.person_type && (
         <DailyVerseCard
           onReflect={async () => {
             // Open today's shared verse post so people reflect together —

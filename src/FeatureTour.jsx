@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect } from 'react';
+import { acquireOverlay, releaseOverlay } from './overlayCoordinator.js';
 import { T } from './theme.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { KinwoveAppIcon } from './components/brand/KinwoveAppIcon.jsx';
@@ -54,6 +55,13 @@ const STEPS = [
 const STORAGE_KEY = 'tour_v1_done';
 export function markTourDone() { try { localStorage.setItem(STORAGE_KEY, '1'); } catch {} }
 export function isTourDone()   { try { return localStorage.getItem(STORAGE_KEY) === '1'; } catch { return false; } }
+
+// True when the welcome tour appeared at any point this browser session —
+// even skipped. Other first-minutes overlays (daily verse card) defer to the
+// next session so a new user's first screen isn't a pile of popups.
+const SESSION_KEY = 'kw:tour-this-session';
+export function markTourSession() { try { sessionStorage.setItem(SESSION_KEY, '1'); } catch {} }
+export function tourRanThisSession() { try { return sessionStorage.getItem(SESSION_KEY) === '1'; } catch { return false; } }
 
 const TIP_W   = 264; // tooltip card width
 const H_PAD   = 8;   // extra padding around the spotlight highlight
@@ -166,6 +174,14 @@ export default function FeatureTour({ onClose }) {
   const [step,       setStep]       = useState(0);
   const [exiting,    setExiting]    = useState(false);
   const [targetRect, setTargetRect] = useState(null);
+
+  // Claim the one-overlay-at-a-time slot for the whole tour, and flag the
+  // session so the daily-verse card waits until the user's next visit.
+  useEffect(() => {
+    markTourSession();
+    acquireOverlay('feature-tour');
+    return () => releaseOverlay('feature-tour');
+  }, []);
 
   const s      = STEPS[step];
   const isLast = step === STEPS.length - 1;

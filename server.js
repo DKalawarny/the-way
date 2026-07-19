@@ -7,6 +7,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
+import http2 from 'node:http2';
 import Anthropic from '@anthropic-ai/sdk';
 import webpush from 'web-push';
 import { getDailyVerse } from './src/dailyVerse.js';
@@ -3506,6 +3507,41 @@ If you're not sure where to start, just tap **Ask** (the ✦ in the bottom bar) 
 
 Glad you're here.`;
 
+// ── Someone joined your circle → tell the creator ───────────────────────────
+// Called fire-and-forget by the client after a successful group join. Group
+// membership RLS blocks members from inserting notifications for others, so
+// the server does it with the service role after verifying the join is real.
+app.post('/api/groups/joined-notify', requireAuth, limitAuthed({ capacity: 10, refillPerSec: 10 / 3600 }), async (req, res) => {
+  const { group_id } = req.body ?? {};
+  if (!isUuid(group_id)) return res.status(400).json({ error: 'bad group_id' });
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
+  try {
+    const [group] = await fetch(`${SUPABASE_URL}/rest/v1/church_groups?id=eq.${group_id}&select=id,name,created_by`, { headers: h }).then((r) => r.json());
+    if (!group) return res.status(404).json({ error: 'no such group' });
+    if (group.created_by === req.userId) return res.json({ ok: true, skipped: 'own group' });
+    const members = await fetch(`${SUPABASE_URL}/rest/v1/group_members?group_id=eq.${group_id}&member_id=eq.${req.userId}&select=id`, { headers: h }).then((r) => r.json());
+    if (!Array.isArray(members) || members.length === 0) return res.status(403).json({ error: 'not a member' });
+    const ins = await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+      method: 'POST',
+      headers: { ...h, Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        recipient_id: group.created_by,
+        actor_id: req.userId,
+        kind: 'group_joined',
+        target_type: 'group',
+        target_id: group_id,
+        data: { group_id, group_name: group.name },
+      }),
+    });
+    if (!ins.ok) console.error('[groups/joined-notify] insert failed:', await ins.text());
+    res.json({ ok: ins.ok });
+  } catch (e) {
+    console.error('[groups/joined-notify]', e?.message);
+    res.status(500).json({ error: 'failed' });
+  }
+});
+
 app.post('/api/welcome-dm', requireAuth, limitAuthed({ capacity: 3, refillPerSec: 3 / 3600 }), async (req, res) => {
   const userId = req.userId;
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
@@ -4181,6 +4217,60 @@ app.get('/api/admin/dm-seen', requireAdmin, async (req, res) => {
 // VAPID_PRIVATE_KEY on Render (generate with `npx web-push generate-vapid-keys`).
 const VAPID_PUBLIC_KEY  = process.env.VAPID_PUBLIC_KEY  ?? '';
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY ?? '';
+
+// ── Native push (APNs) ────────────────────────────────────────────────────────
+// Same fail-quiet pattern as VAPID: until APNS_KEY (contents of the .p8) and
+// APNS_KEY_ID are set on Render, native tokens are stored but nothing sends.
+// Device tokens ride the existing push_subscriptions table as pseudo-endpoints
+// ("apns://<token>") so the same 15s poller fans out to web and native alike.
+const APNS_KEY     = process.env.APNS_KEY;
+const APNS_KEY_ID  = process.env.APNS_KEY_ID;
+const APNS_TEAM_ID = process.env.APNS_TEAM_ID || 'L5X5ZY7FQ5';
+const APNS_TOPIC   = process.env.APNS_TOPIC || 'com.kinwove.app';
+const APNS_ENABLED = !!(APNS_KEY && APNS_KEY_ID && SUPABASE_URL && SUPABASE_SERVICE_KEY);
+
+let apnsJwtCache = null;
+let apnsJwtAt = 0;
+function apnsJwt() {
+  const now = Math.floor(Date.now() / 1000);
+  if (apnsJwtCache && now - apnsJwtAt < 2400) return apnsJwtCache; // Apple wants 20-60 min reuse
+  const header = Buffer.from(JSON.stringify({ alg: 'ES256', kid: APNS_KEY_ID })).toString('base64url');
+  const claims = Buffer.from(JSON.stringify({ iss: APNS_TEAM_ID, iat: now })).toString('base64url');
+  const unsigned = `${header}.${claims}`;
+  const key = APNS_KEY.includes('BEGIN') ? APNS_KEY.replace(/\\n/g, '\n') : APNS_KEY;
+  const sig = crypto.sign('sha256', Buffer.from(unsigned), { key, dsaEncoding: 'ieee-p1363' }).toString('base64url');
+  apnsJwtCache = `${unsigned}.${sig}`;
+  apnsJwtAt = now;
+  return apnsJwtCache;
+}
+
+function sendApns(deviceToken, title, body, tag) {
+  return new Promise((resolve) => {
+    try {
+      const client = http2.connect('https://api.push.apple.com');
+      client.on('error', () => resolve({ status: 0 }));
+      const req = client.request({
+        ':method': 'POST',
+        ':path': `/3/device/${deviceToken}`,
+        authorization: `bearer ${apnsJwt()}`,
+        'apns-topic': APNS_TOPIC,
+        'apns-push-type': 'alert',
+        'content-type': 'application/json',
+      });
+      let status = 0;
+      req.on('response', (h) => { status = h[':status']; });
+      req.setEncoding('utf8');
+      let data = '';
+      req.on('data', (c) => { data += c; });
+      req.on('end', () => { client.close(); resolve({ status, data }); });
+      req.on('error', () => { client.close(); resolve({ status: 0 }); });
+      req.end(JSON.stringify({ aps: { alert: { title, body: body || undefined }, sound: 'default', 'thread-id': String(tag ?? '') } }));
+    } catch {
+      resolve({ status: 0 });
+    }
+  });
+}
+
 const PUSH_ENABLED = !!(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && SUPABASE_URL && SUPABASE_SERVICE_KEY);
 if (PUSH_ENABLED) {
   webpush.setVapidDetails(
@@ -4200,6 +4290,7 @@ const pushSvcHeaders = () => ({
 // Kinds worth waking a phone for, with their notification titles.
 const PUSH_KIND_TITLES = {
   dm_message:              '✉ New message on kinwove',
+  group_joined:            '👋 Someone joined your circle',
   care_message:            '💙 New care message',
   care_new_request:        '💛 Someone reached out for care',
   care_safety_flag:        '⚠️ A care conversation needs attention',
@@ -4217,6 +4308,28 @@ const PUSH_KIND_TITLES = {
 app.get('/api/push/vapid-key', (_req, res) => {
   if (!PUSH_ENABLED) return res.status(404).json({ error: 'push not configured' });
   res.json({ key: VAPID_PUBLIC_KEY });
+});
+
+// Native app device tokens (APNs). Stored even before APNS_KEY is configured
+// so enabling push later lights up every already-registered device.
+app.post('/api/push/native-register', requireAuth, limitAuthed({ capacity: 10, refillPerSec: 10 / 60 }), async (req, res) => {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+  const { token, platform } = req.body ?? {};
+  if (typeof token !== 'string' || !/^[a-f0-9]{16,200}$/i.test(token)) {
+    return res.status(400).json({ error: 'invalid token' });
+  }
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions`, {
+      method: 'POST',
+      headers: { ...pushSvcHeaders(), Prefer: 'resolution=merge-duplicates' },
+      body: JSON.stringify({ endpoint: `apns://${token.toLowerCase()}`, user_id: req.userId, keys: { platform: platform === 'ios' ? 'ios' : 'native' } }),
+    });
+    if (!r.ok) throw new Error(`upsert ${r.status}`);
+    res.json({ ok: true, sending: APNS_ENABLED });
+  } catch (e) {
+    console.error('[kinwove] native push register failed:', e?.message);
+    res.status(500).json({ error: 'could not save token' });
+  }
 });
 
 app.post('/api/push/subscribe', requireAuth, limitAuthed({ capacity: 10, refillPerSec: 10 / 60 }), async (req, res) => {
@@ -4290,19 +4403,28 @@ async function pushSweep() {
       tag: row.id,
       url: '/',
     });
+    const dropSub = (endpoint) => fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(endpoint)}`, {
+      method: 'DELETE', headers: pushSvcHeaders(),
+    }).catch(() => {});
     for (const t of targets) {
+      if (t.endpoint.startsWith('apns://')) {
+        if (!APNS_ENABLED) continue;
+        const title = PUSH_KIND_TITLES[row.kind] ?? 'kinwove';
+        const bodyText = snippet ? `"${String(snippet).slice(0, 100)}"` : '';
+        sendApns(t.endpoint.slice(7), title, bodyText, row.id).then(({ status, data }) => {
+          // 410 = token no longer valid; 400 BadDeviceToken likewise.
+          if (status === 410 || (status === 400 && String(data).includes('BadDeviceToken'))) dropSub(t.endpoint);
+        });
+        continue;
+      }
       webpush.sendNotification({ endpoint: t.endpoint, keys: t.keys }, payload).catch((err) => {
         // 404/410 = subscription expired or revoked — clean it up.
-        if (err?.statusCode === 404 || err?.statusCode === 410) {
-          fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(t.endpoint)}`, {
-            method: 'DELETE', headers: pushSvcHeaders(),
-          }).catch(() => {});
-        }
+        if (err?.statusCode === 404 || err?.statusCode === 410) dropSub(t.endpoint);
       });
     }
   }
 }
-if (PUSH_ENABLED) {
+if (PUSH_ENABLED || APNS_ENABLED) {
   setInterval(() => pushSweep().catch((e) => console.error('[kinwove] push sweep failed:', e?.message)), 15000);
 }
 
@@ -5019,7 +5141,23 @@ ${entries.join('\n')}
 
   // ── Answers library — crawlable, GEO-optimized faith-question pages ──────────
   // Real server-rendered HTML (not the SPA) so Google + AI engines can read/cite.
-  app.get('/answers', (_req, res) => {
+  // ── Universal links (iOS) ────────────────────────────────────────────────────
+// Lets kinwove.com links open the native app once the Associated Domains
+// entitlement ships in a future build. Serving it now is harmless and means
+// the entitlement works the moment it lands.
+app.get('/.well-known/apple-app-site-association', (req, res) => {
+  res.type('application/json').json({
+    applinks: {
+      apps: [],
+      details: [{
+        appID: 'L5X5ZY7FQ5.com.kinwove.app',
+        paths: ['NOT /api/*', 'NOT /answers*', 'NOT /privacy', 'NOT /terms', '/*'],
+      }],
+    },
+  });
+});
+
+app.get('/answers', (_req, res) => {
     res.set('Cache-Control', 'public, max-age=3600').type('html').send(renderAnswerIndex());
   });
   app.get('/answers/:slug', (req, res) => {

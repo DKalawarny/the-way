@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from './supabase.js';
+import { supabase, authedFetch } from './supabase.js';
 import { T } from './theme.js';
 
 const TRADITIONS = [
@@ -46,6 +46,16 @@ export default function GroupSetup({ session, onJoined, onClose, initialCode, in
       setError('Something went wrong. Try again.');
       setBusy(false);
       return;
+    }
+    // Tell the circle's creator someone arrived (fire-and-forget; skip if we
+    // were already a member — the unique-violation path returns above only on
+    // real errors, so a fresh join always lands here exactly once).
+    if (!mErr) {
+      authedFetch('/api/groups/joined-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ group_id: group.id }),
+      }).catch(() => {});
     }
     setBusy(false);
     onJoined({ group, role: 'member' });

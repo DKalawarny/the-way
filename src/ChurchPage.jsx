@@ -1,7 +1,8 @@
-import { useEffect, useState, lazy, Suspense } from 'react';
+import { useEffect, useState, useCallback, lazy, Suspense } from 'react';
 import { ArrowLeft, Share2, Check, ExternalLink, Globe } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T, SHADOW, RADIUS, SEMANTIC, SPACE } from './theme.js';
+import { usePullToRefresh, PullToRefreshIndicator } from './usePullToRefresh.jsx';
 import { markEngaged } from './streak.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import PageTour, { isPageTourDone } from './PageTour.jsx';
@@ -75,6 +76,13 @@ export default function ChurchPage({
   const [churchPrayers, setChurchPrayers] = useState([]);
   const [prayedIds, setPrayedIds] = useState(() => new Set());
   const [feedRefresh, setFeedRefresh] = useState(0);
+  // Pull-to-refresh (window-scrolled page): bumping feedRefresh re-fetches the
+  // congregation feed; the brief hold makes the gesture read as a real reload.
+  const ptrChurchRefresh = useCallback(async () => {
+    setFeedRefresh((n) => n + 1);
+    await new Promise((r) => setTimeout(r, 400));
+  }, []);
+  const { pull: ptrPull, refreshing: ptrRefreshing } = usePullToRefresh(ptrChurchRefresh);
   // Inline prayer compose
   const [prayComposeOpen, setPrayComposeOpen] = useState(false);
   const [prayText, setPrayText] = useState('');
@@ -533,6 +541,7 @@ export default function ChurchPage({
   return (
     <div className="scene" style={{ minHeight: '100vh', paddingBottom: 80 }}>
       {uikitUi}
+      <PullToRefreshIndicator pull={ptrPull} refreshing={ptrRefreshing} />
 
       {/* Visitor-view notice removed — ChurchModeShell header already shows
           "VIEWING AS LEADER · VISITOR" toggle, so the cream strip was

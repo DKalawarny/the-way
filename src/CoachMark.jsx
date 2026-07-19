@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { acquireOverlay, releaseOverlay, overlayHolder, subscribeOverlay } from './overlayCoordinator.js';
 import { T } from './theme.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -70,6 +71,18 @@ export default function CoachMark() {
   const [winW, setWinW] = useState(() => window.innerWidth);
   const didMount = useRef(false);
 
+  // Lowest-priority overlay: wait out the initial render race (page tours
+  // claim the shared slot immediately), then take the slot only if free.
+  const [granted, setGranted] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    const tryClaim = () => { if (!cancelled && !granted && !overlayHolder()) setGranted(acquireOverlay('coach-mark')); };
+    const t = setTimeout(tryClaim, 900);
+    const unsub = subscribeOverlay(() => setTimeout(tryClaim, 400));
+    return () => { cancelled = true; clearTimeout(t); unsub(); };
+  }, [granted]);
+  useEffect(() => () => releaseOverlay('coach-mark'), []);
+
   useEffect(() => {
     const handler = () => setWinW(window.innerWidth);
     window.addEventListener('resize', handler);
@@ -82,6 +95,7 @@ export default function CoachMark() {
   // Only show for first MAX_LOGINS sessions
   const loginCount = getLoginCount();
   if (loginCount > MAX_LOGINS) return null;
+  if (!granted) return null;
 
   const current = STEPS.find((s) => !seen.has(s.id));
   if (!current) return null;
