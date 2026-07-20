@@ -49,6 +49,37 @@ async function syncSeatBlocks(userIdOrCustomer: { userId?: string; customerId?: 
   await supabase.from('churches').update({ seat_blocks: blocks }).eq('id', role.church_id);
 }
 
+
+// Church-anchored subscriptions carry metadata.church_id (set at checkout, on
+// the CHURCH's own Stripe customer). Resolve by church directly so billing
+// survives pastor changes; keep writing the current owner's profiles.plan so
+// entitlements behave exactly as before.
+async function syncChurchAnchored(churchId: string, plan: string, isActive: boolean, subscriptionId: string | null) {
+  await supabase
+    .from('churches')
+    .update({
+      verification_status: isActive ? 'verified' : 'pending',
+      plan: isActive ? plan : 'free',
+    })
+    .eq('id', churchId);
+  // Optional columns (migration may lag) — best-effort, never fatal.
+  await supabase.from('churches')
+    .update({ stripe_subscription_id: isActive ? subscriptionId : null })
+    .eq('id', churchId)
+    .then(() => {}, () => {});
+  const { data: role } = await supabase.from('church_roles')
+    .select('user_id').eq('church_id', churchId).eq('is_owner', true).maybeSingle();
+  if (role?.user_id) {
+    await supabase.from('profiles')
+      .update({ plan: isActive ? plan : 'free' })
+      .eq('id', role.user_id);
+  }
+}
+
+async function syncSeatBlocksByChurch(churchId: string, blocks: number) {
+  await supabase.from('churches').update({ seat_blocks: blocks }).eq('id', churchId);
+}
+
 async function syncChurchVerification(userId: string, plan: string, isActive: boolean) {
   if (!CHURCH_PLANS.has(plan)) return;
   const { data: role } = await supabase
@@ -182,8 +213,13 @@ Deno.serve(async (req) => {
           const subscription = await stripe.subscriptions.retrieve(subscriptionId);
           const item = subscription.items.data[0];
           const priceId = item?.price.id ?? '';
+          const metaChurchId = (subscription.metadata?.church_id as string | undefined) ?? undefined;
           if (priceId === SEAT_PRICE) {
-            await syncSeatBlocks({ userId }, item?.quantity ?? 1);
+            if (metaChurchId) await syncSeatBlocksByChurch(metaChurchId, item?.quantity ?? 1);
+            else await syncSeatBlocks({ userId }, item?.quantity ?? 1);
+          } else if (metaChurchId) {
+            const plan = PRICE_TO_PLAN[priceId] ?? 'church_base';
+            await syncChurchAnchored(metaChurchId, plan, true, subscriptionId);
           } else {
             const plan = PRICE_TO_PLAN[priceId] ?? 'premium';
             await supabase.from('profiles')
@@ -201,8 +237,13 @@ Deno.serve(async (req) => {
       const item = subscription.items.data[0];
       const priceId = item?.price.id ?? '';
       const isActive = subscription.status === 'active' || subscription.status === 'trialing';
+      const metaChurchId = (subscription.metadata?.church_id as string | undefined) ?? undefined;
       if (priceId === SEAT_PRICE) {
-        await syncSeatBlocks({ customerId }, isActive ? (item?.quantity ?? 1) : 0);
+        if (metaChurchId) await syncSeatBlocksByChurch(metaChurchId, isActive ? (item?.quantity ?? 1) : 0);
+        else await syncSeatBlocks({ customerId }, isActive ? (item?.quantity ?? 1) : 0);
+      } else if (metaChurchId) {
+        const plan = isActive ? (PRICE_TO_PLAN[priceId] ?? 'church_base') : 'free';
+        await syncChurchAnchored(metaChurchId, isActive ? plan : (PRICE_TO_PLAN[priceId] ?? 'church_base'), isActive, subscription.id);
       } else {
         const plan = isActive ? (PRICE_TO_PLAN[priceId] ?? 'premium') : 'free';
         const { data: profile } = await supabase.from('profiles')
@@ -218,8 +259,12 @@ Deno.serve(async (req) => {
       const customerId = typeof subscription.customer === 'string'
         ? subscription.customer : subscription.customer.id;
       const priceId = subscription.items.data[0]?.price.id ?? '';
+      const metaChurchId = (subscription.metadata?.church_id as string | undefined) ?? undefined;
       if (priceId === SEAT_PRICE) {
-        await syncSeatBlocks({ customerId }, 0);
+        if (metaChurchId) await syncSeatBlocksByChurch(metaChurchId, 0);
+        else await syncSeatBlocks({ customerId }, 0);
+      } else if (metaChurchId) {
+        await syncChurchAnchored(metaChurchId, PRICE_TO_PLAN[priceId] ?? 'church_base', false, null);
       } else {
         const plan = PRICE_TO_PLAN[priceId] ?? 'free';
         const { data: profile } = await supabase.from('profiles')

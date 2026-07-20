@@ -47,21 +47,58 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('stripe_customer_id')
-      .eq('id', user_id)
-      .maybeSingle();
+    // ── Who is the customer? ────────────────────────────────────────────────
+    // Church plans bill the CHURCH (its own Stripe customer, church name on the
+    // invoice, billing email changeable to accounts-payable via the portal) so
+    // the subscription survives pastor changes. Personal plans bill the person.
+    const isChurchPlan = price_plan === 'church_base' || price_plan === 'church_pro' || price_plan === 'church_seats';
+    let customerId: string | undefined;
+    let churchId: string | null = null;
 
-    let customerId: string | undefined = profile?.stripe_customer_id ?? undefined;
-
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: user_email,
-        metadata: { supabase_user_id: user_id },
-      });
-      customerId = customer.id;
-      await supabase.from('profiles').update({ stripe_customer_id: customerId }).eq('id', user_id);
+    if (isChurchPlan) {
+      const { data: role } = await supabase
+        .from('church_roles')
+        .select('church_id')
+        .eq('user_id', user_id)
+        .eq('is_owner', true)
+        .maybeSingle();
+      churchId = role?.church_id ?? null;
+      if (!churchId) {
+        return new Response(JSON.stringify({ error: 'Only a church owner can start a church plan' }), {
+          status: 403,
+          headers: { ...CORS, 'Content-Type': 'application/json' },
+        });
+      }
+      const found = await stripe.customers.search({ query: `metadata['church_id']:'${churchId}'`, limit: 1 });
+      if (found.data[0]) {
+        customerId = found.data[0].id;
+      } else {
+        const { data: church } = await supabase.from('churches').select('name').eq('id', churchId).maybeSingle();
+        const customer = await stripe.customers.create({
+          email: user_email, // initial billing contact; church can change it in the billing portal
+          name: church?.name ?? 'Church',
+          metadata: { church_id: churchId, created_by_user: user_id },
+        });
+        customerId = customer.id;
+        // Persist on the church row if the column exists (migration may lag).
+        await supabase.from('churches').update({ stripe_customer_id: customerId }).eq('id', churchId)
+          .then(() => {}, () => {});
+      }
+    } else {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('stripe_customer_id')
+        .eq('id', user_id)
+        .maybeSingle();
+      customerId = profile?.stripe_customer_id ?? undefined;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user_email,
+          metadata: { supabase_user_id: user_id },
+        });
+        customerId = customer.id;
+        await supabase.from('profiles').update({ stripe_customer_id: customerId }).eq('id', user_id);
+      }
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -77,7 +114,7 @@ Deno.serve(async (req) => {
       success_url: `${return_url}?stripe_success=1`,
       cancel_url:  `${return_url}?stripe_cancel=1`,
       subscription_data: {
-        metadata: { supabase_user_id: user_id },
+        metadata: { supabase_user_id: user_id, ...(churchId ? { church_id: churchId } : {}) },
       },
     });
 
