@@ -2347,7 +2347,7 @@ Hard rules:
 - Never preachy. Never "God is telling you" or "you need to believe."
 - Never "as Christians." Never assumes the reader believes.
 - Never starts with "I."
-- Today is {DAY}, {DATE}.
+- Never mention the day of the week, the date, the weekend, or the season. The post should read the same whether someone opens it Monday morning or Saturday night — timeless encouragement, not a calendar caption.
 
 Respond ONLY with valid JSON on a single line: {"body":"post text here"}`;
 
@@ -2374,9 +2374,6 @@ app.post('/api/cron/daily-post', async (req, res) => {
     const systemId = await getOrCreateSystemAccount();
     if (!systemId) return res.status(503).json({ error: 'system account unavailable' });
 
-    const now = new Date();
-    const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
-    const date = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
     // Fetch last 7 posts so Claude can avoid repeating themes/structure
     const recentRes = await fetch(
@@ -2388,7 +2385,7 @@ app.post('/api/cron/daily-post', async (req, res) => {
       ? `\n\nDo NOT repeat the theme, opening line, or structure of any of these recent posts:\n${recentPosts.map((p, i) => `${i + 1}. "${p.body}"`).join('\n')}`
       : '';
 
-    const prompt = PERSONA_PROMPT.replace('{DAY}', dayName).replace('{DATE}', date) + recentBlock;
+    const prompt = PERSONA_PROMPT + recentBlock;
 
     const msg = await client.messages.create({
       model: 'claude-opus-4-8',

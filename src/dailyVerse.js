@@ -80,7 +80,7 @@ export const DAILY_VERSES = [
 
   // ── Love & grace ────────────────────────────────────────────────────────────
   { text: 'We love because he first loved us.', ref: '1 John 4:19' },
-  { text: 'But God demonstrates his own love for us in this: While we were still sinners, Christ died for us.', ref: 'Romans 5:8' },
+  { text: 'Surely the Lord is in this place, and I was not aware of it.', ref: 'Genesis 28:16' },
   { text: 'Neither death nor life will be able to separate us from the love of God that is in Christ Jesus our Lord.', ref: 'Romans 8:38–39' },
   { text: 'And now these three remain: faith, hope and love. But the greatest of these is love.', ref: '1 Corinthians 13:13' },
   { text: 'My grace is sufficient for you, for my power is made perfect in weakness.', ref: '2 Corinthians 12:9' },
@@ -91,7 +91,7 @@ export const DAILY_VERSES = [
 
   // ── Faith & trust ───────────────────────────────────────────────────────────
   { text: 'Fixing our eyes on Jesus, the pioneer and perfecter of faith.', ref: 'Hebrews 12:2' },
-  { text: 'In all your ways submit to him, and he will make your paths straight.', ref: 'Proverbs 3:6' },
+  { text: 'A bruised reed he will not break, and a smoldering wick he will not snuff out.', ref: 'Isaiah 42:3' },
   { text: 'Commit your way to the Lord; trust in him and he will do this.', ref: 'Psalm 37:5' },
   { text: 'Jesus Christ is the same yesterday and today and forever.', ref: 'Hebrews 13:8' },
   { text: 'If you have faith as small as a mustard seed, nothing will be impossible for you.', ref: 'Matthew 17:20' },
@@ -136,10 +136,10 @@ export const DAILY_VERSES = [
   // ── Forgiveness & renewal ───────────────────────────────────────────────────
   { text: 'If we confess our sins, he is faithful and just and will forgive us our sins.', ref: '1 John 1:9' },
   { text: 'Create in me a pure heart, O God, and renew a steadfast spirit within me.', ref: 'Psalm 51:10' },
-  { text: 'Though your sins are like scarlet, they shall be as white as snow.', ref: 'Isaiah 1:18' },
+  { text: 'After the earthquake came a fire, but the Lord was not in the fire. And after the fire came a gentle whisper.', ref: '1 Kings 19:12' },
   { text: 'As far as the east is from the west, so far has he removed our transgressions from us.', ref: 'Psalm 103:12' },
   { text: 'I will give you a new heart and put a new spirit in you.', ref: 'Ezekiel 36:26' },
-  { text: 'Repent, then, and turn to God, so that your sins may be wiped out.', ref: 'Acts 3:19' },
+  { text: 'I have calmed and quieted myself; I am like a weaned child with its mother.', ref: 'Psalm 131:2' },
 
   // ── Endurance & perseverance ────────────────────────────────────────────────
   { text: 'Blessed is the one who perseveres under trial because, having stood the test, that person will receive the crown of life.', ref: 'James 1:12' },
@@ -246,8 +246,8 @@ export const DAILY_VERSES = [
   { text: 'Blessed are those whose help is the God of Jacob, whose hope is in the Lord their God.', ref: 'Psalm 146:5' },
 
   // ── More Proverbs ───────────────────────────────────────────────────────────
-  { text: 'The fear of the Lord is the beginning of knowledge.', ref: 'Proverbs 1:7' },
-  { text: 'Do not be wise in your own eyes; fear the Lord and shun evil.', ref: 'Proverbs 3:7' },
+  { text: 'You turned my wailing into dancing; you removed my sackcloth and clothed me with joy.', ref: 'Psalm 30:11' },
+  { text: 'I no longer call you servants. Instead, I have called you friends.', ref: 'John 15:15' },
   { text: 'Above all else, guard your heart, for everything you do flows from it.', ref: 'Proverbs 4:23' },
   { text: 'A generous person will prosper; whoever refreshes others will be refreshed.', ref: 'Proverbs 11:25' },
   { text: 'A gentle answer turns away wrath, but a harsh word stirs up anger.', ref: 'Proverbs 15:1' },
@@ -264,11 +264,11 @@ export const DAILY_VERSES = [
   { text: 'Surely God is my salvation; I will trust and not be afraid. The Lord is my strength and my defense.', ref: 'Isaiah 12:2' },
   { text: 'Lord, you are my God; I will exalt you and praise your name, for in perfect faithfulness you have done wonderful things.', ref: 'Isaiah 25:1' },
   { text: 'Trust in the Lord forever, for the Lord, the Lord himself, is the Rock eternal.', ref: 'Isaiah 26:4' },
-  { text: 'In repentance and rest is your salvation, in quietness and trust is your strength.', ref: 'Isaiah 30:15' },
+  { text: 'You will go out in joy and be led forth in peace; the mountains and hills will burst into song before you.', ref: 'Isaiah 55:12' },
   { text: 'The fruit of that righteousness will be peace; its effect will be quietness and confidence forever.', ref: 'Isaiah 32:17' },
   { text: 'The grass withers and the flowers fall, but the word of our God endures forever.', ref: 'Isaiah 40:8' },
   { text: 'He tends his flock like a shepherd: He gathers the lambs in his arms and carries them close to his heart.', ref: 'Isaiah 40:11' },
-  { text: 'I, even I, am he who blots out your transgressions, and remembers your sins no more.', ref: 'Isaiah 43:25' },
+  { text: 'See! The winter is past; the rains are over and gone. Flowers appear on the earth; the season of singing has come.', ref: 'Song of Solomon 2:11–12' },
   { text: 'Even to your old age and gray hairs I am he, I am he who will sustain you.', ref: 'Isaiah 46:4' },
   { text: 'See, I have engraved you on the palms of my hands.', ref: 'Isaiah 49:16' },
   { text: 'But he was pierced for our transgressions, he was crushed for our iniquities; by his wounds we are healed.', ref: 'Isaiah 53:5' },
@@ -335,7 +335,7 @@ export const DAILY_VERSES = [
   { text: 'It is for freedom that Christ has set us free.', ref: 'Galatians 5:1' },
   { text: 'But the fruit of the Spirit is love, joy, peace, forbearance, kindness, goodness, faithfulness.', ref: 'Galatians 5:22' },
   { text: 'Carry each other’s burdens, and in this way you will fulfill the law of Christ.', ref: 'Galatians 6:2' },
-  { text: 'In him we have redemption through his blood, the forgiveness of sins, in accordance with the riches of God’s grace.', ref: 'Ephesians 1:7' },
+  { text: 'Where morning dawns, where evening fades, you call forth songs of joy.', ref: 'Psalm 65:8' },
   { text: 'But because of his great love for us, God, who is rich in mercy, made us alive with Christ.', ref: 'Ephesians 2:4' },
   { text: 'Now to him who is able to do immeasurably more than all we ask or imagine, according to his power at work within us.', ref: 'Ephesians 3:20' },
   { text: 'Be completely humble and gentle; be patient, bearing with one another in love.', ref: 'Ephesians 4:2' },
@@ -369,7 +369,7 @@ export const DAILY_VERSES = [
   { text: 'Always be prepared to give an answer to everyone who asks you to give the reason for the hope that you have.', ref: '1 Peter 3:15' },
   { text: 'Humble yourselves, therefore, under God’s mighty hand, that he may lift you up in due time.', ref: '1 Peter 5:6' },
   { text: 'And the God of all grace will himself restore you and make you strong, firm and steadfast.', ref: '1 Peter 5:10' },
-  { text: 'The Lord is patient with you, not wanting anyone to perish, but everyone to come to repentance.', ref: '2 Peter 3:9' },
+  { text: 'He will yet fill your mouth with laughter and your lips with shouts of joy.', ref: 'Job 8:21' },
   { text: 'See what great love the Father has lavished on us, that we should be called children of God!', ref: '1 John 3:1' },
   { text: 'Dear friends, let us love one another, for love comes from God.', ref: '1 John 4:7' },
   { text: 'This is the confidence we have in approaching God: that if we ask anything according to his will, he hears us.', ref: '1 John 5:14' },
@@ -411,7 +411,7 @@ export const DAILY_VERSES = [
   { text: 'He refreshes my soul. He guides me along the right paths for his name’s sake.', ref: 'Psalm 23:3' },
   { text: 'I will say of the Lord, He is my refuge and my fortress, my God, in whom I trust.', ref: 'Psalm 91:2' },
   { text: 'The Lord will watch over your coming and going both now and forevermore.', ref: 'Psalm 121:8' },
-  { text: 'Where can I go from your Spirit? Where can I flee from your presence?', ref: 'Psalm 139:7' },
+  { text: 'If I rise on the wings of the dawn, if I settle on the far side of the sea, even there your hand will guide me.', ref: 'Psalm 139:9–10' },
   { text: 'Though he may stumble, he will not fall, for the Lord upholds him with his hand.', ref: 'Psalm 37:24' },
   { text: 'But I trust in you, Lord; I say, You are my God.', ref: 'Psalm 31:14' },
   { text: 'I love you, Lord, my strength.', ref: 'Psalm 18:1' },
