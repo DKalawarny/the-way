@@ -3500,7 +3500,7 @@ A few things worth knowing:
 
 ✦ **No pressure.** There's no right pace, no checklist, no performance. Just honest conversation.
 
-If you're not sure where to start, just tap **Ask** (the ✦ in the bottom bar) and type whatever's on your mind. Or explore the Bible reader, the prayer board, or the community — wherever feels right.
+If you're not sure where to start, just tap **Ask** (the ✦ — bottom bar in the app, left sidebar on your computer) and type whatever's on your mind. Or explore the Bible reader, the prayer board, or the community — wherever feels right.
 
 Glad you're here.`;
 

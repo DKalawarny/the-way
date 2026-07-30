@@ -153,14 +153,20 @@ const LANGUAGES = [
   { code: 'ha', label: 'Hausa',      native: 'Hausa' },
 ];
 
+// Order matters: person type comes second so explorers can be DONE in two
+// steps — a real skeptic told us the full wizard made them want to bail.
 const WIZARD_STEPS = [
   { key: 'name',              question: 'What\'s your name?',                  hint: 'First and last name.' },
-  { key: 'preferred_language',question: 'What language do you prefer?',        hint: 'Your AI companion will respond in your language.' },
   { key: 'person_type',       question: 'Where are you at right now?',          hint: 'Be honest — there\'s no wrong answer here.' },
+  { key: 'preferred_language',question: 'What language do you prefer?',        hint: 'Your AI companion will respond in your language.' },
   { key: 'tradition',         question: 'Any tradition you identify with?',     hint: null },
   { key: 'exploring_since',   question: 'How long have you been on this path?', hint: null },
   { key: 'what_brought',      question: 'What brought you here?',               hint: 'One honest line — or skip.', optional: true },
 ];
+
+// Curious/skeptical signups skip everything after picking their mode — the
+// rest defaults sensibly and lives in Edit Profile whenever they want it.
+const FAST_TRACK_TYPES = new Set(['curious', 'skeptic']);
 
 function WizardDots({ step, total }) {
   return (
@@ -206,6 +212,7 @@ function ProfileWizard({ user, existing, onSave }) {
   async function advance() {
     if (!canAdvance() && !current.optional) return;
     if (isLast) return finish();
+    if (current.key === 'person_type' && FAST_TRACK_TYPES.has(form.person_type)) return finish();
     setAnimDir(1);
     setStep((s) => s + 1);
   }
@@ -261,7 +268,7 @@ function ProfileWizard({ user, existing, onSave }) {
       {/* Scrollable content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 0' }}>
         <div style={{ maxWidth: 480, margin: '0 auto' }}>
-          <WizardDots step={step} total={WIZARD_STEPS.length} />
+          <WizardDots step={step} total={FAST_TRACK_TYPES.has(form.person_type) ? 2 : WIZARD_STEPS.length} />
 
         {/* Question */}
         <h1 style={{
