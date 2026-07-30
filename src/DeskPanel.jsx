@@ -535,6 +535,7 @@ export default function DeskPanel({ session, profile, churchId, onClose, isMobil
                 session={session}
                 profile={bibleProfile}
                 topOffset={BIBLE_TOP_OFFSET}
+                churchNoteContext={churchId}
               />
             </div>
           </Suspense>
