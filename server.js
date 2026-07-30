@@ -1043,7 +1043,7 @@ app.post('/api/chat', optionalAuth, limitEither(
   if (!system || typeof system !== 'string' || !Array.isArray(messages) || messages.length === 0) {
     return res.status(400).json({ error: 'system and messages are required' });
   }
-  if (system.length > 32000) return res.status(413).json({ error: 'system too long' });
+  if (system.length > 48000) return res.status(413).json({ error: 'system too long' });
 
   // Validate each message — content can be a string OR a multimodal array (for image vision).
   const VALID_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
