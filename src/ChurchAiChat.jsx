@@ -8,6 +8,7 @@ import MsgText from './MsgText.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { PERSON_TYPES } from './constants.js';
 import { PER_TYPE } from './prompts.js';
+import { extractRefs, parseRef, toApiVerseId, VALIDATION_BIBLE_ID } from './bibleRefUtils.js';
 
 const PASTORAL_SYSTEM = `You are a theological assistant for Christian church leaders and pastors. You speak from within the historic Christian faith — you hold that Jesus is Lord, that the Bible is the authoritative Word of God, and that the gospel is true. You are not a neutral academic observer. You are a well-read, pastorally grounded colleague helping a minister do their work better.
 
@@ -269,6 +270,9 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
 
   // Action bar state
   const [savedToNoteIdx, setSavedToNoteIdx] = useState({});
+  // Scripture-reference verification + tap-to-preview (same trust UX as Ask)
+  const [refStatusMap, setRefStatusMap] = useState({});
+  const [versePopover, setVersePopover] = useState(null); // { refRaw, text|null }
   const [saveError, setSaveError] = useState(null);
   const [copiedIdx, setCopiedIdx] = useState(null);
   const [flaggedMsgs, setFlaggedMsgs] = useState(new Set());
@@ -406,6 +410,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
       setBusy(false);
       if (assistantContent) {
         aiUsage.increment();
+        validateRefsForMsg(next.length, assistantContent);
         if (researchMode) {
           const allMsgs = [...next, { role: 'assistant', content: assistantContent }];
           authedFetch('/api/research/update-memory', {
@@ -417,6 +422,34 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
       }
       inputRef.current?.focus();
     }
+  }
+
+  // ── Scripture refs: verify against the Bible API + preview on tap ─────────
+  async function validateRefsForMsg(msgIdx, fullText) {
+    const refs = extractRefs(fullText);
+    if (refs.size === 0) return;
+    setRefStatusMap((prev) => ({ ...prev, [msgIdx]: new Map([...refs.keys()].map((r) => [r, 'loading'])) }));
+    const results = new Map();
+    await Promise.all([...refs.entries()].map(async ([raw, verseId]) => {
+      try {
+        const res = await fetch(`/api/bible/${VALIDATION_BIBLE_ID}/verses/${verseId}`);
+        results.set(raw, res.ok ? 'ok' : 'invalid');
+      } catch { results.set(raw, 'invalid'); }
+    }));
+    setRefStatusMap((prev) => ({ ...prev, [msgIdx]: results }));
+  }
+
+  async function handleRefClick(refRaw) {
+    const parsed = parseRef(refRaw);
+    if (!parsed) return;
+    const verseId = toApiVerseId(parsed);
+    setVersePopover({ refRaw, text: null });
+    try {
+      const res = await fetch(`/api/bible/${VALIDATION_BIBLE_ID}/verses/${verseId}`);
+      if (!res.ok) { setVersePopover(null); return; }
+      const json = await res.json();
+      setVersePopover({ refRaw, text: json?.data?.content ?? null });
+    } catch { setVersePopover(null); }
   }
 
   // ── Save to notes ─────────────────────────────────────────────────────────
@@ -696,7 +729,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
                     <div style={{ maxWidth: '100%', background: 'transparent', fontSize: 15, lineHeight: 1.72, color: C.text, fontFamily: T.serif, letterSpacing: '-0.01em', wordBreak: 'break-word' }}>
                       {isStreaming
                         ? <span style={{ color: T.inkMuted, fontStyle: 'italic' }}>…</span>
-                        : <MsgText text={m.content} />
+                        : <MsgText text={m.content} onRefClick={handleRefClick} refStatus={refStatusMap[i]} />
                       }
                     </div>
 

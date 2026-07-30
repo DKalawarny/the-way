@@ -9,6 +9,40 @@ const REF_REGEX =
 // styled differently so readers know they are summaries, not direct quotes.
 const PARAPHRASE_RE = /^\s*(paraphrasing\s+|the idea in\s+)/i;
 
+// Commentary / scholar source names — styled as slate chips so "where this
+// came from" is scannable at a glance (gold chip = scripture, slate = source).
+const SOURCE_RE =
+  /\b(Matthew Henry|Jamieson[-–][ ]?Fausset[-–][ ]?Brown|JFB|John Calvin|Calvin|John Wesley|Wesley|Chrysostom|N\.?\s?T\.?\s?Wright|Charles Spurgeon|Spurgeon|Augustine|Martin Luther|Aquinas|Bonhoeffer|C\.?\s?S\.?\s?Lewis|Word Biblical Commentary|WBC|IVP)\b/g;
+
+// Splits a plain-text run into text + source-name chips, rendering **bold**
+// markdown spans along the way (research answers use it heavily).
+function splitInline(s, keyBase) {
+  const out = [];
+  const boldRe = /\*\*([^*\n][^*]*?)\*\*/g;
+  let last = 0, mb;
+  while ((mb = boldRe.exec(s)) !== null) {
+    if (mb.index > last) out.push(...splitSources(s.slice(last, mb.index), `${keyBase}-p${last}`));
+    out.push(<strong key={`${keyBase}-b${mb.index}`} style={{ fontWeight: 700 }}>{splitSources(mb[1], `${keyBase}-bi${mb.index}`)}</strong>);
+    last = mb.index + mb[0].length;
+  }
+  if (last < s.length) out.push(...splitSources(s.slice(last), `${keyBase}-p${last}`));
+  return out;
+}
+
+// Splits a plain-text run into text + source-name chips.
+function splitSources(s, keyBase) {
+  const out = [];
+  let last = 0, m2;
+  const re = new RegExp(SOURCE_RE.source, 'g');
+  while ((m2 = re.exec(s)) !== null) {
+    if (m2.index > last) out.push(<span key={`${keyBase}-t${m2.index}`} style={{ whiteSpace: 'pre-wrap' }}>{s.slice(last, m2.index)}</span>);
+    out.push(<span key={`${keyBase}-s${m2.index}`} className="src-inline">{m2[0]}</span>);
+    last = m2.index + m2[0].length;
+  }
+  if (last < s.length) out.push(<span key={`${keyBase}-end`} style={{ whiteSpace: 'pre-wrap' }}>{s.slice(last)}</span>);
+  return out;
+}
+
 /**
  * Renders AI message text with:
  * - Scripture refs highlighted and optionally clickable
@@ -26,7 +60,11 @@ export default function MsgText({ text, onRefClick, refStatus }) {
   const segments = useMemo(() => {
     // Split on paragraph breaks (2+ newlines) but keep the separator
     const paragraphs = text.split(/(\n\n+)/);
-    return paragraphs.map((para) => {
+    return paragraphs.map((rawPara) => {
+      // "### Heading" markdown from research answers → styled heading, not literal hashes
+      const headingMatch = rawPara.match(/^(#{1,6})\s+/);
+      const para = headingMatch ? rawPara.slice(headingMatch[0].length) : rawPara;
+      const isHeading = !!headingMatch;
       const isParaphrase = PARAPHRASE_RE.test(para);
       // Apply ref regex within this paragraph
       const parts = [];
@@ -46,7 +84,7 @@ export default function MsgText({ text, onRefClick, refStatus }) {
         last = m.index + v.length;
       }
       if (last < para.length) parts.push({ t: 'text', v: para.slice(last) });
-      return { isParaphrase, parts };
+      return { isParaphrase, isHeading, parts };
     });
   }, [text]);
 
@@ -112,11 +150,16 @@ export default function MsgText({ text, onRefClick, refStatus }) {
               </span>
             );
           }
-          return (
-            <span key={i} style={{ whiteSpace: 'pre-wrap' }}>{p.v}</span>
-          );
+          return <span key={i}>{splitInline(p.v, `${si}-${i}`)}</span>;
         });
 
+        if (seg.isHeading) {
+          return (
+            <span key={si} style={{ display: 'block', fontWeight: 700, fontSize: '1.06em', letterSpacing: '-0.01em', margin: '4px 0 2px' }}>
+              {inner}
+            </span>
+          );
+        }
         if (seg.isParaphrase) {
           return (
             <span

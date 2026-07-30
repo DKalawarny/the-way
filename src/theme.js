@@ -276,6 +276,15 @@ export const globalCss = `
     background: rgba(138, 90, 184, 0.12);
     color: #6B3FA0;
   }
+  .src-inline {
+    display: inline-block;
+    padding: 0 5px;
+    border-radius: 4px;
+    background: rgba(58,107,138,0.10);
+    color: #3a6b8a;
+    font-weight: 600;
+    font-size: 0.9em;
+  }
   .ref-historical {
     background: rgba(120, 120, 120, 0.14);
     color: ${T.inkSoft};

@@ -2354,6 +2354,17 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
     const chapters = Array.from({ length: cb.ch }, (_, i) => i + 1);
     return (
       <div style={{ minHeight: '100vh', background: C.bg, fontFamily: T.sans, paddingBottom: 'calc(62px + env(safe-area-inset-bottom, 0px))' }}>
+        {/* Embedded (church shell): the full header is the shell's job, but the
+            reader still needs its own way back — without this, the chapter
+            grid is a dead end (no route to the book list). */}
+        {topOffset > 0 && (
+          <div style={{ padding: '12px 20px 0', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button onClick={() => setView('home')} style={{ background: 'none', border: 'none', color: C.verse, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: 0 }}>
+              <ArrowLeft size={15} strokeWidth={2} /> Books
+            </button>
+            <span style={{ fontFamily: T.display, fontSize: 17, fontWeight: 600, color: C.text }}>{cb.name}</span>
+          </div>
+        )}
         {/* Header — hidden when embedded inside ChurchModeShell (topOffset > 0) */}
         {topOffset === 0 && (
           <div style={{ position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 20, background: C.bg, borderBottom: `1px solid ${C.border}` }}>
