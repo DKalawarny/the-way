@@ -16,6 +16,9 @@ const VOICE_SHAPE = {
   shimmer: { playbackRate: 1.0 },
 };
 
+import { isNativeApp } from './native.js';
+import { reportClientError } from './errorReport.js';
+
 const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
 export function useTextToSpeech({ voice = 'onyx', onEnded, preferNative = false } = {}) {
@@ -276,8 +279,33 @@ export function useTextToSpeech({ voice = 'onyx', onEnded, preferNative = false 
     if (preferNative) { setLoadingId(null); fallbackSpeak(id, text); return; }
 
     try {
+      if (IS_IOS && isNativeApp) {
+        // Native app: WKWebView allows programmatic playback (no Safari
+        // autoplay gate), so plain blob audio is the most reliable path —
+        // the WebAudio decode dance is only needed in Safari, and its
+        // Web Speech fallback is silently broken inside webviews.
+        const res = await authedFetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, voice }),
+          signal: abortRef.current.signal,
+        });
+        if (!res.ok) throw new Error(`tts http ${res.status}`);
+        const blob = await res.blob();
+        if (!abortRef.current) return;
+        const url = URL.createObjectURL(blob);
+        blobUrl.current = url;
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        shapeAudio(audio);
+        audio.onended = () => { stopAudio(); setSpeakingId(null); setPaused(false); if (!endedByStop.current) onEndedRef.current?.(id); };
+        audio.onerror = () => { stopAudio(); setSpeakingId(null); setPaused(false); };
+        await audio.play();
+        setLoadingId(null);
+        return;
+      }
       if (IS_IOS) {
-        // iOS: decode through Web Audio API — same OpenAI voice as desktop
+        // iOS Safari: decode through Web Audio API — same voice as desktop
         await iosSpeak(id, text, abortRef.current.signal);
         return;
       }
@@ -326,6 +354,7 @@ export function useTextToSpeech({ voice = 'onyx', onEnded, preferNative = false 
     } catch (e) {
       if (e?.name === 'AbortError') return;
       console.warn('[tts] falling back to Web Speech:', e?.message);
+      reportClientError(e, { where: 'tts', ios: IS_IOS, native: isNativeApp });
       stopAudio();
       setLoadingId(null);
       fallbackSpeak(id, text);
