@@ -11,8 +11,41 @@ const PARAPHRASE_RE = /^\s*(paraphrasing\s+|the idea in\s+)/i;
 
 // Commentary / scholar source names — styled as slate chips so "where this
 // came from" is scannable at a glance (gold chip = scripture, slate = source).
-const SOURCE_RE =
-  /\b(Matthew Henry|Jamieson[-–][ ]?Fausset[-–][ ]?Brown|JFB|John Calvin|Calvin|John Wesley|Wesley|Chrysostom|N\.?\s?T\.?\s?Wright|Charles Spurgeon|Spurgeon|Augustine|Martin Luther|Aquinas|Bonhoeffer|C\.?\s?S\.?\s?Lewis|Word Biblical Commentary|WBC|IVP)\b/g;
+// One escaped-name list beats a heroic regex: research mode cites a wide but
+// finite set of scholars, church fathers, and commentary series. Possessives
+// ("Schreiner's") are matched too. Add names here as new ones show up.
+const SOURCE_NAMES = [
+  // Classic commentaries + church fathers + reformers
+  'Matthew Henry', 'Jamieson-Fausset-Brown', 'Jamieson–Fausset–Brown', 'JFB',
+  'John Calvin', 'Calvin', 'John Wesley', 'Wesley', 'Martin Luther', 'Luther',
+  'Chrysostom', 'Augustine', 'Aquinas', 'Athanasius', 'Origen', 'Jerome',
+  'Irenaeus', 'Tertullian', 'Eusebius', 'Ambrose', 'Basil', 'Jonathan Edwards',
+  'Charles Spurgeon', 'Spurgeon', 'Zwingli', 'John Knox',
+  // Modern scholars the research prompt actually surfaces
+  'N.T. Wright', 'N. T. Wright', 'Thomas Schreiner', 'Schreiner',
+  'Köstenberger', 'Kostenberger', 'Gordon Fee', 'D.A. Carson', 'D. A. Carson',
+  'Carson', 'Douglas Moo', 'Craig Keener', 'Keener', 'F.F. Bruce', 'F. F. Bruce',
+  'C.K. Barrett', 'Ben Witherington', 'Witherington', 'Anthony Thiselton',
+  'Thiselton', 'David Garland', 'Richard Hays', 'James Dunn', 'Richard Bauckham',
+  'John Stott', 'Stott', 'J.I. Packer', 'Packer', 'Walter Brueggemann',
+  'Brueggemann', 'John Goldingay', 'Goldingay', 'John Walton', 'Tremper Longman',
+  'Longman', 'Bruce Waltke', 'Waltke', 'Derek Kidner', 'Kidner', 'Alec Motyer',
+  'Motyer', 'Craig Blomberg', 'Blomberg', 'Grant Osborne', 'Cranfield',
+  'Käsemann', 'Kasemann', 'Karl Barth', 'Bonhoeffer', 'C.S. Lewis', 'C. S. Lewis',
+  'Bruce Metzger', 'Metzger', 'Timothy Keller', 'Tim Keller', 'Keller',
+  'John Piper', 'Piper', 'A.W. Tozer', 'Tozer', 'William Barclay', 'Barclay',
+  // Commentary series / study resources
+  'Word Biblical Commentary', 'WBC', 'NICNT', 'NICOT', 'BECNT', 'NIGTC',
+  'Pillar New Testament Commentary', 'Pillar', 'Tyndale Commentary', 'Tyndale',
+  'Anchor Bible', 'Hermeneia', 'ICC', 'IVP',
+];
+const SOURCE_RE = new RegExp(
+  '\\b(' + SOURCE_NAMES
+    .sort((a, b) => b.length - a.length)
+    .map((n) => n.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&'))
+    .join('|') + ")(?:['\u2019]s)?\\b",
+  'g'
+);
 
 // Splits a plain-text run into text + source-name chips, rendering **bold**
 // markdown spans along the way (research answers use it heavily).
@@ -63,7 +96,13 @@ export default function MsgText({ text, onRefClick, refStatus }) {
     return paragraphs.map((rawPara) => {
       // "### Heading" markdown from research answers → styled heading, not literal hashes
       const headingMatch = rawPara.match(/^(#{1,6})\s+/);
-      const para = headingMatch ? rawPara.slice(headingMatch[0].length) : rawPara;
+      // Research answers wrap outlines in ``` fences and use --- separators —
+      // fences render as noise, so drop fence-only lines; --- becomes a rule.
+      const stripped = rawPara.replace(/^\s*```[a-z]*\s*$/gm, '').replace(/\n{3,}/g, '\n\n');
+      if (/^\s*(---+|\*\*\*+)\s*$/.test(stripped)) {
+        return { isDivider: true, isParaphrase: false, isHeading: false, parts: [] };
+      }
+      const para = headingMatch ? stripped.slice(headingMatch[0].length) : stripped;
       const isHeading = !!headingMatch;
       const isParaphrase = PARAPHRASE_RE.test(para);
       // Apply ref regex within this paragraph
@@ -153,6 +192,9 @@ export default function MsgText({ text, onRefClick, refStatus }) {
           return <span key={i}>{splitInline(p.v, `${si}-${i}`)}</span>;
         });
 
+        if (seg.isDivider) {
+          return <span key={si} style={{ display: 'block', borderTop: '1px solid rgba(26,17,8,0.12)', margin: '10px 0' }} />;
+        }
         if (seg.isHeading) {
           return (
             <span key={si} style={{ display: 'block', fontWeight: 700, fontSize: '1.06em', letterSpacing: '-0.01em', margin: '4px 0 2px' }}>
