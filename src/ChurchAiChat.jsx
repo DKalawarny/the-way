@@ -916,6 +916,27 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
           </div>
         )}
       </div>
+
+      {/* Verse preview — tap a scripture chip in an answer to read it in place */}
+      {versePopover && (
+        <div
+          onClick={() => setVersePopover(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 400, background: 'rgba(44,24,16,0.5)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+        >
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#FDF8F0', borderRadius: '20px 20px 0 0', padding: '24px 24px 36px', width: '100%', maxWidth: 560, boxShadow: '0 -8px 40px rgba(44,24,16,0.25)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#A85530', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                {versePopover.refRaw.replace(/[()*]/g, '')}
+              </span>
+              <button onClick={() => setVersePopover(null)} aria-label="Close" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9C7B5E', fontSize: 18, lineHeight: 1, padding: '0 0 0 12px' }}>×</button>
+            </div>
+            {versePopover.text === null
+              ? <div style={{ fontSize: 15, color: '#9C7B5E', fontStyle: 'italic' }}>Loading…</div>
+              : <p style={{ fontFamily: T.serif, fontSize: 17, lineHeight: 1.75, color: '#2C1810', margin: '0 0 10px' }}>{versePopover.text}</p>}
+            <div style={{ fontSize: 11, color: '#9C7B5E' }}>King James Version · api.bible</div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
