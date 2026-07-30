@@ -351,8 +351,22 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession }) {
                     <div style={{ width: 1, height: 16, background: 'rgba(26,17,8,0.15)', margin: '0 2px' }} />
                     <TBtn label="•" title="Bullet list" cmd="insertUnorderedList" />
                     <div style={{ width: 1, height: 16, background: 'rgba(26,17,8,0.15)', margin: '0 2px' }} />
-                    <TBtn label="🖍" title="Highlight selection" cmd="hiliteColor" val="rgba(212,162,74,0.4)" />
-                    <TBtn label="🖍✕" title="Remove highlight" cmd="hiliteColor" val="transparent" style={{ fontSize: 10 }} />
+                    {/* Highlight swatches — same palette as Bible verse highlights */}
+                    {[
+                      ['Gold highlight', 'rgba(212,162,74,0.40)'],
+                      ['Rose highlight', 'rgba(196,86,86,0.32)'],
+                      ['Sage highlight', 'rgba(107,153,92,0.32)'],
+                      ['Sky highlight',  'rgba(92,133,168,0.32)'],
+                    ].map(([t, c]) => (
+                      <button key={t} title={t}
+                        onMouseDown={e => { e.preventDefault(); fmt('hiliteColor', c); }}
+                        style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid rgba(26,17,8,0.18)', background: c, cursor: 'pointer', padding: 0, flexShrink: 0 }}
+                      />
+                    ))}
+                    <button title="Remove highlight"
+                      onMouseDown={e => { e.preventDefault(); fmt('hiliteColor', 'transparent'); }}
+                      style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid rgba(26,17,8,0.22)', background: 'linear-gradient(135deg, transparent 44%, rgba(165,63,43,0.85) 46%, rgba(165,63,43,0.85) 54%, transparent 56%)', cursor: 'pointer', padding: 0, flexShrink: 0 }}
+                    />
                   </div>
                   {/* contentEditable body */}
                   <div
@@ -441,7 +455,14 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession }) {
                   {preview.slice(0, 90)}{preview.length > 90 ? '…' : ''}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, gap: 6, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 11, color: T.inkMuted, opacity: 0.65 }}>{dateStr}</span>
+                  <span style={{ fontSize: 11, color: T.inkMuted, opacity: 0.65 }}>
+                    {dateStr}
+                    {note.source && (
+                      <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, letterSpacing: 0.7, textTransform: 'uppercase', color: note.source === 'bible' ? '#8E5528' : '#3a6b8a', background: note.source === 'bible' ? 'rgba(142,85,40,0.10)' : 'rgba(58,107,138,0.10)', borderRadius: 4, padding: '1px 6px', verticalAlign: 'middle' }}>
+                        {note.source === 'bible' ? 'Bible' : note.source === 'research' ? 'Research' : 'Ask'}
+                      </span>
+                    )}
+                  </span>
                   <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
                     <button onClick={() => startEdit(note)}
                       style={{ background: 'none', border: `1px solid rgba(26,17,8,0.14)`, borderRadius: 8, padding: '3px 10px', fontSize: 11, color: T.inkSoft, cursor: 'pointer', fontWeight: 500 }}>
