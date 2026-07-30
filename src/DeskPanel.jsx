@@ -105,6 +105,27 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession }) {
   const [showDonePrompt, setShowDonePrompt] = useState(false);
   const [formSeries, setFormSeries]         = useState('');
   const [seriesEditId, setSeriesEditId]     = useState(null);
+  // Drag-to-reorder within a series group (sermon prep order ≠ creation order)
+  const [dragId, setDragId]         = useState(null);
+  const [dragOverId, setDragOverId] = useState(null);
+  function reorderInGroup(groupNotes, fromId, toId) {
+    const ids = groupNotes.map(n => n.id);
+    const from = ids.indexOf(fromId), to = ids.indexOf(toId);
+    if (from === -1 || to === -1 || from === to) return;
+    const moved = [...groupNotes];
+    const [item] = moved.splice(from, 1);
+    moved.splice(to, 0, item);
+    // Optimistic local order
+    setNotes(prev => {
+      const others = prev.filter(n => !ids.includes(n.id));
+      const withOrder = moved.map((n, i) => ({ ...n, sort_order: i }));
+      return [...others, ...withOrder];
+    });
+    // Persist — tolerant of the sort_order column not existing yet
+    moved.forEach((n, i) => {
+      supabase.from('church_notes').update({ sort_order: i }).eq('id', n.id).then(null, () => {});
+    });
+  }
   const [seriesInput, setSeriesInput]       = useState('');
   const editorRef = useRef(null);
 
@@ -291,6 +312,10 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession }) {
           const key = n.series?.trim() || '';
           (grouped[key] = grouped[key] ?? []).push(n);
         });
+        // Within a group: pastor's drag order first (sort_order), then newest-first
+        for (const k of Object.keys(grouped)) {
+          grouped[k].sort((a, b) => (a.sort_order ?? 1e9) - (b.sort_order ?? 1e9));
+        }
         const keys = [...allSeries, '']; // named series first, unsorted last
         const hasAnySeries = allSeries.length > 0;
 
@@ -441,12 +466,29 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession }) {
 
             // ── View mode ──
             return (
-              <div key={note.id} style={{ background: 'linear-gradient(160deg,#FFFCF2 0%,#FFF8E8 100%)', border: `1px solid rgba(184,115,58,0.15)`, borderRadius: 10, padding: '10px 13px', boxShadow: '0 1px 4px rgba(26,17,8,0.04)' }}>
+              <div
+                key={note.id}
+                draggable
+                onDragStart={(e) => { setDragId(note.id); e.dataTransfer.effectAllowed = 'move'; }}
+                onDragOver={(e) => { e.preventDefault(); if (dragId && dragId !== note.id) setDragOverId(note.id); }}
+                onDragLeave={() => setDragOverId((cur) => (cur === note.id ? null : cur))}
+                onDrop={(e) => { e.preventDefault(); if (dragId && dragId !== note.id) reorderInGroup(group, dragId, note.id); setDragId(null); setDragOverId(null); }}
+                onDragEnd={() => { setDragId(null); setDragOverId(null); }}
+                style={{
+                  background: 'linear-gradient(160deg,#FFFCF2 0%,#FFF8E8 100%)',
+                  border: dragOverId === note.id ? '1px dashed rgba(184,115,58,0.7)' : `1px solid rgba(184,115,58,0.15)`,
+                  borderRadius: 10, padding: '10px 13px', boxShadow: '0 1px 4px rgba(26,17,8,0.04)',
+                  opacity: dragId === note.id ? 0.45 : 1,
+                  cursor: 'grab',
+                  transition: 'border-color 0.12s, opacity 0.12s',
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
                   <span style={{ fontFamily: T.serif, fontSize: 13, fontWeight: 600, color: T.ink, lineHeight: 1.35, flex: 1 }}>
                     {note.title || preview.slice(0, 55) + (preview.length > 55 ? '…' : '')}
                   </span>
-                  <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                  <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
+                    <span title="Drag to reorder" aria-hidden="true" style={{ color: T.inkMuted, opacity: 0.4, fontSize: 11, letterSpacing: 1, cursor: 'grab', userSelect: 'none' }}>⋮⋮</span>
                     <button onClick={e => { e.stopPropagation(); printNote(note); }}
                       title="Print" style={{ background: 'none', border: 'none', fontSize: 12, cursor: 'pointer', color: T.inkMuted, opacity: 0.6, padding: '0 2px', lineHeight: 1 }}>🖨</button>
                   </div>
