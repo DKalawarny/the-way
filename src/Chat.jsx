@@ -19,6 +19,7 @@ import Tip from './Tip.jsx';
 import { extractRefs, parseRef, toApiVerseId, VALIDATION_BIBLE_ID } from './bibleRefUtils.js';
 import { cleanText } from './moderation.js';
 import { isWiderCanonText, WiderCanonTag } from './widerCanon.jsx';
+import { syncUiFlag } from './uiFlags.js';
 
 const GUEST_COUNT_KEY = 'kinwove:guest_count';
 
@@ -918,6 +919,17 @@ export default function Chat({
   // error banner's Retry can replay the exact same question.
   const [retryPayload, setRetryPayload] = useState(null);
   const [savedIdx, setSavedIdx] = useState(() => new Set());
+  // One-time hint: newcomers don't know the gold reference chips are tappable.
+  // Shown once under the first completed answer that contains a reference,
+  // then never again (account-syncable localStorage flag).
+  const [refTipDismissed, setRefTipDismissed] = useState(() => {
+    try { return localStorage.getItem('kw:ref-tip-seen') === '1'; } catch { return true; }
+  });
+  function dismissRefTip() {
+    setRefTipDismissed(true);
+    try { localStorage.setItem('kw:ref-tip-seen', '1'); } catch {}
+    syncUiFlag('kw:ref-tip-seen', '1');
+  }
   const [copiedIdx, setCopiedIdx] = useState(null);
   // ── Scripture verification + flag state ──────────────────────────────────
   const [refStatusMap,  setRefStatusMap]  = useState({}); // { [msgIdx]: Map<refRaw, 'ok'|'invalid'|'loading'> }
@@ -1806,6 +1818,19 @@ export default function Chat({
                           onRefClick={handleRefClick}
                           refStatus={refStatusMap[i]}
                         />
+                        {isAssistant && !isStreaming && !refTipDismissed && extractRefs(m.content).size > 0 && messages.findIndex((mm) => mm.role === 'assistant' && mm.content && extractRefs(mm.content).size > 0) === i && (
+                          <button
+                            onClick={dismissRefTip}
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 10,
+                              background: 'rgba(168,85,48,0.08)', border: '1px dashed rgba(168,85,48,0.35)',
+                              borderRadius: 10, padding: '7px 12px', fontSize: 12.5, color: T.goldDark,
+                              fontFamily: T.sans, cursor: 'pointer', textAlign: 'left', lineHeight: 1.5,
+                            }}
+                          >
+                            <span aria-hidden="true">👆</span> The gold references are tappable — read the verse right here. <span style={{ opacity: 0.6 }}>Got it</span>
+                          </button>
+                        )}
                       </div>
                     ) : !m._imagePreview ? (
                       <MsgText text={m.content} onRefClick={handleRefClick} refStatus={refStatusMap[i]} />
