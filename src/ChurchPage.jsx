@@ -3,6 +3,7 @@ import { ArrowLeft, Share2, Check, ExternalLink, Globe } from 'lucide-react';
 import { supabase } from './supabase.js';
 import { T, SHADOW, RADIUS, SEMANTIC, SPACE } from './theme.js';
 import { usePullToRefresh, PullToRefreshIndicator } from './usePullToRefresh.jsx';
+import { notifyChurchJoined } from './churchJoinNotify.js';
 import { markEngaged } from './streak.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import PageTour, { isPageTourDone } from './PageTour.jsx';
@@ -359,6 +360,7 @@ export default function ChurchPage({
       showToast(msg, 'error');
       return;
     }
+    notifyChurchJoined(churchId);
     onProfileUpdate?.({ ...profile, church_id: churchId });
     setMemberCount((c) => c + 1);
     // Auto-follow the church so its public posts appear in the user's feed
@@ -394,6 +396,7 @@ export default function ChurchPage({
     const { error } = await supabase.from('profiles').update({ church_id: churchId }).eq('id', session.user.id);
     setCodeLoading(false);
     if (error) { setCodeError(`Couldn't join: ${error.message}`); return; }
+    notifyChurchJoined(churchId);
     onProfileUpdate?.({ ...profile, church_id: churchId });
     setMemberCount((c) => c + 1);
     showToast('Welcome \u2014 you\'re now a member.', 'success');

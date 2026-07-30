@@ -29,6 +29,7 @@ const KIND_COPY = {
   follow:                    { verb: 'started following you', Icon: UserPlus },
   role_assigned:             { verb: 'gave you a role', Icon: null, emoji: '🎖' },
   group_joined:              { verb: 'joined your circle', Icon: Users },
+  church_member_joined:      { verb: 'joined your church', Icon: Users },
   role_invited:              { verb: 'invited you to a role', Icon: null, emoji: '🎖' },
   dm_message:                { verb: 'sent you a message', Icon: MessageCircle },
   care_message:              { verb: 'sent you a care message', Icon: MessageCircle },
@@ -58,6 +59,8 @@ function NotificationRow({ n, onClick, onFriendAction, onAvatarClick, onRoleAcce
     ? `${n.data?.group_name ?? 'a group'} · code: ${n.data?.invite_code ?? ''}`
     : n.kind === 'group_post' || n.kind === 'group_reply' || n.kind === 'group_joined'
     ? (n.data?.group_name ?? 'a circle')
+    : n.kind === 'church_member_joined'
+    ? (n.data?.church_name ?? 'your church')
     : n.data?.snippet;
   const unread = !n.read_at;
   const isFriendReq  = n.kind === 'friend_request_received';

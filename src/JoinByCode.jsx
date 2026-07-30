@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from './supabase.js';
+import { notifyChurchJoined } from './churchJoinNotify.js';
 import { T } from './theme.js';
 
 export default function JoinByCode({ session, profile, onJoined, prefilledCode = '' }) {
@@ -44,6 +45,7 @@ export default function JoinByCode({ session, profile, onJoined, prefilledCode =
       return;
     }
 
+    notifyChurchJoined(ch.id);
     setSuccess(`Welcome to ${ch.name}.`);
     onJoined?.(ch);
   }

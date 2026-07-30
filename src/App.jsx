@@ -117,6 +117,7 @@ import InstallPrompt from './InstallPrompt.jsx';
 import { usePushNotifications, requestNotificationPermission } from './usePushNotifications.js';
 import { ensureNativePush } from './nativePush.js';
 import { applyUiFlags } from './uiFlags.js';
+import { notifyChurchJoined } from './churchJoinNotify.js';
 
 const Community         = lazy(() => import('./Community.jsx'));
 const ConnectScreen     = lazy(() => import('./ConnectScreen.jsx'));
@@ -2547,6 +2548,7 @@ export default function App() {
             : `Couldn't join ${ch.name}: ${updateErr.message}`,
         });
       } else {
+        notifyChurchJoined(ch.id);
         await loadProfile(session.user.id);
         setJoinResult({ ok: true, churchName: ch.name, message: `Welcome to ${ch.name}.` });
         setViewingChurchId(ch.id);
@@ -2606,6 +2608,7 @@ export default function App() {
             : `Couldn't join ${ch.name}: ${updateErr.message}`,
         });
       } else {
+        notifyChurchJoined(ch.id);
         await loadProfile(session.user.id);
         setJoinResult({ ok: true, churchName: ch.name, message: `Welcome to ${ch.name}.` });
         setViewingChurchId(ch.id);
@@ -3915,6 +3918,10 @@ export default function App() {
               setViewingGroupEntry(null);
               setPendingGroupCode(n.data?.invite_code ?? null);
               setStage('groups');
+            }
+            else if (n.kind === 'church_member_joined') {
+              setPastorAdminInitialTab('people');
+              setStage('church-admin');
             }
             else if (n.kind === 'group_post' || n.kind === 'group_reply' || n.kind === 'group_joined') {
               const gId = n.data?.group_id;

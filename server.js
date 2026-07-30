@@ -3504,6 +3504,39 @@ If you're not sure where to start, just tap **Ask** (the ✦ — bottom bar in t
 
 Glad you're here.`;
 
+// ── Someone joined your church → tell the pastor ────────────────────────────
+// Fired by the client after a successful join (invite code, open join, request
+// approval). Server verifies the membership is real, then notifies the owner.
+app.post('/api/church/joined-notify', requireAuth, limitAuthed({ capacity: 10, refillPerSec: 10 / 3600 }), async (req, res) => {
+  const { church_id } = req.body ?? {};
+  if (!isUuid(church_id)) return res.status(400).json({ error: 'bad church_id' });
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
+  try {
+    const [me] = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}&select=church_id,display_name`, { headers: h }).then((r) => r.json());
+    if (me?.church_id !== church_id) return res.status(403).json({ error: 'not a member' });
+    const [church] = await fetch(`${SUPABASE_URL}/rest/v1/churches?id=eq.${church_id}&select=id,name,pastor_id`, { headers: h }).then((r) => r.json());
+    if (!church?.pastor_id || church.pastor_id === req.userId) return res.json({ ok: true, skipped: true });
+    const ins = await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+      method: 'POST',
+      headers: { ...h, Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        recipient_id: church.pastor_id,
+        actor_id: req.userId,
+        kind: 'church_member_joined',
+        target_type: 'church',
+        target_id: church_id,
+        data: { church_id, church_name: church.name },
+      }),
+    });
+    if (!ins.ok) console.error('[church/joined-notify] insert failed:', await ins.text());
+    res.json({ ok: ins.ok });
+  } catch (e) {
+    console.error('[church/joined-notify]', e?.message);
+    res.status(500).json({ error: 'failed' });
+  }
+});
+
 // ── Someone joined your circle → tell the creator ───────────────────────────
 // Called fire-and-forget by the client after a successful group join. Group
 // membership RLS blocks members from inserting notifications for others, so
@@ -4288,6 +4321,7 @@ const pushSvcHeaders = () => ({
 const PUSH_KIND_TITLES = {
   dm_message:              '✉ New message on kinwove',
   group_joined:            '👋 Someone joined your circle',
+  church_member_joined:    '⛪ Someone joined your church',
   care_message:            '💙 New care message',
   care_new_request:        '💛 Someone reached out for care',
   care_safety_flag:        '⚠️ A care conversation needs attention',
