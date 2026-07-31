@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Compass, Users, Heart, BookOpen, Building2, UserCheck, Shield, Search, Sparkles, Volume2, StickyNote } from 'lucide-react';
+import { Compass, Users, Heart, BookOpen, Building2, UserCheck, Shield, Search, Sparkles, Volume2, StickyNote, Mic } from 'lucide-react';
 import { T } from './theme.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
@@ -243,6 +243,33 @@ const SECTIONS = [
       {
         q: 'How does the youth invite work?',
         a: 'Pastors can generate a separate youth invite code from their church dashboard (People tab). Share it with parents or youth group members. When someone joins with the youth code they\'re added to the church as a youth-sponsored member. Accounts automatically graduate to full access when the member turns 17 — no manual steps needed.',
+      },
+    ],
+  },
+  {
+    id: 'sermonprep',
+    Icon: Mic,
+    title: 'Sermon prep (pastors)',
+    items: [
+      {
+        q: 'What is the Study tab in my church dashboard?',
+        a: 'Study is a research space built for sermon prep — a pastoral AI for theology, exegesis, and pastoral care, with a Scholar\'s Desk beside it holding a Bible and your prep notes. Ask anything, save the answers worth keeping, and name each session so you can pick the thread back up later.',
+      },
+      {
+        q: 'How do prep notes and series work?',
+        a: 'Any response in the Study chat can be saved as a note, and you can write your own from the Desk\'s Notes tab. Give notes a series name — "Romans," or this Sunday\'s title — and they group together under that heading. Drag notes by the ⋮⋮ grip to put them in preaching order, highlight key lines in four colours, and print one note or the whole set for the pulpit.',
+      },
+      {
+        q: 'How do I turn my prep notes into a sermon?',
+        a: 'Tap "Use in sermon →" on any series heading in the Desk notes. You\'ll see the series\' notes with everything checked — uncheck anything personal you don\'t want carried over, then tap Continue. A new sermon draft opens with the series name as its title, the scripture reference picked up from your note titles, and your notes stitched into the outline in your drag order. Everything is editable before you generate or publish, and your notes stay in the Desk untouched.',
+      },
+      {
+        q: 'Do my prep notes show up in my personal notes too?',
+        a: 'Yes — your sermon prep notes also appear in a read-only "Sermon prep" section of your personal Notes page, so everything you\'ve written lives in one place. They stay church-scoped: to edit one, open it in your church Study tab.',
+      },
+      {
+        q: 'Are scripture references in Study checked like they are in Ask?',
+        a: 'Yes — the same verification runs here. Gold references in Study responses are tappable (read the verse right there) and checked in the background: ✓ means confirmed, ⚠ means check your Bible before you preach it. Commentary and scholar names appear as slate-blue chips, so you can tell source material from scripture at a glance.',
       },
     ],
   },
