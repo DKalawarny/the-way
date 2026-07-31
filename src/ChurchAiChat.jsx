@@ -348,6 +348,45 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }
 
+  // ── Highlight → note: select a passage in an answer, save just that ───────
+  // Chip is positioned in the scroll container's content space (y includes
+  // scrollTop) so it rides along with the text.
+  const [selNote, setSelNote] = useState(null); // { text, x, y, saved }
+  function handleSelectionEnd() {
+    setTimeout(() => { // let the browser finalize the selection first
+      const sel = window.getSelection();
+      if (!sel || sel.isCollapsed) { setSelNote((s) => (s?.saved ? s : null)); return; }
+      const text = sel.toString().trim();
+      if (text.length < 8) { setSelNote(null); return; }
+      const node = sel.anchorNode?.nodeType === 1 ? sel.anchorNode : sel.anchorNode?.parentElement;
+      const msgEl = node?.closest?.('[data-msg-role="assistant"]');
+      const rootEl = scrollRef.current;
+      if (!msgEl || !rootEl?.contains(msgEl)) { setSelNote(null); return; }
+      const rect = sel.getRangeAt(0).getBoundingClientRect();
+      const rootRect = rootEl.getBoundingClientRect();
+      setSelNote({
+        text,
+        x: Math.min(Math.max(rect.left - rootRect.left + rect.width / 2, 76), rootRect.width - 76),
+        y: Math.max(rect.top - rootRect.top + rootEl.scrollTop - 40, 2),
+        saved: false,
+      });
+    }, 10);
+  }
+  async function saveSelectionToNotes() {
+    if (!selNote || selNote.saved || !churchId || !userId) return;
+    const sessionTitle = convTitle !== 'New conversation' ? convTitle : null;
+    const { error } = await supabase.from('church_notes').insert({
+      church_id: churchId, author_id: userId,
+      title: '', body: selNote.text, series: sessionTitle, source: researchMode ? 'research' : 'ask',
+    });
+    if (!error) {
+      setSelNote((s) => (s ? { ...s, saved: true } : s));
+      onNoteSaved?.();
+      try { window.getSelection()?.removeAllRanges(); } catch { /* ignore */ }
+      setTimeout(() => setSelNote(null), 1400);
+    }
+  }
+
   // Persist conversation to localStorage
   useEffect(() => {
     if (messages.length === 0) return;
@@ -697,8 +736,25 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
         <div
           ref={scrollRef}
           onScroll={handleScroll}
+          onMouseUp={handleSelectionEnd}
+          onTouchEnd={handleSelectionEnd}
           style={{ flex: 1, overflowY: 'auto', padding: '12px 0', position: 'relative' }}
         >
+          {/* Floating "Add to notes" chip over a text selection */}
+          {selNote && (
+            <button
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={saveSelectionToNotes}
+              style={{
+                position: 'absolute', top: selNote.y, left: selNote.x, transform: 'translateX(-50%)',
+                zIndex: 30, background: selNote.saved ? '#3d6b35' : T.ink, color: T.cream,
+                border: 'none', borderRadius: 999, padding: '6px 13px', fontSize: 12, fontWeight: 600,
+                cursor: 'pointer', boxShadow: '0 3px 12px rgba(26,17,8,0.35)', whiteSpace: 'nowrap',
+              }}
+            >
+              {selNote.saved ? '✓ Noted' : '📝 Add to notes'}
+            </button>
+          )}
           {isEmpty && !atLimit && (
             <div style={{ textAlign: 'center', padding: '24px 0 32px' }}>
               <div style={{ marginBottom: 10 }}><KinwoveStar size={22} /></div>
@@ -752,7 +808,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
                   </div>
                 ) : (
                   <>
-                    <div style={{ maxWidth: '100%', background: 'transparent', fontSize: 15, lineHeight: 1.72, color: C.text, fontFamily: T.serif, letterSpacing: '-0.01em', wordBreak: 'break-word' }}>
+                    <div data-msg-role="assistant" style={{ maxWidth: '100%', background: 'transparent', fontSize: 15, lineHeight: 1.72, color: C.text, fontFamily: T.serif, letterSpacing: '-0.01em', wordBreak: 'break-word' }}>
                       {isStreaming
                         ? <span style={{ color: T.inkMuted, fontStyle: 'italic' }}>…</span>
                         : <MsgText text={m.content} onRefClick={handleRefClick} refStatus={refStatusMap[i]} />
