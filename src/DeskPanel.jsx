@@ -47,7 +47,7 @@ function stitchNotes(notes) {
   return notes.map(n => {
     const body = htmlToPlain(n.body);
     const title = (n.title || '').replace(/^Q:\s+/, '').trim();
-    return title ? `## ${title}\n\n${body}` : body;
+    return title ? `${title}\n\n${body}` : body;
   }).filter(Boolean).join('\n\n');
 }
 
