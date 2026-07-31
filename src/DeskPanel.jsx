@@ -2,6 +2,7 @@ import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 import { T } from './theme.js';
 import { supabase } from './supabase.js';
 import { useDraft } from './useDraft.js';
+import { parseRef } from './bibleRefUtils.js';
 
 const BibleReader = lazy(() => import('./BibleReader.jsx'));
 
@@ -24,6 +25,47 @@ function toEditorHtml(raw) {
   if (!raw) return '';
   if (/<[a-z]/i.test(raw)) return raw; // already HTML (rich text)
   return raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// ── "Use in sermon →" — stitch picked prep notes into a sermon-outline draft ──
+// Note bodies are rich HTML (or plain text); the sermon composer outline is a
+// plain textarea, so blocks become newlines and highlights/Q: prefixes go.
+function htmlToPlain(html) {
+  if (!html) return '';
+  let s = html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<li[^>]*>/gi, '• ')
+    .replace(/<\/(p|div|li|h1|h2|h3|h4|ul|ol|blockquote)>/gi, '\n')
+    .replace(/<[^>]*>/g, '');
+  s = s.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  s = s.replace(/==([^=\n]+)==/g, '$1');
+  s = s.replace(/^Q:\s+/gm, '');
+  return s.split('\n').map(l => l.trimEnd()).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function stitchNotes(notes) {
+  return notes.map(n => {
+    const body = htmlToPlain(n.body);
+    const title = (n.title || '').replace(/^Q:\s+/, '').trim();
+    return title ? `## ${title}\n\n${body}` : body;
+  }).filter(Boolean).join('\n\n');
+}
+
+// First "Book C:V" (or "Book C") in the notes' titles, validated against the
+// real book list via parseRef so titles like "Week 3" never match.
+function detectScriptureRef(notes) {
+  for (const n of notes) {
+    const words = (n.title || '').split(/\s+/);
+    for (let i = 1; i < words.length; i++) {
+      const num = words[i].match(/^(\d{1,3}(?::\d{1,3}(?:[–-]\d{1,3})?)?)[,.;)]?$/);
+      if (!num) continue;
+      for (let take = Math.min(3, i); take >= 1; take--) {
+        const cand = `${words.slice(i - take, i).join(' ').replace(/^[([]/, '')} ${num[1]}`;
+        if (parseRef(/:/.test(cand) ? cand : `${cand}:1`)) return cand;
+      }
+    }
+  }
+  return '';
 }
 
 // ── Print a single note in a clean new window ─────────────────────────────────
@@ -86,7 +128,7 @@ function printAllNotes(notes) {
 }
 
 // ── Notes section ─────────────────────────────────────────────────────────────
-function NotesSection({ session, churchId, refreshKey = 0, onOpenSession }) {
+function NotesSection({ session, churchId, refreshKey = 0, onOpenSession, onUseInSermon }) {
   const userId = session?.user?.id;
   const [notes, setNotes]         = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -127,7 +169,33 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession }) {
     });
   }
   const [seriesInput, setSeriesInput]       = useState('');
+  // "Use in sermon →" note picker — pastors keep personal reminders in prep
+  // notes, so they must be able to exclude before the stitch (all checked by default)
+  const [pickerSeries, setPickerSeries] = useState(null); // series key | null
+  const [pickerIds, setPickerIds]       = useState(new Set());
   const editorRef = useRef(null);
+
+  function seriesNotesInOrder(seriesKey) {
+    return notes
+      .filter(n => (n.series?.trim() || '') === seriesKey)
+      .sort((a, b) => (a.sort_order ?? 1e9) - (b.sort_order ?? 1e9));
+  }
+
+  function openSermonPicker(seriesKey) {
+    setPickerIds(new Set(seriesNotesInOrder(seriesKey).map(n => n.id)));
+    setPickerSeries(seriesKey);
+  }
+
+  function confirmUseInSermon() {
+    const chosen = seriesNotesInOrder(pickerSeries).filter(n => pickerIds.has(n.id));
+    if (!chosen.length) return;
+    onUseInSermon?.({
+      title: pickerSeries,
+      scriptureRef: detectScriptureRef(chosen),
+      summary: stitchNotes(chosen),
+    });
+    setPickerSeries(null);
+  }
 
   // Draft safety net for the notes editor — so an interrupted note isn't lost.
   // New-note form is a plain textarea (useDraft); the edit editor is a
@@ -342,6 +410,15 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession }) {
                         Open session →
                       </button>
                     )}
+                    {key && onUseInSermon && (
+                      <button
+                        onClick={() => openSermonPicker(key)}
+                        title="Draft a sermon from these notes"
+                        style={{ background: 'none', border: 'none', padding: 0, fontSize: 11, color: T.goldDark, cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}
+                      >
+                        Use in sermon →
+                      </button>
+                    )}
                   </div>
                 )}
                 {group.map(note => {
@@ -521,6 +598,64 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession }) {
         </>
         );
       })()}
+
+      {/* "Use in sermon →" note picker — covers the whole Desk panel */}
+      {pickerSeries !== null && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 20, background: 'rgba(26,17,8,0.30)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 14 }}>
+          <div style={{ background: '#FFFDF5', border: '1.5px solid rgba(184,115,58,0.35)', borderRadius: 14, boxShadow: '0 8px 32px rgba(26,17,8,0.18)', width: '100%', maxWidth: 380, maxHeight: '85%', display: 'flex', flexDirection: 'column', padding: '16px 16px 14px' }}>
+            <div style={{ fontFamily: T.serif, fontSize: 16, fontWeight: 600, color: T.ink, letterSpacing: '-0.01em' }}>Use in sermon</div>
+            <div style={{ fontSize: 12, color: T.inkSoft, lineHeight: 1.55, margin: '4px 0 12px' }}>
+              These notes will start a sermon draft, in this order. Uncheck anything personal — your notes stay here either way.
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {seriesNotesInOrder(pickerSeries).map(n => {
+                const preview = makePreview(n.body);
+                const checked = pickerIds.has(n.id);
+                return (
+                  <label key={n.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: checked ? 'linear-gradient(160deg,#FFFCF2 0%,#FFF8E8 100%)' : 'transparent', border: `1px solid ${checked ? 'rgba(184,115,58,0.22)' : 'rgba(26,17,8,0.10)'}`, borderRadius: 9, padding: '8px 10px', cursor: 'pointer', opacity: checked ? 1 : 0.6, transition: 'opacity 0.12s' }}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => setPickerIds(prev => {
+                        const next = new Set(prev);
+                        if (next.has(n.id)) next.delete(n.id); else next.add(n.id);
+                        return next;
+                      })}
+                      style={{ accentColor: T.gold, marginTop: 2, flexShrink: 0 }}
+                    />
+                    <span style={{ minWidth: 0 }}>
+                      <span style={{ display: 'block', fontFamily: T.serif, fontSize: 13, fontWeight: 600, color: T.ink, lineHeight: 1.35 }}>
+                        {n.title || preview.slice(0, 55) + (preview.length > 55 ? '…' : '')}
+                      </span>
+                      {n.title && preview && (
+                        <span style={{ display: 'block', fontSize: 11, color: T.inkMuted, marginTop: 2, lineHeight: 1.4 }}>
+                          {preview.slice(0, 70)}{preview.length > 70 ? '…' : ''}
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            <div style={{ display: 'flex', gap: 7, marginTop: 12, alignItems: 'center' }}>
+              <button
+                onClick={confirmUseInSermon}
+                disabled={pickerIds.size === 0}
+                style={{ ...btnBase, background: T.ink, color: T.cream, opacity: pickerIds.size === 0 ? 0.5 : 1 }}
+              >
+                Continue →
+              </button>
+              <button
+                onClick={() => setPickerSeries(null)}
+                style={{ ...btnBase, background: 'transparent', color: T.inkMuted, border: '1px solid rgba(26,17,8,0.14)' }}
+              >
+                Cancel
+              </button>
+              <span style={{ fontSize: 11, color: T.inkMuted, marginLeft: 'auto' }}>{pickerIds.size} of {seriesNotesInOrder(pickerSeries).length}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -533,7 +668,7 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession }) {
 // matches DeskPanel content area: calc(100vh-130px) minus ~58px tab bar.
 const BIBLE_TOP_OFFSET = 126;
 
-export default function DeskPanel({ session, profile, churchId, onClose, isMobile, initialTab, width = 480, refreshKey = 0, onOpenSession }) {
+export default function DeskPanel({ session, profile, churchId, onClose, isMobile, initialTab, width = 480, refreshKey = 0, onOpenSession, onUseInSermon }) {
   const [activeTab, setActiveTab] = useState(initialTab ?? 'bible');
 
   // Plan-enriched profile for BibleReader
@@ -603,7 +738,7 @@ export default function DeskPanel({ session, profile, churchId, onClose, isMobil
             </div>
           </Suspense>
         )}
-        {activeTab === 'notes' && <NotesSection session={session} churchId={churchId} refreshKey={refreshKey} onOpenSession={onOpenSession} />}
+        {activeTab === 'notes' && <NotesSection session={session} churchId={churchId} refreshKey={refreshKey} onOpenSession={onOpenSession} onUseInSermon={onUseInSermon} />}
       </div>
     </div>
   );

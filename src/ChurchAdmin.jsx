@@ -2375,6 +2375,14 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
   const [notesRefreshKey, setNotesRefreshKey] = useState(0);
   // Note → thread: series title queued for ChurchAiChat to load (cleared once loaded)
   const [studySessionToOpen, setStudySessionToOpen] = useState(null);
+  // Desk "Use in sermon →": picked prep notes queued as a composer draft
+  // ({title, scriptureRef, summary}), cleared once the composer applies it
+  const [sermonPrefill, setSermonPrefill] = useState(null);
+  function sendNotesToSermon(payload) {
+    setSermonPrefill(payload);
+    setComposerSermonId(null);
+    setTab('sermons');
+  }
   const [deskWidth, setDeskWidth] = useState(() => {
     const saved = localStorage.getItem('kw_desk_width');
     return saved ? Math.max(280, Math.min(700, parseInt(saved, 10))) : 480;
@@ -2492,7 +2500,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
               <>
                 <DividerHandle onMouseDown={onDeskDragStart} />
                 <Suspense fallback={null}>
-                  <DeskPanel session={session} profile={profile} churchId={churchId} width={deskWidth} refreshKey={notesRefreshKey} onOpenSession={setStudySessionToOpen} />
+                  <DeskPanel session={session} profile={profile} churchId={churchId} width={deskWidth} refreshKey={notesRefreshKey} onOpenSession={setStudySessionToOpen} onUseInSermon={sendNotesToSermon} />
                 </Suspense>
               </>
             )}
@@ -2521,6 +2529,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
                       onClose={() => setMobileDeskPanel(null)}
                       refreshKey={notesRefreshKey}
                       onOpenSession={(title) => { setStudySessionToOpen(title); setMobileDeskPanel(null); }}
+                      onUseInSermon={(payload) => { sendNotesToSermon(payload); setMobileDeskPanel(null); }}
                     />
                   </Suspense>
                 </div>
@@ -2550,6 +2559,8 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
             initialSermonId={composerSermonId}
             onOpenSermon={onOpenSermon}
             userPlan={aiPlan ?? 'free'}
+            prefill={sermonPrefill}
+            onPrefillConsumed={() => setSermonPrefill(null)}
             onBack={() => { setComposerSermonId(null); setTab('overview'); }}
           />
         )}

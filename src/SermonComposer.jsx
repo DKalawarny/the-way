@@ -139,7 +139,7 @@ function ContentItem({ item, onChange, onRemove, onRegenerate, regenerating, any
   );
 }
 
-export default function SermonComposer({ session, churchId, onBack, initialSermonId, onOpenSermon, embedded = false, userPlan = 'free' }) {
+export default function SermonComposer({ session, churchId, onBack, initialSermonId, onOpenSermon, embedded = false, userPlan = 'free', prefill = null, onPrefillConsumed }) {
   const [sermons, setSermons] = useState([]);
   const [view, setView] = useState('list');  // 'list' | 'edit'
   const [editing, setEditing] = useState(null);
@@ -258,6 +258,18 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
     setError(null);
     setView('edit');
   }
+
+  // "Use in sermon →" from the Scholar's Desk: open a fresh draft seeded with
+  // the picked prep notes. Consumed once so re-renders never clobber edits.
+  useEffect(() => {
+    if (!prefill) return;
+    startNew();
+    setTitle(prefill.title ?? '');
+    setScriptureRef(prefill.scriptureRef ?? '');
+    setSummary(prefill.summary ?? '');
+    onPrefillConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefill]);
 
   async function startEdit(sermon) {
     setEditing(sermon);
