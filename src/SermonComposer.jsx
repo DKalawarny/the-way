@@ -206,6 +206,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
 
   // Series state — null means standalone (no series). Loaded once per church.
   const [seriesList, setSeriesList] = useState([]);
+  const [seriesLoaded, setSeriesLoaded] = useState(false);
   const [seriesId, setSeriesId] = useState(null);
   const [seriesIndex, setSeriesIndex] = useState(null);
   const [showNewSeries, setShowNewSeries] = useState(false);
@@ -237,7 +238,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
       .select('id, name, scripture_arc, started_on, ended_on')
       .eq('church_id', churchId)
       .order('started_on', { ascending: false })
-      .then(({ data }) => setSeriesList(data ?? []));
+      .then(({ data }) => { setSeriesList(data ?? []); setSeriesLoaded(true); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [churchId, initialSermonId]);
 
@@ -261,15 +262,35 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
 
   // "Use in sermon →" from the Scholar's Desk: open a fresh draft seeded with
   // the picked prep notes. Consumed once so re-renders never clobber edits.
+  // The Desk series name goes to the SERIES field, not the title — matched
+  // against existing sermon series once the list loads (below); title stays
+  // empty for the sermon's own name.
+  const [pendingSeriesName, setPendingSeriesName] = useState(null);
   useEffect(() => {
     if (!prefill) return;
     startNew();
-    setTitle(prefill.title ?? '');
     setScriptureRef(prefill.scriptureRef ?? '');
     setSummary(prefill.summary ?? '');
+    setPendingSeriesName(prefill.seriesName ?? null);
     onPrefillConsumed?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefill]);
+
+  useEffect(() => {
+    if (!pendingSeriesName || !seriesLoaded) return;
+    const want = pendingSeriesName.trim().toLowerCase();
+    const match = seriesList.find((s) => (s.name ?? '').trim().toLowerCase() === want);
+    if (match) {
+      setSeriesId(match.id);
+    } else {
+      // No series by that name yet — offer it in the new-series form, one
+      // click to create, or Cancel to keep the sermon standalone
+      setShowNewSeries(true);
+      setNewSeriesName(pendingSeriesName.trim());
+    }
+    setPendingSeriesName(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingSeriesName, seriesLoaded]);
 
   async function startEdit(sermon) {
     setEditing(sermon);

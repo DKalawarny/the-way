@@ -190,7 +190,7 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession, onUseI
     const chosen = seriesNotesInOrder(pickerSeries).filter(n => pickerIds.has(n.id));
     if (!chosen.length) return;
     onUseInSermon?.({
-      title: pickerSeries,
+      seriesName: pickerSeries,
       scriptureRef: detectScriptureRef(chosen),
       summary: stitchNotes(chosen),
     });
