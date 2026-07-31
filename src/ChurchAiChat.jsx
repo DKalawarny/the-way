@@ -375,10 +375,36 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
   async function saveSelectionToNotes() {
     if (!selNote || selNote.saved || !churchId || !userId) return;
     const sessionTitle = convTitle !== 'New conversation' ? convTitle : null;
-    const { error } = await supabase.from('church_notes').insert({
-      church_id: churchId, author_id: userId,
-      title: '', body: selNote.text, series: sessionTitle, source: researchMode ? 'research' : 'ask',
-    });
+    const src = researchMode ? 'research' : 'ask';
+    let error = null;
+    if (sessionTitle) {
+      // Highlights collect into ONE running "Highlights" note per named
+      // session — each save appends, so the series stays one tidy card
+      // instead of a pile of clips. The note body may have been rich-edited
+      // (HTML) in the Desk, so append in kind.
+      const { data: existing } = await supabase.from('church_notes')
+        .select('id, body').eq('church_id', churchId).eq('author_id', userId)
+        .eq('series', sessionTitle).eq('title', 'Highlights').limit(1);
+      if (existing?.length) {
+        const cur = existing[0];
+        const isHtml = /<[a-z]/i.test(cur.body || '');
+        const esc = selNote.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+        const body = isHtml ? `${cur.body}<br><br>${esc}` : `${cur.body}\n\n${selNote.text}`;
+        ({ error } = await supabase.from('church_notes')
+          .update({ body, updated_at: new Date().toISOString() }).eq('id', cur.id));
+      } else {
+        ({ error } = await supabase.from('church_notes').insert({
+          church_id: churchId, author_id: userId,
+          title: 'Highlights', body: selNote.text, series: sessionTitle, source: src,
+        }));
+      }
+    } else {
+      // Un-named session: no series to collect under — plain single note
+      ({ error } = await supabase.from('church_notes').insert({
+        church_id: churchId, author_id: userId,
+        title: '', body: selNote.text, series: null, source: src,
+      }));
+    }
     if (!error) {
       setSelNote((s) => (s ? { ...s, saved: true } : s));
       onNoteSaved?.();
