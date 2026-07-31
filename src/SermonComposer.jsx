@@ -262,13 +262,14 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
 
   // "Use in sermon →" from the Scholar's Desk: open a fresh draft seeded with
   // the picked prep notes. Consumed once so re-renders never clobber edits.
-  // The Desk series name goes to the SERIES field, not the title — matched
-  // against existing sermon series once the list loads (below); title stays
-  // empty for the sermon's own name.
+  // Zero-typing rule (Daniel, 7/30): title starts as the Desk series name
+  // (editable), an existing sermon series with that name is selected silently
+  // once the list loads, and nothing ever asks the pastor a question.
   const [pendingSeriesName, setPendingSeriesName] = useState(null);
   useEffect(() => {
     if (!prefill) return;
     startNew();
+    setTitle(prefill.seriesName ?? '');
     setScriptureRef(prefill.scriptureRef ?? '');
     setSummary(prefill.summary ?? '');
     setPendingSeriesName(prefill.seriesName ?? null);
@@ -280,14 +281,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
     if (!pendingSeriesName || !seriesLoaded) return;
     const want = pendingSeriesName.trim().toLowerCase();
     const match = seriesList.find((s) => (s.name ?? '').trim().toLowerCase() === want);
-    if (match) {
-      setSeriesId(match.id);
-    } else {
-      // No series by that name yet — offer it in the new-series form, one
-      // click to create, or Cancel to keep the sermon standalone
-      setShowNewSeries(true);
-      setNewSeriesName(pendingSeriesName.trim());
-    }
+    if (match) setSeriesId(match.id);
     setPendingSeriesName(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingSeriesName, seriesLoaded]);
