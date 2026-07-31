@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { supabase } from './supabase.js';
+import { supabase, authedFetch } from './supabase.js';
 import { T } from './theme.js';
 import { Avatar } from './ProfilePage.jsx';
 import ShareSheet from './ShareSheet.jsx';
@@ -544,6 +544,12 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
     if (newMsg) {
       setMessages((prev) => [...prev, { ...newMsg, profiles: { display_name: profile?.display_name, avatar_config: profile?.avatar_config, avatar_url: profile?.avatar_url } }]);
       setTimeout(() => msgEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+      // Bell/push for the other members (server dedupes unread) — fire-and-forget
+      authedFetch('/api/groups/message-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ group_id: group.id, snippet: body.slice(0, 120) }),
+      }).catch(() => {});
     }
     setMsgBusy(false);
     msgInputRef.current?.focus();
@@ -713,11 +719,14 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
                   {showName && (
                     <div style={{ fontSize: 11, fontWeight: 700, color, marginBottom: 2, marginLeft: 4 }}>{name}</div>
                   )}
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, flexDirection: isMe ? 'row-reverse' : 'row' }}>
+                  {/* maxWidth lives on the row (child of the full-width column) —
+                      a % on the bubble inside this shrink-to-fit row resolves
+                      circularly and collapses bubbles to one character wide */}
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, flexDirection: isMe ? 'row-reverse' : 'row', maxWidth: '78%' }}>
                     <div
                       onClick={() => isMe && setDeletingId(deletingId === m.id ? null : m.id)}
                       style={{
-                        maxWidth: '78%', minWidth: 0,
+                        maxWidth: '100%', minWidth: 0,
                         display: 'inline-block',
                         wordBreak: 'break-word', overflowWrap: 'break-word',
                         background: isMe ? T.gold : T.white,

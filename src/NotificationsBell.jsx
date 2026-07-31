@@ -38,6 +38,7 @@ const KIND_COPY = {
   group_invite:              { verb: 'invited you to a group', Icon: null, emoji: '📖' },
   group_post:                { verb: 'posted in', Icon: null, emoji: '◯' },
   group_reply:               { verb: 'replied to your post in', Icon: null, emoji: '↩' },
+  group_chat:                { verb: 'sent a message in', Icon: MessageCircle },
 };
 
 function NotificationRow({ n, onClick, onFriendAction, onAvatarClick, onRoleAccepted, onMarkRead }) {
@@ -57,7 +58,7 @@ function NotificationRow({ n, onClick, onFriendAction, onAvatarClick, onRoleAcce
     ? (n.data?.role_label ?? n.data?.role_key)
     : n.kind === 'group_invite'
     ? `${n.data?.group_name ?? 'a group'} · code: ${n.data?.invite_code ?? ''}`
-    : n.kind === 'group_post' || n.kind === 'group_reply' || n.kind === 'group_joined'
+    : n.kind === 'group_post' || n.kind === 'group_reply' || n.kind === 'group_joined' || n.kind === 'group_chat'
     ? (n.data?.group_name ?? 'a circle')
     : n.kind === 'church_member_joined'
     ? (n.data?.church_name ?? 'your church')

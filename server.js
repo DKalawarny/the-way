@@ -3585,6 +3585,49 @@ app.post('/api/groups/joined-notify', requireAuth, limitAuthed({ capacity: 10, r
   }
 });
 
+// Circle chat message → notify the other members. Deduped: a member with an
+// UNREAD chat notification for this circle doesn't get another one, so a busy
+// chat reads as one "new messages" bell instead of a pile.
+app.post('/api/groups/message-notify', requireAuth, limitAuthed({ capacity: 30, refillPerSec: 30 / 300 }), async (req, res) => {
+  const { group_id, snippet } = req.body ?? {};
+  if (!isUuid(group_id)) return res.status(400).json({ error: 'bad group_id' });
+  if (snippet && (typeof snippet !== 'string' || snippet.length > 200)) return res.status(413).json({ error: 'snippet too long' });
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
+  try {
+    const [group] = await fetch(`${SUPABASE_URL}/rest/v1/church_groups?id=eq.${group_id}&select=id,name`, { headers: h }).then((r) => r.json());
+    if (!group) return res.status(404).json({ error: 'no such group' });
+    const members = await fetch(`${SUPABASE_URL}/rest/v1/group_members?group_id=eq.${group_id}&select=member_id`, { headers: h }).then((r) => r.json());
+    if (!Array.isArray(members) || !members.some((m) => m.member_id === req.userId)) return res.status(403).json({ error: 'not a member' });
+    const others = members.map((m) => m.member_id).filter((id) => id !== req.userId);
+    if (others.length === 0) return res.json({ ok: true, notified: 0 });
+    const unread = await fetch(
+      `${SUPABASE_URL}/rest/v1/notifications?kind=eq.group_chat&target_id=eq.${group_id}&read_at=is.null&recipient_id=in.(${others.join(',')})&select=recipient_id`,
+      { headers: h }
+    ).then((r) => r.json());
+    const alreadyPinged = new Set((Array.isArray(unread) ? unread : []).map((n) => n.recipient_id));
+    const fresh = others.filter((id) => !alreadyPinged.has(id));
+    if (fresh.length === 0) return res.json({ ok: true, notified: 0 });
+    const ins = await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+      method: 'POST',
+      headers: { ...h, Prefer: 'return=minimal' },
+      body: JSON.stringify(fresh.map((recipient_id) => ({
+        recipient_id,
+        actor_id: req.userId,
+        kind: 'group_chat',
+        target_type: 'group',
+        target_id: group_id,
+        data: { group_id, group_name: group.name, snippet: (snippet ?? '').slice(0, 120) },
+      }))),
+    });
+    if (!ins.ok) console.error('[groups/message-notify] insert failed:', await ins.text());
+    res.json({ ok: ins.ok, notified: fresh.length });
+  } catch (e) {
+    console.error('[groups/message-notify]', e?.message);
+    res.status(500).json({ error: 'failed' });
+  }
+});
+
 app.post('/api/welcome-dm', requireAuth, limitAuthed({ capacity: 3, refillPerSec: 3 / 3600 }), async (req, res) => {
   const userId = req.userId;
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
@@ -4334,6 +4377,7 @@ const pushSvcHeaders = () => ({
 const PUSH_KIND_TITLES = {
   dm_message:              '✉ New message on kinwove',
   group_joined:            '👋 Someone joined your circle',
+  group_chat:              '💬 New message in your circle',
   church_member_joined:    '⛪ Someone joined your church',
   care_message:            '💙 New care message',
   care_new_request:        '💛 Someone reached out for care',

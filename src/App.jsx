@@ -3888,6 +3888,10 @@ export default function App() {
             loadChurchRoles(session?.user?.id);
           }}
           onNavigate={async (n) => {
+            // The profile overlay renders ON TOP of every stage — close it or
+            // notification taps appear to do nothing while a profile is open.
+            // (The profile-target branches below re-set it deliberately.)
+            setViewingUserId(null);
             if (n.target_type === 'post' || n.type === 'post_comment' || n.type === 'post_comment_reply') {
               setOpenCommentPostId(n.target_id);
               setStage('feed');
@@ -3923,7 +3927,7 @@ export default function App() {
               setPastorAdminInitialTab('people');
               setStage('church-admin');
             }
-            else if (n.kind === 'group_post' || n.kind === 'group_reply' || n.kind === 'group_joined') {
+            else if (n.kind === 'group_post' || n.kind === 'group_reply' || n.kind === 'group_joined' || n.kind === 'group_chat') {
               const gId = n.data?.group_id;
               if (gId) {
                 const entry = userGroups.find((g) => g.group.id === gId);
