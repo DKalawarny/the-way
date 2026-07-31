@@ -1434,11 +1434,13 @@ Each must stand alone, quote scripture faithfully if quoted, and end warm — ne
 newsletter: subject ≤60 chars (no clickbait); body 120-200 words — what the sermon covered, one takeaway for the week, one line inviting people to the discussion. Write it so a church admin can paste it straight into their email.`;
 
 app.post('/api/sermon/repurpose', requireAuth, requirePastor, limitAuthed({ capacity: 8, refillPerSec: 8 / 300 }), async (req, res) => {
-  const { title, scripture_ref, summary } = req.body ?? {};
+  let { title, scripture_ref, summary } = req.body ?? {};
   if (!summary || typeof summary !== 'string' || !summary.trim()) {
     return res.status(400).json({ error: 'summary required' });
   }
-  if (summary.length > 16000) return res.status(413).json({ error: 'summary too long' });
+  // Long outlines (e.g. stitched research notes via "Use in sermon →") used to
+  // 413 here — captions don't need the whole outline, so work from the start.
+  if (summary.length > 16000) summary = summary.slice(0, 16000);
   try {
     const resp = await client.messages.create({
       model: 'claude-sonnet-4-6',
