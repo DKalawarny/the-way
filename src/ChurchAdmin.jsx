@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Download, Copy, Check, QrCode } from 'lucide-react';
 import { supabase, resizeImageToDataUrl, authedFetch } from './supabase.js';
 import { moderateImage } from './moderation.js';
@@ -13,6 +13,7 @@ import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 
 import { usePlan } from './usePlan.js';
 import { TrialBanner, SeatNudge } from './PlanGate.jsx';
+import { studySessionTitles } from './studySessions.js';
 
 const PastorDashboard = lazy(() => import('./PastorDashboard.jsx'));
 const SermonComposer  = lazy(() => import('./SermonComposer.jsx'));
@@ -2132,6 +2133,9 @@ const PASTOR_TOUR_STEPS = [
 // ── NotesPanel ───────────────────────────────────────────────────────────────
 function NotesPanel({ session, churchId, onOpenSession }) {
   const userId = session?.user?.id;
+  // "Open session" only where a saved chat session with that title exists on
+  // this device — hand-named series have none to open
+  const sessionTitles = useMemo(() => new Set(studySessionTitles(userId, churchId)), [userId, churchId]);
   const [notes, setNotes]               = useState([]);
   const [loading, setLoading]           = useState(true);
   const [showForm, setShowForm]         = useState(false);
@@ -2275,7 +2279,7 @@ function NotesPanel({ session, churchId, onOpenSession }) {
                     {note.title && <div style={{ fontSize: 13, color: T.inkMuted, marginTop: 4, lineHeight: 1.4 }}>{note.body.slice(0, 100)}{note.body.length > 100 ? '…' : ''}</div>}
                     <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 6, display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span>{dateStr}</span>
-                      {note.series && onOpenSession && (
+                      {note.series && onOpenSession && sessionTitles.has(note.series) && (
                         <button
                           onClick={(e) => { e.stopPropagation(); onOpenSession(note.series); }}
                           style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, color: T.goldDark, cursor: 'pointer', fontWeight: 600 }}

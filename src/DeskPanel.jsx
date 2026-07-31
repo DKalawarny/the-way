@@ -1,8 +1,9 @@
-import { lazy, Suspense, useState, useEffect, useRef } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef, useMemo } from 'react';
 import { T } from './theme.js';
 import { supabase } from './supabase.js';
 import { useDraft } from './useDraft.js';
 import { parseRef } from './bibleRefUtils.js';
+import { studySessionTitles } from './studySessions.js';
 
 const BibleReader = lazy(() => import('./BibleReader.jsx'));
 
@@ -174,6 +175,13 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession, onUseI
   const [pickerSeries, setPickerSeries] = useState(null); // series key | null
   const [pickerIds, setPickerIds]       = useState(new Set());
   const editorRef = useRef(null);
+  // "Open session →" only shows where a saved chat session with that title
+  // actually exists on this device — hand-named series have none to open.
+  // refreshKey bumps on note-save from chat, which is when new titles appear.
+  const sessionTitles = useMemo(
+    () => new Set(studySessionTitles(userId, churchId)),
+    [userId, churchId, refreshKey]
+  );
 
   function seriesNotesInOrder(seriesKey) {
     return notes
@@ -401,7 +409,7 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession, onUseI
                       {key || 'Unsorted'}
                     </span>
                     <div style={{ flex: 1, height: 1, background: key ? `rgba(184,115,58,0.25)` : 'rgba(26,17,8,0.08)' }} />
-                    {key && onOpenSession && (
+                    {key && onOpenSession && sessionTitles.has(key) && (
                       <button
                         onClick={() => onOpenSession(key)}
                         title="Reopen this research session in the chat"

@@ -9,6 +9,7 @@ import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { PERSON_TYPES } from './constants.js';
 import { PER_TYPE } from './prompts.js';
 import { extractRefs, parseRef, toApiVerseId, VALIDATION_BIBLE_ID } from './bibleRefUtils.js';
+import { readConvs, writeConvs } from './studySessions.js';
 
 const PASTORAL_SYSTEM = `You are a theological assistant for Christian church leaders and pastors. You speak from within the historic Christian faith — you hold that Jesus is Lord, that the Bible is the authoritative Word of God, and that the gospel is true. You are not a neutral academic observer. You are a well-read, pastorally grounded colleague helping a minister do their work better.
 
@@ -187,9 +188,8 @@ const DARK = {
 };
 
 // ── localStorage helpers ─────────────────────────────────────────────────────
-function convKey(userId, churchId) { return `church-pastoral-convs-${userId ?? 'anon'}-${churchId ?? 'x'}`; }
-function readConvs(userId, churchId) { try { return JSON.parse(localStorage.getItem(convKey(userId, churchId))) ?? []; } catch { return []; } }
-function writeConvs(userId, churchId, convs) { try { localStorage.setItem(convKey(userId, churchId), JSON.stringify(convs)); } catch {} }
+// Moved to studySessions.js so the Desk/Notes surfaces can check for saved
+// sessions without pulling this whole chunk in.
 
 // ── History modal ────────────────────────────────────────────────────────────
 function HistoryModal({ open, onClose, conversations, onLoad, onDelete, onNew }) {
@@ -507,6 +507,15 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
     onSessionOpened?.();
   }, [openSessionTitle]);
 
+  // Existing note series suggested when naming a session — so new research can
+  // join an existing series (notes saved here land under the session title)
+  const [seriesOptions, setSeriesOptions] = useState([]);
+  useEffect(() => {
+    if (!churchId) return;
+    supabase.from('church_notes').select('series').eq('church_id', churchId).not('series', 'is', null)
+      .then(({ data }) => setSeriesOptions([...new Set((data ?? []).map((r) => r.series?.trim()).filter(Boolean))].sort()), () => {});
+  }, [churchId]);
+
   return (
     <>
       <HistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} conversations={history} onLoad={loadConversation} onDelete={deleteConversation} onNew={newConversation} />
@@ -521,8 +530,12 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
               value={convTitle === 'New conversation' ? '' : convTitle}
               onChange={e => setConvTitle(e.target.value || 'New conversation')}
               placeholder="Name this session…"
+              list="study-session-series"
               style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: 15, fontFamily: T.serif, fontWeight: 600, color: C.text, letterSpacing: '-0.01em', padding: 0, flex: 1, minWidth: 0 }}
             />
+            <datalist id="study-session-series">
+              {seriesOptions.map((s) => <option key={s} value={s} />)}
+            </datalist>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
