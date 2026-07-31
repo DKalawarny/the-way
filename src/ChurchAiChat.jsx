@@ -365,9 +365,14 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
   }, [messages]);
 
   // ── Send ──────────────────────────────────────────────────────────────────
+  // Server said limit reached (its count is authoritative and can differ from
+  // the local one) — flip into the same wall the local gate uses.
+  const [serverLimit, setServerLimit] = useState(false);
+  const atLimit = aiUsage.atLimit || serverLimit;
+
   async function send(text) {
     const prompt = (text ?? input).trim();
-    if (!prompt || busy || aiUsage.atLimit) return;
+    if (!prompt || busy || atLimit) return;
     setInput(''); setError(null); setTimeout(() => inputRef.current?.focus(), 0);
     const next = [...messages, { role: 'user', content: prompt }];
     setMessages(next);
@@ -383,6 +388,14 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ system, messages: next, personType, plan, groundCommentary: researchMode }),
       });
+      if (res.status === 429) {
+        // Limit reached — show the upgrade wall, and put the question back in
+        // the box so nothing typed is lost.
+        setServerLimit(true);
+        setMessages(messages);
+        setInput(prompt);
+        return;
+      }
       if (!res.ok || !res.body) throw new Error((await res.text().catch(() => '')) || `HTTP ${res.status}`);
       setMessages((m) => [...m, { role: 'assistant', content: '' }]);
       const reader = res.body.getReader();
@@ -686,7 +699,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
           onScroll={handleScroll}
           style={{ flex: 1, overflowY: 'auto', padding: '12px 0', position: 'relative' }}
         >
-          {isEmpty && !aiUsage.atLimit && (
+          {isEmpty && !atLimit && (
             <div style={{ textAlign: 'center', padding: '24px 0 32px' }}>
               <div style={{ marginBottom: 10 }}><KinwoveStar size={22} /></div>
               {researchMode ? (
@@ -720,9 +733,9 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
 
           {/* At the monthly limit with no conversation open: center the upgrade
               card in the empty space instead of leaving a large blank void. */}
-          {isEmpty && aiUsage.atLimit && (
+          {isEmpty && atLimit && (
             <div style={{ minHeight: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 0' }}>
-              <AiLimitWall plan={plan} panelMode onTopupSuccess={() => aiUsage.refreshAfterTopup()} />
+              <AiLimitWall plan={plan} panelMode onTopupSuccess={() => { setServerLimit(false); aiUsage.refreshAfterTopup(); }} />
             </div>
           )}
 
@@ -887,12 +900,12 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
         )}
 
         {/* ── Input ── */}
-        {aiUsage.atLimit ? (
+        {atLimit ? (
           // When the chat is empty the wall is centered in the message area
           // above, so only pin it at the bottom when there's a conversation.
           !isEmpty && (
             <div style={{ overflowY: 'auto', flexShrink: 0, maxHeight: '70%' }}>
-              <AiLimitWall plan={plan} panelMode onTopupSuccess={() => aiUsage.refreshAfterTopup()} />
+              <AiLimitWall plan={plan} panelMode onTopupSuccess={() => { setServerLimit(false); aiUsage.refreshAfterTopup(); }} />
             </div>
           )
         ) : (

@@ -6,6 +6,10 @@
 // having access, and an expired trial must gate AI to 0 (not wall the whole
 // dashboard). The tests in test/planConfig.test.js lock these invariants.
 
+// Church trial length. Lives here (not usePlan.js) so the server can import
+// it — server.js resolves pastors to their church plan for AI quotas.
+export const TRIAL_DAYS = 35;
+
 // Monthly AI question caps by plan (church chat / Bible AI).
 // 'expired' = trial ended + unpaid → AI off, rest of dashboard still usable.
 export const PLAN_LIMITS = {

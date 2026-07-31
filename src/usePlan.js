@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase.js';
-import { churchHasAccess } from './planConfig.js';
+import { churchHasAccess, TRIAL_DAYS } from './planConfig.js';
 import { isNativeApp } from './native.js';
 
-export const TRIAL_DAYS               = 35;
+export { TRIAL_DAYS }; // moved to planConfig.js (server needs it); re-exported for PlanGate
 
 // Payments go-live switch. Until Stripe is live, real users CANNOT pay —
 // so expired trials must not lock anyone out, and walls must not sell.

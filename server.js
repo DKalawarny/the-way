@@ -12,7 +12,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import webpush from 'web-push';
 import { getDailyVerse } from './src/dailyVerse.js';
 import { ANSWERS, ANSWERS_BY_SLUG, renderAnswerPage, renderAnswerIndex } from './content/answers.js';
-import { PLAN_LIMITS } from './src/planConfig.js';
+import { PLAN_LIMITS, churchHasAccess, TRIAL_DAYS } from './src/planConfig.js';
 import { renderLegalPage } from './content/legal.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -922,10 +922,21 @@ function serverPeriod(type) {
 async function getServerPlan(userId) {
   if (!userId || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) return 'free';
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=plan&limit=1`,
-      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } });
+    const headers = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=plan&limit=1`, { headers });
     const [row] = await r.json();
-    return row?.plan ?? 'free';
+    const personal = row?.plan ?? 'free';
+    if (personal !== 'free') return personal;
+    // A pastor on a free personal plan is covered by their church's plan —
+    // otherwise the 5/week personal cap walls off their own sermon prep.
+    const cr = await fetch(`${SUPABASE_URL}/rest/v1/churches?pastor_id=eq.${userId}&select=plan,trial_started_at&limit=1`, { headers });
+    const [church] = await cr.json();
+    if (church) {
+      const trialEnd = church.trial_started_at ? new Date(church.trial_started_at).getTime() + TRIAL_DAYS * 86400000 : 0;
+      const daysLeft = Math.max(0, Math.ceil((trialEnd - Date.now()) / 86400000));
+      if (churchHasAccess(church.plan, daysLeft)) return church.plan === 'active' ? 'church_base' : church.plan;
+    }
+    return personal;
   } catch { return 'free'; }
 }
 async function getAiUsage(userId, period) {
