@@ -1603,7 +1603,7 @@ function StreakChip({ streak, onClick, compact = false }) {
   );
 }
 
-function AppHeader({ onOpenBible, onVerseClick, streak }) {
+function AppHeader({ onOpenBible, onVerseClick, streak, rightOffset = 0 }) {
   const verse = getDailyVerse();
   return (
     <div style={{
@@ -1647,8 +1647,10 @@ function AppHeader({ onOpenBible, onVerseClick, streak }) {
         }}>{verse.ref} ↗</span>
       </button>
       <StreakChip streak={streak} onClick={onVerseClick} />
-      {/* Reserved right gutter for the 3 FABs (3×44 + 2×8 gaps + 12px edge = 160px + 4px buffer) */}
-      <div style={{ width: 164, flexShrink: 0 }} aria-hidden="true" />
+      {/* Reserved right gutter for the 3 FABs (3×44 + 2×8 gaps + 12px edge = 160px + 4px buffer).
+          The FABs shift left by rightOffset when the chat panel is docked — the
+          gutter must follow or the verse runs underneath them (iPad landscape). */}
+      <div style={{ width: 164 + rightOffset, flexShrink: 0 }} aria-hidden="true" />
     </div>
   );
 }
@@ -1656,7 +1658,7 @@ function AppHeader({ onOpenBible, onVerseClick, streak }) {
 // ── Mobile global top header ────────────────────────────────────────────────
 // Mirrors AppHeader but for mobile — same dark walnut bar, ✦ kinwove, daily
 // verse. Shown on every page when logged in so the brand is always anchored.
-function MobileHeader({ onOpenBible, onVerseClick, streak }) {
+function MobileHeader({ onOpenBible, onVerseClick, streak, rightOffset = 0 }) {
   const verse = getDailyVerse();
   // The header also hosts 3 overlaid FABs (164px reserved right padding), so on
   // phone widths there's no room for the verse chip — it was clipping mid-word
@@ -1668,8 +1670,11 @@ function MobileHeader({ onOpenBible, onVerseClick, streak }) {
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
-  const showVerse = winW >= 500;
-  const showQuote = winW >= 620;
+  // A docked chat panel (iPad) shifts the FABs left by rightOffset — degrade
+  // against the width that's actually left for the verse, not the window.
+  const availW = winW - rightOffset;
+  const showVerse = availW >= 500;
+  const showQuote = availW >= 620;
   return (
     <div style={{
       position: 'fixed',
@@ -1684,7 +1689,7 @@ function MobileHeader({ onOpenBible, onVerseClick, streak }) {
       borderBottom: 'none',
       boxShadow: '0 1px 0 rgba(255,255,255,0.04)',
       display: 'flex', alignItems: 'center',
-      paddingRight: 164, paddingLeft: 16, // right: room for 3 FABs (3×44 + 2×8 gaps + 12px edge)
+      paddingRight: 164 + rightOffset, paddingLeft: 16, // right: room for 3 FABs (3×44 + 2×8 gaps + 12px edge) + docked chat panel
       gap: 12,
     }}>
       <div style={{ flexShrink: 0 }}>
@@ -3070,8 +3075,8 @@ export default function App() {
       {/* ── Global dark header (all devices when logged in) ─────────── */}
       {showNav && (
         isDesktop
-          ? <AppHeader onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }} onVerseClick={() => setShowVerseCard(true)} streak={currentStreak(profile)} />
-          : <MobileHeader onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }} onVerseClick={() => setShowVerseCard(true)} streak={currentStreak(profile)} />
+          ? <AppHeader onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }} onVerseClick={() => setShowVerseCard(true)} streak={currentStreak(profile)} rightOffset={isDocked ? chatPanelWidth : 0} />
+          : <MobileHeader onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }} onVerseClick={() => setShowVerseCard(true)} streak={currentStreak(profile)} rightOffset={isDocked ? chatPanelWidth : 0} />
       )}
 
       {/* ── Main stage ─────────────────────────────────────────────── */}
