@@ -322,7 +322,7 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession, onUseI
   }
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '0 14px 24px' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', padding: '0 14px 24px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '12px 0 10px', flexShrink: 0 }}>
         <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: T.inkMuted, flex: 1 }}>Notes</span>
@@ -405,7 +405,7 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession, onUseI
               <div key={key || '__unsorted'} style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: key ? 18 : 0 }}>
                 {(key || hasAnySeries) && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: key ? 4 : 0 }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: key ? T.gold : T.inkMuted, whiteSpace: 'nowrap' }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase', color: key ? T.gold : T.inkMuted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0, flexShrink: 1 }}>
                       {key || 'Unsorted'}
                     </span>
                     <div style={{ flex: 1, height: 1, background: key ? `rgba(184,115,58,0.25)` : 'rgba(26,17,8,0.08)' }} />
