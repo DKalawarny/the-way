@@ -412,19 +412,19 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
       </header>
 
       {/* ── Hero ── */}
-      <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '80px 24px 80px', position: 'relative', overflow: 'hidden' }}>
+      <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '52px 24px 36px', position: 'relative', overflow: 'hidden' }}>
         {/* Ambient glow */}
         <div style={{ position: 'absolute', top: -60, left: '50%', transform: 'translateX(-50%)', width: 900, height: 600, background: 'radial-gradient(ellipse at 50% 30%, rgba(184,115,58,0.14) 0%, rgba(184,115,58,0.04) 50%, transparent 72%)', pointerEvents: 'none' }} />
 
         {/* Wordmark — the arrival moment */}
-        <div style={{ marginBottom: 24, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ marginBottom: 16, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           {/* Focused glow behind the wordmark */}
           <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 560, height: 180, background: 'radial-gradient(ellipse at 50% 50%, rgba(212,162,74,0.13) 0%, rgba(168,85,48,0.07) 45%, transparent 70%)', pointerEvents: 'none' }} />
           <KinwoveWordmark size={88} textColor={T.cream} starColor={T.honey} />
         </div>
 
         {/* Honey star — punctuation between brand and message */}
-        <div style={{ marginBottom: 40 }}>
+        <div style={{ marginBottom: 26 }}>
           <KinwoveStar size={9} color="rgba(212,162,74,0.5)" />
         </div>
 
@@ -439,7 +439,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
           You don't have to have it<br />figured out to <em style={{ color: T.gold, fontStyle: 'italic', fontWeight: 500 }}>belong here.</em>
         </h1>
 
-        <p style={{ fontFamily: T.serif, fontSize: 18, lineHeight: 1.72, color: DIM, maxWidth: 520, margin: '0 0 48px', position: 'relative' }}>
+        <p style={{ fontFamily: T.serif, fontSize: 18, lineHeight: 1.72, color: DIM, maxWidth: 520, margin: '0 0 34px', position: 'relative' }}>
           AI that stays in scripture. Real people at every stage. Tools for your church between Sundays.
         </p>
 
@@ -450,11 +450,11 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
 
       {/* ── Two doors — the same product, two very different reasons to walk in.
              Each box is a complete pitch; nobody has to read the other one. ── */}
-      <section style={{ padding: '0 24px 88px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
-        <div style={{ textAlign: 'center', fontSize: 10, letterSpacing: '0.18em', fontWeight: 700, textTransform: 'uppercase', color: T.honey, opacity: 0.85, marginBottom: 26 }}>Two ways in</div>
+      <section style={{ padding: '10px 24px 72px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
+        <div style={{ textAlign: 'center', fontSize: 10, letterSpacing: '0.18em', fontWeight: 700, textTransform: 'uppercase', color: T.honey, opacity: 0.85, marginBottom: 22 }}>Two ways in</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, justifyContent: 'center' }}>
           {/* Door 1 — For you */}
-          <div style={{ flex: '1 1 320px', maxWidth: 420, background: 'rgba(255,255,255,0.045)', border: '1px solid rgba(212,162,74,0.28)', borderRadius: 20, padding: '30px 28px 26px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: '1 1 320px', maxWidth: 420, background: 'linear-gradient(165deg, rgba(212,162,74,0.13) 0%, rgba(212,162,74,0.05) 60%)', border: '1px solid rgba(212,162,74,0.5)', borderRadius: 20, padding: '30px 28px 26px', display: 'flex', flexDirection: 'column', boxShadow: '0 8px 40px rgba(212,162,74,0.08)' }}>
             <div style={{ fontSize: 24, marginBottom: 14 }}>🕊️</div>
             <h3 style={{ fontFamily: T.serif, fontSize: 24, fontWeight: 600, color: T.cream, margin: '0 0 10px', letterSpacing: '-0.018em' }}>For you</h3>
             <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.7, margin: '0 0 18px' }}>
@@ -484,7 +484,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
             </div>
           </div>
           {/* Door 2 — For your church */}
-          <div style={{ flex: '1 1 320px', maxWidth: 420, background: 'rgba(30,18,8,0.55)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 20, padding: '30px 28px 26px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: '1 1 320px', maxWidth: 420, background: 'rgba(14,9,4,0.72)', border: '1px solid rgba(255,255,255,0.09)', borderTop: `3px solid ${T.honey}`, borderRadius: 20, padding: '28px 28px 26px', display: 'flex', flexDirection: 'column' }}>
             <div style={{ fontSize: 24, marginBottom: 14 }}>⛪</div>
             <h3 style={{ fontFamily: T.serif, fontSize: 24, fontWeight: 600, color: T.cream, margin: '0 0 10px', letterSpacing: '-0.018em' }}>
               For your church
