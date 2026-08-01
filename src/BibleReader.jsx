@@ -1099,6 +1099,32 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const chRewind  = usingAudio ? (() => caSkip(-10)) : (() => rdRewind(10));
   const chForward = usingAudio ? (() => caSkip(10))  : (() => rdForward(10));
 
+  // Leaving the reading view — or the reader entirely — silences both engines.
+  // Without this the chapter MP3 kept playing over whatever page came next,
+  // and "what am I hearing?" never matched what was on screen.
+  useEffect(() => {
+    if (view !== 'reading') {
+      autoStartTts.current = false;
+      caStop();
+      rdStop();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
+  useEffect(() => () => {
+    const a = caRef.current;
+    if (a) { a.onended = null; a.pause(); a.src = ''; }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // "Just the red" listening: one voice (the device reader), only his words.
+  function redOnlyListenText(list) {
+    return list
+      .filter((v) => v.segments?.some((sg) => sg.wj))
+      .map((v) => v.segments.filter((sg) => sg.wj).map((sg) => sg.text).join(' '))
+      .join(' ');
+  }
+  const chapterHasRed = verses.some((v) => v.segments?.some((sg) => sg.wj));
+
   // When chapter changes: if audio was playing, stop it and flag to auto-start new chapter
   useEffect(() => {
     const saved = localStorage.getItem(`rdr_tts:${bookId}:${chNum}`);
@@ -1122,6 +1148,10 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     const firstVerse = verses[0]?.number ?? 1;
     setTtsStartVerse(firstVerse);
     localStorage.setItem(`rdr_tts:${bookId}:${chNum}`, String(firstVerse));
+    if (redOnly && verses.some((v) => v.segments?.some((sg) => sg.wj))) {
+      rdSpeak(`ch:${bookId}:${chNum}`, redOnlyListenText(verses));
+      return;
+    }
     const text = verses.map((v) => v.text).join(' ');
     if (usingAudio) caPlay(0, text);
     else rdSpeak(`ch:${bookId}:${chNum}`, text);
@@ -1134,6 +1164,10 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     setTtsStartVerse(verseNum);
     setSelectedVerse(null);
     localStorage.setItem(`rdr_tts:${bookId}:${chNum}`, String(verseNum));
+    if (redOnly && chapterHasRed) {
+      rdSpeak(CHAPTER_TTS_ID, redOnlyListenText(slice));
+      return;
+    }
     if (usingAudio) {
       // Narration is one MP3 per chapter — seek proportionally by character
       // position so "read from verse N" lands close to the right spot.
@@ -2005,7 +2039,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
 
   // ── HOME VIEW ────────────────────────────────────────────────────────────────
   if (view === 'home') return (
-    <div style={{ minHeight: '100vh', background: C.bg, fontFamily: T.sans, paddingBottom: 'calc(62px + env(safe-area-inset-bottom, 0px))' }}>
+    <div style={{ minHeight: '100vh', flexShrink: 0, background: C.bg, fontFamily: T.sans, paddingBottom: 'calc(62px + env(safe-area-inset-bottom, 0px))' }}>
       {/* Header — hidden when embedded inside ChurchModeShell (topOffset > 0) */}
       {topOffset === 0 && (
         <div style={{ position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 20, background: C.bg, borderBottom: `1px solid ${C.border}` }}>
@@ -2398,7 +2432,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
     const done = bookDone(cb);
     const chapters = Array.from({ length: cb.ch }, (_, i) => i + 1);
     return (
-      <div style={{ minHeight: '100vh', background: C.bg, fontFamily: T.sans, paddingBottom: 'calc(62px + env(safe-area-inset-bottom, 0px))' }}>
+      <div style={{ minHeight: '100vh', flexShrink: 0, background: C.bg, fontFamily: T.sans, paddingBottom: 'calc(62px + env(safe-area-inset-bottom, 0px))' }}>
         {/* Embedded (church shell): the full header is the shell's job, but the
             reader still needs its own way back — without this, the chapter
             grid is a dead end (no route to the book list). */}
@@ -2958,7 +2992,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                           fontSize: 12.5, fontWeight: 500, color: C.muted, cursor: 'pointer',
                         }}
                       >
-                        ▶ {ttsStartVerse && ttsStartVerse !== verses[0]?.number ? `Resume from v.${ttsStartVerse}` : 'Read chapter'}
+                        ▶ {ttsStartVerse && ttsStartVerse !== verses[0]?.number ? `Resume from v.${ttsStartVerse}` : (redOnly && chapterHasRed ? 'Read the red' : 'Read chapter')}
                       </button>
                       {verses.some((vv) => vv.segments?.some((sg) => sg.wj)) && (
                         <button
