@@ -3504,7 +3504,7 @@ export default function App() {
           profile={profile}
           churchId={pastorChurchId || profile.church_id}
           initialTab={pastorAdminInitialTab}
-          onBack={() => goBack('me')}
+          onBack={() => { setViewingUserId(null); setStage('home'); }}
           onOpenChurchPage={() => { setViewingChurchId(effectiveChurchId || profile?.church_id); setStage('church'); }}
           onOpenChurchHub={() => { setViewingChurchId(pastorChurchId || profile?.church_id); setStage('church'); }}
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}

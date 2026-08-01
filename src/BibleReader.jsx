@@ -1852,7 +1852,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
         {VERSIONS.find((v) => v.id === bibleId)?.abbr} ▾
       </button>
       {showVersions && (
-        <div style={{ position: 'absolute', top: '110%', right: 'auto', left: 0, background: dark ? '#1A0E07' : T.white, border: `1px solid ${C.border}`, borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', overflow: 'hidden', zIndex: 50, minWidth: 210, maxWidth: 'calc(100vw - 24px)' }}>
+        <div style={{ position: 'absolute', top: '110%', right: 0, left: 'auto', background: dark ? '#1A0E07' : T.white, border: `1px solid ${C.border}`, borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', overflow: 'hidden', zIndex: 50, minWidth: 210, maxWidth: 'calc(100vw - 24px)' }}>
           {VERSIONS.map((v) => (
             <button key={v.id} onClick={() => { setBibleId(v.id); setShowVersions(false); }} style={{
               width: '100%', textAlign: 'left', background: bibleId === v.id ? 'rgba(184,115,58,0.1)' : 'transparent',
@@ -2046,10 +2046,10 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
   // ── HOME VIEW ────────────────────────────────────────────────────────────────
   if (view === 'home') return (
     <div style={{ minHeight: '100vh', flexShrink: 0, background: C.bg, fontFamily: T.sans, paddingBottom: 'calc(62px + env(safe-area-inset-bottom, 0px))' }}>
-      {/* Header — hidden when embedded inside ChurchModeShell (topOffset > 0) */}
-      {topOffset === 0 && (
-        <div style={{ position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 20, background: C.bg, borderBottom: `1px solid ${C.border}` }}>
-          <div style={{ padding: '0 164px 0 20px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* Header — slim + non-sticky when embedded inside ChurchModeShell */}
+      {(
+        <div style={{ position: topOffset === 0 ? 'sticky' : 'static', top: 'var(--global-header-h, 0px)', zIndex: 20, background: C.bg, borderBottom: `1px solid ${C.border}` }}>
+          <div style={{ padding: topOffset === 0 ? '0 164px 0 20px' : '0 20px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <span style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: C.text, letterSpacing: '-0.012em' }}>Read</span>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {VersionPicker}
@@ -2886,11 +2886,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
 
         {/* Right controls */}
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          {isDesktop && (
-            <span style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: 1, marginRight: 2 }}>
-              {VERSIONS.find((v) => v.id === bibleId)?.abbr}
-            </span>
-          )}
+          {isDesktop && VersionPicker}
           <button
             onClick={() => { setSearchOpen((o) => { if (!o) setTimeout(() => searchRef.current?.focus(), 50); return !o; }); setSearchVal(''); setSearchErr(false); }}
             style={{ width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', background: searchOpen ? C.inputBg : 'none', border: `1px solid ${searchOpen ? C.border : 'transparent'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.muted, transition: 'all 0.15s', WebkitTapHighlightColor: 'transparent' }}
