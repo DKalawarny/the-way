@@ -915,6 +915,67 @@ const BIBLE_READ_TOUR_STEPS = [
   },
 ];
 
+
+// ── Illuminated initial — a decorated cap panel, seeded per chapter ──────────
+// Every chapter gets its own deterministic variation (frame, filigree corners,
+// accent ink) the way manuscript workshops varied their versals. Same chapter
+// always renders the same panel, like a printed edition.
+function IlluminatedCap({ seedKey, letter, quote, red, dark, scale = 1 }) {
+  // mulberry32 over a string hash — tiny, deterministic
+  let h = 1779033703;
+  for (let i = 0; i < seedKey.length; i++) { h = Math.imul(h ^ seedKey.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
+  const rand = () => {
+    h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return ((h ^= h >>> 16) >>> 0) / 4294967296;
+  };
+  const frame = Math.floor(rand() * 3);            // 0 plain · 1 double · 2 corner diamonds
+  const flourish = Math.floor(rand() * 4);          // corner filigree family
+  const accentPick = rand();
+  const accent = accentPick < 0.55 ? (dark ? '#D4A24A' : '#8E5528')
+    : accentPick < 0.8 ? '#6B995C'
+    : (dark ? '#7C9DB8' : '#3a6b8a');
+  const corners = [[8, 8, 1, 1], [92, 8, -1, 1], [8, 92, 1, -1], [92, 92, -1, -1]];
+  const whichCorners = rand() < 0.5 ? [0, 3] : [1, 2];
+  const dots = rand() < 0.6;
+
+  const size = Math.round(74 * scale);
+  const line = dark ? 'rgba(212,162,74,0.55)' : 'rgba(142,85,40,0.5)';
+  const letterColor = red ? (dark ? '#E0796F' : '#A93B32') : (dark ? '#E8C07A' : '#8E5528');
+
+  const curl = (x, y, sx, sy) => {
+    if (flourish === 0) return `M ${x} ${y + 14 * sy} Q ${x} ${y}, ${x + 14 * sx} ${y} Q ${x + 6 * sx} ${y + 6 * sy}, ${x + 2 * sx} ${y + 13 * sy}`;
+    if (flourish === 1) return `M ${x} ${y + 16 * sy} Q ${x + 2 * sx} ${y + 2 * sy}, ${x + 16 * sx} ${y} M ${x + 4 * sx} ${y + 9 * sy} Q ${x + 8 * sx} ${y + 4 * sy}, ${x + 13 * sx} ${y + 4 * sy}`;
+    if (flourish === 2) return `M ${x} ${y + 12 * sy} C ${x} ${y}, ${x + 12 * sx} ${y}, ${x + 12 * sx} ${y + 8 * sy} C ${x + 12 * sx} ${y + 3 * sy}, ${x + 5 * sx} ${y + 3 * sy}, ${x + 5 * sx} ${y + 8 * sy}`;
+    return `M ${x} ${y + 15 * sy} Q ${x + 15 * sx} ${y + 15 * sy}, ${x + 15 * sx} ${y}`;
+  };
+
+  return (
+    <span aria-hidden="true" style={{ float: 'left', margin: `${Math.round(5 * scale)}px ${Math.round(12 * scale)}px 2px 0`, lineHeight: 0 }}>
+      <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: 'block' }}>
+        <rect x="2" y="2" width="96" height="96" rx="6" fill={dark ? 'rgba(212,162,74,0.09)' : 'rgba(212,162,74,0.10)'} stroke={line} strokeWidth="1.6" />
+        {frame === 1 && <rect x="7" y="7" width="86" height="86" rx="3" fill="none" stroke={line} strokeWidth="0.8" opacity="0.8" />}
+        {frame === 2 && corners.map(([cx, cy], i) => (
+          <path key={i} d={`M ${cx} ${cy - 4} L ${cx + 4} ${cy} L ${cx} ${cy + 4} L ${cx - 4} ${cy} Z`} fill={accent} opacity="0.9" />
+        ))}
+        {whichCorners.map((ci) => {
+          const [x, y, sx, sy] = corners[ci];
+          return <path key={ci} d={curl(x, y, sx, sy)} fill="none" stroke={accent} strokeWidth="1.6" strokeLinecap="round" opacity="0.85" />;
+        })}
+        {dots && whichCorners.map((ci) => {
+          const [x, y, sx, sy] = corners[ci];
+          return <g key={`d${ci}`} fill={accent} opacity="0.75">
+            <circle cx={x + 20 * sx} cy={y + 4 * sy} r="1.6" />
+            <circle cx={x + 4 * sx} cy={y + 20 * sy} r="1.6" />
+          </g>;
+        })}
+        {quote && (
+          <text x="22" y="34" textAnchor="middle" fontFamily="Fraunces, Georgia, serif" fontWeight="600" fontSize="26" fill={letterColor} opacity="0.65">{quote}</text>
+        )}
+        <text x="52" y="52" textAnchor="middle" dominantBaseline="central" fontFamily="Fraunces, Georgia, serif" fontWeight="600" fontSize="58" fill={letterColor}>{letter}</text>
+      </svg>
+    </span>
+  );
+}
 export default function BibleReader({ session, profile, homeKey = 0, onClose, onOpenChat, jumpRef, topOffset = 0, fillParent = false, churchNoteContext = null }) {
   const uid = session?.user?.id ?? 'guest';
 
@@ -3132,13 +3193,14 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                           v._dropLen = mCap[0].length;
                           const capRed = v.segments?.[0]?.wj;
                           return (
-                            <span aria-hidden="true" style={{
-                              float: 'left', fontFamily: T.serif, fontWeight: 600,
-                              fontSize: Math.round(56 * fontScale), lineHeight: 0.82,
-                              padding: '6px 10px 0 0', letterSpacing: '-0.02em',
-                              color: capRed ? (dark ? '#E0796F' : '#A93B32') : (dark ? T.honey : T.goldDark),
-                              textShadow: dark ? '0 1px 12px rgba(212,162,74,0.25)' : 'none',
-                            }}>{mCap[0]}</span>
+                            <IlluminatedCap
+                              seedKey={`${bookId}:${chNum}`}
+                              letter={mCap[2]}
+                              quote={mCap[1] || null}
+                              red={!!capRed}
+                              dark={dark}
+                              scale={fontScale}
+                            />
                           );
                         })()}
                         {!v._dropLen && (
