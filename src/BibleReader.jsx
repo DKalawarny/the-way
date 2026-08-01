@@ -13,6 +13,7 @@ import { useAiUsage } from './useAiUsage.js';
 import AiLimitWall, { AiUsageWarning } from './AiLimitWall.jsx';
 import { track } from './analytics.js';
 import { READING_PLANS, planProgress, planNextDay } from './readingPlans.js';
+import { INITIALS } from './initialsManifest.js';
 import { BOOK_AUTHORS } from './bookAuthors.js';
 import { isWiderCanonText, WiderCanonTag } from './widerCanon.jsx';
 import Tip from './Tip.jsx';
@@ -927,8 +928,29 @@ function IlluminatedCap({ seedKey, letter, quote, red, dark, scale = 1 }) {
     h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909);
     return ((h ^= h >>> 16) >>> 0) / 4294967296;
   };
-  // Five structurally different treatments — panel, ink block, medallion,
-  // open vine cap, rubricated column — so chapters differ at a glance.
+  // Real illumination first: curated crops from Owen Jones' "One Thousand and
+  // One Initial Letters" (1864, public domain) — the chapter seed picks which
+  // of the letter's variants this chapter wears, permanently.
+  const imgCount = INITIALS[letter] ?? 0;
+  const imgIdx = Math.floor(rand() * Math.max(1, imgCount));
+  if (imgCount > 0) {
+    const size = Math.round(84 * scale);
+    return (
+      <span aria-hidden="true" style={{ float: 'left', margin: `${Math.round(4 * scale)}px ${Math.round(14 * scale)}px ${Math.round(2 * scale)}px 0`, lineHeight: 0 }}>
+        <img
+          src={`/initials/${letter}/${imgIdx}.png`}
+          alt=""
+          draggable={false}
+          style={{
+            height: size, width: 'auto', maxWidth: Math.round(size * 1.2),
+            objectFit: 'contain', display: 'block',
+            filter: dark ? 'brightness(0.92)' : 'none',
+          }}
+        />
+      </span>
+    );
+  }
+  // SVG fallback — five structurally different treatments
   const variant = Math.floor(rand() * 5);
   const accentPick = rand();
   const accent = accentPick < 0.5 ? (dark ? '#D4A24A' : '#8E5528')
