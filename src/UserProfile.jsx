@@ -3,6 +3,7 @@ import { supabase, authedFetch } from './supabase.js';
 import { T } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
 import { Avatar, bannerBackground } from './ProfilePage.jsx';
+import { SHOW_FOLLOWS } from './flags.js';
 // Shared with MePanel — same constants, same helpers, same church card.
 // If you find yourself adding a profile primitive, put it there, not here.
 import { TYPE_COLORS, timeAgo, loadChurchContext, ChurchAttendsCard } from './profileShared.jsx';
@@ -337,7 +338,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
                 )}
 
                 {/* ── Follow ── secondary outline */}
-                {profile?.allow_follows !== false && friendStatus !== 'pending-received' && (
+                {SHOW_FOLLOWS && profile?.allow_follows !== false && friendStatus !== 'pending-received' && (
                   <button onClick={handleFollow} style={{
                     background: isFollowing ? T.white : 'transparent',
                     color: isFollowing ? T.inkMuted : T.ink,

@@ -1,5 +1,6 @@
 import { T, SHADOW } from './theme.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
+import { KinwoveWordmark } from './components/brand/KinwoveWordmark.jsx';
 
 const TABS = [
   { id: 'overview', label: 'Overview', emoji: <KinwoveStar size={13} /> },
@@ -18,8 +19,8 @@ function TabButton({ tab, active, onClick }) {
       onClick={onClick}
       style={{
         background: active ? T.cream : 'transparent',
-        color: active ? T.ink : 'rgba(253,248,240,0.65)',
-        border: active ? 'none' : '1px solid rgba(253,248,240,0.18)',
+        color: active ? T.ink : 'rgba(253,248,240,0.60)',
+        border: 'none',
         borderRadius: 999,
         padding: '8px 14px',
         fontSize: 13,
@@ -30,7 +31,10 @@ function TabButton({ tab, active, onClick }) {
         display: 'inline-flex',
         alignItems: 'center',
         gap: 6,
+        transition: 'color 0.15s',
       }}
+      onMouseEnter={(e) => { if (!active) e.currentTarget.style.color = 'rgba(253,248,240,0.9)'; }}
+      onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = 'rgba(253,248,240,0.60)'; }}
     >
       <span style={{ fontSize: 13 }}>{tab.emoji}</span>
       {tab.label}
@@ -48,9 +52,12 @@ export default function ChurchModeShell({
   currentSubpage,
   bodyMaxWidth = 760,
   fullBleed = false,
+  profile,
+  onSwitchToPersonal,
   children,
 }) {
   const isVisitorView = currentSubpage === 'public';
+  const firstName = (profile?.display_name ?? '').split(' ')[0];
 
   return (
     <div style={{ height: 'calc(100vh - var(--global-header-h, 0px))', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden', background: T.cream }}>
@@ -59,53 +66,78 @@ export default function ChurchModeShell({
         minWidth: 0,
         background: '#1e1208',
         borderBottom: 'none',
-        padding: '14px 20px 0',
+        padding: '0 0 0',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
         color: T.cream,
       }}>
-        <div style={{ maxWidth: bodyMaxWidth, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-            <button onClick={onOpenChurchHub ?? onBack} style={{
-              background: 'none', border: 'none', color: T.goldLight, fontSize: 14, cursor: 'pointer', padding: 0,
-            }}>← Church page</button>
-            <div style={{ flex: 1 }} />
-            {/* Leader / Visitor view toggle */}
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.16em',
-            }}>
-              <span style={{ color: 'rgba(253,248,240,0.45)' }}>Viewing as</span>
-              <button
-                onClick={() => !isVisitorView ? undefined : onOpenChurchHub?.() ?? onBack?.()}
-                style={{
-                  background: 'none', border: 'none', padding: 0, cursor: isVisitorView ? 'pointer' : 'default',
-                  color: isVisitorView ? 'rgba(253,248,240,0.5)' : T.cream,
-                  fontWeight: isVisitorView ? 400 : 600, fontSize: 10.5,
-                  textTransform: 'uppercase', letterSpacing: '0.16em',
-                }}
-              >Leader</button>
-              <span style={{ color: 'rgba(253,248,240,0.3)' }}>·</span>
-              <button
-                onClick={isVisitorView ? undefined : onOpenChurchPage}
-                style={{
-                  background: 'none', border: 'none', padding: 0, cursor: isVisitorView ? 'default' : 'pointer',
-                  color: isVisitorView ? T.cream : 'rgba(253,248,240,0.5)',
-                  fontWeight: isVisitorView ? 600 : 400, fontSize: 10.5,
-                  textTransform: 'uppercase', letterSpacing: '0.16em',
-                }}
-              >Visitor</button>
-            </div>
+        {/* Identity row — full-bleed: brand left, switcher right.
+            paddingRight reserves the fixed Bell/Messages FAB zone. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 168px 8px 18px', borderBottom: '1px solid rgba(253,248,240,0.07)' }}>
+          <KinwoveWordmark size={21} textColor="#f4e9d4" starColor={T.honey} />
+          <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: T.honey, opacity: 0.85, whiteSpace: 'nowrap', marginTop: 2 }}>
+            for churches
+          </span>
+          <div style={{ flex: 1 }} />
+          {/* Leader / Visitor view toggle */}
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.14em', whiteSpace: 'nowrap',
+          }}>
+            <button
+              onClick={() => !isVisitorView ? undefined : onOpenChurchHub?.() ?? onBack?.()}
+              style={{
+                background: 'none', border: 'none', padding: 0, cursor: isVisitorView ? 'pointer' : 'default',
+                color: isVisitorView ? 'rgba(253,248,240,0.5)' : T.cream,
+                fontWeight: isVisitorView ? 400 : 600, fontSize: 10,
+                textTransform: 'uppercase', letterSpacing: '0.14em',
+              }}
+            >Leader</button>
+            <span style={{ color: 'rgba(253,248,240,0.3)' }}>·</span>
+            <button
+              onClick={isVisitorView ? undefined : onOpenChurchPage}
+              style={{
+                background: 'none', border: 'none', padding: 0, cursor: isVisitorView ? 'default' : 'pointer',
+                color: isVisitorView ? T.cream : 'rgba(253,248,240,0.5)',
+                fontWeight: isVisitorView ? 600 : 400, fontSize: 10,
+                textTransform: 'uppercase', letterSpacing: '0.14em',
+              }}
+            >Visitor</button>
           </div>
+          {/* Account-style switcher back to the personal space */}
+          {(onSwitchToPersonal ?? onBack) && (
+            <button
+              onClick={onSwitchToPersonal ?? onBack}
+              title="Switch to your personal space"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                background: 'rgba(253,248,240,0.08)',
+                border: '1px solid rgba(253,248,240,0.18)',
+                borderRadius: 999, padding: '5px 12px',
+                fontSize: 11.5, fontWeight: 600, color: 'rgba(253,248,240,0.85)',
+                cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.15s',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(253,248,240,0.16)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(253,248,240,0.08)')}
+            >
+              <span aria-hidden="true" style={{ fontSize: 12 }}>⇄</span>
+              {firstName ? `${firstName} · personal` : 'Personal'}
+            </button>
+          )}
+        </div>
 
-          <div style={{ textAlign: 'center', marginBottom: 12 }}>
-            <h1 style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.1, margin: '0 0 4px' }}>
+        <div style={{ maxWidth: bodyMaxWidth, margin: '0 auto', padding: '10px 20px 0' }}>
+          <div style={{ textAlign: 'center', marginBottom: 8 }}>
+            <h1 style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.cream, letterSpacing: '-0.02em', lineHeight: 1.1, margin: 0 }}>
               {church?.name ?? 'Your church'}
+              {church?.city && (
+                <span style={{ fontSize: 12.5, fontWeight: 400, color: 'rgba(253,248,240,0.55)', marginLeft: 10, letterSpacing: 0 }}>
+                  {church.city}{church.region ? `, ${church.region}` : ''}
+                </span>
+              )}
             </h1>
-            {church?.city && (
-              <span style={{ fontSize: 13, color: 'rgba(253,248,240,0.65)' }}>{church.city}{church.region ? `, ${church.region}` : ''}</span>
-            )}
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, overflowX: 'auto', paddingBottom: 10 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 2, overflowX: 'auto', paddingBottom: 8 }}>
             {TABS.map((t) => (
               <TabButton
                 key={t.id}

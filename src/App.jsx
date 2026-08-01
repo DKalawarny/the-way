@@ -95,6 +95,7 @@ class RouteErrorBoundary extends Component {
 
 import { supabase, authedFetch } from './supabase.js';
 import { getDailyVerse } from './dailyVerse.js';
+import { SHOW_WALKS, SHOW_CONNECT, SHOW_MILESTONES_TAB, SHOW_FOLLOWS } from './flags.js';
 import {
   LayoutGrid, UserPlus, Inbox, Building2,
   Star, ShieldCheck, Flag, Megaphone, UserCog, LogOut, Trash2, Settings as SettingsIcon, HelpCircle, BookOpen,
@@ -452,6 +453,51 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
           <GuestQuestion onSignUp={onBegin} initialQuestion={initialQuestion} landingMode />
         </div>
       </main>
+
+      {/* ── Two doors — the same product, two very different reasons to walk in.
+             Each box is a complete pitch; nobody has to read the other one. ── */}
+      <section style={{ padding: '0 24px 88px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
+        <div style={{ textAlign: 'center', fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 26 }}>Two ways in</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, justifyContent: 'center' }}>
+          {/* Door 1 — For you */}
+          <div style={{ flex: '1 1 320px', maxWidth: 420, background: 'rgba(255,255,255,0.045)', border: '1px solid rgba(212,162,74,0.28)', borderRadius: 20, padding: '30px 28px 26px', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontSize: 24, marginBottom: 14 }}>🕊️</div>
+            <h3 style={{ fontFamily: T.serif, fontSize: 24, fontWeight: 600, color: T.cream, margin: '0 0 10px', letterSpacing: '-0.018em' }}>For you</h3>
+            <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.7, margin: '0 0 18px' }}>
+              Honest answers to the questions you actually have — doubt included. An AI that stays in scripture and says "I don't know" when it doesn't, a Bible you can ask anything, and people at every stage of the same road.
+            </p>
+            <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.8, margin: '0 0 22px' }}>
+              Ask anything · Read &amp; listen to scripture · Keep notes · Free
+            </div>
+            <div style={{ marginTop: 'auto' }}>
+              <button onClick={onBegin} style={{ background: T.gold, color: T.cream, border: 'none', padding: '12px 26px', borderRadius: 999, fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 16px rgba(184,115,58,0.35)' }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = T.goldLight)}
+                onMouseLeave={(e) => (e.currentTarget.style.background = T.gold)}
+              >Start asking →</button>
+            </div>
+          </div>
+          {/* Door 2 — For your church */}
+          <div style={{ flex: '1 1 320px', maxWidth: 420, background: 'rgba(30,18,8,0.55)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 20, padding: '30px 28px 26px', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ fontSize: 24, marginBottom: 14 }}>⛪</div>
+            <h3 style={{ fontFamily: T.serif, fontSize: 24, fontWeight: 600, color: T.cream, margin: '0 0 10px', letterSpacing: '-0.018em' }}>
+              For your church
+              <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: T.honey, marginLeft: 10, verticalAlign: 'middle' }}>kinwove for churches</span>
+            </h3>
+            <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.7, margin: '0 0 18px' }}>
+              Sunday's sermon becomes a week of engagement. A research desk for sermon prep, daily questions your congregation actually answers, and a prayer wall that tells you how your people are really doing.
+            </p>
+            <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.8, margin: '0 0 22px' }}>
+              Sermon prep &amp; research · Daily engagement · Care tools · Free to start
+            </div>
+            <div style={{ marginTop: 'auto' }}>
+              <button onClick={onPastorIntent} style={{ background: 'transparent', color: T.cream, border: `1.5px solid rgba(253,248,240,0.4)`, padding: '12px 26px', borderRadius: 999, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(253,248,240,0.1)'; e.currentTarget.style.borderColor = 'rgba(253,248,240,0.7)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(253,248,240,0.4)'; }}
+              >Set up your church →</button>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ── Section rule ── */}
       <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
@@ -2322,7 +2368,7 @@ export default function App() {
     }
   }, [stage, churchReturnTab]);
 
-  const STAGE_SAFE = new Set(['home','feed','read','church','me','messages','groups','prayer','walks','care-inbox','journal']);
+  const STAGE_SAFE = new Set(['home','feed','read','church','me','messages','groups','prayer','walks','care-inbox','journal','church-admin']);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -2354,7 +2400,8 @@ export default function App() {
                   else setStage('home');
                 } else setStage(prof.last_stage);
               }
-              else if (!local2) setStage('home');
+              // Pastors land on the church side — the dashboard IS their product
+              else if (!local2) setStage(prof?.is_pastor ? 'church-admin' : 'home');
             });
           }
         }
@@ -3063,6 +3110,11 @@ export default function App() {
   }
 
   const showNav = session && stage !== 'onboarding' && stage !== 'intake' && authStage === 'idle';
+  // Church mode is a full-screen takeover — the dashboard is "kinwove for
+  // churches", its own product surface. Personal chrome (headers, sidebar,
+  // bottom bar, Find/⋮) disappears; the way out is the shell's switcher.
+  // Bell + Messages stay — pastors need member-join + DM signals in church mode.
+  const inChurchMode = stage === 'church-admin';
   // Hide on full-screen flows that have no header room at all.
   const showTopRight = showNav && !['onboarding', 'intake', 'anon-welcome', 'church-entry'].includes(stage);
 
@@ -3073,7 +3125,7 @@ export default function App() {
       <style>{globalCss}</style>
 
       {/* ── Global dark header (all devices when logged in) ─────────── */}
-      {showNav && (
+      {showNav && !inChurchMode && (
         isDesktop
           ? <AppHeader onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }} onVerseClick={() => setShowVerseCard(true)} streak={currentStreak(profile)} rightOffset={isDocked ? chatPanelWidth : 0} />
           : <MobileHeader onOpenBible={(ref) => { setBibleJumpRef(ref); setStage('read'); }} onVerseClick={() => setShowVerseCard(true)} streak={currentStreak(profile)} rightOffset={isDocked ? chatPanelWidth : 0} />
@@ -3084,11 +3136,11 @@ export default function App() {
       <Suspense fallback={<ScreenLoader />}>
       <div style={{
         paddingRight: isDocked ? chatPanelWidth : 0,
-        marginLeft: isDesktop && showNav ? SIDEBAR_W : 0,
-        paddingTop: showNav ? (isDesktop ? HEADER_H : `calc(${HEADER_H}px + env(safe-area-inset-top, 0px))`) : 0,
-        paddingBottom: !isDesktop && showNav ? 'calc(62px + env(safe-area-inset-bottom, 0px))' : 0,
+        marginLeft: isDesktop && showNav && !inChurchMode ? SIDEBAR_W : 0,
+        paddingTop: showNav && !inChurchMode ? (isDesktop ? HEADER_H : `calc(${HEADER_H}px + env(safe-area-inset-top, 0px))`) : 0,
+        paddingBottom: !isDesktop && showNav && !inChurchMode ? 'calc(62px + env(safe-area-inset-bottom, 0px))' : 0,
         transition: isResizingRef.current ? 'none' : 'padding-right 0.28s ease, margin-left 0.28s ease',
-        '--global-header-h': showNav ? `${HEADER_H}px` : '0px',
+        '--global-header-h': showNav && !inChurchMode ? `${HEADER_H}px` : '0px',
       }}>
       {stage === 'landing' && guestPost && (
         <GuestPostView
@@ -3134,7 +3186,7 @@ export default function App() {
             else setStage('churches');
           }}
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
-          onOpenConnect={() => setStage('connect')}
+          onOpenConnect={SHOW_CONNECT ? () => setStage('connect') : undefined}
           onOpenGroups={() => setStage('groups')}
           onOpenGroup={(entry) => { setViewingGroupEntry(entry); setStage('groups'); }}
           onSendDM={(url) => { setPendingShareUrl(url); setStage('messages'); }}
@@ -3193,7 +3245,7 @@ export default function App() {
             else setStage('churches');
           }}
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
-          onOpenConnect={() => setStage('connect')}
+          onOpenConnect={SHOW_CONNECT ? () => setStage('connect') : undefined}
           onOpenGroups={() => setStage('groups')}
           onOpenGroup={(entry) => { setViewingGroupEntry(entry); setStage('groups'); }}
           onSendDM={(url) => { setPendingShareUrl(url); setStage('messages'); }}
@@ -3257,11 +3309,11 @@ export default function App() {
           onOpenChurchDisputesQueue={profile?.is_admin ? () => setStage('church-disputes-queue') : undefined}
           onOpenChurch={(id) => { setViewingChurchId(id); setStage('church'); }}
           onOpenSermon={(id) => { setViewingSermonId(id); setStage('sermon-view'); }}
-          onOpenWalks={() => setStage('walks')}
+          onOpenWalks={SHOW_WALKS ? () => setStage('walks') : undefined}
           onOpenTalkToSomeone={profile?.church_id ? () => { setViewingChurchId(profile.church_id); setStage('talk-to-someone'); } : undefined}
           onOpenCareInbox={(careTeamRecord || pastorChurchId) ? () => setStage('care-inbox') : undefined}
           onOpenMessages={() => setStage('messages')}
-          onOpenConnect={() => setStage('connect')}
+          onOpenConnect={SHOW_CONNECT ? () => setStage('connect') : undefined}
 
           onOpenPastorDashboard={pastorChurchId ? () => setStage('church-admin') : undefined}
           hasCareTeamRole={!!(careTeamRecord || pastorChurchId)}
@@ -3403,7 +3455,7 @@ export default function App() {
               ? () => setStage('talk-to-someone')
               : undefined}
             onOpenCareInbox={(careTeamRecord || pastorChurchId) ? () => setStage('care-inbox') : undefined}
-            onOpenWalks={() => setStage('walks')}
+            onOpenWalks={SHOW_WALKS ? () => setStage('walks') : undefined}
             onFindChurches={() => { setViewingUserId(null); setStage('churches'); }}
             onRequestJoin={!session
               ? () => { setPendingChurchJoin(viewingChurchId); setAuthStage('auth'); }
@@ -3763,7 +3815,7 @@ export default function App() {
       )}
       {/* ── Nav: sidebar on desktop, bottom tab bar on mobile/tablet ── */}
       {isDesktop ? (
-        showNav && (
+        showNav && !inChurchMode && (
           <SidebarNav
             stage={stage}
             session={session}
@@ -3805,8 +3857,8 @@ export default function App() {
         <>
           {/* Hold coach-marks while the FeatureTour spotlight is active — both
               carry overlapping copy and they visually stack otherwise. */}
-          {showNav && !chatPanelOpen && !showTour && <CoachMark />}
-          <BottomNav
+          {showNav && !chatPanelOpen && !showTour && !inChurchMode && <CoachMark />}
+          {!inChurchMode && <BottomNav
             stage={stage}
             authStage={authStage}
             session={session}
@@ -3823,10 +3875,10 @@ export default function App() {
           onGoPeople={() => setPeopleSearchOpen(true)}
           onGoMe={() => { setViewingUserId(null); setStage('me'); }}
           onToggleChat={() => chatPanelOpen ? closeChatPanel() : (currentConvId ? setChatPanelOpen(true) : (startChatFromProfile(), setChatPanelOpen(true)))}
-        />
+        />}
         </>
       )}
-      {showTopRight && (!chatPanelOpen || isDesktop) && (
+      {showTopRight && (!chatPanelOpen || isDesktop) && !inChurchMode && (
         <TopRightMenu
           profile={profile}
           hasCareTeamRole={!!(careTeamRecord || pastorChurchId)}
@@ -3853,7 +3905,7 @@ export default function App() {
           onDeleteAccount={() => setShowDeleteAccount(true)}
         />
       )}
-      {showTopRight && session && (
+      {showTopRight && session && !inChurchMode && (
         <FindButton
           isDesktop={isDesktop}
           rightOffset={isDocked ? chatPanelWidth : 0}

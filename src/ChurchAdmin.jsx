@@ -2447,6 +2447,8 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
       onOpenChurchHub={onOpenChurchHub}
       currentSubpage={null}
       fullBleed={tab === 'bible' || tab === 'ask'}
+      profile={profile}
+      onSwitchToPersonal={onBack}
     >
       <Suspense fallback={<div style={{ color: T.inkMuted, fontFamily: T.serif, padding: 40, textAlign: 'center' }}>Loading…</div>}>
         {/* When the trial ends unpaid we no longer wall off the whole dashboard —

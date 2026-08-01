@@ -6,6 +6,7 @@ import { useUiKit } from './uikit.jsx';
 import { T, tintFor, SEMANTIC } from './theme.js';
 import { markEngaged } from './streak.js';
 import { usePullToRefresh, PullToRefreshIndicator } from './usePullToRefresh.jsx';
+import { SHOW_MILESTONES_TAB, SHOW_FOLLOWS } from './flags.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { KinwoveWordmark } from './components/brand/KinwoveWordmark.jsx';
 import { PERSON_TYPES } from './constants.js';
@@ -447,7 +448,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
             </div>
             {currentUserId && !isOwnPost && !post.profiles?.is_system_account && (
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
-                <button onClick={() => onFollow(post.author_id, isFollowing)} style={{
+                {SHOW_FOLLOWS && <button onClick={() => onFollow(post.author_id, isFollowing)} style={{
                   background: isFollowing
                     ? 'transparent'
                     : 'linear-gradient(180deg, #FFFCF4 0%, #F5ECD9 100%)',
@@ -462,7 +463,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
                   transition: 'all 0.15s',
                 }}>
                   {isFollowing ? 'Following' : '+ Follow'}
-                </button>
+                </button>}
                 <div style={{ position: 'relative' }}>
                   <button
                     onClick={() => setMenuOpen((v) => !v)}
@@ -1898,7 +1899,7 @@ useEffect(() => {
           { id: 'posts',      label: '📝 Posts'     },
           { id: 'prayers',    label: '🙏 Prayers'   },
           { id: 'discover',   label: <><KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 4, flexShrink: 0 }} /> Circles</> },
-          { id: 'milestones', label: <><KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 4, flexShrink: 0 }} /> Milestones</> },
+          ...(SHOW_MILESTONES_TAB ? [{ id: 'milestones', label: <><KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 4, flexShrink: 0 }} /> Milestones</> }] : []),
         ].map(t => {
           const isActive = feedType === t.id;
           return (
@@ -2097,7 +2098,7 @@ useEffect(() => {
           {/* ── Posts feed (excludes milestones + sermons — those have own tabs) ── */}
           {feedType === 'posts' && (() => {
             const filtered = posts
-              .filter((p) => p.kind !== 'journey_milestone')
+              .filter((p) => SHOW_MILESTONES_TAB ? p.kind !== 'journey_milestone' : true)
               .filter((p) => !blockedIds.includes(p.author_id));
             return (
               <>
@@ -2207,7 +2208,7 @@ useEffect(() => {
                             {...sponsors[Math.floor(i / 10) % sponsors.length]}
                           />
                         )}
-                        {(i === 3 || (filtered.length < 4 && i === filtered.length - 1)) && session && (() => {
+                        {SHOW_FOLLOWS && (i === 3 || (filtered.length < 4 && i === filtered.length - 1)) && session && (() => {
                           const suggestions = suggestedPeople
                             .filter((sp) => !following.has(sp.id) && !blockedIds.includes(sp.id))
                             .slice(0, 4);

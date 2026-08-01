@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase.js';
 import { T } from './theme.js';
+import { SHOW_WALKS } from './flags.js';
 import { KinwoveStar } from './components/brand/KinwoveStar';
 
 const PostComposer  = lazy(() => import('./PostComposer.jsx'));
@@ -711,7 +712,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
             {/* Quick actions */}
             <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
               <QuickAction emoji={<KinwoveStar size={22} />} label="New sermon"        hint="Turn Sunday into a week"    onClick={onOpenComposer}    accent={T.goldDark} />
-              <QuickAction emoji="✶" label="Announce a walk"   hint="Post & feature for everyone" onClick={openWalkModal}     accent={T.goldDark} />
+              {SHOW_WALKS && <QuickAction emoji="✶" label="Announce a walk"   hint="Post & feature for everyone" onClick={openWalkModal}     accent={T.goldDark} />}
               <QuickAction emoji="✎" label="Post to feed"      hint="A note for the congregation" onClick={() => setPostModalOpen(true)} />
               <QuickAction emoji="👥" label="People & roles"    hint="Invite, badge, and manage" onClick={onOpenCareAdmin} />
               <QuickAction emoji="⛪" label="Public church page" hint="See what visitors see"     onClick={onOpenChurchPage} />
@@ -723,7 +724,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
         {embedded && (
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
             <QuickAction emoji="📖" label="New sermon"      hint="Turn Sunday into a week"     onClick={() => onOpenComposer?.()}    accent={T.goldDark} />
-            <QuickAction emoji="✶"  label="Announce a walk" hint="Post & feature for everyone"  onClick={openWalkModal}               accent={T.goldDark} />
+            {SHOW_WALKS && <QuickAction emoji="✶"  label="Announce a walk" hint="Post & feature for everyone"  onClick={openWalkModal}               accent={T.goldDark} />}
             <QuickAction emoji="✎"  label="Post to feed"    hint="A note for the congregation"  onClick={() => setPostModalOpen(true)} />
           </div>
         )}
