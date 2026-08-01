@@ -1458,7 +1458,24 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     }
   }, [verses, pendingVerseScroll]);
 
+  // Plan-context reading: arrows step through the plan's own chapters, a slim
+  // bar shows the day, ✕ exits back to free reading.
+  const [activePlanId, setActivePlanId] = useState(null);
+  const activePlan = READING_PLANS.find((pl) => pl.id === activePlanId) ?? null;
+  const planDayIdx = activePlan ? activePlan.days.findIndex((d) => d.b === bookId && d.c === chNum) : -1;
+  // Red-only reading: just the words of Jesus (speech tags kept, but faint)
+  const [redOnly, setRedOnly] = useState(() => { try { return localStorage.getItem('kw:bible-red-only') === '1'; } catch { return false; } });
+  function toggleRedOnly() {
+    setRedOnly((v) => { const nv = !v; try { localStorage.setItem('kw:bible-red-only', nv ? '1' : '0'); } catch { /* ignore */ } return nv; });
+  }
+
   function goChapter(n) {
+    if (activePlan && planDayIdx >= 0) {
+      const dir = n > chNum ? 1 : -1;
+      const nd = activePlan.days[planDayIdx + dir];
+      if (nd) { setBookId(nd.b); setChNum(nd.c); }
+      return;
+    }
     if (n < 1) {
       const idx = ALL_BOOKS.findIndex((b) => b.id === bookId);
       if (idx > 0) { setBookId(ALL_BOOKS[idx - 1].id); setChNum(ALL_BOOKS[idx - 1].ch); }
@@ -1498,9 +1515,15 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     goChapter(chNum + 1);
   }
 
-  function openChapter(b, n, verseNum = null) {
+  function openChapter(b, n, verseNum = null, planId = null) {
     setBookId(b.id); setChNum(n);
     setPendingVerseScroll(verseNum);
+    setActivePlanId(planId);
+    // Entering The Red Letters: default the red-only view ON unless the
+    // reader has explicitly chosen otherwise before.
+    if (planId === 'red-letters') {
+      try { if (localStorage.getItem('kw:bible-red-only') == null) setRedOnly(true); } catch { /* ignore */ }
+    }
     setView('reading');
   }
 
@@ -1999,6 +2022,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
 
       {SearchPanel}
 
+
       <div style={{ overflowY: 'auto', padding: '24px 20px 100px', maxWidth: 680, margin: '0 auto' }}>
 
         {/* Continue reading card */}
@@ -2100,7 +2124,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                     </div>
                     {next && nextBook ? (
                       <button
-                        onClick={() => { track('plan_open', { plan: plan.id }); openChapter(nextBook, next.c); }}
+                        onClick={() => { track('plan_open', { plan: plan.id }); openChapter(nextBook, next.c, null, plan.id); }}
                         style={{
                           background: prog.done > 0 ? `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)` : 'transparent',
                           color: prog.done > 0 ? T.cream : C.verse,
@@ -2796,7 +2820,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
       }}>
         {/* Back to chapters */}
         <button
-          onClick={() => { setChapBook(book); setView('chapters'); }}
+          onClick={() => { setChapBook(book); setActivePlanId(null); setView('chapters'); }}
           style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: C.verse, fontSize: 13, fontWeight: 600, fontFamily: T.serif, flexShrink: 0, WebkitTapHighlightColor: 'transparent' }}
         >
           <ArrowLeft size={15} strokeWidth={2} /> {book.name}
@@ -2862,6 +2886,19 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
 
       {SearchPanel}
 
+      {/* ── Plan bar — day position + title, ✕ leaves the plan ── */}
+      {activePlan && planDayIdx >= 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 16px', background: 'rgba(184,115,58,0.10)', borderBottom: `1px solid ${C.border}`, fontSize: 12.5, flexShrink: 0 }}>
+          <span aria-hidden="true">{activePlan.emoji}</span>
+          <span style={{ fontWeight: 700, color: C.text, fontFamily: T.serif }}>{activePlan.title}</span>
+          <span style={{ color: C.muted, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            · Day {planDayIdx + 1} of {activePlan.days.length}{activePlan.days[planDayIdx].t ? ` — ${activePlan.days[planDayIdx].t}` : ''}
+          </span>
+          <span style={{ flex: 1 }} />
+          <button onClick={() => setActivePlanId(null)} title="Leave the plan (keep reading freely)" style={{ background: 'none', border: 'none', color: C.muted, fontSize: 14, cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>✕</button>
+        </div>
+      )}
+
       {/* Body */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Reading area */}
@@ -2923,6 +2960,21 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                       >
                         ▶ {ttsStartVerse && ttsStartVerse !== verses[0]?.number ? `Resume from v.${ttsStartVerse}` : 'Read chapter'}
                       </button>
+                      {verses.some((vv) => vv.segments?.some((sg) => sg.wj)) && (
+                        <button
+                          onClick={toggleRedOnly}
+                          title={redOnly ? 'Show the full chapter' : 'Show just the words of Jesus'}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 5,
+                            background: redOnly ? (dark ? 'rgba(224,121,111,0.16)' : 'rgba(169,59,50,0.10)') : 'none',
+                            border: `1px solid ${redOnly ? (dark ? 'rgba(224,121,111,0.5)' : 'rgba(169,59,50,0.4)') : C.border}`,
+                            borderRadius: 999, padding: '6px 14px',
+                            fontSize: 12.5, fontWeight: 600, color: redOnly ? (dark ? '#E0796F' : '#A93B32') : C.muted, cursor: 'pointer',
+                          }}
+                        >
+                          📕 Just the red
+                        </button>
+                      )}
                       {hasNarration && (
                         <span style={{ fontSize: 11, color: C.muted, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
                           🎧 Narrated
@@ -2992,12 +3044,20 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
               />
 
               <div style={{ fontFamily: T.serif, fontSize: Math.round(18 * fontScale), lineHeight: 1.9, color: C.text }}>
-                {verses.map((v) => {
+                {(() => {
+                  const redOnlyActive = redOnly && verses.some((vv) => vv.segments?.some((sg) => sg.wj));
+                  let lastShown = 0;
+                  return verses.map((v) => {
+                  const hasWj = v.segments?.some((sg) => sg.wj);
+                  if (redOnlyActive && !hasWj) return null;
+                  const gapBefore = redOnlyActive && lastShown > 0 && v.number > lastShown + 1;
+                  lastShown = v.number;
                   const sel = selectedVerse != null && v.number >= selLo && v.number <= selHi;
                   const showMenu = selectedVerse != null && v.number === selHi;
                   const hl  = highlightVerse === v.number;
                   return (
                     <span key={v.number}>
+                      {gapBefore && <span style={{ color: C.muted, opacity: 0.5, margin: '0 10px', letterSpacing: 2 }}>···</span>}
                       {v.heading && (
                         <span style={{
                           display: 'block', fontFamily: T.display, fontSize: Math.round(15.5 * fontScale), fontWeight: 700,
@@ -3023,7 +3083,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                         {v.segments?.some((sg) => sg.wj)
                           ? v.segments.map((sg, si) => sg.wj
                               ? <span key={si} style={{ color: dark ? '#E0796F' : '#A93B32' }}>{sg.text}</span>
-                              : <span key={si}>{sg.text}</span>)
+                              : <span key={si} style={redOnly ? { color: C.muted, opacity: 0.6 } : undefined}>{sg.text}</span>)
                           : v.text}
                       </span>
                       {' '}
@@ -3107,7 +3167,8 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                       )}
                     </span>
                   );
-                })}
+                  });
+                })()}
               </div>
               </>
             )}

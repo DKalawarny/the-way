@@ -23,18 +23,24 @@ export const READING_PLANS = [
     title: 'The Red Letters',
     tagline: 'Eighteen chapters where Jesus does the talking — his words shown in red, the way the old red-letter Bibles printed them. Read them, or have them read to you.',
     days: [
-      ...range('MAT', 5, 7),            // Sermon on the Mount
-      { b: 'MAT', c: 13 },              // the kingdom parables
-      { b: 'MRK', c: 4 },               // the sower
-      { b: 'LUK', c: 6 },               // the sermon on the plain
-      { b: 'LUK', c: 10 },              // the good Samaritan
-      { b: 'LUK', c: 12 },              // do not be anxious
-      { b: 'LUK', c: 15 },              // the lost sheep, coin, and son
-      { b: 'JHN', c: 6 },               // the bread of life
-      { b: 'JHN', c: 10 },              // the good shepherd
-      ...range('JHN', 13, 17),          // the upper room, and his prayer
-      { b: 'MAT', c: 25 },              // the sheep and the goats
-      { b: 'MAT', c: 28 },              // the great commission
+      { b: 'MAT', c: 5,  t: 'The Sermon on the Mount begins' },
+      { b: 'MAT', c: 6,  t: 'The Lord\u2019s Prayer, and do not worry' },
+      { b: 'MAT', c: 7,  t: 'Ask, seek, knock' },
+      { b: 'MAT', c: 13, t: 'The kingdom parables' },
+      { b: 'MRK', c: 4,  t: 'The sower and the storm' },
+      { b: 'LUK', c: 6,  t: 'The sermon on the plain' },
+      { b: 'LUK', c: 10, t: 'The good Samaritan' },
+      { b: 'LUK', c: 12, t: 'Do not be anxious' },
+      { b: 'LUK', c: 15, t: 'The lost sheep, the lost coin, the lost son' },
+      { b: 'JHN', c: 6,  t: 'The bread of life' },
+      { b: 'JHN', c: 10, t: 'The good shepherd' },
+      { b: 'JHN', c: 13, t: 'The upper room \u2014 a new commandment' },
+      { b: 'JHN', c: 14, t: 'The way, the truth, and the life' },
+      { b: 'JHN', c: 15, t: 'The vine and the branches' },
+      { b: 'JHN', c: 16, t: 'Sorrow will turn to joy' },
+      { b: 'JHN', c: 17, t: 'His prayer for you' },
+      { b: 'MAT', c: 25, t: 'The sheep and the goats' },
+      { b: 'MAT', c: 28, t: 'The great commission' },
     ],
   },
   {
