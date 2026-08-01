@@ -2940,11 +2940,17 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
         {/* Reading area */}
         <div ref={readAreaRef} style={{ flex: 1, overflowY: 'auto', padding: isDesktop ? '32px 40px 120px' : '24px 20px 200px' }}>
           <div style={{ maxWidth: '65ch', margin: '0 auto' }}>
-            <div style={{ fontFamily: T.serif, fontSize: 13, letterSpacing: 3, textTransform: 'uppercase', color: C.verse, fontWeight: 600, marginBottom: BOOK_AUTHORS[bookId] ? 6 : 24 }}>
+            {/* Chapter ornament — the flourish an old plate Bible would open with */}
+            <div aria-hidden="true" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, opacity: 0.85 }}>
+              <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, transparent, ${dark ? 'rgba(212,162,74,0.45)' : 'rgba(142,85,40,0.35)'})` }} />
+              <KinwoveStar size={11} color={dark ? T.honey : T.goldDark} />
+              <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${dark ? 'rgba(212,162,74,0.45)' : 'rgba(142,85,40,0.35)'}, transparent)` }} />
+            </div>
+            <div style={{ fontFamily: T.serif, fontSize: 13, letterSpacing: 3, textTransform: 'uppercase', color: C.verse, fontWeight: 600, textAlign: 'center', marginBottom: BOOK_AUTHORS[bookId] ? 6 : 24 }}>
               {book.name} · Chapter {chNum}
             </div>
             {BOOK_AUTHORS[bookId] && (
-              <div style={{ fontFamily: T.serif, fontSize: 13.5, fontStyle: 'italic', color: C.muted, marginBottom: 24 }}>
+              <div style={{ fontFamily: T.serif, fontSize: 13.5, fontStyle: 'italic', color: C.muted, textAlign: 'center', marginBottom: 24 }}>
                 {BOOK_AUTHORS[bookId]}
               </div>
             )}
@@ -3083,6 +3089,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                 {(() => {
                   const redOnlyActive = redOnly && verses.some((vv) => vv.segments?.some((sg) => sg.wj));
                   let lastShown = 0;
+                  let dropCapDone = false;
                   return verses.map((v) => {
                   const hasWj = v.segments?.some((sg) => sg.wj);
                   if (redOnlyActive && !hasWj) return null;
@@ -3115,12 +3122,43 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                           transition: 'background 0.4s', display: 'inline',
                         }}
                       >
-                        <sup style={{ fontSize: Math.round(10 * fontScale), fontWeight: 700, color: C.verse, marginRight: 3, verticalAlign: 'super', lineHeight: 1 }}>{v.number}</sup>
-                        {v.segments?.some((sg) => sg.wj)
+                        {(() => {
+                          if (dropCapDone) return null;
+                          dropCapDone = true;
+                          // Take any leading quote mark along with the initial
+                          const src = (v.segments?.[0]?.text ?? v.text) || '';
+                          const mCap = src.match(/^(["'\u201C\u2018]?)(\p{L})/u);
+                          if (!mCap) { return null; }
+                          v._dropLen = mCap[0].length;
+                          const capRed = v.segments?.[0]?.wj;
+                          return (
+                            <span aria-hidden="true" style={{
+                              float: 'left', fontFamily: T.serif, fontWeight: 600,
+                              fontSize: Math.round(56 * fontScale), lineHeight: 0.82,
+                              padding: '6px 10px 0 0', letterSpacing: '-0.02em',
+                              color: capRed ? (dark ? '#E0796F' : '#A93B32') : (dark ? T.honey : T.goldDark),
+                              textShadow: dark ? '0 1px 12px rgba(212,162,74,0.25)' : 'none',
+                            }}>{mCap[0]}</span>
+                          );
+                        })()}
+                        {!v._dropLen && (
+                          <sup style={{ fontSize: Math.round(10 * fontScale), fontWeight: 700, color: C.verse, marginRight: 3, verticalAlign: 'super', lineHeight: 1 }}>{v.number}</sup>
+                        )}
+                        {v._dropLen
+                          ? (v.segments?.some((sg) => sg.wj)
+                              ? v.segments.map((sg, si) => {
+                                  const txt = si === 0 ? sg.text.slice(v._dropLen) : sg.text;
+                                  return sg.wj
+                                    ? <span key={si} style={{ color: dark ? '#E0796F' : '#A93B32' }}>{txt}</span>
+                                    : <span key={si} style={redOnly ? { color: C.muted, opacity: 0.6 } : undefined}>{txt}</span>;
+                                })
+                              : v.text.slice(v._dropLen))
+                          : null}
+                        {!v._dropLen && (v.segments?.some((sg) => sg.wj)
                           ? v.segments.map((sg, si) => sg.wj
                               ? <span key={si} style={{ color: dark ? '#E0796F' : '#A93B32' }}>{sg.text}</span>
                               : <span key={si} style={redOnly ? { color: C.muted, opacity: 0.6 } : undefined}>{sg.text}</span>)
-                          : v.text}
+                          : v.text)}
                       </span>
                       {' '}
                       {showMenu && (
