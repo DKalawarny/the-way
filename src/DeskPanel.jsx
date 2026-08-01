@@ -679,6 +679,29 @@ const BIBLE_TOP_OFFSET = 126;
 export default function DeskPanel({ session, profile, churchId, onClose, isMobile, initialTab, width = 480, refreshKey = 0, onOpenSession, onUseInSermon, threePane = false }) {
   const [activeTab, setActiveTab] = useState(initialTab ?? 'bible');
 
+  // Three-pane Bible/Notes split — draggable, remembered (% of desk width)
+  const deskRef = useRef(null);
+  const [split3, setSplit3] = useState(() => {
+    const saved = localStorage.getItem('kw_desk_split3');
+    return saved ? Math.max(30, Math.min(70, parseInt(saved, 10))) : 55;
+  });
+  function onSplitDragStart(e) {
+    e.preventDefault();
+    const rect = deskRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    function onMove(ev) {
+      const pct = Math.max(30, Math.min(70, ((ev.clientX - rect.left) / rect.width) * 100));
+      setSplit3(pct);
+      localStorage.setItem('kw_desk_split3', String(Math.round(pct)));
+    }
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
   // Plan-enriched profile for BibleReader
   const bibleProfile = profile ? { ...profile } : profile;
 
@@ -686,7 +709,7 @@ export default function DeskPanel({ session, profile, churchId, onClose, isMobil
   // (Daniel 7/31 — the study desk should have everything open at once.)
   if (threePane && !isMobile) {
     return (
-      <div style={{
+      <div ref={deskRef} style={{
         width,
         flexShrink: 0,
         height: '100%',
@@ -697,7 +720,7 @@ export default function DeskPanel({ session, profile, churchId, onClose, isMobil
         position: 'relative',
       }}>
         {/* Bible pane */}
-        <div style={{ flex: '11 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ flex: `${split3} 1 0`, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <Suspense fallback={
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.inkMuted, fontSize: 13, fontStyle: 'italic' }}>
               Loading Bible…
@@ -713,9 +736,18 @@ export default function DeskPanel({ session, profile, churchId, onClose, isMobil
             </div>
           </Suspense>
         </div>
-        <div style={{ width: 1, background: 'rgba(184,115,58,0.22)', flexShrink: 0 }} />
+        {/* Draggable Bible/Notes divider */}
+        <div
+          onMouseDown={onSplitDragStart}
+          title="Drag to resize"
+          style={{ width: 7, margin: '0 -3px', cursor: 'col-resize', flexShrink: 0, zIndex: 5, display: 'flex', justifyContent: 'center' }}
+          onMouseEnter={(e) => (e.currentTarget.firstChild.style.background = 'rgba(184,115,58,0.55)')}
+          onMouseLeave={(e) => (e.currentTarget.firstChild.style.background = 'rgba(184,115,58,0.22)')}
+        >
+          <div style={{ width: 1, background: 'rgba(184,115,58,0.22)', transition: 'background 0.15s' }} />
+        </div>
         {/* Notes pane */}
-        <div style={{ flex: '9 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ flex: `${100 - split3} 1 0`, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <NotesSection session={session} churchId={churchId} refreshKey={refreshKey} onOpenSession={onOpenSession} onUseInSermon={onUseInSermon} />
         </div>
       </div>
