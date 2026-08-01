@@ -2352,7 +2352,17 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
   // Allow deep-links into a specific tab (e.g. ChurchPage's "Edit in Pastor
   // settings" lands on Settings, not Overview). Falls back to overview.
   const VALID_TABS = ['overview', 'people', 'ask', 'bible', 'sermons', 'notes', 'settings'];
-  const [tab, setTab] = useState(initialTab && VALID_TABS.includes(initialTab) ? initialTab : 'overview');
+  // Remember the last tab — leaving mid-Study and coming back lands in Study,
+  // not Overview. Explicit deep-links (initialTab) still win.
+  const [tab, setTabState] = useState(() => {
+    if (initialTab && VALID_TABS.includes(initialTab)) return initialTab;
+    try { const saved = localStorage.getItem('kw:church-tab'); if (VALID_TABS.includes(saved)) return saved; } catch { /* ignore */ }
+    return 'overview';
+  });
+  function setTab(t) {
+    setTabState(t);
+    try { localStorage.setItem('kw:church-tab', t); } catch { /* ignore */ }
+  }
   const [church, setChurch] = useState(null);
   const [showPastorTour, setShowPastorTour] = useState(false);
   // Wait for church data to load before measuring — the sticky nav includes the

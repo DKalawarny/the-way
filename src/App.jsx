@@ -1999,7 +1999,7 @@ export default function App() {
   const [sermonChurchId, setSermonChurchId] = useState(null);
   // Which tab ChurchAdmin should land on when entered. Set by ChurchPage's
   // "Edit in Pastor settings" deep-link, consumed by the ChurchAdmin mount.
-  const [pastorAdminInitialTab, setPastorAdminInitialTab] = useState('overview');
+  const [pastorAdminInitialTab, setPastorAdminInitialTab] = useState(null); // null → ChurchAdmin restores the remembered tab
   // Which tab ChurchPage should open on. Set when returning from sermon-view
   // so the user lands back on Sermons, not Feed. Cleared one tick after mount.
   const [churchReturnTab, setChurchReturnTab] = useState(null);
@@ -2172,7 +2172,7 @@ export default function App() {
     document.title = TITLES[stage] ?? 'kinwove';
     // Persist nav position so tab-suspend / mobile reload returns user to same screen.
     // localStorage: fast, same-browser. DB last_stage: cross-browser/device fallback (debounced).
-    const PERSIST = new Set(['home','feed','read','church','me','messages','groups','prayer','walks','care-inbox','journal']);
+    const PERSIST = new Set(['home','feed','read','church','me','messages','groups','prayer','walks','care-inbox','journal','church-admin']);
     if (PERSIST.has(stage)) {
       localStorage.setItem('kw:stage', stage);
       // Reduced from 2000ms → 300ms so DB is updated before user leaves the tab
@@ -2187,7 +2187,7 @@ export default function App() {
   // Flush last_stage to DB immediately when tab is hidden (mobile Safari recycles
   // tabs aggressively — the debounce above often doesn't fire before the page unloads).
   useEffect(() => {
-    const PERSIST = new Set(['home','feed','read','church','me','messages','groups','prayer','walks','care-inbox','journal']);
+    const PERSIST = new Set(['home','feed','read','church','me','messages','groups','prayer','walks','care-inbox','journal','church-admin']);
     const flush = () => {
       const uid = sessionRef.current?.user?.id;
       if (uid && PERSIST.has(stage)) {
