@@ -18,6 +18,26 @@ export const READING_PLANS = [
     days: range('JHN', 1, 21),
   },
   {
+    id: 'red-letters',
+    emoji: '📕',
+    title: 'The Red Letters',
+    tagline: 'Eighteen chapters where Jesus does the talking — his words shown in red, the way the old red-letter Bibles printed them. Read them, or have them read to you.',
+    days: [
+      ...range('MAT', 5, 7),            // Sermon on the Mount
+      { b: 'MAT', c: 13 },              // the kingdom parables
+      { b: 'MRK', c: 4 },               // the sower
+      { b: 'LUK', c: 6 },               // the sermon on the plain
+      { b: 'LUK', c: 10 },              // the good Samaritan
+      { b: 'LUK', c: 12 },              // do not be anxious
+      { b: 'LUK', c: 15 },              // the lost sheep, coin, and son
+      { b: 'JHN', c: 6 },               // the bread of life
+      { b: 'JHN', c: 10 },              // the good shepherd
+      ...range('JHN', 13, 17),          // the upper room, and his prayer
+      { b: 'MAT', c: 25 },              // the sheep and the goats
+      { b: 'MAT', c: 28 },              // the great commission
+    ],
+  },
+  {
     id: 'psalms-anxious',
     emoji: '🌿',
     title: 'Psalms for Anxious Seasons',

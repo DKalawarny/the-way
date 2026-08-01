@@ -778,7 +778,27 @@ function parseVerses(html) {
   const verses = [];
   let current = null;
   let pendingHeading = null;
-  function walk(node) {
+  // Red letters: api.bible marks the words of Jesus with class="wj" — carry
+  // that through parsing as {text, wj} segments so the renderer can paint
+  // them red. current.text stays the plain concatenation for TTS/copy/AI.
+  function addText(t, wj) {
+    current.text += t;
+    const segs = current.segments ?? (current.segments = []);
+    const last = segs[segs.length - 1];
+    if (last && last.wj === wj) last.text += t;
+    else segs.push({ text: t, wj });
+  }
+  function flush() {
+    if (!current) return;
+    const trimmed = current.text.trim();
+    if (current.segments?.length) {
+      current.segments[0].text = current.segments[0].text.replace(/^\s+/, '');
+      const lastSeg = current.segments[current.segments.length - 1];
+      lastSeg.text = lastSeg.text.replace(/\s+$/, '');
+    }
+    verses.push({ ...current, text: trimmed });
+  }
+  function walk(node, inWj = false) {
     if (node.nodeType === 1) {
       if (node.classList?.contains('note')) return;
       const cls = [...(node.classList ?? [])];
@@ -790,7 +810,7 @@ function parseVerses(html) {
       }
       const num = node.getAttribute?.('data-number');
       if (num && !isNaN(parseInt(num))) {
-        if (current) verses.push({ ...current, text: current.text.trim() });
+        flush();
         current = { number: parseInt(num), text: '', ...(pendingHeading ? { heading: pendingHeading } : {}) };
         pendingHeading = null;
         return;
@@ -798,16 +818,17 @@ function parseVerses(html) {
       // Paragraph boundary inside a running verse (prose paragraphs, poetry
       // q1/q2 lines) → keep a line break so copy/TTS don't flatten poetry.
       if (node.tagName === 'P' && current && current.text && !current.text.endsWith('\n')) {
-        current.text += '\n';
+        addText('\n', inWj);
       }
-      for (const child of node.childNodes) walk(child);
+      const wj = inWj || cls.includes('wj');
+      for (const child of node.childNodes) walk(child, wj);
     } else if (node.nodeType === 3 && current) {
-      current.text += node.textContent;
+      addText(node.textContent, inWj);
     }
   }
   const root = doc.body.firstChild;
   if (root) for (const child of root.childNodes) walk(child);
-  if (current?.text?.trim()) verses.push({ ...current, text: current.text.trim() });
+  if (current?.text?.trim()) flush();
   return verses.filter((v) => v.text);
 }
 
@@ -2999,7 +3020,11 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                         }}
                       >
                         <sup style={{ fontSize: Math.round(10 * fontScale), fontWeight: 700, color: C.verse, marginRight: 3, verticalAlign: 'super', lineHeight: 1 }}>{v.number}</sup>
-                        {v.text}
+                        {v.segments?.some((sg) => sg.wj)
+                          ? v.segments.map((sg, si) => sg.wj
+                              ? <span key={si} style={{ color: dark ? '#E0796F' : '#A93B32' }}>{sg.text}</span>
+                              : <span key={si}>{sg.text}</span>)
+                          : v.text}
                       </span>
                       {' '}
                       {showMenu && (
