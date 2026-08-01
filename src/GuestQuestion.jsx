@@ -250,7 +250,7 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
         <>
           {landingMode ? (
             <>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center', marginBottom: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 10, marginBottom: 20 }}>
                 {EXAMPLE_QUESTIONS.map((q) => (
                   <button
                     key={q}

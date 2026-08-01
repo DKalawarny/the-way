@@ -463,8 +463,18 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
             <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13.5, color: 'rgba(212,162,74,0.75)', lineHeight: 1.7, margin: '0 0 10px' }}>
               For the curious · the skeptic · the searching · the believer
             </div>
-            <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.8, margin: '0 0 22px' }}>
-              Ask anything · Read &amp; listen to scripture · Keep notes · Free
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, margin: '0 0 22px' }}>
+              {[
+                'Ask anything — honest answers with the verses to check',
+                'The full Bible, to read or listen to',
+                'Notes, highlights, and reading plans',
+                'Real people and churches, whenever you\'re ready',
+              ].map((b) => (
+                <div key={b} style={{ display: 'flex', alignItems: 'flex-start', gap: 9, fontSize: 13.5, color: DIM, lineHeight: 1.55, textAlign: 'left' }}>
+                  <KinwoveStar size={9} color={T.gold} style={{ flexShrink: 0, marginTop: 4 }} />
+                  {b}
+                </div>
+              ))}
             </div>
             <div style={{ marginTop: 'auto' }}>
               <button onClick={onBegin} style={{ background: T.gold, color: T.cream, border: 'none', padding: '12px 26px', borderRadius: 999, fontSize: 14, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 16px rgba(184,115,58,0.35)' }}
@@ -483,8 +493,18 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
             <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.7, margin: '0 0 18px' }}>
               Sunday's sermon becomes a week of engagement. A research desk for sermon prep, daily questions your congregation actually answers, and a prayer wall that tells you how your people are really doing.
             </p>
-            <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.8, margin: '0 0 10px' }}>
-              Sermon prep &amp; research · Daily engagement · Care tools
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, margin: '0 0 12px' }}>
+              {[
+                'A research desk that preps your sermon from real sources',
+                'Sunday\'s outline becomes a week of daily questions',
+                'Your congregation in one place — feed, prayer, groups',
+                'Care tools, so you know how your people are really doing',
+              ].map((b) => (
+                <div key={b} style={{ display: 'flex', alignItems: 'flex-start', gap: 9, fontSize: 13.5, color: DIM, lineHeight: 1.55, textAlign: 'left' }}>
+                  <KinwoveStar size={9} color={T.honey} style={{ flexShrink: 0, marginTop: 4 }} />
+                  {b}
+                </div>
+              ))}
             </div>
             <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13.5, color: 'rgba(212,162,74,0.75)', lineHeight: 1.7, margin: '0 0 22px' }}>
               Church page free forever · pastor tools free for 35 days · no card
