@@ -938,9 +938,12 @@ function IlluminatedCap({ seedKey, letter, quote, red, dark, scale = 1 }) {
     // The art sits on its own small parchment plate — the way a tipped-in
     // print would — which also swallows any scan fringe in dark mode.
     return (
-      <span aria-hidden="true" style={{
+      <span
+        aria-hidden="true"
+        title={`“${letter}” — an illuminated initial from Owen Jones, 1864`}
+        style={{
         float: 'left', margin: `${Math.round(5 * scale)}px ${Math.round(14 * scale)}px ${Math.round(3 * scale)}px 0`,
-        lineHeight: 0, display: 'inline-block',
+        lineHeight: 0, display: 'inline-block', cursor: 'help',
         background: 'linear-gradient(160deg, #FCF6E8 0%, #F3E9D2 100%)',
         border: '1px solid rgba(142,85,40,0.35)',
         borderRadius: 7, padding: Math.round(6 * scale),
