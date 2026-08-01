@@ -676,11 +676,21 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession, onUseI
 // matches DeskPanel content area: calc(100vh-130px) minus ~58px tab bar.
 const BIBLE_TOP_OFFSET = 126;
 
-export default function DeskPanel({ session, profile, churchId, onClose, isMobile, initialTab, width = 480, refreshKey = 0, onOpenSession, onUseInSermon, threePane = false }) {
+export default function DeskPanel({ session, profile, churchId, onClose, isMobile, initialTab, width = 480, refreshKey = 0, onOpenSession, onUseInSermon, threePane = false, side = 'right' }) {
   const [activeTab, setActiveTab] = useState(initialTab ?? 'bible');
 
-  // Three-pane Bible/Notes split — draggable, remembered (% of desk width)
+  // Three-pane Bible/Notes split — draggable, remembered (% of desk width).
+  // Order is flippable too (divider ⇄): bible-first | notes-first.
   const deskRef = useRef(null);
+  const [deskOrder, setDeskOrder] = useState(() => (localStorage.getItem('kw_desk_order') === 'notes-first' ? 'notes-first' : 'bible-first'));
+  const [divHover, setDivHover] = useState(false);
+  function toggleDeskOrder() {
+    setDeskOrder((cur) => {
+      const next = cur === 'notes-first' ? 'bible-first' : 'notes-first';
+      try { localStorage.setItem('kw_desk_order', next); } catch { /* ignore */ }
+      return next;
+    });
+  }
   const [split3, setSplit3] = useState(() => {
     const saved = localStorage.getItem('kw_desk_split3');
     return saved ? Math.max(30, Math.min(70, parseInt(saved, 10))) : 55;
@@ -690,7 +700,9 @@ export default function DeskPanel({ session, profile, churchId, onClose, isMobil
     const rect = deskRef.current?.getBoundingClientRect();
     if (!rect) return;
     function onMove(ev) {
-      const pct = Math.max(30, Math.min(70, ((ev.clientX - rect.left) / rect.width) * 100));
+      const raw = ((ev.clientX - rect.left) / rect.width) * 100;
+      const bibleShare = deskOrder === 'notes-first' ? 100 - raw : raw;
+      const pct = Math.max(30, Math.min(70, bibleShare));
       setSplit3(pct);
       localStorage.setItem('kw_desk_split3', String(Math.round(pct)));
     }
@@ -714,8 +726,10 @@ export default function DeskPanel({ session, profile, churchId, onClose, isMobil
         flexShrink: 0,
         height: '100%',
         background: `linear-gradient(180deg, #FAF6EA 0%, ${T.parchment} 100%)`,
-        borderLeft: `1px solid rgba(184,115,58,0.20)`,
+        borderLeft: side === 'right' ? '1px solid rgba(184,115,58,0.20)' : 'none',
+        borderRight: side === 'left' ? '1px solid rgba(184,115,58,0.20)' : 'none',
         display: 'flex',
+        flexDirection: deskOrder === 'notes-first' ? 'row-reverse' : 'row',
         overflow: 'hidden',
         position: 'relative',
       }}>
@@ -736,15 +750,29 @@ export default function DeskPanel({ session, profile, churchId, onClose, isMobil
             </div>
           </Suspense>
         </div>
-        {/* Draggable Bible/Notes divider */}
+        {/* Draggable Bible/Notes divider — hover shows the ⇄ swap knob */}
         <div
           onMouseDown={onSplitDragStart}
           title="Drag to resize"
-          style={{ width: 7, margin: '0 -3px', cursor: 'col-resize', flexShrink: 0, zIndex: 5, display: 'flex', justifyContent: 'center' }}
-          onMouseEnter={(e) => (e.currentTarget.firstChild.style.background = 'rgba(184,115,58,0.55)')}
-          onMouseLeave={(e) => (e.currentTarget.firstChild.style.background = 'rgba(184,115,58,0.22)')}
+          onMouseEnter={() => setDivHover(true)}
+          onMouseLeave={() => setDivHover(false)}
+          style={{ width: 7, margin: '0 -3px', cursor: 'col-resize', flexShrink: 0, zIndex: 5, display: 'flex', justifyContent: 'center', position: 'relative' }}
         >
-          <div style={{ width: 1, background: 'rgba(184,115,58,0.22)', transition: 'background 0.15s' }} />
+          <div style={{ width: 1, background: divHover ? 'rgba(184,115,58,0.55)' : 'rgba(184,115,58,0.22)', transition: 'background 0.15s' }} />
+          {divHover && (
+            <button
+              title="Swap Bible and Notes"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); toggleDeskOrder(); }}
+              style={{
+                position: 'absolute', top: 56, left: '50%', transform: 'translateX(-50%)',
+                width: 26, height: 26, borderRadius: '50%',
+                background: T.ink, color: T.cream, border: '1px solid rgba(253,248,240,0.3)',
+                fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 8px rgba(26,17,8,0.3)', zIndex: 20, padding: 0, lineHeight: 1,
+              }}
+            >⇄</button>
+          )}
         </div>
         {/* Notes pane */}
         <div style={{ flex: `${100 - split3} 1 0`, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -760,7 +788,8 @@ export default function DeskPanel({ session, profile, churchId, onClose, isMobil
       flexShrink: 0,
       height: '100%',
       background: `linear-gradient(180deg, #FAF6EA 0%, ${T.parchment} 100%)`,
-      borderLeft: isMobile ? 'none' : `1px solid rgba(184,115,58,0.20)`,
+      borderLeft: isMobile || side === 'left' ? 'none' : `1px solid rgba(184,115,58,0.20)`,
+      borderRight: !isMobile && side === 'left' ? `1px solid rgba(184,115,58,0.20)` : 'none',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',

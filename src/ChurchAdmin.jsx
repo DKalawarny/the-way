@@ -21,7 +21,7 @@ const ChurchAiChat    = lazy(() => import('./ChurchAiChat.jsx'));
 const BibleReader     = lazy(() => import('./BibleReader.jsx'));
 const DeskPanel       = lazy(() => import('./DeskPanel.jsx'));
 
-function DividerHandle({ onMouseDown }) {
+function DividerHandle({ onMouseDown, onSwap, swapTitle = 'Swap sides' }) {
   const [hovered, setHovered] = useState(false);
   return (
     <div
@@ -33,10 +33,25 @@ function DividerHandle({ onMouseDown }) {
         background: hovered ? 'rgba(184,115,58,0.22)' : 'transparent',
         transition: 'background 0.15s',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
+        position: 'relative',
       }}
     >
       {hovered && (
         <div style={{ width: 2, height: 40, borderRadius: 99, background: 'rgba(184,115,58,0.6)' }} />
+      )}
+      {onSwap && hovered && (
+        <button
+          title={swapTitle}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); onSwap(); }}
+          style={{
+            position: 'absolute', top: 'calc(50% - 44px)', left: '50%', transform: 'translateX(-50%)',
+            width: 26, height: 26, borderRadius: '50%',
+            background: T.ink, color: T.cream, border: `1px solid rgba(253,248,240,0.3)`,
+            fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(26,17,8,0.3)', zIndex: 20, padding: 0, lineHeight: 1,
+          }}
+        >⇄</button>
       )}
     </div>
   );
@@ -2413,6 +2428,15 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
     const saved = localStorage.getItem('kw_desk_width3');
     return saved ? Math.max(560, Math.min(1000, parseInt(saved, 10))) : 760;
   });
+  // Which side the desk lives on (chat takes the other) — divider ⇄ flips it
+  const [deskSide, setDeskSide] = useState(() => (localStorage.getItem('kw_desk_side') === 'left' ? 'left' : 'right'));
+  function toggleDeskSide() {
+    setDeskSide((cur) => {
+      const next = cur === 'left' ? 'right' : 'left';
+      try { localStorage.setItem('kw_desk_side', next); } catch { /* ignore */ }
+      return next;
+    });
+  }
   useEffect(() => {
     function onResize() {
       setIsWide(window.innerWidth >= 900);
@@ -2427,8 +2451,9 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
     const startX = e.clientX;
     const startWidth = three ? deskWidth3 : deskWidth;
     const [lo, hi] = three ? [560, 1000] : [280, 700];
+    const dir = deskSide === 'left' ? -1 : 1;
     function onMove(ev) {
-      const w = Math.max(lo, Math.min(hi, startWidth + (startX - ev.clientX)));
+      const w = Math.max(lo, Math.min(hi, startWidth + dir * (startX - ev.clientX)));
       if (three) { setDeskWidth3(w); localStorage.setItem('kw_desk_width3', String(w)); }
       else { setDeskWidth(w); localStorage.setItem('kw_desk_width', String(w)); }
     }
@@ -2512,7 +2537,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
           />
         )}
         {tab === 'ask' && (
-          <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative', alignItems: 'stretch' }}>
+          <div style={{ display: 'flex', flexDirection: deskSide === 'left' ? 'row-reverse' : 'row', flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative', alignItems: 'stretch' }}>
             {/* Chat — takes remaining width */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <ChurchAiChat
@@ -2531,9 +2556,9 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
             {/* Desktop: drag handle + Scholar's Desk panel */}
             {isWide && (
               <>
-                <DividerHandle onMouseDown={onDeskDragStart} />
+                <DividerHandle onMouseDown={onDeskDragStart} onSwap={toggleDeskSide} swapTitle="Move the desk to the other side" />
                 <Suspense fallback={null}>
-                  <DeskPanel session={session} profile={profile} churchId={churchId} width={isThreePane ? deskWidth3 : deskWidth} threePane={isThreePane} refreshKey={notesRefreshKey} onOpenSession={setStudySessionToOpen} onUseInSermon={sendNotesToSermon} />
+                  <DeskPanel session={session} profile={profile} churchId={churchId} width={isThreePane ? deskWidth3 : deskWidth} threePane={isThreePane} side={deskSide} refreshKey={notesRefreshKey} onOpenSession={setStudySessionToOpen} onUseInSermon={sendNotesToSermon} />
                 </Suspense>
               </>
             )}
