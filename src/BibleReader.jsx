@@ -921,61 +921,104 @@ const BIBLE_READ_TOUR_STEPS = [
 // accent ink) the way manuscript workshops varied their versals. Same chapter
 // always renders the same panel, like a printed edition.
 function IlluminatedCap({ seedKey, letter, quote, red, dark, scale = 1 }) {
-  // mulberry32 over a string hash — tiny, deterministic
   let h = 1779033703;
   for (let i = 0; i < seedKey.length; i++) { h = Math.imul(h ^ seedKey.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
   const rand = () => {
     h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909);
     return ((h ^= h >>> 16) >>> 0) / 4294967296;
   };
-  const frame = Math.floor(rand() * 3);            // 0 plain · 1 double · 2 corner diamonds
-  const flourish = Math.floor(rand() * 4);          // corner filigree family
+  // Five structurally different treatments — panel, ink block, medallion,
+  // open vine cap, rubricated column — so chapters differ at a glance.
+  const variant = Math.floor(rand() * 5);
   const accentPick = rand();
-  const accent = accentPick < 0.55 ? (dark ? '#D4A24A' : '#8E5528')
-    : accentPick < 0.8 ? '#6B995C'
+  const accent = accentPick < 0.5 ? (dark ? '#D4A24A' : '#8E5528')
+    : accentPick < 0.78 ? '#6B995C'
     : (dark ? '#7C9DB8' : '#3a6b8a');
-  const corners = [[8, 8, 1, 1], [92, 8, -1, 1], [8, 92, 1, -1], [92, 92, -1, -1]];
-  const whichCorners = rand() < 0.5 ? [0, 3] : [1, 2];
-  const dots = rand() < 0.6;
-
-  const size = Math.round(74 * scale);
+  const flip = rand() < 0.5;
+  const size = Math.round(76 * scale);
   const line = dark ? 'rgba(212,162,74,0.55)' : 'rgba(142,85,40,0.5)';
-  const letterColor = red ? (dark ? '#E0796F' : '#A93B32') : (dark ? '#E8C07A' : '#8E5528');
+  const inkFill = red ? (dark ? '#6E2A22' : '#7A2A22') : (dark ? '#3A2410' : '#4A2E14');
+  const letterInk = red ? (dark ? '#E0796F' : '#A93B32') : (dark ? '#E8C07A' : '#8E5528');
+  const F = 'Fraunces, Georgia, serif';
 
-  const curl = (x, y, sx, sy) => {
-    if (flourish === 0) return `M ${x} ${y + 14 * sy} Q ${x} ${y}, ${x + 14 * sx} ${y} Q ${x + 6 * sx} ${y + 6 * sy}, ${x + 2 * sx} ${y + 13 * sy}`;
-    if (flourish === 1) return `M ${x} ${y + 16 * sy} Q ${x + 2 * sx} ${y + 2 * sy}, ${x + 16 * sx} ${y} M ${x + 4 * sx} ${y + 9 * sy} Q ${x + 8 * sx} ${y + 4 * sy}, ${x + 13 * sx} ${y + 4 * sy}`;
-    if (flourish === 2) return `M ${x} ${y + 12 * sy} C ${x} ${y}, ${x + 12 * sx} ${y}, ${x + 12 * sx} ${y + 8 * sy} C ${x + 12 * sx} ${y + 3 * sy}, ${x + 5 * sx} ${y + 3 * sy}, ${x + 5 * sx} ${y + 8 * sy}`;
-    return `M ${x} ${y + 15 * sy} Q ${x + 15 * sx} ${y + 15 * sy}, ${x + 15 * sx} ${y}`;
-  };
+  const inner = (() => {
+    if (variant === 0) {
+      // Classic bordered panel with corner filigree
+      return (
+        <>
+          <rect x="3" y="3" width="94" height="94" rx="6" fill={dark ? 'rgba(212,162,74,0.09)' : 'rgba(212,162,74,0.10)'} stroke={line} strokeWidth="1.8" />
+          <rect x="9" y="9" width="82" height="82" rx="3" fill="none" stroke={line} strokeWidth="0.8" opacity="0.7" />
+          <path d={flip ? 'M 12 26 Q 12 12, 26 12' : 'M 74 12 Q 88 12, 88 26'} fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" />
+          <path d={flip ? 'M 88 74 Q 88 88, 74 88' : 'M 26 88 Q 12 88, 12 74'} fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" />
+          <circle cx={flip ? 17 : 83} cy={flip ? 17 : 17} r="2" fill={accent} opacity="0.85" />
+          <circle cx={flip ? 83 : 17} cy={flip ? 83 : 83} r="2" fill={accent} opacity="0.85" />
+          <text x="52" y="53" textAnchor="middle" dominantBaseline="central" fontFamily={F} fontWeight="600" fontSize="56" fill={letterInk}>{letter}</text>
+        </>
+      );
+    }
+    if (variant === 1) {
+      // Solid ink block — light letter reversed out, thin inner keyline
+      return (
+        <>
+          <rect x="4" y="4" width="92" height="92" rx="7" fill={inkFill} />
+          <rect x="10" y="10" width="80" height="80" rx="3" fill="none" stroke={dark ? 'rgba(244,233,212,0.35)' : 'rgba(245,237,216,0.4)'} strokeWidth="1" />
+          <path d={`M 20 ${flip ? 16 : 84} h 60`} stroke={accent} strokeWidth="1.6" opacity="0.9" />
+          <text x="50" y="52" textAnchor="middle" dominantBaseline="central" fontFamily={F} fontWeight="600" fontSize="56" fill={dark ? '#F0E2C4' : '#F5EDD8'}>{letter}</text>
+        </>
+      );
+    }
+    if (variant === 2) {
+      // Ring medallion with a crown star
+      return (
+        <>
+          <circle cx="50" cy="52" r="43" fill={dark ? 'rgba(212,162,74,0.08)' : 'rgba(212,162,74,0.09)'} stroke={line} strokeWidth="1.8" />
+          <circle cx="50" cy="52" r="36" fill="none" stroke={accent} strokeWidth="1" opacity="0.75" />
+          <path d="M 50 2 L 51.4 7.6 L 57 9 L 51.4 10.4 L 50 16 L 48.6 10.4 L 43 9 L 48.6 7.6 Z" fill={accent} />
+          <text x="50" y="54" textAnchor="middle" dominantBaseline="central" fontFamily={F} fontWeight="600" fontSize="52" fill={letterInk}>{letter}</text>
+        </>
+      );
+    }
+    if (variant === 3) {
+      // Open vine cap — no box, a climbing tendril beside a large free letter
+      const vx = flip ? 88 : 12;
+      const dir = flip ? -1 : 1;
+      return (
+        <>
+          <path d={`M ${vx} 10 C ${vx + 10 * dir} 25, ${vx - 6 * dir} 40, ${vx + 4 * dir} 55 C ${vx + 12 * dir} 68, ${vx - 2 * dir} 80, ${vx + 2 * dir} 92`} fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" opacity="0.9" />
+          <path d={`M ${vx + 3 * dir} 28 q ${8 * dir} -2 ${10 * dir} -9`} fill="none" stroke={accent} strokeWidth="1.6" strokeLinecap="round" />
+          <path d={`M ${vx + 4 * dir} 62 q ${9 * dir} 1 ${12 * dir} 8`} fill="none" stroke={accent} strokeWidth="1.6" strokeLinecap="round" />
+          <circle cx={vx + 14 * dir} cy="17" r="2.4" fill={accent} />
+          <circle cx={vx + 17 * dir} cy="72" r="2.4" fill={accent} />
+          <text x={flip ? 42 : 58} y="54" textAnchor="middle" dominantBaseline="central" fontFamily={F} fontWeight="600" fontSize="72" fill={letterInk}>{letter}</text>
+        </>
+      );
+    }
+    // Rubricated column — bold side bar, hatched footer corner
+    const bx = flip ? 88 : 6;
+    return (
+      <>
+        <rect x="4" y="4" width="92" height="92" rx="5" fill={dark ? 'rgba(212,162,74,0.06)' : 'rgba(212,162,74,0.07)'} stroke={line} strokeWidth="1.2" />
+        <rect x={bx} y="6" width="6" height="88" rx="2" fill={accent} opacity="0.9" />
+        {[0, 1, 2, 3].map((i) => (
+          <path key={i} d={`M ${flip ? 10 + i * 5 : 70 + i * 5} 94 L ${flip ? 22 + i * 5 : 82 + i * 5} 82`} stroke={line} strokeWidth="1" opacity="0.8" />
+        ))}
+        <text x={flip ? 46 : 54} y="52" textAnchor="middle" dominantBaseline="central" fontFamily={F} fontWeight="600" fontSize="56" fill={letterInk}>{letter}</text>
+      </>
+    );
+  })();
 
   return (
     <span aria-hidden="true" style={{ float: 'left', margin: `${Math.round(5 * scale)}px ${Math.round(12 * scale)}px 2px 0`, lineHeight: 0 }}>
-      <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: 'block' }}>
-        <rect x="2" y="2" width="96" height="96" rx="6" fill={dark ? 'rgba(212,162,74,0.09)' : 'rgba(212,162,74,0.10)'} stroke={line} strokeWidth="1.6" />
-        {frame === 1 && <rect x="7" y="7" width="86" height="86" rx="3" fill="none" stroke={line} strokeWidth="0.8" opacity="0.8" />}
-        {frame === 2 && corners.map(([cx, cy], i) => (
-          <path key={i} d={`M ${cx} ${cy - 4} L ${cx + 4} ${cy} L ${cx} ${cy + 4} L ${cx - 4} ${cy} Z`} fill={accent} opacity="0.9" />
-        ))}
-        {whichCorners.map((ci) => {
-          const [x, y, sx, sy] = corners[ci];
-          return <path key={ci} d={curl(x, y, sx, sy)} fill="none" stroke={accent} strokeWidth="1.6" strokeLinecap="round" opacity="0.85" />;
-        })}
-        {dots && whichCorners.map((ci) => {
-          const [x, y, sx, sy] = corners[ci];
-          return <g key={`d${ci}`} fill={accent} opacity="0.75">
-            <circle cx={x + 20 * sx} cy={y + 4 * sy} r="1.6" />
-            <circle cx={x + 4 * sx} cy={y + 20 * sy} r="1.6" />
-          </g>;
-        })}
-        {quote && (
-          <text x="22" y="34" textAnchor="middle" fontFamily="Fraunces, Georgia, serif" fontWeight="600" fontSize="26" fill={letterColor} opacity="0.65">{quote}</text>
+      <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: 'block', overflow: 'visible' }}>
+        {inner}
+        {quote && variant !== 1 && (
+          <text x="16" y="26" textAnchor="middle" fontFamily={F} fontWeight="600" fontSize="24" fill={letterInk} opacity="0.6">{quote}</text>
         )}
-        <text x="52" y="52" textAnchor="middle" dominantBaseline="central" fontFamily="Fraunces, Georgia, serif" fontWeight="600" fontSize="58" fill={letterColor}>{letter}</text>
       </svg>
     </span>
   );
 }
+
 export default function BibleReader({ session, profile, homeKey = 0, onClose, onOpenChat, jumpRef, topOffset = 0, fillParent = false, churchNoteContext = null }) {
   const uid = session?.user?.id ?? 'guest';
 
