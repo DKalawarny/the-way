@@ -934,18 +934,23 @@ function IlluminatedCap({ seedKey, letter, quote, red, dark, scale = 1 }) {
   const imgCount = INITIALS[letter] ?? 0;
   const imgIdx = Math.floor(rand() * Math.max(1, imgCount));
   if (imgCount > 0) {
-    const size = Math.round(84 * scale);
+    const size = Math.round(80 * scale);
+    // The art sits on its own small parchment plate — the way a tipped-in
+    // print would — which also swallows any scan fringe in dark mode.
     return (
-      <span aria-hidden="true" style={{ float: 'left', margin: `${Math.round(4 * scale)}px ${Math.round(14 * scale)}px ${Math.round(2 * scale)}px 0`, lineHeight: 0 }}>
+      <span aria-hidden="true" style={{
+        float: 'left', margin: `${Math.round(5 * scale)}px ${Math.round(14 * scale)}px ${Math.round(3 * scale)}px 0`,
+        lineHeight: 0, display: 'inline-block',
+        background: 'linear-gradient(160deg, #FCF6E8 0%, #F3E9D2 100%)',
+        border: '1px solid rgba(142,85,40,0.35)',
+        borderRadius: 7, padding: Math.round(6 * scale),
+        boxShadow: dark ? '0 2px 14px rgba(0,0,0,0.5)' : '0 1px 6px rgba(26,17,8,0.12)',
+      }}>
         <img
           src={`/initials/${letter}/${imgIdx}.png`}
           alt=""
           draggable={false}
-          style={{
-            height: size, width: 'auto', maxWidth: Math.round(size * 1.2),
-            objectFit: 'contain', display: 'block',
-            filter: dark ? 'brightness(0.92)' : 'none',
-          }}
+          style={{ height: size, width: 'auto', maxWidth: Math.round(size * 1.25), objectFit: 'contain', display: 'block' }}
         />
       </span>
     );
