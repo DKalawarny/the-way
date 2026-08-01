@@ -676,11 +676,51 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession, onUseI
 // matches DeskPanel content area: calc(100vh-130px) minus ~58px tab bar.
 const BIBLE_TOP_OFFSET = 126;
 
-export default function DeskPanel({ session, profile, churchId, onClose, isMobile, initialTab, width = 480, refreshKey = 0, onOpenSession, onUseInSermon }) {
+export default function DeskPanel({ session, profile, churchId, onClose, isMobile, initialTab, width = 480, refreshKey = 0, onOpenSession, onUseInSermon, threePane = false }) {
   const [activeTab, setActiveTab] = useState(initialTab ?? 'bible');
 
   // Plan-enriched profile for BibleReader
   const bibleProfile = profile ? { ...profile } : profile;
+
+  // ── Three-pane desk: Bible and Notes side by side, no toggling ──────────────
+  // (Daniel 7/31 — the study desk should have everything open at once.)
+  if (threePane && !isMobile) {
+    return (
+      <div style={{
+        width,
+        flexShrink: 0,
+        height: '100%',
+        background: `linear-gradient(180deg, #FAF6EA 0%, ${T.parchment} 100%)`,
+        borderLeft: `1px solid rgba(184,115,58,0.20)`,
+        display: 'flex',
+        overflow: 'hidden',
+        position: 'relative',
+      }}>
+        {/* Bible pane */}
+        <div style={{ flex: '11 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <Suspense fallback={
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.inkMuted, fontSize: 13, fontStyle: 'italic' }}>
+              Loading Bible…
+            </div>
+          }>
+            <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+              <BibleReader
+                session={session}
+                profile={bibleProfile}
+                topOffset={BIBLE_TOP_OFFSET}
+                churchNoteContext={churchId}
+              />
+            </div>
+          </Suspense>
+        </div>
+        <div style={{ width: 1, background: 'rgba(184,115,58,0.22)', flexShrink: 0 }} />
+        {/* Notes pane */}
+        <div style={{ flex: '9 1 0', minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <NotesSection session={session} churchId={churchId} refreshKey={refreshKey} onOpenSession={onOpenSession} onUseInSermon={onUseInSermon} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{

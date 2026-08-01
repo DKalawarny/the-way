@@ -1506,9 +1506,9 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
 
       {/* Invite code card */}
       <div style={{
-        background: `linear-gradient(135deg, ${T.parchment} 0%, ${T.parchmentDark} 100%)`,
-        border: `1px solid ${T.line}`, borderRadius: 14,
-        padding: '18px 20px',
+        background: T.white,
+        border: '1px solid rgba(26,17,8,0.08)', borderRadius: 16,
+        padding: '18px 20px', boxShadow: '0 1px 4px rgba(26,17,8,0.04)',
       }}>
         <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center' }}>
           <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Invite your congregation
@@ -1633,20 +1633,25 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
             Generate an invite code so your congregation can find and join your church on kinwove. Tap below to create one.
           </p>
         )}
-        <button onClick={() => setConfirmRotate(true)} style={{
-          background: 'transparent', color: T.goldDark, border: 'none',
-          padding: 0, marginTop: code ? 10 : 12,
-          fontSize: code ? 12 : 14, cursor: 'pointer', fontWeight: 600,
-          textDecoration: 'underline', textUnderlineOffset: 3,
-        }}>
-          {code ? 'Reset code…' : 'Generate invite code →'}
-        </button>
+        {code ? (
+          <button onClick={() => setConfirmRotate(true)} style={{
+            background: 'transparent', color: T.goldDark, border: 'none',
+            padding: 0, marginTop: 10, fontSize: 12, cursor: 'pointer', fontWeight: 600,
+            textDecoration: 'underline', textUnderlineOffset: 3,
+          }}>Reset code…</button>
+        ) : (
+          <button onClick={() => setConfirmRotate(true)} style={{
+            background: T.gold, color: T.cream, border: 'none', borderRadius: 999,
+            padding: '10px 22px', marginTop: 12, fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(184,115,58,0.25)',
+          }}>Generate invite code →</button>
+        )}
       </div>
 
       {/* Youth group invite card */}
       <div style={{
-        background: `linear-gradient(135deg, ${T.parchment} 0%, ${T.parchmentDark} 100%)`,
-        border: `1px solid ${T.line}`, borderRadius: 14, padding: '18px 20px',
+        background: T.white,
+        border: '1px solid rgba(26,17,8,0.08)', borderRadius: 16, padding: '18px 20px', boxShadow: '0 1px 4px rgba(26,17,8,0.04)',
       }}>
         <div style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: T.goldDark, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center' }}>
           <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Youth group invite
@@ -2373,8 +2378,10 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
   // The consuming panel calls clearPendingAction() after firing it.
   const [pendingAction, setPendingAction] = useState(null);
 
-  // Scholar's Desk split layout
+  // Scholar's Desk split layout. ≥1280px the desk goes three-pane — chat,
+  // Bible, and notes all open at once; below that the desk keeps its toggle.
   const [isWide, setIsWide] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 900);
+  const [isThreePane, setIsThreePane] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1280);
   const [mobileDeskPanel, setMobileDeskPanel] = useState(null); // null | 'bible' | 'notes'
   const [notesRefreshKey, setNotesRefreshKey] = useState(0);
   // Note → thread: series title queued for ChurchAiChat to load (cleared once loaded)
@@ -2391,19 +2398,29 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
     const saved = localStorage.getItem('kw_desk_width');
     return saved ? Math.max(280, Math.min(700, parseInt(saved, 10))) : 480;
   });
+  // Three-pane desk needs more room — its own remembered width
+  const [deskWidth3, setDeskWidth3] = useState(() => {
+    const saved = localStorage.getItem('kw_desk_width3');
+    return saved ? Math.max(560, Math.min(1000, parseInt(saved, 10))) : 760;
+  });
   useEffect(() => {
-    function onResize() { setIsWide(window.innerWidth >= 900); }
+    function onResize() {
+      setIsWide(window.innerWidth >= 900);
+      setIsThreePane(window.innerWidth >= 1280);
+    }
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
   function onDeskDragStart(e) {
+    const three = isThreePane;
     const startX = e.clientX;
-    const startWidth = deskWidth;
+    const startWidth = three ? deskWidth3 : deskWidth;
+    const [lo, hi] = three ? [560, 1000] : [280, 700];
     function onMove(ev) {
-      const w = Math.max(280, Math.min(700, startWidth + (startX - ev.clientX)));
-      setDeskWidth(w);
-      localStorage.setItem('kw_desk_width', String(w));
+      const w = Math.max(lo, Math.min(hi, startWidth + (startX - ev.clientX)));
+      if (three) { setDeskWidth3(w); localStorage.setItem('kw_desk_width3', String(w)); }
+      else { setDeskWidth(w); localStorage.setItem('kw_desk_width', String(w)); }
     }
     function onUp() {
       document.removeEventListener('mousemove', onMove);
@@ -2506,7 +2523,7 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
               <>
                 <DividerHandle onMouseDown={onDeskDragStart} />
                 <Suspense fallback={null}>
-                  <DeskPanel session={session} profile={profile} churchId={churchId} width={deskWidth} refreshKey={notesRefreshKey} onOpenSession={setStudySessionToOpen} onUseInSermon={sendNotesToSermon} />
+                  <DeskPanel session={session} profile={profile} churchId={churchId} width={isThreePane ? deskWidth3 : deskWidth} threePane={isThreePane} refreshKey={notesRefreshKey} onOpenSession={setStudySessionToOpen} onUseInSermon={sendNotesToSermon} />
                 </Suspense>
               </>
             )}

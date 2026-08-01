@@ -290,7 +290,7 @@ function CommunityPreview({ onBegin }) {
   return (
     <section style={{ padding: '88px 32px 92px', maxWidth: 720, margin: '0 auto', width: '100%' }}>
       <div style={{ textAlign: 'center', marginBottom: 48 }}>
-        <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 16 }}>
+        <div style={{ fontSize: 10, letterSpacing: '0.18em', fontWeight: 700, textTransform: 'uppercase', color: T.honey, opacity: 0.85, marginBottom: 16 }}>
           See it in action
         </div>
         <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(24px, 3.2vw, 36px)', color: T.cream, fontWeight: 600, margin: 0, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
@@ -387,12 +387,6 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
     'No denominational agenda — designed to point to Jesus, never to push',
   ];
 
-  const whoCards = [
-    { emoji: '🤔', label: 'The curious',      body: 'You\'ve heard about Jesus. Something keeps pulling you toward the question. You want honest answers, not a sales pitch.' },
-    { emoji: '🤨', label: 'The skeptic',       body: 'You\'re not sure any of this is true. You have real doubts and you want them taken seriously, not papered over.' },
-    { emoji: '💭', label: 'The searching',     body: 'Something in your life cracked open. You\'re not sure what you believe anymore — or maybe for the first time, you want to know.' },
-    { emoji: '🙏', label: 'The believer',      body: 'Your faith is real. You want to go deeper, understand more, and find people who take it as seriously as you do.' },
-  ];
 
   return (
     <div style={{ minHeight: '100vh', background: '#1A110A', display: 'flex', flexDirection: 'column', fontFamily: T.sans }}>
@@ -457,7 +451,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
       {/* ── Two doors — the same product, two very different reasons to walk in.
              Each box is a complete pitch; nobody has to read the other one. ── */}
       <section style={{ padding: '0 24px 88px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
-        <div style={{ textAlign: 'center', fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 26 }}>Two ways in</div>
+        <div style={{ textAlign: 'center', fontSize: 10, letterSpacing: '0.18em', fontWeight: 700, textTransform: 'uppercase', color: T.honey, opacity: 0.85, marginBottom: 26 }}>Two ways in</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, justifyContent: 'center' }}>
           {/* Door 1 — For you */}
           <div style={{ flex: '1 1 320px', maxWidth: 420, background: 'rgba(255,255,255,0.045)', border: '1px solid rgba(212,162,74,0.28)', borderRadius: 20, padding: '30px 28px 26px', display: 'flex', flexDirection: 'column' }}>
@@ -466,6 +460,9 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
             <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.7, margin: '0 0 18px' }}>
               Honest answers to the questions you actually have — doubt included. An AI that stays in scripture and says "I don't know" when it doesn't, a Bible you can ask anything, and people at every stage of the same road.
             </p>
+            <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13.5, color: 'rgba(212,162,74,0.75)', lineHeight: 1.7, margin: '0 0 10px' }}>
+              For the curious · the skeptic · the searching · the believer
+            </div>
             <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.8, margin: '0 0 22px' }}>
               Ask anything · Read &amp; listen to scripture · Keep notes · Free
             </div>
@@ -486,8 +483,11 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
             <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.7, margin: '0 0 18px' }}>
               Sunday's sermon becomes a week of engagement. A research desk for sermon prep, daily questions your congregation actually answers, and a prayer wall that tells you how your people are really doing.
             </p>
-            <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.8, margin: '0 0 22px' }}>
-              Sermon prep &amp; research · Daily engagement · Care tools · Free to start
+            <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.8, margin: '0 0 10px' }}>
+              Sermon prep &amp; research · Daily engagement · Care tools
+            </div>
+            <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13.5, color: 'rgba(212,162,74,0.75)', lineHeight: 1.7, margin: '0 0 22px' }}>
+              Church page free forever · pastor tools free for 35 days · no card
             </div>
             <div style={{ marginTop: 'auto' }}>
               <button onClick={onPastorIntent} style={{ background: 'transparent', color: T.cream, border: `1.5px solid rgba(253,248,240,0.4)`, padding: '12px 26px', borderRadius: 999, fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}
@@ -502,41 +502,12 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
       {/* ── Section rule ── */}
       <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
 
-      {/* ── Community ── */}
-      <section style={{ padding: '88px 32px 92px', maxWidth: 900, margin: '0 auto', width: '100%', textAlign: 'center' }}>
-        <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 18 }}>Real community</div>
-        <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(26px, 3.6vw, 40px)', color: T.cream, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.022em', lineHeight: 1.12 }}>
-          You're not just talking to an AI.<br />
-          <em style={{ color: T.gold, fontStyle: 'italic', fontWeight: 500 }}>You're joining people.</em>
-        </h2>
-        <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, maxWidth: 480, margin: '0 auto 52px', lineHeight: 1.75 }}>
-          The loneliest part of seeking is doing it alone. Real people, every background, every stage.
-        </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 14, maxWidth: 780, margin: '0 auto' }}>
-          {[
-            { icon: '💬', title: 'Post & discuss', body: 'Share thoughts, ask questions. Your community responds — not an algorithm.' },
-            { icon: '🙏', title: 'Pray together', body: 'Post a request. People pray for you. You\'ll know when they do.' },
-            { icon: '📖', title: 'Study scripture', body: 'Read any chapter. Tap any verse for instant AI insight, right in the margin.' },
-            { icon: '⛪', title: 'Find your church', body: 'Connect with your congregation or discover a community near you.' },
-          ].map((f) => (
-            <div key={f.title} style={{ flex: '1 1 200px', maxWidth: 240, padding: '24px 20px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, textAlign: 'left' }}>
-              <div style={{ fontSize: 22, marginBottom: 12 }}>{f.icon}</div>
-              <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.cream, marginBottom: 6, letterSpacing: '-0.008em' }}>{f.title}</div>
-              <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.65 }}>{f.body}</div>
-            </div>
-          ))}
-        </div>
-      </section>
 
-      {/* ── Social proof — live community activity (folded into the community story) ── */}
-      <CommunityPreview onBegin={onBegin} />
-
-      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
 
       {/* ── AI trust ── */}
       <section style={{ padding: '88px 32px 92px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 48 }}>
-          <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 18 }}>Why not just ask ChatGPT?</div>
+          <div style={{ fontSize: 10, letterSpacing: '0.18em', fontWeight: 700, textTransform: 'uppercase', color: T.honey, opacity: 0.85, marginBottom: 18 }}>Why not just ask ChatGPT?</div>
           <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(26px, 3.6vw, 40px)', color: T.cream, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.022em', lineHeight: 1.12, maxWidth: 640 }}>
             We know you might not trust AI<br />with something this important.
           </h2>
@@ -554,103 +525,19 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
             </div>
           ))}
         </div>
-        <div style={{ maxWidth: 480, margin: '40px auto 0', padding: '32px 28px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.18)', borderRadius: 20 }}>
-          <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.gold, marginBottom: 12, letterSpacing: '-0.005em' }}>Somewhere safe to ask.</div>
-          <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.75, margin: '0 0 18px' }}>
-            Some questions wait a long time for a safe place to land.
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
-            {[
-              'Is God even real?',
-              'Why do I feel nothing when I pray?',
-              'I want to believe — I just don\'t know if I do.',
-            ].map((q) => (
-              <div key={q} style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 14.5, color: T.cream, opacity: 0.72, paddingLeft: 14, borderLeft: '2px solid rgba(184,115,58,0.35)', textAlign: 'left' }}>{q}</div>
-            ))}
-          </div>
-          <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.75, margin: 0 }}>
-            Bring them here. You'll be met with warmth and honesty — at whatever pace feels right.
-          </p>
-        </div>
       </section>
 
       <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
 
-      {/* ── Who it's for ── */}
-      <section style={{ padding: '88px 32px 92px', maxWidth: 1040, margin: '0 auto', width: '100%' }}>
-        <div style={{ textAlign: 'center', marginBottom: 52 }}>
-          <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 14 }}>Whoever you are</div>
-          <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(26px, 3.4vw, 38px)', color: T.cream, fontWeight: 600, margin: '0 0 16px', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
-            There's a place for you here.
-          </h2>
-          <p style={{ fontFamily: T.serif, fontSize: 16, color: DIM, maxWidth: 440, margin: '0 auto', lineHeight: 1.7 }}>
-            Not for people who have all the answers. For people honest enough to keep asking.
-          </p>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
-          {whoCards.map((c) => (
-            <button key={c.label} onClick={onBegin}
-              style={{ textAlign: 'left', padding: '28px 24px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(184,115,58,0.18)', borderRadius: 20, cursor: 'pointer', transition: 'all 0.2s ease' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(184,115,58,0.1)'; e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.transform = 'translateY(-3px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor = 'rgba(184,115,58,0.18)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-            >
-              <div style={{ fontSize: 28, marginBottom: 14, height: 40, display: 'flex', alignItems: 'flex-end' }}>{c.emoji}</div>
-              <div style={{ fontFamily: T.display, fontSize: 17, fontWeight: 600, color: T.cream, marginBottom: 8, letterSpacing: '-0.01em' }}>{c.label}</div>
-              <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.7 }}>{c.body}</div>
-            </button>
-          ))}
-        </div>
-      </section>
 
-      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
 
-      {/* ── For pastors ── */}
-      {onPastorIntent && !pastorChurchId && (
-        <section style={{ padding: '88px 32px 92px', maxWidth: 900, margin: '0 auto', width: '100%', textAlign: 'center' }}>
-          <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 18 }}>For pastors & church leaders</div>
-          <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(26px, 3.6vw, 40px)', color: T.cream, fontWeight: 600, margin: '0 0 20px', letterSpacing: '-0.022em', lineHeight: 1.12 }}>
-            Your congregation<br />needs a home between Sundays.
-          </h2>
-          <p style={{ fontFamily: T.serif, fontSize: 17, color: DIM, maxWidth: 540, margin: '0 auto 40px', lineHeight: 1.75 }}>
-            Sunday is one hour. kinwove is the other six days —
-            where your members keep wrestling with what was preached, ask the questions they won't raise in the lobby,
-            and pray for each other by name. And where someone new can get to know your church before they ever walk through the door.
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 14, maxWidth: 780, margin: '0 auto 40px' }}>
-            {[
-              { icon: '📖', t: 'A page for every Sunday', d: 'Sermon content, scripture, daily verses, kids version — all in one place.' },
-              { icon: '💬', t: 'Real discussion, not dead chat', d: 'Threaded conversations under each sermon. Members reply, wrestle, and come back to Sunday more ready.' },
-              { icon: '📚', t: 'Sermon research in one brief', d: 'Calvin, Wesley, N.T. Wright, the modern commentaries — original language first, honest where they disagree. Hours of prep, in minutes.' },
-              { icon: '🌱', t: 'A study tool for the whole week', d: 'Members read scripture, highlight, follow reading plans, and ask honest questions right in the text — study that carries your Sunday into Tuesday.' },
-              { icon: '👋', t: 'A front door before the front door', d: 'Someone new or nervous can meet your church here first — read along, listen in, ask quietly — and walk in on Sunday already feeling at home.' },
-              { icon: '🛡', t: 'Your church profile — free', d: 'Get your church on kinwove at no cost. The tools that genuinely replace your time cost money. The presence doesn\'t.' },
-            ].map((f) => (
-              <div key={f.t} style={{ flex: '1 1 200px', maxWidth: 240, padding: '20px 18px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, textAlign: 'left' }}>
-                <div style={{ fontSize: 17, marginBottom: 10 }}>{f.icon}</div>
-                <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.cream, marginBottom: 6, letterSpacing: '-0.005em' }}>{f.t}</div>
-                <div style={{ fontSize: 13, color: DIMLO, lineHeight: 1.65 }}>{f.d}</div>
-              </div>
-            ))}
-          </div>
-          <button onClick={onPastorIntent}
-            style={{ background: 'transparent', color: T.gold, border: `1px solid ${T.gold}`, borderRadius: 999, padding: '13px 32px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(184,115,58,0.12)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-          >Bring your church — free to start</button>
-          <div style={{ marginTop: 12, fontSize: 12, color: DIMLO, lineHeight: 1.7 }}>
-            Your church page is free forever. Pastor tools are free for 35 days — no card needed.<br />
-            Instant when your email matches your church domain; others reviewed by hand.
-          </div>
-        </section>
-      )}
 
-      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${RULE}, transparent)`, margin: '0 40px' }} />
 
       {/* ── Bottom CTA ── */}
       <section style={{ padding: '96px 24px 108px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 700, height: 500, background: 'radial-gradient(ellipse at 50% 0%, rgba(184,115,58,0.09) 0%, transparent 65%)', pointerEvents: 'none' }} />
         <div style={{ maxWidth: 600, margin: '0 auto', position: 'relative' }}>
-          <div style={{ fontSize: 10, letterSpacing: 5, textTransform: 'uppercase', color: T.gold, opacity: 0.7, marginBottom: 22 }}>Begin</div>
+          <div style={{ fontSize: 10, letterSpacing: '0.18em', fontWeight: 700, textTransform: 'uppercase', color: T.honey, opacity: 0.85, marginBottom: 22 }}>Begin</div>
           <h2 style={{ fontFamily: T.serif, fontSize: 'clamp(30px, 5vw, 58px)', fontWeight: 600, color: T.cream, lineHeight: 1.05, marginBottom: 20, letterSpacing: '-0.026em' }}>
             Start asking.<br />We'll meet you there.
           </h2>
@@ -665,6 +552,12 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
             Get started free →
           </button>
           <div style={{ marginTop: 16, fontSize: 12, color: DIMLO }}>No credit card · Takes 30 seconds</div>
+          {onPastorIntent && (
+            <div style={{ marginTop: 14, fontSize: 13, color: DIMLO }}>
+              Bringing a church?{' '}
+              <button onClick={onPastorIntent} style={{ background: 'none', border: 'none', color: T.gold, fontSize: 13, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>Set it up free →</button>
+            </div>
+          )}
           {!session && (
             <div style={{ marginTop: 20, fontSize: 13, color: DIMLO }}>
               Already here?{' '}
