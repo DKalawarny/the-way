@@ -1052,12 +1052,12 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
       .then((d) => { if (d?.audioBibleId) setAudioBibleId(d.audioBibleId); }, () => {});
   }, []);
 
-  async function caPlay(seekFraction, fallbackText) {
+  async function caPlay(seekFraction, fallbackText, endpoint = null) {
     setCaActive(true); setCaLoading(true); setCaPaused(false);
     try {
-      const r = await authedFetch(`/api/bible-audio/${audioBibleId}/chapters/${bookId}.${chNum}`);
+      const r = await authedFetch(endpoint ?? `/api/bible-audio/${audioBibleId}/chapters/${bookId}.${chNum}`);
       const d = await r.json();
-      const url = d?.data?.resourceUrl;
+      const url = d?.data?.resourceUrl ?? d?.url;
       if (!url) throw new Error('no audio url');
       let a = caRef.current;
       if (!a) { a = new Audio(); caRef.current = a; }
@@ -1149,7 +1149,9 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     setTtsStartVerse(firstVerse);
     localStorage.setItem(`rdr_tts:${bookId}:${chNum}`, String(firstVerse));
     if (redOnly && verses.some((v) => v.segments?.some((sg) => sg.wj))) {
-      rdSpeak(`ch:${bookId}:${chNum}`, redOnlyListenText(verses));
+      const rt = redOnlyListenText(verses);
+      if (audioBibleId) caPlay(0, rt, `/api/red-audio/${bibleId}/${bookId}.${chNum}?voice=${ttsVoice}`);
+      else rdSpeak(`ch:${bookId}:${chNum}`, rt);
       return;
     }
     const text = verses.map((v) => v.text).join(' ');
@@ -1165,7 +1167,11 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     setSelectedVerse(null);
     localStorage.setItem(`rdr_tts:${bookId}:${chNum}`, String(verseNum));
     if (redOnly && chapterHasRed) {
-      rdSpeak(CHAPTER_TTS_ID, redOnlyListenText(slice));
+      const allRed = redOnlyListenText(verses);
+      const fromRed = redOnlyListenText(slice);
+      const frac = allRed.length > 0 ? Math.max(0, (allRed.length - fromRed.length) / allRed.length) : 0;
+      if (audioBibleId) caPlay(frac, fromRed, `/api/red-audio/${bibleId}/${bookId}.${chNum}?voice=${ttsVoice}`);
+      else rdSpeak(CHAPTER_TTS_ID, fromRed);
       return;
     }
     if (usingAudio) {

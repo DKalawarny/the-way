@@ -707,6 +707,127 @@ function cachedSystem(staticText, dynamicText) {
   return blocks;
 }
 
+
+// ── Red-letter audio — the words of Jesus, one premium voice, cached forever ──
+// Generated once per (bible, chapter, voice) via ElevenLabs and stored in the
+// public 'red-audio' bucket; every later listen is a free static MP3.
+function extractRedText(html) {
+  let out = '';
+  let depth = 0;
+  const stack = [];
+  const tagRe = /<(\/?)([a-zA-Z0-9]+)([^>]*)>/g;
+  let last = 0, m;
+  while ((m = tagRe.exec(html))) {
+    if (depth > 0) out += html.slice(last, m.index);
+    last = tagRe.lastIndex;
+    const closing = m[1] === '/';
+    const tag = m[2].toLowerCase();
+    if (tag === 'span') {
+      if (!closing) {
+        const inWj = depth > 0 || /class="[^"]*\bwj\b[^"]*"/.test(m[3]);
+        stack.push(inWj);
+        if (inWj) depth++;
+      } else if (stack.length) {
+        if (stack.pop()) depth--;
+      }
+    } else if (closing && depth > 0) {
+      out += ' '; // block boundaries read as small pauses
+    }
+  }
+  return out
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ').trim();
+}
+
+function chunkForTts(t, max = 3800) {
+  const chunks = [];
+  let rest = t;
+  while (rest.length > max) {
+    let cut = rest.lastIndexOf('. ', max);
+    if (cut < max * 0.5) cut = rest.lastIndexOf(' ', max);
+    if (cut <= 0) cut = max;
+    chunks.push(rest.slice(0, cut + 1));
+    rest = rest.slice(cut + 1);
+  }
+  if (rest.trim()) chunks.push(rest);
+  return chunks;
+}
+
+const RED_AUDIO_BUCKET = 'red-audio';
+app.get('/api/red-audio/:bibleId/:chapterId', requireAuth, limitAuthed({ capacity: 10, refillPerSec: 10 / 300 }), async (req, res) => {
+  const { bibleId, chapterId } = req.params;
+  if (!/^[A-Za-z0-9-]+$/.test(bibleId) || !/^[A-Z0-9]{3}\.\d{1,3}$/.test(chapterId)) {
+    return res.status(400).json({ error: 'bad params' });
+  }
+  const voice = ELEVEN_VOICES[req.query.voice] ? req.query.voice : 'onyx';
+  const path = `${bibleId}/${voice}/${chapterId}.mp3`;
+  const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${RED_AUDIO_BUCKET}/${path}`;
+
+  try {
+    const head = await fetch(publicUrl, { method: 'HEAD' });
+    if (head.ok) return res.json({ url: publicUrl, cached: true });
+  } catch { /* not cached — generate below */ }
+
+  const ELEVEN_KEY = process.env.ELEVENLABS_API_KEY;
+  const BIBLE_API_KEY = process.env.VITE_BIBLE_API_KEY;
+  if (!ELEVEN_KEY || !BIBLE_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    return res.status(503).json({ error: 'not configured' });
+  }
+
+  // Generation shares the monthly ElevenLabs budget guard with /api/tts.
+  const month = new Date().toISOString().slice(0, 7);
+  if (month !== _ttsMonth) { _ttsMonth = month; _ttsMonthCount = 0; }
+  if (_ttsMonthCount >= TTS_MONTHLY_CAP) return res.status(429).json({ error: 'tts monthly cap reached' });
+
+  try {
+    const params = new URLSearchParams({
+      'content-type': 'html', 'include-notes': 'false', 'include-titles': 'false',
+      'include-chapter-numbers': 'false', 'include-verse-numbers': 'false', 'include-verse-spans': 'false',
+    });
+    const up = await fetch(`https://rest.api.bible/v1/bibles/${bibleId}/chapters/${chapterId}?${params}`, { headers: { 'api-key': BIBLE_API_KEY } });
+    trackBibleUsage(up.status);
+    if (!up.ok) return res.status(502).json({ error: 'bible upstream' });
+    const json = await up.json();
+    const red = extractRedText(json?.data?.content ?? '');
+    if (!red || red.length < 40) return res.status(404).json({ error: 'no red text in this chapter' });
+
+    const voiceId = ELEVEN_VOICES[voice];
+    const buffers = [];
+    for (const chunk of chunkForTts(red)) {
+      _ttsMonthCount++;
+      const er = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: 'POST',
+        headers: { 'xi-api-key': ELEVEN_KEY, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
+        body: JSON.stringify({
+          text: chunk,
+          model_id: 'eleven_turbo_v2_5',
+          voice_settings: { stability: 0.50, similarity_boost: 0.75, style: 0.0, use_speaker_boost: true },
+        }),
+      });
+      trackTts(er.status);
+      if (!er.ok) { console.error('[red-audio] eleven', er.status, await er.text()); return res.status(502).json({ error: 'tts upstream' }); }
+      buffers.push(Buffer.from(await er.arrayBuffer()));
+    }
+    const mp3 = Buffer.concat(buffers);
+
+    const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+    // Bucket is created lazily on first use (409 = already exists, fine)
+    await fetch(`${SUPABASE_URL}/storage/v1/bucket`, {
+      method: 'POST', headers: { ...h, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: RED_AUDIO_BUCKET, name: RED_AUDIO_BUCKET, public: true }),
+    }).catch(() => {});
+    const upRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${RED_AUDIO_BUCKET}/${path}`, {
+      method: 'POST', headers: { ...h, 'Content-Type': 'audio/mpeg', 'x-upsert': 'true' }, body: mp3,
+    });
+    if (!upRes.ok) { console.error('[red-audio] storage upload failed:', await upRes.text()); return res.status(500).json({ error: 'store failed' }); }
+    console.log(`[red-audio] generated ${path} chars=${red.length} bytes=${mp3.length}`);
+    res.json({ url: publicUrl, cached: false });
+  } catch (e) {
+    console.error('[red-audio]', e?.message);
+    res.status(500).json({ error: 'failed' });
+  }
+});
+
 app.get('/api/bible/:bibleId/chapters/:chapterId', optionalAuth, limitEither({ capacity: 60, refillPerSec: 1 }, { capacity: 20, refillPerSec: 20 / 60 }), async (req, res) => {
   const { bibleId, chapterId } = req.params;
   const BIBLE_API_KEY = process.env.VITE_BIBLE_API_KEY;
