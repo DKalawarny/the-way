@@ -497,7 +497,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
               {[
                 'A research desk that preps your sermon from real sources',
                 'Sunday\'s outline becomes a week of daily questions',
-                'Your congregation in one place — feed, prayer, groups',
+                'A soft front door — new people can meet your church before they ever walk in',
                 'Care tools, so you know how your people are really doing',
               ].map((b) => (
                 <div key={b} style={{ display: 'flex', alignItems: 'flex-start', gap: 9, fontSize: 13.5, color: DIM, lineHeight: 1.55, textAlign: 'left' }}>

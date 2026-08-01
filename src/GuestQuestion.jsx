@@ -358,8 +358,11 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
         </>
       )}
 
-      {/* ── Signup gate for returning visitors who already used their questions ── */}
-      {!hasMessages && storedCount >= MAX_EXCHANGES && (
+      {/* ── Signup gate for returning visitors who already used their questions.
+             Keyed on messages.length, NOT hasMessages — hasMessages is forced
+             true by the stored cap itself, which made this gate unreachable
+             and left capped visitors staring at an empty hero. ── */}
+      {messages.length === 0 && storedCount >= MAX_EXCHANGES && (
         <div style={{
           animation: 'fadeUp 0.4s ease both',
           background: 'rgba(184,115,58,0.08)',
