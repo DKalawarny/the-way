@@ -49,10 +49,10 @@ function SetupChecklist({ items, allDone, onDismiss }) {
   const pct = (completed / total) * 100;
   return (
     <div style={{
-      background: T.parchment,
-      border: `1px solid ${T.goldLight}`,
-      borderLeft: `4px solid ${T.gold}`,
-      borderRadius: 14,
+      background: T.white,
+      border: '1px solid rgba(26,17,8,0.08)',
+      borderRadius: 16,
+      boxShadow: '0 1px 4px rgba(26,17,8,0.04)',
       padding: '18px 20px',
       marginBottom: 16,
     }}>
@@ -72,7 +72,7 @@ function SetupChecklist({ items, allDone, onDismiss }) {
       </div>
 
       {/* Progress rail */}
-      <div style={{ height: 4, background: 'rgba(184,115,58,0.18)', borderRadius: 999, overflow: 'hidden', marginBottom: 14 }}>
+      <div style={{ height: 3, background: 'rgba(184,115,58,0.16)', borderRadius: 999, overflow: 'hidden', marginBottom: 14 }}>
         <div style={{
           width: `${pct}%`, height: '100%',
           background: `linear-gradient(90deg, ${T.goldLight}, ${T.gold})`,
@@ -88,8 +88,8 @@ function SetupChecklist({ items, allDone, onDismiss }) {
             onClick={item.onClick}
             style={{
               display: 'flex', alignItems: 'center', gap: 12,
-              background: item.done ? 'rgba(74,139,90,0.06)' : T.white,
-              border: `1px solid ${item.done ? 'rgba(74,139,90,0.30)' : T.line}`,
+              background: item.done ? 'rgba(107,153,92,0.07)' : T.parchment,
+              border: `1px solid ${item.done ? 'rgba(107,153,92,0.28)' : 'rgba(26,17,8,0.08)'}`,
               borderRadius: 10, padding: '10px 12px', cursor: 'pointer',
               textAlign: 'left', fontFamily: 'inherit',
               transition: 'transform 0.12s ease, border-color 0.12s ease',
@@ -99,8 +99,8 @@ function SetupChecklist({ items, allDone, onDismiss }) {
           >
             <div style={{
               width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
-              background: item.done ? T.success : 'transparent',
-              border: `1.5px solid ${item.done ? T.success : T.line}`,
+              background: item.done ? '#6B995C' : 'transparent',
+              border: `1.5px solid ${item.done ? '#6B995C' : T.line}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: item.done ? T.cream : 'transparent',
               fontSize: 13, fontWeight: 700,
@@ -109,7 +109,7 @@ function SetupChecklist({ items, allDone, onDismiss }) {
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{
-                fontSize: 14, fontWeight: 600, color: T.ink, lineHeight: 1.25,
+                fontFamily: T.serif, fontSize: 14.5, fontWeight: 600, color: T.ink, lineHeight: 1.25, letterSpacing: '-0.01em',
                 textDecoration: item.done ? 'line-through' : 'none',
                 opacity: item.done ? 0.6 : 1,
               }}>
@@ -267,8 +267,8 @@ function SermonRow({ sermon, onEdit, onTogglePublish, busy }) {
         disabled={busy}
         title={published ? 'Click to unpublish' : 'Click to publish'}
         style={{
-          background: published ? T.successBg : 'rgba(165,63,43,0.08)',
-          color: published ? T.success : T.error,
+          background: published ? 'rgba(107,153,92,0.14)' : 'rgba(165,63,43,0.08)',
+          color: published ? '#4F7A42' : T.error,
           border: `1px solid ${published ? 'rgba(74,139,90,0.35)' : 'rgba(165,63,43,0.3)'}`,
           borderRadius: 999, padding: '5px 12px', fontSize: 11.5, fontWeight: 700, letterSpacing: 0.5,
           textTransform: 'uppercase', cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
@@ -713,7 +713,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
             <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
               <QuickAction emoji={<KinwoveStar size={22} />} label="New sermon"        hint="Turn Sunday into a week"    onClick={onOpenComposer}    accent={T.goldDark} />
               {SHOW_WALKS && <QuickAction emoji="✶" label="Announce a walk"   hint="Post & feature for everyone" onClick={openWalkModal}     accent={T.goldDark} />}
-              <QuickAction emoji="✎" label="Post to feed"      hint="A note for the congregation" onClick={() => setPostModalOpen(true)} />
+              <QuickAction emoji="✎" label="Post to feed"      hint="A note for the congregation" onClick={() => setPostModalOpen(true)} accent={T.goldDark} />
               <QuickAction emoji="👥" label="People & roles"    hint="Invite, badge, and manage" onClick={onOpenCareAdmin} />
               <QuickAction emoji="⛪" label="Public church page" hint="See what visitors see"     onClick={onOpenChurchPage} />
             </div>
@@ -725,7 +725,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
           <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
             <QuickAction emoji="📖" label="New sermon"      hint="Turn Sunday into a week"     onClick={() => onOpenComposer?.()}    accent={T.goldDark} />
             {SHOW_WALKS && <QuickAction emoji="✶"  label="Announce a walk" hint="Post & feature for everyone"  onClick={openWalkModal}               accent={T.goldDark} />}
-            <QuickAction emoji="✎"  label="Post to feed"    hint="A note for the congregation"  onClick={() => setPostModalOpen(true)} />
+            <QuickAction emoji="✎"  label="Post to feed"    hint="A note for the congregation"  onClick={() => setPostModalOpen(true)} accent={T.goldDark} />
           </div>
         )}
 
@@ -927,8 +927,8 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
 
         {/* Quick links */}
         <div style={{
-          background: 'rgba(184,115,58,0.06)', border: `1px solid ${T.goldLight}`,
-          borderRadius: 14, padding: '14px 18px',
+          background: 'rgba(184,115,58,0.05)', border: '1px solid rgba(184,115,58,0.20)',
+          borderRadius: 16, padding: '14px 18px',
           fontSize: 13, color: T.inkSoft, lineHeight: 1.65,
         }}>
           <div style={{ fontWeight: 600, color: T.ink, marginBottom: 6 }}>What pastors can and can't see</div>
