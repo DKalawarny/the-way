@@ -927,98 +927,104 @@ function IlluminatedCap({ seedKey, letter, quote, red, dark, scale = 1 }) {
     h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909);
     return ((h ^= h >>> 16) >>> 0) / 4294967296;
   };
+  const uid = `il${Math.abs(h)}${letter}`; // unique gradient ids per panel
 
-  // ── kinwove illumination — a modern rendition of the Owen Jones plates ─────
-  // Deep ink grounds, acanthus foliage, white-dot rubrication, and a fully
-  // legible Fraunces letter. Seeded per chapter: same chapter, same panel.
-  const INK = {
-    crimson: '#A93B32', crimsonDeep: '#7A2A22',
-    gold: '#D4A24A', goldDeep: '#8E5528',
-    sage: '#6B995C', sageDeep: '#46663B',
-    slate: '#5B82A0', slateDeep: '#33566F',
-    cream: '#F5EDD8', parchment: '#F8F1DD',
-    walnut: '#2A1A0C', walnutDeep: '#1C1005',
-  };
-  // ground + foliage ink pairings, tuned so the letter always carries
-  const THEMES = [
-    { bg: INK.walnut,      frame: INK.gold,   leafA: INK.crimson, leafB: INK.sage,  letter: INK.cream,  lstroke: INK.walnutDeep },
-    { bg: INK.crimsonDeep, frame: INK.gold,   leafA: INK.gold,    leafB: INK.sage,  letter: INK.cream,  lstroke: '#4A1812' },
-    { bg: INK.parchment,   frame: INK.goldDeep, leafA: INK.crimson, leafB: INK.sage, letter: INK.goldDeep, lstroke: INK.cream },
-    { bg: INK.sageDeep,    frame: INK.gold,   leafA: INK.crimson, leafB: INK.gold,  letter: INK.cream,  lstroke: '#2C4224' },
-    { bg: INK.slateDeep,   frame: INK.gold,   leafA: INK.crimson, leafB: INK.gold,  letter: INK.cream,  lstroke: '#1F3A4E' },
-    { bg: INK.walnut,      frame: INK.gold,   leafA: INK.slate,   leafB: INK.gold,  letter: INK.cream,  lstroke: INK.walnutDeep },
+  // ── kinwove illumination v3 — the gold is the hero ─────────────────────────
+  // Dimensional gold letter (gradient + sheen + foliate inlay) on a deep
+  // ground, gold frame, botanical sprigs with berries. Seeded per chapter.
+  const GROUNDS = [
+    { g: '#1E2A45', g2: '#141D33', name: 'indigo' },
+    { g: '#2A1A0C', g2: '#1A0F05', name: 'walnut' },
+    { g: '#4A1F18', g2: '#33130D', name: 'crimson' },
+    { g: '#20301E', g2: '#141F12', name: 'forest' },
+    { g: '#241A33', g2: '#171022', name: 'plum' },
   ];
-  const t = THEMES[Math.floor(rand() * THEMES.length)];
-  const letterColor = red ? (t.bg === INK.parchment ? '#A93B32' : '#F0A9A0') : t.letter;
+  const ground = GROUNDS[Math.floor(rand() * GROUNDS.length)];
+  const layout = Math.floor(rand() * 3);
+  const mirror = rand() < 0.5;
+  const sage = '#7FA26B', sageDeep = '#5C7A4C';
+  const berry = red ? '#E0796F' : '#C24A3F';
 
-  // acanthus curl: stem sweep + leaf lobes + white dot chain
-  const curl = (x, y, s2, rot, mir, cA, cB) => {
-    const tf = `translate(${x} ${y}) rotate(${rot}) scale(${mir ? -s2 : s2} ${s2})`;
-    return (
-      <g key={`${x}-${y}-${rot}`} transform={tf}>
-        <path d="M 0 0 C 2 -8, 10 -12, 18 -10 C 13 -9, 10 -6, 9 -2 C 14 -6, 20 -5, 22 0 C 17 -1, 14 1, 13 4 C 18 3, 22 6, 22 11 C 17 8, 12 9, 9 12 C 11 6, 8 1, 0 0 Z"
-          fill={cA} stroke={cB} strokeWidth="0.8" strokeLinejoin="round" />
-        <path d="M 2 -1 C 8 -6, 13 -7, 17 -7" fill="none" stroke={cB} strokeWidth="1" strokeLinecap="round" opacity="0.9" />
-        <circle cx="5" cy="-3.4" r="1.05" fill="#FFF6E4" opacity="0.95" />
-        <circle cx="9.5" cy="-5" r="1.05" fill="#FFF6E4" opacity="0.95" />
-        <circle cx="14" cy="-6" r="1.05" fill="#FFF6E4" opacity="0.95" />
-      </g>
-    );
-  };
-  // trailing vine with buds for panel edges
-  const vine = (x, y, len, rot, c) => (
-    <g key={`v${x}-${y}`} transform={`translate(${x} ${y}) rotate(${rot})`}>
-      <path d={`M 0 0 q ${len*0.3} -6 ${len*0.55} 0 q ${len*0.25} 5 ${len*0.45} -1`} fill="none" stroke={c} strokeWidth="1.6" strokeLinecap="round" />
-      <circle cx={len*0.28} cy={-4.4} r="1.6" fill={c} />
-      <circle cx={len*0.62} cy={3.4} r="1.6" fill={c} />
-      <circle cx={len*0.97} cy={-2} r="1.9" fill="#FFF6E4" stroke={c} strokeWidth="0.8" />
+  // botanical sprig: curved stem, leaf pair, berry cluster
+  const sprig = (x, y, rot, mir2, kk) => (
+    <g key={kk} transform={`translate(${x} ${y}) rotate(${rot}) scale(${mir2 ? -1 : 1} 1)`}>
+      <path d="M 0 0 C 6 -4, 14 -6, 22 -4" fill="none" stroke={sageDeep} strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M 7 -3.5 C 8 -8, 12 -10, 16 -9 C 13 -6, 11 -4.5, 9 -3.2 Z" fill={sage} stroke={sageDeep} strokeWidth="0.5" />
+      <path d="M 13 -5 C 15 -1, 19 0.5, 23 -0.5 C 20 -3, 17 -4.5, 14 -5 Z" fill={sage} stroke={sageDeep} strokeWidth="0.5" />
+      <circle cx="24" cy="-5.5" r="2.1" fill={berry} />
+      <circle cx="27.6" cy="-3" r="1.8" fill={berry} />
+      <circle cx="24.6" cy="-1" r="1.5" fill={berry} />
+      <circle cx="23.4" cy="-6.1" r="0.65" fill="#FFE9D9" opacity="0.9" />
     </g>
   );
 
-  const mirror = rand() < 0.5;
-  const layout = Math.floor(rand() * 4);
-  const corners = [];
-  if (layout === 0) {           // opposite corner acanthus
-    corners.push(curl(16, 20, 1.05, 160, !mirror, t.leafA, t.frame));
-    corners.push(curl(84, 82, 1.05, -20, mirror, t.leafB, t.frame));
-    corners.push(vine(24, 88, 52, -2, t.leafA));
-  } else if (layout === 1) {    // twin crown curls + base vine
-    corners.push(curl(22, 18, 0.95, 150, false, t.leafA, t.frame));
-    corners.push(curl(78, 18, 0.95, 30, true, t.leafA, t.frame));
-    corners.push(vine(20, 86, 60, 0, t.leafB));
-  } else if (layout === 2) {    // climbing side foliage
-    corners.push(curl(15, 30, 1.0, 195, !mirror, t.leafA, t.frame));
-    corners.push(curl(15, 62, 0.9, 175, !mirror, t.leafB, t.frame));
-    corners.push(curl(85, 78, 1.0, -15, mirror, t.leafA, t.frame));
-  } else {                      // quiet corners, dot rubrication field
-    corners.push(curl(18, 82, 1.0, 210, false, t.leafA, t.frame));
-    corners.push(curl(82, 20, 1.0, 30, true, t.leafB, t.frame));
-    for (let i = 0; i < 7; i++) {
-      corners.push(<circle key={`d${i}`} cx={14 + rand()*72} cy={14 + rand()*72} r="1.3" fill={t.frame} opacity="0.55" />);
-    }
+  const sprigs = [];
+  if (layout === 0) {
+    sprigs.push(sprig(12, 22, -18, mirror, 'a'));
+    sprigs.push(sprig(60, 88, 8, !mirror, 'b'));
+  } else if (layout === 1) {
+    sprigs.push(sprig(10, 84, -4, false, 'a'));
+    sprigs.push(sprig(66, 14, 14, true, 'b'));
+  } else {
+    sprigs.push(sprig(8, 50, -85, mirror, 'a'));
+    sprigs.push(sprig(64, 90, 6, !mirror, 'b'));
   }
 
-  const size = Math.round(80 * scale);
+  const size = Math.round(82 * scale);
+  const letterFill = red ? `url(#rg-${uid})` : `url(#gg-${uid})`;
   return (
     <span
       aria-hidden="true"
       title={`“${letter}”`}
       style={{ float: 'left', margin: `${Math.round(5 * scale)}px ${Math.round(14 * scale)}px ${Math.round(3 * scale)}px 0`, lineHeight: 0, cursor: 'help' }}
     >
-      <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: 'block', borderRadius: Math.round(8 * scale), boxShadow: dark ? '0 2px 14px rgba(0,0,0,0.45)' : '0 1px 6px rgba(26,17,8,0.18)' }}>
-        <rect x="0" y="0" width="100" height="100" fill={t.bg} />
-        {/* double keyline frame, Jones-style */}
-        <rect x="3.5" y="3.5" width="93" height="93" fill="none" stroke={t.frame} strokeWidth="1.6" opacity="0.95" />
-        <rect x="7.5" y="7.5" width="85" height="85" fill="none" stroke={t.frame} strokeWidth="0.6" opacity="0.55" />
-        {corners}
-        {/* the letter — always legible, softly haloed off the ornament */}
-        <text x="50" y="54" textAnchor="middle" dominantBaseline="central"
-          fontFamily="Fraunces, Georgia, serif" fontWeight="600" fontSize="58"
-          fill={letterColor} stroke={t.lstroke} strokeWidth="2.6" paintOrder="stroke" strokeLinejoin="round">
-          {letter}
-        </text>
+      <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: 'block', borderRadius: Math.round(9 * scale), boxShadow: dark ? '0 3px 16px rgba(0,0,0,0.5)' : '0 2px 10px rgba(26,17,8,0.22)' }}>
+        <defs>
+          <radialGradient id={`bg-${uid}`} cx="38%" cy="30%" r="90%">
+            <stop offset="0%" stopColor={ground.g} />
+            <stop offset="100%" stopColor={ground.g2} />
+          </radialGradient>
+          {/* the gold: lit from above, bronze at the foot */}
+          <linearGradient id={`gg-${uid}`} x1="0" y1="0" x2="0.25" y2="1">
+            <stop offset="0%" stopColor="#F9E7B3" />
+            <stop offset="34%" stopColor="#EFC96F" />
+            <stop offset="68%" stopColor="#C7913D" />
+            <stop offset="100%" stopColor="#8E5A22" />
+          </linearGradient>
+          <linearGradient id={`rg-${uid}`} x1="0" y1="0" x2="0.25" y2="1">
+            <stop offset="0%" stopColor="#F0A08F" />
+            <stop offset="45%" stopColor="#C8543F" />
+            <stop offset="100%" stopColor="#7A2A1C" />
+          </linearGradient>
+          {/* diagonal specular sheen, clipped onto the letter by re-drawing it */}
+          <linearGradient id={`sh-${uid}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0" />
+            <stop offset="38%" stopColor="#FFFFFF" stopOpacity="0.75" />
+            <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0" />
+            <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+          </linearGradient>
+          {/* foliate inlay engraved into the gold */}
+          <pattern id={`in-${uid}`} width="9" height="9" patternUnits="userSpaceOnUse" patternTransform={`rotate(${mirror ? -24 : 24})`}>
+            <path d="M 0 6 Q 3 1, 7 3 Q 4.5 4, 3.5 7" fill="none" stroke="#6E4514" strokeWidth="0.9" strokeLinecap="round" />
+            <circle cx="7.4" cy="6.8" r="0.62" fill="#6E4514" />
+          </pattern>
+        </defs>
+
+        <rect x="0" y="0" width="100" height="100" fill={`url(#bg-${uid})`} />
+        <rect x="3.5" y="3.5" width="93" height="93" fill="none" stroke="#D9AE5C" strokeWidth="1.7" opacity="0.95" />
+        <rect x="7" y="7" width="86" height="86" fill="none" stroke="#D9AE5C" strokeWidth="0.55" opacity="0.5" />
+        {/* corner studs, like mounted metalwork */}
+        {[[3.5, 3.5], [96.5, 3.5], [3.5, 96.5], [96.5, 96.5]].map(([cx, cy], i) => (
+          <circle key={i} cx={cx} cy={cy} r="2" fill="#D9AE5C" />
+        ))}
+        {sprigs}
+        {/* the letter: shadow → gold body → engraved inlay → sheen → edge */}
+        <text x="51.5" y="56.5" textAnchor="middle" dominantBaseline="central" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="62" fill="rgba(0,0,0,0.45)">{letter}</text>
+        <text x="50" y="55" textAnchor="middle" dominantBaseline="central" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="62" fill={letterFill} stroke="#5C3A10" strokeWidth="1.1" paintOrder="stroke">{letter}</text>
+        <text x="50" y="55" textAnchor="middle" dominantBaseline="central" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="62" fill={`url(#in-${uid})`} opacity="0.5">{letter}</text>
+        <text x="50" y="55" textAnchor="middle" dominantBaseline="central" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="62" fill={`url(#sh-${uid})`} opacity="0.55">{letter}</text>
         {quote && (
-          <text x="15" y="24" textAnchor="middle" fontFamily="Fraunces, Georgia, serif" fontWeight="600" fontSize="20" fill={letterColor} opacity="0.7">{quote}</text>
+          <text x="14" y="22" textAnchor="middle" fontFamily="Fraunces, Georgia, serif" fontWeight="600" fontSize="19" fill="#E9C56F" opacity="0.8">{quote}</text>
         )}
       </svg>
     </span>
