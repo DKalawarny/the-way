@@ -13,7 +13,6 @@ import { useAiUsage } from './useAiUsage.js';
 import AiLimitWall, { AiUsageWarning } from './AiLimitWall.jsx';
 import { track } from './analytics.js';
 import { READING_PLANS, planProgress, planNextDay } from './readingPlans.js';
-import { INITIALS } from './initialsManifest.js';
 import { BOOK_AUTHORS } from './bookAuthors.js';
 import { isWiderCanonText, WiderCanonTag } from './widerCanon.jsx';
 import Tip from './Tip.jsx';
@@ -928,121 +927,98 @@ function IlluminatedCap({ seedKey, letter, quote, red, dark, scale = 1 }) {
     h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909);
     return ((h ^= h >>> 16) >>> 0) / 4294967296;
   };
-  // Real illumination first: curated crops from Owen Jones' "One Thousand and
-  // One Initial Letters" (1864, public domain) — the chapter seed picks which
-  // of the letter's variants this chapter wears, permanently.
-  const imgCount = INITIALS[letter] ?? 0;
-  const imgIdx = Math.floor(rand() * Math.max(1, imgCount));
-  if (imgCount > 0) {
-    const size = Math.round(80 * scale);
-    // The art sits on its own small parchment plate — the way a tipped-in
-    // print would — which also swallows any scan fringe in dark mode.
+
+  // ── kinwove illumination — a modern rendition of the Owen Jones plates ─────
+  // Deep ink grounds, acanthus foliage, white-dot rubrication, and a fully
+  // legible Fraunces letter. Seeded per chapter: same chapter, same panel.
+  const INK = {
+    crimson: '#A93B32', crimsonDeep: '#7A2A22',
+    gold: '#D4A24A', goldDeep: '#8E5528',
+    sage: '#6B995C', sageDeep: '#46663B',
+    slate: '#5B82A0', slateDeep: '#33566F',
+    cream: '#F5EDD8', parchment: '#F8F1DD',
+    walnut: '#2A1A0C', walnutDeep: '#1C1005',
+  };
+  // ground + foliage ink pairings, tuned so the letter always carries
+  const THEMES = [
+    { bg: INK.walnut,      frame: INK.gold,   leafA: INK.crimson, leafB: INK.sage,  letter: INK.cream,  lstroke: INK.walnutDeep },
+    { bg: INK.crimsonDeep, frame: INK.gold,   leafA: INK.gold,    leafB: INK.sage,  letter: INK.cream,  lstroke: '#4A1812' },
+    { bg: INK.parchment,   frame: INK.goldDeep, leafA: INK.crimson, leafB: INK.sage, letter: INK.goldDeep, lstroke: INK.cream },
+    { bg: INK.sageDeep,    frame: INK.gold,   leafA: INK.crimson, leafB: INK.gold,  letter: INK.cream,  lstroke: '#2C4224' },
+    { bg: INK.slateDeep,   frame: INK.gold,   leafA: INK.crimson, leafB: INK.gold,  letter: INK.cream,  lstroke: '#1F3A4E' },
+    { bg: INK.walnut,      frame: INK.gold,   leafA: INK.slate,   leafB: INK.gold,  letter: INK.cream,  lstroke: INK.walnutDeep },
+  ];
+  const t = THEMES[Math.floor(rand() * THEMES.length)];
+  const letterColor = red ? (t.bg === INK.parchment ? '#A93B32' : '#F0A9A0') : t.letter;
+
+  // acanthus curl: stem sweep + leaf lobes + white dot chain
+  const curl = (x, y, s2, rot, mir, cA, cB) => {
+    const tf = `translate(${x} ${y}) rotate(${rot}) scale(${mir ? -s2 : s2} ${s2})`;
     return (
-      <span
-        aria-hidden="true"
-        title={`“${letter}” — an illuminated initial from Owen Jones, 1864`}
-        style={{
-        float: 'left', margin: `${Math.round(5 * scale)}px ${Math.round(14 * scale)}px ${Math.round(3 * scale)}px 0`,
-        lineHeight: 0, display: 'inline-block', cursor: 'help',
-        background: 'linear-gradient(160deg, #FCF6E8 0%, #F3E9D2 100%)',
-        border: '1px solid rgba(142,85,40,0.35)',
-        borderRadius: 7, padding: Math.round(6 * scale),
-        boxShadow: dark ? '0 2px 14px rgba(0,0,0,0.5)' : '0 1px 6px rgba(26,17,8,0.12)',
-      }}>
-        <img
-          src={`/initials/${letter}/${imgIdx}.png`}
-          alt=""
-          draggable={false}
-          style={{ height: size, width: 'auto', maxWidth: Math.round(size * 1.25), objectFit: 'contain', display: 'block' }}
-        />
-      </span>
+      <g key={`${x}-${y}-${rot}`} transform={tf}>
+        <path d="M 0 0 C 2 -8, 10 -12, 18 -10 C 13 -9, 10 -6, 9 -2 C 14 -6, 20 -5, 22 0 C 17 -1, 14 1, 13 4 C 18 3, 22 6, 22 11 C 17 8, 12 9, 9 12 C 11 6, 8 1, 0 0 Z"
+          fill={cA} stroke={cB} strokeWidth="0.8" strokeLinejoin="round" />
+        <path d="M 2 -1 C 8 -6, 13 -7, 17 -7" fill="none" stroke={cB} strokeWidth="1" strokeLinecap="round" opacity="0.9" />
+        <circle cx="5" cy="-3.4" r="1.05" fill="#FFF6E4" opacity="0.95" />
+        <circle cx="9.5" cy="-5" r="1.05" fill="#FFF6E4" opacity="0.95" />
+        <circle cx="14" cy="-6" r="1.05" fill="#FFF6E4" opacity="0.95" />
+      </g>
     );
+  };
+  // trailing vine with buds for panel edges
+  const vine = (x, y, len, rot, c) => (
+    <g key={`v${x}-${y}`} transform={`translate(${x} ${y}) rotate(${rot})`}>
+      <path d={`M 0 0 q ${len*0.3} -6 ${len*0.55} 0 q ${len*0.25} 5 ${len*0.45} -1`} fill="none" stroke={c} strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx={len*0.28} cy={-4.4} r="1.6" fill={c} />
+      <circle cx={len*0.62} cy={3.4} r="1.6" fill={c} />
+      <circle cx={len*0.97} cy={-2} r="1.9" fill="#FFF6E4" stroke={c} strokeWidth="0.8" />
+    </g>
+  );
+
+  const mirror = rand() < 0.5;
+  const layout = Math.floor(rand() * 4);
+  const corners = [];
+  if (layout === 0) {           // opposite corner acanthus
+    corners.push(curl(16, 20, 1.05, 160, !mirror, t.leafA, t.frame));
+    corners.push(curl(84, 82, 1.05, -20, mirror, t.leafB, t.frame));
+    corners.push(vine(24, 88, 52, -2, t.leafA));
+  } else if (layout === 1) {    // twin crown curls + base vine
+    corners.push(curl(22, 18, 0.95, 150, false, t.leafA, t.frame));
+    corners.push(curl(78, 18, 0.95, 30, true, t.leafA, t.frame));
+    corners.push(vine(20, 86, 60, 0, t.leafB));
+  } else if (layout === 2) {    // climbing side foliage
+    corners.push(curl(15, 30, 1.0, 195, !mirror, t.leafA, t.frame));
+    corners.push(curl(15, 62, 0.9, 175, !mirror, t.leafB, t.frame));
+    corners.push(curl(85, 78, 1.0, -15, mirror, t.leafA, t.frame));
+  } else {                      // quiet corners, dot rubrication field
+    corners.push(curl(18, 82, 1.0, 210, false, t.leafA, t.frame));
+    corners.push(curl(82, 20, 1.0, 30, true, t.leafB, t.frame));
+    for (let i = 0; i < 7; i++) {
+      corners.push(<circle key={`d${i}`} cx={14 + rand()*72} cy={14 + rand()*72} r="1.3" fill={t.frame} opacity="0.55" />);
+    }
   }
-  // SVG fallback — five structurally different treatments
-  const variant = Math.floor(rand() * 5);
-  const accentPick = rand();
-  const accent = accentPick < 0.5 ? (dark ? '#D4A24A' : '#8E5528')
-    : accentPick < 0.78 ? '#6B995C'
-    : (dark ? '#7C9DB8' : '#3a6b8a');
-  const flip = rand() < 0.5;
-  const size = Math.round(76 * scale);
-  const line = dark ? 'rgba(212,162,74,0.55)' : 'rgba(142,85,40,0.5)';
-  const inkFill = red ? (dark ? '#6E2A22' : '#7A2A22') : (dark ? '#3A2410' : '#4A2E14');
-  const letterInk = red ? (dark ? '#E0796F' : '#A93B32') : (dark ? '#E8C07A' : '#8E5528');
-  const F = 'Fraunces, Georgia, serif';
 
-  const inner = (() => {
-    if (variant === 0) {
-      // Classic bordered panel with corner filigree
-      return (
-        <>
-          <rect x="3" y="3" width="94" height="94" rx="6" fill={dark ? 'rgba(212,162,74,0.09)' : 'rgba(212,162,74,0.10)'} stroke={line} strokeWidth="1.8" />
-          <rect x="9" y="9" width="82" height="82" rx="3" fill="none" stroke={line} strokeWidth="0.8" opacity="0.7" />
-          <path d={flip ? 'M 12 26 Q 12 12, 26 12' : 'M 74 12 Q 88 12, 88 26'} fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" />
-          <path d={flip ? 'M 88 74 Q 88 88, 74 88' : 'M 26 88 Q 12 88, 12 74'} fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" />
-          <circle cx={flip ? 17 : 83} cy={flip ? 17 : 17} r="2" fill={accent} opacity="0.85" />
-          <circle cx={flip ? 83 : 17} cy={flip ? 83 : 83} r="2" fill={accent} opacity="0.85" />
-          <text x="52" y="53" textAnchor="middle" dominantBaseline="central" fontFamily={F} fontWeight="600" fontSize="56" fill={letterInk}>{letter}</text>
-        </>
-      );
-    }
-    if (variant === 1) {
-      // Solid ink block — light letter reversed out, thin inner keyline
-      return (
-        <>
-          <rect x="4" y="4" width="92" height="92" rx="7" fill={inkFill} />
-          <rect x="10" y="10" width="80" height="80" rx="3" fill="none" stroke={dark ? 'rgba(244,233,212,0.35)' : 'rgba(245,237,216,0.4)'} strokeWidth="1" />
-          <path d={`M 20 ${flip ? 16 : 84} h 60`} stroke={accent} strokeWidth="1.6" opacity="0.9" />
-          <text x="50" y="52" textAnchor="middle" dominantBaseline="central" fontFamily={F} fontWeight="600" fontSize="56" fill={dark ? '#F0E2C4' : '#F5EDD8'}>{letter}</text>
-        </>
-      );
-    }
-    if (variant === 2) {
-      // Ring medallion with a crown star
-      return (
-        <>
-          <circle cx="50" cy="52" r="43" fill={dark ? 'rgba(212,162,74,0.08)' : 'rgba(212,162,74,0.09)'} stroke={line} strokeWidth="1.8" />
-          <circle cx="50" cy="52" r="36" fill="none" stroke={accent} strokeWidth="1" opacity="0.75" />
-          <path d="M 50 2 L 51.4 7.6 L 57 9 L 51.4 10.4 L 50 16 L 48.6 10.4 L 43 9 L 48.6 7.6 Z" fill={accent} />
-          <text x="50" y="54" textAnchor="middle" dominantBaseline="central" fontFamily={F} fontWeight="600" fontSize="52" fill={letterInk}>{letter}</text>
-        </>
-      );
-    }
-    if (variant === 3) {
-      // Open vine cap — no box, a climbing tendril beside a large free letter
-      const vx = flip ? 88 : 12;
-      const dir = flip ? -1 : 1;
-      return (
-        <>
-          <path d={`M ${vx} 10 C ${vx + 10 * dir} 25, ${vx - 6 * dir} 40, ${vx + 4 * dir} 55 C ${vx + 12 * dir} 68, ${vx - 2 * dir} 80, ${vx + 2 * dir} 92`} fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round" opacity="0.9" />
-          <path d={`M ${vx + 3 * dir} 28 q ${8 * dir} -2 ${10 * dir} -9`} fill="none" stroke={accent} strokeWidth="1.6" strokeLinecap="round" />
-          <path d={`M ${vx + 4 * dir} 62 q ${9 * dir} 1 ${12 * dir} 8`} fill="none" stroke={accent} strokeWidth="1.6" strokeLinecap="round" />
-          <circle cx={vx + 14 * dir} cy="17" r="2.4" fill={accent} />
-          <circle cx={vx + 17 * dir} cy="72" r="2.4" fill={accent} />
-          <text x={flip ? 42 : 58} y="54" textAnchor="middle" dominantBaseline="central" fontFamily={F} fontWeight="600" fontSize="72" fill={letterInk}>{letter}</text>
-        </>
-      );
-    }
-    // Rubricated column — bold side bar, hatched footer corner
-    const bx = flip ? 88 : 6;
-    return (
-      <>
-        <rect x="4" y="4" width="92" height="92" rx="5" fill={dark ? 'rgba(212,162,74,0.06)' : 'rgba(212,162,74,0.07)'} stroke={line} strokeWidth="1.2" />
-        <rect x={bx} y="6" width="6" height="88" rx="2" fill={accent} opacity="0.9" />
-        {[0, 1, 2, 3].map((i) => (
-          <path key={i} d={`M ${flip ? 10 + i * 5 : 70 + i * 5} 94 L ${flip ? 22 + i * 5 : 82 + i * 5} 82`} stroke={line} strokeWidth="1" opacity="0.8" />
-        ))}
-        <text x={flip ? 46 : 54} y="52" textAnchor="middle" dominantBaseline="central" fontFamily={F} fontWeight="600" fontSize="56" fill={letterInk}>{letter}</text>
-      </>
-    );
-  })();
-
+  const size = Math.round(80 * scale);
   return (
-    <span aria-hidden="true" style={{ float: 'left', margin: `${Math.round(5 * scale)}px ${Math.round(12 * scale)}px 2px 0`, lineHeight: 0 }}>
-      <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: 'block', overflow: 'visible' }}>
-        {inner}
-        {quote && variant !== 1 && (
-          <text x="16" y="26" textAnchor="middle" fontFamily={F} fontWeight="600" fontSize="24" fill={letterInk} opacity="0.6">{quote}</text>
+    <span
+      aria-hidden="true"
+      title={`“${letter}”`}
+      style={{ float: 'left', margin: `${Math.round(5 * scale)}px ${Math.round(14 * scale)}px ${Math.round(3 * scale)}px 0`, lineHeight: 0, cursor: 'help' }}
+    >
+      <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: 'block', borderRadius: Math.round(8 * scale), boxShadow: dark ? '0 2px 14px rgba(0,0,0,0.45)' : '0 1px 6px rgba(26,17,8,0.18)' }}>
+        <rect x="0" y="0" width="100" height="100" fill={t.bg} />
+        {/* double keyline frame, Jones-style */}
+        <rect x="3.5" y="3.5" width="93" height="93" fill="none" stroke={t.frame} strokeWidth="1.6" opacity="0.95" />
+        <rect x="7.5" y="7.5" width="85" height="85" fill="none" stroke={t.frame} strokeWidth="0.6" opacity="0.55" />
+        {corners}
+        {/* the letter — always legible, softly haloed off the ornament */}
+        <text x="50" y="54" textAnchor="middle" dominantBaseline="central"
+          fontFamily="Fraunces, Georgia, serif" fontWeight="600" fontSize="58"
+          fill={letterColor} stroke={t.lstroke} strokeWidth="2.6" paintOrder="stroke" strokeLinejoin="round">
+          {letter}
+        </text>
+        {quote && (
+          <text x="15" y="24" textAnchor="middle" fontFamily="Fraunces, Georgia, serif" fontWeight="600" fontSize="20" fill={letterColor} opacity="0.7">{quote}</text>
         )}
       </svg>
     </span>
