@@ -927,51 +927,78 @@ function IlluminatedCap({ seedKey, letter, quote, red, dark, scale = 1 }) {
     h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909);
     return ((h ^= h >>> 16) >>> 0) / 4294967296;
   };
-  const uid = `il${Math.abs(h)}${letter}`; // unique gradient ids per panel
+  const uid = `il${Math.abs(h)}${letter}`;
 
-  // ── kinwove illumination v3 — the gold is the hero ─────────────────────────
-  // Dimensional gold letter (gradient + sheen + foliate inlay) on a deep
-  // ground, gold frame, botanical sprigs with berries. Seeded per chapter.
+  // ── kinwove illumination v4 — properly ornate ──────────────────────────────
+  // A living vine network fills the ground, tendrils cross the gold letter,
+  // fan flourishes hold the corners. Dense but fine, so the letter still wins.
   const GROUNDS = [
-    { g: '#1E2A45', g2: '#141D33', name: 'indigo' },
-    { g: '#2A1A0C', g2: '#1A0F05', name: 'walnut' },
-    { g: '#4A1F18', g2: '#33130D', name: 'crimson' },
-    { g: '#20301E', g2: '#141F12', name: 'forest' },
-    { g: '#241A33', g2: '#171022', name: 'plum' },
+    { g: '#1E2A45', g2: '#131C31' },
+    { g: '#2A1A0C', g2: '#190E04' },
+    { g: '#471E17', g2: '#30120C' },
+    { g: '#1F2F1D', g2: '#122010' },
+    { g: '#241A33', g2: '#150F20' },
   ];
   const ground = GROUNDS[Math.floor(rand() * GROUNDS.length)];
-  const layout = Math.floor(rand() * 3);
-  const mirror = rand() < 0.5;
-  const sage = '#7FA26B', sageDeep = '#5C7A4C';
+  const sage = '#7FA26B', sageDeep = '#55713F';
+  const goldLine = '#D9AE5C';
   const berry = red ? '#E0796F' : '#C24A3F';
 
-  // botanical sprig: curved stem, leaf pair, berry cluster
-  const sprig = (x, y, rot, mir2, kk) => (
-    <g key={kk} transform={`translate(${x} ${y}) rotate(${rot}) scale(${mir2 ? -1 : 1} 1)`}>
-      <path d="M 0 0 C 6 -4, 14 -6, 22 -4" fill="none" stroke={sageDeep} strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M 7 -3.5 C 8 -8, 12 -10, 16 -9 C 13 -6, 11 -4.5, 9 -3.2 Z" fill={sage} stroke={sageDeep} strokeWidth="0.5" />
-      <path d="M 13 -5 C 15 -1, 19 0.5, 23 -0.5 C 20 -3, 17 -4.5, 14 -5 Z" fill={sage} stroke={sageDeep} strokeWidth="0.5" />
-      <circle cx="24" cy="-5.5" r="2.1" fill={berry} />
-      <circle cx="27.6" cy="-3" r="1.8" fill={berry} />
-      <circle cx="24.6" cy="-1" r="1.5" fill={berry} />
-      <circle cx="23.4" cy="-6.1" r="0.65" fill="#FFE9D9" opacity="0.9" />
+  // one vine sprig: curved stem + alternating leaves + optional berries
+  function sprig(x, y, rot, len, kk, withBerries, tone) {
+    const leafC = tone === 'gold' ? goldLine : sage;
+    const leafD = tone === 'gold' ? '#A87A2E' : sageDeep;
+    const l2 = len * 0.55;
+    return (
+      <g key={kk} transform={`translate(${x} ${y}) rotate(${rot})`}>
+        <path d={`M 0 0 C ${len*0.3} -${len*0.28}, ${len*0.62} -${len*0.3}, ${len} -${len*0.12}`} fill="none" stroke={leafD} strokeWidth="1.25" strokeLinecap="round" />
+        <path d={`M ${len*0.3} -${len*0.24} c -2 -6, 2 -10, 7 -10 c -1 5, -3 8, -7 10 Z`} fill={leafC} stroke={leafD} strokeWidth="0.5" />
+        <path d={`M ${len*0.62} -${len*0.26} c 5 -4, 10 -3, 12 1 c -5 1, -9 0.5, -12 -1 Z`} fill={leafC} stroke={leafD} strokeWidth="0.5" />
+        <path d={`M ${l2} -${len*0.3} c 0 5, 4 8, 8 8 c -1 -5, -4 -7.5, -8 -8 Z`} fill={leafC} stroke={leafD} strokeWidth="0.5" opacity="0.92" />
+        {withBerries && (
+          <g>
+            <circle cx={len} cy={-len*0.12} r="2.2" fill={berry} />
+            <circle cx={len+3.4} cy={-len*0.12+2.6} r="1.8" fill={berry} />
+            <circle cx={len+1} cy={-len*0.12+3.8} r="1.5" fill={berry} />
+            <circle cx={len-0.8} cy={-len*0.12-0.9} r="0.7" fill="#FFE9D9" opacity="0.9" />
+          </g>
+        )}
+      </g>
+    );
+  }
+  // corner fan flourish: three radiating arcs + dots
+  const fan = (x, y, rot, kk) => (
+    <g key={kk} transform={`translate(${x} ${y}) rotate(${rot})`} opacity="0.95">
+      <path d="M 0 0 Q 10 -2 15 -10" fill="none" stroke={goldLine} strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M 0 0 Q 8 -7 9 -15" fill="none" stroke={goldLine} strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M 0 0 Q 3 -9 -1 -16" fill="none" stroke={goldLine} strokeWidth="1.2" strokeLinecap="round" />
+      <circle cx="16.5" cy="-11.5" r="1.2" fill={goldLine} />
+      <circle cx="10" cy="-16.8" r="1.2" fill={goldLine} />
+      <circle cx="-1.6" cy="-17.8" r="1.2" fill={goldLine} />
     </g>
   );
 
-  const sprigs = [];
-  if (layout === 0) {
-    sprigs.push(sprig(12, 22, -18, mirror, 'a'));
-    sprigs.push(sprig(60, 88, 8, !mirror, 'b'));
-  } else if (layout === 1) {
-    sprigs.push(sprig(10, 84, -4, false, 'a'));
-    sprigs.push(sprig(66, 14, 14, true, 'b'));
-  } else {
-    sprigs.push(sprig(8, 50, -85, mirror, 'a'));
-    sprigs.push(sprig(64, 90, 6, !mirror, 'b'));
+  // vine ring around the letter — dense, seeded
+  const ring = [];
+  const N = 8 + Math.floor(rand() * 3);
+  for (let i = 0; i < N; i++) {
+    const ang = (i / N) * Math.PI * 2 + rand() * 0.5;
+    const rx = 50 + Math.cos(ang) * (33 + rand() * 6);
+    const ry = 52 + Math.sin(ang) * (34 + rand() * 5);
+    const rot = (ang * 180 / Math.PI) + 140 + rand() * 60;
+    ring.push(sprig(rx, ry, rot, 16 + rand() * 9, `r${i}`, rand() < 0.55, rand() < 0.3 ? 'gold' : 'sage'));
   }
+  // two tendrils that cross IN FRONT of the letter
+  const front = [
+    sprig(24, 78, -35 + rand() * 14, 26, 'f0', true, 'sage'),
+    sprig(64, 30, 130 + rand() * 16, 24, 'f1', rand() < 0.5, 'sage'),
+  ];
 
   const size = Math.round(82 * scale);
   const letterFill = red ? `url(#rg-${uid})` : `url(#gg-${uid})`;
+  const T = (props) => (
+    <text x="50" y="55" textAnchor="middle" dominantBaseline="central" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="60" {...props}>{letter}</text>
+  );
   return (
     <span
       aria-hidden="true"
@@ -984,7 +1011,6 @@ function IlluminatedCap({ seedKey, letter, quote, red, dark, scale = 1 }) {
             <stop offset="0%" stopColor={ground.g} />
             <stop offset="100%" stopColor={ground.g2} />
           </radialGradient>
-          {/* the gold: lit from above, bronze at the foot */}
           <linearGradient id={`gg-${uid}`} x1="0" y1="0" x2="0.25" y2="1">
             <stop offset="0%" stopColor="#F9E7B3" />
             <stop offset="34%" stopColor="#EFC96F" />
@@ -996,35 +1022,42 @@ function IlluminatedCap({ seedKey, letter, quote, red, dark, scale = 1 }) {
             <stop offset="45%" stopColor="#C8543F" />
             <stop offset="100%" stopColor="#7A2A1C" />
           </linearGradient>
-          {/* diagonal specular sheen, clipped onto the letter by re-drawing it */}
           <linearGradient id={`sh-${uid}`} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0" />
-            <stop offset="38%" stopColor="#FFFFFF" stopOpacity="0.75" />
+            <stop offset="38%" stopColor="#FFFFFF" stopOpacity="0.8" />
             <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0" />
             <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
           </linearGradient>
-          {/* foliate inlay engraved into the gold */}
-          <pattern id={`in-${uid}`} width="9" height="9" patternUnits="userSpaceOnUse" patternTransform={`rotate(${mirror ? -24 : 24})`}>
-            <path d="M 0 6 Q 3 1, 7 3 Q 4.5 4, 3.5 7" fill="none" stroke="#6E4514" strokeWidth="0.9" strokeLinecap="round" />
-            <circle cx="7.4" cy="6.8" r="0.62" fill="#6E4514" />
+          <pattern id={`in-${uid}`} width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(24)">
+            <path d="M 0 5.5 Q 2.6 0.8, 6.2 2.6 Q 4 3.6, 3.1 6.2" fill="none" stroke="#6E4514" strokeWidth="1.05" strokeLinecap="round" />
+            <circle cx="6.6" cy="6" r="0.7" fill="#6E4514" />
           </pattern>
         </defs>
 
         <rect x="0" y="0" width="100" height="100" fill={`url(#bg-${uid})`} />
-        <rect x="3.5" y="3.5" width="93" height="93" fill="none" stroke="#D9AE5C" strokeWidth="1.7" opacity="0.95" />
-        <rect x="7" y="7" width="86" height="86" fill="none" stroke="#D9AE5C" strokeWidth="0.55" opacity="0.5" />
-        {/* corner studs, like mounted metalwork */}
-        {[[3.5, 3.5], [96.5, 3.5], [3.5, 96.5], [96.5, 96.5]].map(([cx, cy], i) => (
-          <circle key={i} cx={cx} cy={cy} r="2" fill="#D9AE5C" />
-        ))}
-        {sprigs}
-        {/* the letter: shadow → gold body → engraved inlay → sheen → edge */}
-        <text x="51.5" y="56.5" textAnchor="middle" dominantBaseline="central" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="62" fill="rgba(0,0,0,0.45)">{letter}</text>
-        <text x="50" y="55" textAnchor="middle" dominantBaseline="central" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="62" fill={letterFill} stroke="#5C3A10" strokeWidth="1.1" paintOrder="stroke">{letter}</text>
-        <text x="50" y="55" textAnchor="middle" dominantBaseline="central" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="62" fill={`url(#in-${uid})`} opacity="0.5">{letter}</text>
-        <text x="50" y="55" textAnchor="middle" dominantBaseline="central" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="62" fill={`url(#sh-${uid})`} opacity="0.55">{letter}</text>
+        {/* faint all-over damask: big soft curls in the ground */}
+        <g opacity="0.14" stroke={goldLine} fill="none" strokeWidth="1">
+          <path d="M 8 30 Q 22 10 40 14 M 60 12 Q 80 10 92 26 M 90 66 Q 92 84 74 90 M 26 92 Q 10 88 8 70" />
+        </g>
+        <rect x="3.5" y="3.5" width="93" height="93" fill="none" stroke={goldLine} strokeWidth="1.7" opacity="0.95" />
+        <rect x="7" y="7" width="86" height="86" fill="none" stroke={goldLine} strokeWidth="0.55" opacity="0.5" />
+        {fan(10, 12, 88, 'c0')}
+        {fan(90, 12, -2, 'c1')}
+        {fan(10, 88, 178, 'c2')}
+        {fan(90, 88, 92, 'c3')}
+        {ring}
+        {/* the letter: shadow → gold → engraving → sheen; then front tendrils */}
+        <T x="51.5" y="56.5" fill="rgba(0,0,0,0.5)" />
+        <T fill={letterFill} stroke="#5C3A10" strokeWidth="1.15" paintOrder="stroke" />
+        <T fill={`url(#in-${uid})`} opacity="0.62" />
+        <T fill={`url(#sh-${uid})`} opacity="0.6" />
+        {/* gold finial crowning the letter */}
+        <g transform="translate(50 16.5)" fill={goldLine}>
+          <path d="M 0 -6 L 1.6 -1.6 L 6 0 L 1.6 1.6 L 0 6 L -1.6 1.6 L -6 0 L -1.6 -1.6 Z" />
+        </g>
+        {front}
         {quote && (
-          <text x="14" y="22" textAnchor="middle" fontFamily="Fraunces, Georgia, serif" fontWeight="600" fontSize="19" fill="#E9C56F" opacity="0.8">{quote}</text>
+          <text x="13" y="21" textAnchor="middle" fontFamily="Fraunces, Georgia, serif" fontWeight="600" fontSize="18" fill="#E9C56F" opacity="0.85">{quote}</text>
         )}
       </svg>
     </span>
