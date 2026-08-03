@@ -778,6 +778,17 @@ app.get('/api/red-audio/:bibleId/:chapterId', requireAuth, limitAuthed({ capacit
   const month = new Date().toISOString().slice(0, 7);
   if (month !== _ttsMonth) { _ttsMonth = month; _ttsMonthCount = 0; }
   if (_ttsMonthCount >= TTS_MONTHLY_CAP) return res.status(429).json({ error: 'tts monthly cap reached' });
+  // Interactive Listen shares this quota — batch generation must never drain
+  // it dry (8/1: a pregen run did, and Ask's Listen fell back to the robot
+  // voice on Daniel's phone). Keep a hard character reserve.
+  try {
+    const sub = await fetch('https://api.elevenlabs.io/v1/user/subscription', { headers: { 'xi-api-key': ELEVEN_KEY } }).then((r) => r.json());
+    const remaining = (sub?.character_limit ?? 0) - (sub?.character_count ?? 0);
+    if (remaining < 12000) {
+      console.log(`[red-audio] deferring generation — only ${remaining} EL chars left (reserve floor 12k)`);
+      return res.status(429).json({ error: 'voice budget reserved for listening' });
+    }
+  } catch { /* subscription probe failed — proceed, the cap guard still applies */ }
 
   try {
     const params = new URLSearchParams({
