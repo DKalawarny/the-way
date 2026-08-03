@@ -155,7 +155,10 @@ export default function ChurchModeShell({
           takes its own height and the tab flexes into the rest — otherwise the
           tab's height:100% overflows past the clipped container and the bottom
           is unreachable. */}
-      <div style={{ minWidth: 0, minHeight: 0, overflow: fullBleed ? 'hidden' : 'auto', display: fullBleed ? 'flex' : undefined, flexDirection: fullBleed ? 'column' : undefined, paddingBottom: (!fullBleed && isVisitorView) ? 80 : 0 }}>
+      {/* Children scroll inside THIS container, not the window — sticky
+          offsets tuned to the global header must resolve to 0 in here, or a
+          see-through gap opens above them and posts slide past (visitor Feed). */}
+      <div style={{ minWidth: 0, minHeight: 0, overflow: fullBleed ? 'hidden' : 'auto', display: fullBleed ? 'flex' : undefined, flexDirection: fullBleed ? 'column' : undefined, paddingBottom: (!fullBleed && isVisitorView) ? 80 : 0, '--global-header-h': '0px' }}>
         {isVisitorView || fullBleed
           ? children
           : <div style={{ maxWidth: bodyMaxWidth, margin: '0 auto', padding: '20px 20px 80px', width: '100%', boxSizing: 'border-box' }}>{children}</div>
