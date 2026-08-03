@@ -921,83 +921,53 @@ const BIBLE_READ_TOUR_STEPS = [
 // accent ink) the way manuscript workshops varied their versals. Same chapter
 // always renders the same panel, like a printed edition.
 function IlluminatedCap({ seedKey, letter, quote, red, dark, scale = 1 }) {
-  let h = 1779033703;
-  for (let i = 0; i < seedKey.length; i++) { h = Math.imul(h ^ seedKey.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
+  // FNV-1a + avalanche — the old mix left similar chapter keys correlated and
+  // whole stretches of a book came out on the same ground.
+  let h = 2166136261;
+  for (let i = 0; i < seedKey.length; i++) { h = Math.imul(h ^ seedKey.charCodeAt(i), 16777619); }
+  h = Math.imul(h ^ (h >>> 15), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); h ^= h >>> 16;
   const rand = () => {
     h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909);
     return ((h ^= h >>> 16) >>> 0) / 4294967296;
   };
-  const uid = `il${Math.abs(h)}${letter}`;
+  const uid = `il${(h >>> 0).toString(36)}${letter}`;
 
-  // ── kinwove illumination v4 — properly ornate ──────────────────────────────
-  // A living vine network fills the ground, tendrils cross the gold letter,
-  // fan flourishes hold the corners. Dense but fine, so the letter still wins.
+  // ── kinwove illumination v5 — clean stage, dimensional gold ───────────────
   const GROUNDS = [
-    { g: '#1E2A45', g2: '#131C31' },
-    { g: '#2A1A0C', g2: '#190E04' },
-    { g: '#471E17', g2: '#30120C' },
-    { g: '#1F2F1D', g2: '#122010' },
-    { g: '#241A33', g2: '#150F20' },
+    { g: '#233252', g2: '#131C31' },
+    { g: '#33200E', g2: '#190E04' },
+    { g: '#522219', g2: '#30120C' },
+    { g: '#24371F', g2: '#122010' },
+    { g: '#2C2040', g2: '#150F20' },
   ];
   const ground = GROUNDS[Math.floor(rand() * GROUNDS.length)];
   const sage = '#7FA26B', sageDeep = '#55713F';
   const goldLine = '#D9AE5C';
   const berry = red ? '#E0796F' : '#C24A3F';
+  const mirror = rand() < 0.5;
+  const layout = Math.floor(rand() * 3);
 
-  // one vine sprig: curved stem + alternating leaves + optional berries
-  function sprig(x, y, rot, len, kk, withBerries, tone) {
-    const leafC = tone === 'gold' ? goldLine : sage;
-    const leafD = tone === 'gold' ? '#A87A2E' : sageDeep;
-    const l2 = len * 0.55;
-    return (
-      <g key={kk} transform={`translate(${x} ${y}) rotate(${rot})`}>
-        <path d={`M 0 0 C ${len*0.3} -${len*0.28}, ${len*0.62} -${len*0.3}, ${len} -${len*0.12}`} fill="none" stroke={leafD} strokeWidth="1.25" strokeLinecap="round" />
-        <path d={`M ${len*0.3} -${len*0.24} c -2 -6, 2 -10, 7 -10 c -1 5, -3 8, -7 10 Z`} fill={leafC} stroke={leafD} strokeWidth="0.5" />
-        <path d={`M ${len*0.62} -${len*0.26} c 5 -4, 10 -3, 12 1 c -5 1, -9 0.5, -12 -1 Z`} fill={leafC} stroke={leafD} strokeWidth="0.5" />
-        <path d={`M ${l2} -${len*0.3} c 0 5, 4 8, 8 8 c -1 -5, -4 -7.5, -8 -8 Z`} fill={leafC} stroke={leafD} strokeWidth="0.5" opacity="0.92" />
-        {withBerries && (
-          <g>
-            <circle cx={len} cy={-len*0.12} r="2.2" fill={berry} />
-            <circle cx={len+3.4} cy={-len*0.12+2.6} r="1.8" fill={berry} />
-            <circle cx={len+1} cy={-len*0.12+3.8} r="1.5" fill={berry} />
-            <circle cx={len-0.8} cy={-len*0.12-0.9} r="0.7" fill="#FFE9D9" opacity="0.9" />
-          </g>
-        )}
-      </g>
-    );
-  }
-  // corner fan flourish: three radiating arcs + dots
-  const fan = (x, y, rot, kk) => (
-    <g key={kk} transform={`translate(${x} ${y}) rotate(${rot})`} opacity="0.95">
-      <path d="M 0 0 Q 10 -2 15 -10" fill="none" stroke={goldLine} strokeWidth="1.2" strokeLinecap="round" />
-      <path d="M 0 0 Q 8 -7 9 -15" fill="none" stroke={goldLine} strokeWidth="1.2" strokeLinecap="round" />
-      <path d="M 0 0 Q 3 -9 -1 -16" fill="none" stroke={goldLine} strokeWidth="1.2" strokeLinecap="round" />
-      <circle cx="16.5" cy="-11.5" r="1.2" fill={goldLine} />
-      <circle cx="10" cy="-16.8" r="1.2" fill={goldLine} />
-      <circle cx="-1.6" cy="-17.8" r="1.2" fill={goldLine} />
+  const sprig = (x, y, rot, mir2, kk) => (
+    <g key={kk} transform={`translate(${x} ${y}) rotate(${rot}) scale(${mir2 ? -1 : 1} 1)`}>
+      <path d="M 0 0 C 6 -4, 14 -6, 22 -4" fill="none" stroke={sageDeep} strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M 7 -3.5 C 8 -8, 12 -10, 16 -9 C 13 -6, 11 -4.5, 9 -3.2 Z" fill={sage} stroke={sageDeep} strokeWidth="0.5" />
+      <path d="M 13 -5 C 15 -1, 19 0.5, 23 -0.5 C 20 -3, 17 -4.5, 14 -5 Z" fill={sage} stroke={sageDeep} strokeWidth="0.5" />
+      <circle cx="24" cy="-5.5" r="2.1" fill={berry} />
+      <circle cx="27.6" cy="-3" r="1.8" fill={berry} />
+      <circle cx="24.6" cy="-1" r="1.5" fill={berry} />
+      <circle cx="23.4" cy="-6.1" r="0.65" fill="#FFE9D9" opacity="0.9" />
     </g>
   );
-
-  // vine ring around the letter — dense, seeded
-  const ring = [];
-  const N = 8 + Math.floor(rand() * 3);
-  for (let i = 0; i < N; i++) {
-    const ang = (i / N) * Math.PI * 2 + rand() * 0.5;
-    const rx = 50 + Math.cos(ang) * (33 + rand() * 6);
-    const ry = 52 + Math.sin(ang) * (34 + rand() * 5);
-    const rot = (ang * 180 / Math.PI) + 140 + rand() * 60;
-    ring.push(sprig(rx, ry, rot, 16 + rand() * 9, `r${i}`, rand() < 0.55, rand() < 0.3 ? 'gold' : 'sage'));
-  }
-  // two tendrils that cross IN FRONT of the letter
-  const front = [
-    sprig(24, 78, -35 + rand() * 14, 26, 'f0', true, 'sage'),
-    sprig(64, 30, 130 + rand() * 16, 24, 'f1', rand() < 0.5, 'sage'),
-  ];
+  const sprigs = layout === 0
+    ? [sprig(12, 22, -18, mirror, 'a'), sprig(60, 88, 8, !mirror, 'b')]
+    : layout === 1
+    ? [sprig(10, 84, -4, false, 'a'), sprig(66, 14, 14, true, 'b')]
+    : [sprig(8, 50, -85, mirror, 'a'), sprig(64, 90, 6, !mirror, 'b')];
 
   const size = Math.round(82 * scale);
-  const letterFill = red ? `url(#rg-${uid})` : `url(#gg-${uid})`;
-  const T = (props) => (
-    <text x="50" y="55" textAnchor="middle" dominantBaseline="central" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="60" {...props}>{letter}</text>
+  const gld = red ? 'rg' : 'gg';
+  const T = ({ dx = 0, dy = 0, ...props }) => (
+    <text x={50 + dx} y={55 + dy} textAnchor="middle" dominantBaseline="central" fontFamily="Fraunces, Georgia, serif" fontWeight="700" fontSize="62" {...props}>{letter}</text>
   );
   return (
     <span
@@ -1007,55 +977,67 @@ function IlluminatedCap({ seedKey, letter, quote, red, dark, scale = 1 }) {
     >
       <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: 'block', borderRadius: Math.round(9 * scale), boxShadow: dark ? '0 3px 16px rgba(0,0,0,0.5)' : '0 2px 10px rgba(26,17,8,0.22)' }}>
         <defs>
-          <radialGradient id={`bg-${uid}`} cx="38%" cy="30%" r="90%">
+          <radialGradient id={`bg-${uid}`} cx="38%" cy="28%" r="95%">
             <stop offset="0%" stopColor={ground.g} />
             <stop offset="100%" stopColor={ground.g2} />
           </radialGradient>
+          <radialGradient id={`halo-${uid}`} cx="50%" cy="46%" r="50%">
+            <stop offset="0%" stopColor="#F3D27E" stopOpacity="0.34" />
+            <stop offset="70%" stopColor="#F3D27E" stopOpacity="0.06" />
+            <stop offset="100%" stopColor="#F3D27E" stopOpacity="0" />
+          </radialGradient>
           <linearGradient id={`gg-${uid}`} x1="0" y1="0" x2="0.25" y2="1">
-            <stop offset="0%" stopColor="#F9E7B3" />
-            <stop offset="34%" stopColor="#EFC96F" />
-            <stop offset="68%" stopColor="#C7913D" />
+            <stop offset="0%" stopColor="#FDF0BF" />
+            <stop offset="30%" stopColor="#F2CE72" />
+            <stop offset="62%" stopColor="#D19A3F" />
             <stop offset="100%" stopColor="#8E5A22" />
           </linearGradient>
           <linearGradient id={`rg-${uid}`} x1="0" y1="0" x2="0.25" y2="1">
-            <stop offset="0%" stopColor="#F0A08F" />
+            <stop offset="0%" stopColor="#F5B3A3" />
             <stop offset="45%" stopColor="#C8543F" />
             <stop offset="100%" stopColor="#7A2A1C" />
           </linearGradient>
           <linearGradient id={`sh-${uid}`} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0" />
-            <stop offset="38%" stopColor="#FFFFFF" stopOpacity="0.8" />
-            <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0" />
-            <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+            <stop offset="34%" stopColor="#FFFFFF" stopOpacity="0.9" />
+            <stop offset="47%" stopColor="#FFFFFF" stopOpacity="0" />
+            <stop offset="72%" stopColor="#FFFFFF" stopOpacity="0.35" />
+            <stop offset="82%" stopColor="#FFFFFF" stopOpacity="0" />
           </linearGradient>
           <pattern id={`in-${uid}`} width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(24)">
-            <path d="M 0 5.5 Q 2.6 0.8, 6.2 2.6 Q 4 3.6, 3.1 6.2" fill="none" stroke="#6E4514" strokeWidth="1.05" strokeLinecap="round" />
-            <circle cx="6.6" cy="6" r="0.7" fill="#6E4514" />
+            <path d="M 0 5.5 Q 2.6 0.8, 6.2 2.6 Q 4 3.6, 3.1 6.2" fill="none" stroke="#6E4514" strokeWidth="1" strokeLinecap="round" />
+            <circle cx="6.6" cy="6" r="0.65" fill="#6E4514" />
           </pattern>
+          <filter id={`blur-${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="1.6" />
+          </filter>
         </defs>
 
         <rect x="0" y="0" width="100" height="100" fill={`url(#bg-${uid})`} />
-        {/* faint all-over damask: big soft curls in the ground */}
-        <g opacity="0.14" stroke={goldLine} fill="none" strokeWidth="1">
+        <g opacity="0.13" stroke={goldLine} fill="none" strokeWidth="1">
           <path d="M 8 30 Q 22 10 40 14 M 60 12 Q 80 10 92 26 M 90 66 Q 92 84 74 90 M 26 92 Q 10 88 8 70" />
         </g>
         <rect x="3.5" y="3.5" width="93" height="93" fill="none" stroke={goldLine} strokeWidth="1.7" opacity="0.95" />
         <rect x="7" y="7" width="86" height="86" fill="none" stroke={goldLine} strokeWidth="0.55" opacity="0.5" />
-        {fan(10, 12, 88, 'c0')}
-        {fan(90, 12, -2, 'c1')}
-        {fan(10, 88, 178, 'c2')}
-        {fan(90, 88, 92, 'c3')}
-        {ring}
-        {/* the letter: shadow → gold → engraving → sheen; then front tendrils */}
-        <T x="51.5" y="56.5" fill="rgba(0,0,0,0.5)" />
-        <T fill={letterFill} stroke="#5C3A10" strokeWidth="1.15" paintOrder="stroke" />
-        <T fill={`url(#in-${uid})`} opacity="0.62" />
-        <T fill={`url(#sh-${uid})`} opacity="0.6" />
-        {/* gold finial crowning the letter */}
-        <g transform="translate(50 16.5)" fill={goldLine}>
-          <path d="M 0 -6 L 1.6 -1.6 L 6 0 L 1.6 1.6 L 0 6 L -1.6 1.6 L -6 0 L -1.6 -1.6 Z" />
+        {[[3.5, 3.5], [96.5, 3.5], [3.5, 96.5], [96.5, 96.5]].map(([cx, cy], i) => (
+          <circle key={i} cx={cx} cy={cy} r="2" fill={goldLine} />
+        ))}
+        {sprigs}
+
+        {/* glow lifts the metal off the ground */}
+        <circle cx="50" cy="52" r="40" fill={`url(#halo-${uid})`} />
+        {/* 3D stack: soft cast shadow → bronze extrude → bevel light → body → engraving → sheen */}
+        <T dx={2.6} dy={3.2} fill="rgba(0,0,0,0.55)" filter={`url(#blur-${uid})`} />
+        <T dx={1.7} dy={1.9} fill={red ? '#571A10' : '#5C3A10'} />
+        <T dx={1.0} dy={1.1} fill={red ? '#7A2A1C' : '#7A4C16'} />
+        <T dx={-0.8} dy={-0.9} fill={red ? '#FFD9CE' : '#FFF4D2'} />
+        <T fill={`url(#${gld}-${uid})`} stroke={red ? '#4A150C' : '#4A2E0C'} strokeWidth="0.8" paintOrder="stroke" />
+        <T fill={`url(#in-${uid})`} opacity="0.5" />
+        <T fill={`url(#sh-${uid})`} opacity="0.72" />
+        {/* sparkle at the top-left shoulder of the glyph */}
+        <g transform="translate(36 32)" fill="#FFFFFF" opacity="0.9">
+          <path d="M 0 -3.2 L 0.85 -0.85 L 3.2 0 L 0.85 0.85 L 0 3.2 L -0.85 0.85 L -3.2 0 L -0.85 -0.85 Z" />
         </g>
-        {front}
         {quote && (
           <text x="13" y="21" textAnchor="middle" fontFamily="Fraunces, Georgia, serif" fontWeight="600" fontSize="18" fill="#E9C56F" opacity="0.85">{quote}</text>
         )}
