@@ -1146,8 +1146,12 @@ function ConversationHistory({ open, onClose, conversations, onLoad, onDelete, o
         // the visible work area instead of fighting the chat panel.
         position: 'fixed', top: 0, left: 0, bottom: 0, right: rightOffset,
         background: 'rgba(44,24,16,0.55)',
-        zIndex: 160, display: 'flex', justifyContent: 'center', alignItems: 'flex-start',
-        padding: 20, animation: 'fadeIn 0.15s ease', overflowY: 'auto',
+        // Above the whole top-right FAB cluster (bell/find/⋮ at 160, messages at
+        // 200) — at 160 the later-rendered FABs painted straight over this
+        // dialog's Close button. Still below the dropdown layer at 299/300.
+        zIndex: 210, display: 'flex', justifyContent: 'center', alignItems: 'flex-start',
+        padding: 'calc(20px + env(safe-area-inset-top, 0px)) 20px calc(20px + env(safe-area-inset-bottom, 0px))',
+        animation: 'fadeIn 0.15s ease',
       }}
     >
       <div
@@ -1155,13 +1159,18 @@ function ConversationHistory({ open, onClose, conversations, onLoad, onDelete, o
         className="fade-up"
         style={{
           background: T.parchment, borderRadius: 18, maxWidth: 680, width: '100%',
-          margin: '40px 0', border: `1px solid ${T.line}`, overflow: 'hidden',
+          border: `1px solid ${T.line}`, overflow: 'hidden',
           boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+          // The card used to grow to fit every conversation and let the backdrop
+          // scroll, so with a long history the header — and the only way out on a
+          // phone — scrolled off the top. Cap to the viewport; the list scrolls inside.
+          maxHeight: '100%', display: 'flex', flexDirection: 'column',
         }}
       >
         <div style={{
           padding: '20px 24px', borderBottom: `1px solid ${T.line}`, background: T.cream,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          flexShrink: 0,
         }}>
           <div>
             <div style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 4 }}>Your history</div>
@@ -1204,6 +1213,7 @@ function ConversationHistory({ open, onClose, conversations, onLoad, onDelete, o
           </div>
         </div>
 
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
         {conversations.filter((c) => c.messages.length > 0).length === 0 && (
           <div style={{ padding: '48px 32px', textAlign: 'center', color: T.inkMuted, fontFamily: T.serif, fontSize: 16, lineHeight: 1.6 }}>
             No conversations yet.
@@ -1242,6 +1252,7 @@ function ConversationHistory({ open, onClose, conversations, onLoad, onDelete, o
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );
