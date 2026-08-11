@@ -707,6 +707,43 @@ function cachedSystem(staticText, dynamicText) {
   return blocks;
 }
 
+// How much conversation history rides along on each turn. This was a flat
+// messages.slice(-8) — four exchanges — so any longer thread answered as if it
+// had begun halfway through, and reopening an old one lost the whole beginning.
+// Budget by size instead of message count: ordinary threads travel whole, and
+// only genuinely huge ones get trimmed, oldest first.
+const HISTORY_CHAR_BUDGET = 48000; // ≈12k tokens; the system prompt is cached separately
+const HISTORY_MAX_MSGS    = 80;
+// An image costs ~1.5k tokens to Claude regardless of how long its base64 is,
+// so charge it a flat equivalent — measuring the raw string would blow the
+// budget on the first photo and strand the model with no history at all.
+const IMAGE_CHAR_EQUIV    = 6000;
+
+function messageSize(content) {
+  if (typeof content === 'string') return content.length;
+  if (!Array.isArray(content)) return 0;
+  return content.reduce((n, b) => n + (b.type === 'image' ? IMAGE_CHAR_EQUIV : (b.text?.length ?? 0)), 0);
+}
+
+// Newest-first walk, then restored to chronological order.
+function windowHistory(all) {
+  const kept = [];
+  let used = 0;
+  for (let i = all.length - 1; i >= 0; i--) {
+    const size = messageSize(all[i].content);
+    // The newest message is the question being asked — it always goes, whatever its size.
+    if (kept.length && (kept.length >= HISTORY_MAX_MSGS || used + size > HISTORY_CHAR_BUDGET)) break;
+    kept.push(all[i]);
+    used += size;
+  }
+  kept.reverse();
+  // The API requires the window to open on a user turn.
+  while (kept.length && kept[0].role !== 'user') kept.shift();
+  if (kept.length) return kept;
+  const lastUser = all.map((m) => m.role).lastIndexOf('user');
+  return lastUser >= 0 ? all.slice(lastUser) : all.slice(-1);
+}
+
 
 // ── Red-letter audio — the words of Jesus, one premium voice, cached forever ──
 // Generated once per (bible, chapter, voice) via ElevenLabs and stored in the
@@ -1354,7 +1391,7 @@ app.post('/api/chat', optionalAuth, limitEither(
     }
     if (internal) model = 'claude-haiku-4-5-20251001';
 
-    const trimmed = messages.slice(-8);
+    const trimmed = windowHistory(messages);
 
     const stream = client.messages.stream({
       model,
