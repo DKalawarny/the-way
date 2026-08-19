@@ -7,11 +7,11 @@
 // — especially the payments, liability, and children's-data sections. Update the
 // EFFECTIVE date and the company/jurisdiction line when finalized.
 
-const EFFECTIVE = 'July 9, 2026';
+const EFFECTIVE = 'August 19, 2026';
 const CONTACT = 'hello@kinwove.com';
 // TODO(Daniel): confirm legal entity name + province for the governing-law line.
 const ENTITY = 'kinwove';
-const JURISDICTION = 'the Province of Alberta, Canada';
+const JURISDICTION = 'the Province of British Columbia, Canada';
 
 const PRIVACY = {
   title: 'Privacy Policy',
@@ -41,7 +41,8 @@ const TERMS = {
     { h: 'Community conduct', p: `Be kind. You agree not to harass, threaten, deceive, or endanger others; not to post illegal, hateful, sexually exploitative, or spam content; and not to impersonate others or abuse the platform. We may remove content and suspend or terminate accounts that violate these rules, especially where anyone's safety is at stake.` },
     { h: 'Subscriptions &amp; payments', p: `Some features require a paid plan. Prices are shown before you pay. Subscriptions renew automatically until cancelled; you can cancel anytime and keep access through the paid period. Payments are handled by Stripe. Refunds are handled case by case — contact us.` },
     { h: 'Termination', p: `You can delete your account anytime from Settings. We may suspend or end access for violations of these terms or to protect the community. On termination, your right to use kinwove ends and your data is handled per the Privacy Policy.` },
-    { h: 'Disclaimers &amp; liability', p: `kinwove is provided "as is," without warranties of any kind. To the fullest extent permitted by law, ${ENTITY} is not liable for indirect or consequential damages, and our total liability is limited to the amount you paid us in the prior 12 months (or, if you paid nothing, a nominal amount).` },
+    { h: 'kinwove is in beta', p: `kinwove is currently in beta and free to use. Features may change, break, or be withdrawn without notice, and data can occasionally be lost — so please don't rely on kinwove as the only copy of anything that matters to you. We'd rather build this in the open with you than wait years for perfect, but that means accepting it as a work in progress. Everything in the section below applies with particular force while the service is free.` },
+    { h: 'Disclaimers &amp; liability', p: `kinwove is provided "as is" and "as available," without warranties of any kind, whether express or implied — including any implied warranty that it is fit for a particular purpose, uninterrupted, or error-free. You use it at your own discretion and risk. To the fullest extent permitted by law, ${ENTITY} is not liable for indirect, incidental, special or consequential damages, or for any loss of data, goodwill, or profits, and our total liability for any claim is limited to the amount you paid us in the 12 months before it arose (or, where you paid nothing, one hundred Canadian dollars). Nothing here excludes liability that cannot be excluded by law.` },
     { h: 'Changes to these terms', p: `We may update these terms; we'll revise the date above and, for material changes, notify you in the app or by email. Continued use after changes means you accept them.` },
     { h: 'Governing law &amp; contact', p: `These terms are governed by the laws of ${JURISDICTION}. Questions? Email <a href="mailto:${CONTACT}">${CONTACT}</a>.` },
   ],
