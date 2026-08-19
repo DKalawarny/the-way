@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, lazy, Suspense, Component } from 
 import { T, globalCss } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
 import { isNativeApp } from './native.js';
+import { flushPendingTerms } from './termsConsent.js';
 import { KinwoveWordmark } from './components/brand/KinwoveWordmark.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { KinwoveAppIcon } from './components/brand/KinwoveAppIcon.jsx';
@@ -2077,7 +2078,14 @@ export default function App() {
   const { notes, addNote, removeNote } = useNotes(session?.user?.id ?? null);
   // Keep a ref so stage-save effect can access the current session without
   // needing session in its dependency array (would cause double-saves).
-  const _setSession = (s) => { sessionRef.current = s; setSession(s); };
+  const _setSession = (s) => {
+    sessionRef.current = s;
+    setSession(s);
+    // Google signup parks its consent before the OAuth redirect; this is where
+    // the browser lands afterwards, so it's the only place it can be written.
+    // No-ops unless something was actually parked.
+    flushPendingTerms(s?.user?.id);
+  };
   // pastorChurchId from church_roles; falls back to profile.church_id when
   // the church_roles RLS lookup fails (e.g. schema not migrated yet).
   const effectiveChurchId = pastorChurchId || (profile?.church_id ?? null);

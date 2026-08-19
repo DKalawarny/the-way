@@ -4,7 +4,7 @@ import { T } from './theme.js';
 import { getStoredUtm, clearStoredUtm } from './utm.js';
 import { Turnstile, TURNSTILE_ENABLED } from './Turnstile.jsx';
 import { isNativeApp } from './native.js';
-import { TERMS_VERSION } from './constants.js';
+import { recordTermsAcceptance, markTermsPending } from './termsConsent.js';
 
 function Field({ label, children }) {
   return (
@@ -112,13 +112,7 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
     // Record which version of the Terms this person ticked the box for. Fire and
     // forget: the account already exists, and a failed log must never block
     // someone getting into the app. Server stamps the time, IP and user agent.
-    if (signUpData?.user?.id) {
-      fetch('/api/terms-accept', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: signUpData.user.id, version: TERMS_VERSION }),
-      }).then(null, () => {});
-    }
+    recordTermsAcceptance(signUpData?.user?.id);
     // If Supabase returns a session immediately (email confirmation disabled),
     // hand it to App.jsx so the wizard can run. Otherwise show the verify screen.
     if (signUpData?.session) {
@@ -149,6 +143,9 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
 
   async function handleGoogle() {
     setError(null);
+    // Signing up with Google: the box is ticked here, but the acceptance can
+    // only be written once we're back with a session. Park it.
+    if (mode === 'signup') markTermsPending();
     const utm = getStoredUtm();
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -280,12 +277,13 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
         {!isNativeApp && <button
           type="button"
           onClick={handleGoogle}
-          disabled={loading}
+          disabled={loading || (mode === 'signup' && !ageConfirmed)}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
             background: T.white, color: T.ink, border: `1px solid ${T.line}`,
             borderRadius: 999, padding: '12px 20px', fontSize: 15, fontWeight: 600,
-            cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1,
+            cursor: (loading || (mode === 'signup' && !ageConfirmed)) ? 'not-allowed' : 'pointer',
+            opacity: (loading || (mode === 'signup' && !ageConfirmed)) ? 0.6 : 1,
           }}
         >
           <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
@@ -296,6 +294,16 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
           </svg>
           Continue with Google
         </button>}
+
+        {/* Signing in shows no checkbox — but Google creates an account for
+            anyone who has never used it, so the terms still need naming here. */}
+        {!isNativeApp && mode === 'signin' && (
+          <p style={{ fontSize: 11.5, color: T.inkMuted, lineHeight: 1.5, margin: '10px 0 0', textAlign: 'center' }}>
+            By continuing you agree to our{' '}
+            <a href="/terms" target="_blank" rel="noopener" style={{ color: T.goldDark }}>Terms</a> and{' '}
+            <a href="/privacy" target="_blank" rel="noopener" style={{ color: T.goldDark }}>Privacy Policy</a>.
+          </p>
+        )}
 
         {!isNativeApp && <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '18px 0' }}>
           <div style={{ flex: 1, height: 1, background: T.line }} />
