@@ -4,6 +4,7 @@ import { T } from './theme.js';
 import { getStoredUtm, clearStoredUtm } from './utm.js';
 import { Turnstile, TURNSTILE_ENABLED } from './Turnstile.jsx';
 import { isNativeApp } from './native.js';
+import { TERMS_VERSION } from './constants.js';
 
 function Field({ label, children }) {
   return (
@@ -108,6 +109,16 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
     setLoading(false);
     if (err) { resetCaptcha(); return setError(err.message); }
     clearStoredUtm(); // attribution captured — clean up
+    // Record which version of the Terms this person ticked the box for. Fire and
+    // forget: the account already exists, and a failed log must never block
+    // someone getting into the app. Server stamps the time, IP and user agent.
+    if (signUpData?.user?.id) {
+      fetch('/api/terms-accept', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: signUpData.user.id, version: TERMS_VERSION }),
+      }).then(null, () => {});
+    }
     // If Supabase returns a session immediately (email confirmation disabled),
     // hand it to App.jsx so the wizard can run. Otherwise show the verify screen.
     if (signUpData?.session) {
@@ -347,17 +358,14 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
                 style={{ marginTop: 3, accentColor: T.gold, width: 16, height: 16, flexShrink: 0 }}
               />
               <span style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.5 }}>
-                I am 13 or older. Under 13? Your church can add you through the youth program.
+                I am 13 or older and I agree to the{' '}
+                <a href="/terms" target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()} style={{ color: T.goldDark }}>Terms</a> and{' '}
+                <a href="/privacy" target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()} style={{ color: T.goldDark }}>Privacy Policy</a>.
+                <span style={{ display: 'block', color: T.inkMuted, fontSize: 11.5, marginTop: 3 }}>
+                  Under 13? Your church can add you through the youth program.
+                </span>
               </span>
             </label>
-          )}
-
-          {mode === 'signup' && (
-            <p style={{ fontSize: 11.5, color: T.inkMuted, lineHeight: 1.5, margin: '0 0 12px' }}>
-              By creating an account you agree to our{' '}
-              <a href="/terms" target="_blank" rel="noopener" style={{ color: T.goldDark }}>Terms</a> and{' '}
-              <a href="/privacy" target="_blank" rel="noopener" style={{ color: T.goldDark }}>Privacy Policy</a>.
-            </p>
           )}
 
           <Turnstile onToken={setCaptchaToken} resetKey={captchaReset} />

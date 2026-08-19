@@ -7,6 +7,8 @@
 // — especially the payments, liability, and children's-data sections. Update the
 // EFFECTIVE date and the company/jurisdiction line when finalized.
 
+import { TERMS_VERSION } from '../src/constants.js';
+
 const EFFECTIVE = 'August 19, 2026';
 const CONTACT = 'hello@kinwove.com';
 // TODO(Daniel): confirm legal entity name + province for the governing-law line.
@@ -81,7 +83,7 @@ export function renderLegalPage(which) {
   <div class="wrap">
     <div class="eyebrow">✦ kinwove</div>
     <h1>${doc.title}</h1>
-    <div class="date">Effective ${EFFECTIVE}</div>
+    <div class="date">Effective ${EFFECTIVE} &middot; version ${TERMS_VERSION}</div>
     <p class="intro">${doc.intro}</p>
     ${body}
     <div class="foot">

@@ -3346,6 +3346,56 @@ app.delete('/api/church/:churchId', requireAuth, limitAuthed({ capacity: 3, refi
   }
 });
 
+// ── Terms acceptance log ─────────────────────────────────────────────────────
+// Called once at signup, right after the account is created. The browser sends
+// only who and which version; the timestamp, IP and user agent are stamped here
+// so the record is ours rather than the client's. Idempotent — the unique
+// (user_id, version) constraint means a retry or double-submit can't duplicate.
+//
+// Deliberately not requireAuth: when email confirmation is on, signUp returns a
+// user with no session yet, and that is exactly the moment the box was ticked.
+// The user_id is a foreign key into auth.users, so a forged id simply fails to
+// insert, and there is nothing to gain by forging one anyway.
+app.post('/api/terms-accept', async (req, res) => {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    return res.status(503).json({ error: 'not configured' });
+  }
+  const { userId, version } = req.body ?? {};
+  if (typeof userId !== 'string' || !/^[0-9a-f-]{36}$/i.test(userId)) {
+    return res.status(400).json({ error: 'userId required' });
+  }
+  if (typeof version !== 'string' || version.length > 40) {
+    return res.status(400).json({ error: 'version required' });
+  }
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/terms_acceptances`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        // A repeat acceptance of the same version is success, not a 409.
+        Prefer: 'resolution=ignore-duplicates,return=minimal',
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        version,
+        ip: (req.headers['x-forwarded-for'] || '').toString().split(',')[0].trim() || req.ip || null,
+        user_agent: (req.headers['user-agent'] || '').toString().slice(0, 400) || null,
+      }),
+    });
+    if (!r.ok && r.status !== 409) {
+      const body = await r.text();
+      console.error('[kinwove] terms-accept insert failed', r.status, body.slice(0, 200));
+      return res.status(500).json({ error: 'could not record acceptance' });
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[kinwove] terms-accept error:', e?.message);
+    res.status(500).json({ error: 'could not record acceptance' });
+  }
+});
+
 app.delete('/api/account', requireAuth, async (req, res) => {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
     return res.status(503).json({ error: 'account deletion not configured' });

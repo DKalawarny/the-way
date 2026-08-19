@@ -335,3 +335,9 @@ export const ADS = [
   { id: 'a2', text: 'The ESV Study Bible — now in soft-bound parchment.', tag: 'Sponsored' },
   { id: 'a3', text: 'Retreats for people who want quiet, not quotas.', tag: 'Sponsored' },
 ];
+
+// Version stamp for the legal pages. Bump this string whenever the Terms or
+// Privacy Policy change in a way people should re-agree to — it is what gets
+// written to terms_acceptances, so the log stays meaningful across revisions.
+// Shown on /terms and /privacy so what someone reads matches what we record.
+export const TERMS_VERSION = '2026-08-19';
