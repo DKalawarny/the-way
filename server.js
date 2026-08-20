@@ -12,7 +12,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import webpush from 'web-push';
 import { getDailyVerse } from './src/dailyVerse.js';
 import { ANSWERS, ANSWERS_BY_SLUG, renderAnswerPage, renderAnswerIndex } from './content/answers.js';
-import { PLAN_LIMITS, churchHasAccess, TRIAL_DAYS } from './src/planConfig.js';
+import { PLAN_LIMITS, churchHasAccess, TRIAL_DAYS, effectivePersonalPlan } from './src/planConfig.js';
 import { renderLegalPage } from './content/legal.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -1092,9 +1092,11 @@ async function getServerPlan(userId) {
   if (!userId || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) return 'free';
   try {
     const headers = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=plan&limit=1`, { headers });
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=plan,gift_expires_at,stripe_subscription_id&limit=1`, { headers });
     const [row] = await r.json();
-    const personal = row?.plan ?? 'free';
+    // A lapsed promo/gift grant reads as free here, so the quota actually drops
+    // back. Paying subscribers are excluded inside effectivePersonalPlan.
+    const personal = effectivePersonalPlan(row);
     if (personal !== 'free') return personal;
     // A pastor on a free personal plan is covered by their church's plan —
     // otherwise the 5/week personal cap walls off their own sermon prep.

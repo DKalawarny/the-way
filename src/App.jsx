@@ -3,6 +3,7 @@ import { T, globalCss } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
 import { isNativeApp } from './native.js';
 import { flushPendingTerms } from './termsConsent.js';
+import { effectivePersonalPlan } from './planConfig.js';
 import { KinwoveWordmark } from './components/brand/KinwoveWordmark.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { KinwoveAppIcon } from './components/brand/KinwoveAppIcon.jsx';
@@ -2660,6 +2661,11 @@ export default function App() {
         data = { ...data, is_youth_sponsored: false };
       }
     }
+    // Normalise the plan the moment it lands, so every `profile?.plan` reader
+    // downstream sees the same answer the server enforces. The church trial bug
+    // came from exactly this gap: the UI showed tools unlocked while the server
+    // had already dropped the pastor to the free quota.
+    if (data) data = { ...data, plan: effectivePersonalPlan(data) };
     setProfile(data ?? null);
     // Account-synced tour flags: apply before deciding to show the welcome
     // tour so a new device/browser doesn't replay onboarding (uiFlags.js).

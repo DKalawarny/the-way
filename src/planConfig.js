@@ -32,6 +32,25 @@ export const SERMON_PAID_LIMITS = {
 
 // Does a church plan currently grant full (paid or in-trial) access?
 // Paid church plans always count; trial only while days remain.
+// ── Granted plans lapse; bought plans don't ──────────────────────────────────
+// Promo codes and gifts set profiles.plan plus a gift_expires_at. Nothing ever
+// read that date, so every grant was permanent — fine while the only codes were
+// for friends, but gift subscriptions are a paid product, and a bought 3-month
+// gift that never ends is revenue quietly walking out the door.
+//
+// A real Stripe subscriber is the one case that must never be downgraded here:
+// their access ends through the webhook when they actually cancel, and they
+// carry a stripe_subscription_id. So the absence of that id is what marks a
+// plan as granted rather than bought.
+export function effectivePersonalPlan(profile) {
+  const plan = profile?.plan ?? 'free';
+  if (plan === 'free') return 'free';
+  if (profile?.stripe_subscription_id) return plan;   // paying — never lapses here
+  const expires = profile?.gift_expires_at;
+  if (!expires) return plan;                          // granted with no end date
+  return new Date(expires).getTime() < Date.now() ? 'free' : plan;
+}
+
 export function churchHasAccess(plan, daysLeft) {
   return plan === 'active'
     || plan === 'church_base'
