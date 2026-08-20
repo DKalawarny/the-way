@@ -2320,10 +2320,15 @@ app.post('/api/cron/question-followup', async (req, res) => {
         <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#B8733A;font-weight:700;margin:0 0 18px">You asked</div>
         <div style="font-family:Georgia,serif;font-size:19px;font-style:italic;line-height:1.5;color:#2C1810;margin:0 0 24px">&ldquo;${escapeHtml(lead.question)}&rdquo;</div>
         <div style="font-size:15px;line-height:1.75;color:#2C1810;margin:0 0 28px">${escapeHtml(thought)}</div>
-        <a href="${askUrl}" style="display:inline-block;background:#1A1108;color:#FDF8F0;text-decoration:none;padding:13px 26px;border-radius:999px;font-size:14px;font-weight:600">Keep going &rarr;</a>
-        <div style="font-size:13px;color:#9C7B5E;margin-top:22px;line-height:1.7">No pressure, and no series of emails after this one.<br>
+        <a href="${askUrl}" style="display:inline-block;background:#1A1108;color:#FDF8F0;text-decoration:none;padding:13px 26px;border-radius:999px;font-size:14px;font-weight:600">Ask a follow-up &rarr;</a>
+        <div style="font-size:13px;color:#9C7B5E;margin-top:22px;line-height:1.7">Replies to this address aren't read — tap above and the conversation picks up where you left it.<br>
+        No pressure, and no series of emails after this one.<br>
         <a href="${unsubUrl}" style="color:#9C7B5E">Don't email me again</a></div>
-      `));
+      `), {
+        // Sending a real person into an inbox nobody works is a job Daniel
+        // doesn't want. The button is the reply path — the AI answers there.
+        'Reply-To': 'no-reply@kinwove.com',
+      });
       await fetch(`${SUPABASE_URL}/rest/v1/question_leads?email=eq.${encodeURIComponent(lead.email)}`, {
         method: 'PATCH',
         headers: { ...h, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
