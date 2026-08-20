@@ -126,6 +126,87 @@ function TypingDots() {
   );
 }
 
+// The quieter option under the signup button. Plenty of people who won't make
+// an account ninety seconds after arriving from ChatGPT will still leave an
+// address — and without one there's no way back to them at all.
+function LeadCapture({ firstQuestion }) {
+  const [email, setEmail]   = useState('');
+  const [state, setState]   = useState('idle'); // idle | open | sending | done | error
+  if (!firstQuestion) return null;
+
+  if (state === 'done') {
+    return (
+      <div style={{ marginTop: 18, fontSize: 13, color: 'rgba(253,248,240,0.55)', lineHeight: 1.6 }}>
+        Sent. We'll follow up once on that question — nothing after it.
+      </div>
+    );
+  }
+
+  async function submit(e) {
+    e.preventDefault();
+    if (!email.trim() || state === 'sending') return;
+    setState('sending');
+    try {
+      const r = await fetch('/api/lead-capture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email.trim(),
+          question: firstQuestion,
+          // Lets the follow-up land at about the same hour of their day.
+          tzOffsetMinutes: new Date().getTimezoneOffset(),
+          source: window.location.pathname,
+        }),
+      });
+      setState(r.ok ? 'done' : 'error');
+    } catch { setState('error'); }
+  }
+
+  if (state === 'idle') {
+    return (
+      <button
+        onClick={() => setState('open')}
+        style={{
+          display: 'block', margin: '16px auto 0', background: 'none', border: 'none',
+          color: 'rgba(253,248,240,0.5)', fontSize: 13, textDecoration: 'underline',
+          cursor: 'pointer', fontFamily: 'inherit',
+        }}
+      >
+        or just email me this answer
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} style={{ marginTop: 16, display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+      <input
+        type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+        placeholder="you@somewhere.com" autoFocus required
+        style={{
+          flex: '1 1 190px', minWidth: 0, padding: '11px 14px', fontSize: 15, fontFamily: 'inherit',
+          borderRadius: 10, border: '1px solid rgba(184,115,58,0.4)',
+          background: 'rgba(255,255,255,0.06)', color: T.cream, outline: 'none',
+        }}
+      />
+      <button
+        type="submit" disabled={state === 'sending'}
+        style={{
+          padding: '11px 20px', fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
+          borderRadius: 999, border: 'none', background: 'rgba(253,248,240,0.9)',
+          color: '#1A1108', cursor: state === 'sending' ? 'wait' : 'pointer',
+        }}
+      >
+        {state === 'sending' ? 'Sending…' : 'Send it'}
+      </button>
+      {state === 'error' && (
+        <div style={{ width: '100%', fontSize: 12.5, color: '#E8A87C', marginTop: 4 }}>
+          That didn't go through. Try again?
+        </div>
+      )}
+    </form>
+  );
+}
+
 export default function GuestQuestion({ onSignUp, initialQuestion, landingMode = false }) {
   const [messages, setMessages] = useState([]); // { role: 'user'|'assistant', content: string, streaming?: bool }
   const [input, setInput] = useState('');
@@ -140,6 +221,15 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
 
   const liveExchanges = messages.filter((m) => m.role === 'user').length;
   const exchangeCount = Math.max(liveExchanges, storedCount);
+  // The question to follow up on. Live messages when they're still on the page;
+  // otherwise the one stashed at line ~230, so a returning visitor who only sees
+  // the wall still has something to be emailed about.
+  const firstQuestion = (() => {
+    const fromThread = messages.find((m) => m.role === 'user')?.content;
+    if (fromThread) return fromThread;
+    try { return JSON.parse(localStorage.getItem('kinwove:pendingConv') || 'null')?.q ?? null; }
+    catch { return null; }
+  })();
   const maxReached = exchangeCount >= MAX_EXCHANGES && !busy;
   const hasMessages = messages.length > 0 || (storedCount >= MAX_EXCHANGES);
 
@@ -393,6 +483,7 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
           >
             Join free — keep going →
           </button>
+          <LeadCapture firstQuestion={firstQuestion} />
         </div>
       )}
 

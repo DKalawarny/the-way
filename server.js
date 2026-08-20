@@ -2217,6 +2217,144 @@ app.post('/api/church/role-invite', requireAuth, limitAuthed({ capacity: 20, ref
 // Hit this endpoint with a cron job once per day (e.g. Render cron or uptime service).
 // Finds users who signed up 24–72 h ago with no display_name and sends one nudge email.
 // Add a secret header in your cron config: X-Cron-Secret: <CRON_SECRET env var>
+// ── Question leads: capture + the 24-hour follow-up ──────────────────────────
+// The lighter ask under the signup button. Someone who won't make an account
+// will often still leave an address, and without one there is no way back to
+// them at all — all four strangers who ever found kinwove left no trace.
+app.post('/api/lead-capture', async (req, res) => {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+  const { email, question, tzOffsetMinutes, source } = req.body ?? {};
+  const addr = String(email ?? '').trim().toLowerCase();
+  if (!addr || addr.length > 200 || !/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(addr)) {
+    return res.status(400).json({ error: 'a valid email is required' });
+  }
+  if (typeof question !== 'string' || !question.trim()) {
+    return res.status(400).json({ error: 'question required' });
+  }
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/question_leads?on_conflict=email`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        // Asking again restarts the clock rather than erroring — the newest
+        // question is the one worth following up on.
+        Prefer: 'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify({
+        email: addr,
+        question: question.trim().slice(0, 1000),
+        asked_at: new Date().toISOString(),
+        tz_offset_minutes: Number.isFinite(tzOffsetMinutes) ? Math.trunc(tzOffsetMinutes) : null,
+        source: typeof source === 'string' ? source.slice(0, 200) : null,
+        follow_up_sent_at: null,
+      }),
+    });
+    if (!r.ok) {
+      console.error('[kinwove] lead-capture failed', r.status, (await r.text()).slice(0, 200));
+      return res.status(500).json({ error: 'could not save' });
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[kinwove] lead-capture error:', e?.message);
+    res.status(500).json({ error: 'could not save' });
+  }
+});
+
+// One-click unsubscribe for leads (they have no account, so the profile-based
+// unsubscribe route can't serve them).
+app.get('/api/lead/unsubscribe', async (req, res) => {
+  const { e, t } = req.query;
+  if (!e || emailToken(String(e)) !== t) return res.status(400).send('Invalid link.');
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/question_leads?email=eq.${encodeURIComponent(String(e))}`, {
+      method: 'PATCH',
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json', Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({ unsubscribed_at: new Date().toISOString() }),
+    });
+  } catch (err) { console.error('[lead-unsubscribe]', err?.message); }
+  res.type('html').send('<p style="font-family:Georgia,serif;padding:40px;max-width:420px;margin:0 auto">You won\'t hear from us again. If you ever want to pick the question back up, kinwove is still there.</p>');
+});
+
+// Runs hourly. Sends one follow-up, roughly a day later, at about the same hour
+// of THEIR day — see the migration for why the timing matters.
+app.post('/api/cron/question-followup', async (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || req.headers['x-cron-secret'] !== secret) return res.status(401).json({ error: 'unauthorized' });
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+
+  // 20h is the earliest we'd send; 96h is the point where a "yesterday you
+  // asked" note stops making sense, so anything older is quietly skipped.
+  const from = new Date(Date.now() - 96 * 3600 * 1000).toISOString();
+  const to   = new Date(Date.now() - 20 * 3600 * 1000).toISOString();
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/question_leads?follow_up_sent_at=is.null&unsubscribed_at=is.null` +
+    `&asked_at=gte.${from}&asked_at=lte.${to}&select=email,question,asked_at,tz_offset_minutes&limit=25`, { headers: h });
+  const leads = await r.json().catch(() => []);
+  if (!Array.isArray(leads) || !leads.length) return res.json({ sent: 0, considered: 0 });
+
+  let sent = 0, waiting = 0;
+  for (const lead of leads) {
+    try {
+      // Their local hour now, and the local hour they asked at.
+      const off = Number.isFinite(lead.tz_offset_minutes) ? lead.tz_offset_minutes : 0;
+      const localNow  = new Date(Date.now() - off * 60000).getUTCHours();
+      const localThen = new Date(new Date(lead.asked_at).getTime() - off * 60000).getUTCHours();
+      // Within two hours either side of when they asked. Past 72h, stop waiting
+      // for a perfect hour and just send.
+      const overdue = Date.now() - new Date(lead.asked_at).getTime() > 72 * 3600 * 1000;
+      const diff = Math.min(Math.abs(localNow - localThen), 24 - Math.abs(localNow - localThen));
+      if (!overdue && diff > 2) { waiting++; continue; }
+
+      const thought = await followUpThought(lead.question);
+      if (!thought) { waiting++; continue; }
+
+      const unsubUrl = `https://www.kinwove.com/api/lead/unsubscribe?e=${encodeURIComponent(lead.email)}&t=${emailToken(lead.email)}`;
+      const askUrl   = `https://www.kinwove.com/?q=${encodeURIComponent(lead.question)}`;
+      await sendEmail(lead.email, 'One more thought on your question', emailWrap(`
+        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#B8733A;font-weight:700;margin:0 0 18px">You asked</div>
+        <div style="font-family:Georgia,serif;font-size:19px;font-style:italic;line-height:1.5;color:#2C1810;margin:0 0 24px">&ldquo;${escapeHtml(lead.question)}&rdquo;</div>
+        <div style="font-size:15px;line-height:1.75;color:#2C1810;margin:0 0 28px">${escapeHtml(thought)}</div>
+        <a href="${askUrl}" style="display:inline-block;background:#1A1108;color:#FDF8F0;text-decoration:none;padding:13px 26px;border-radius:999px;font-size:14px;font-weight:600">Keep going &rarr;</a>
+        <div style="font-size:13px;color:#9C7B5E;margin-top:22px;line-height:1.7">No pressure, and no series of emails after this one.<br>
+        <a href="${unsubUrl}" style="color:#9C7B5E">Don't email me again</a></div>
+      `));
+      await fetch(`${SUPABASE_URL}/rest/v1/question_leads?email=eq.${encodeURIComponent(lead.email)}`, {
+        method: 'PATCH',
+        headers: { ...h, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ follow_up_sent_at: new Date().toISOString() }),
+      });
+      sent++;
+    } catch (e) {
+      console.error('[question-followup]', lead.email, e?.message);
+    }
+  }
+  res.json({ sent, waiting, considered: leads.length });
+});
+
+// One further thought on their question — generated, not templated, so it reads
+// as a continuation of what they actually asked rather than a marketing touch.
+async function followUpThought(question) {
+  try {
+    const msg = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 260,
+      system: 'You are kinwove, an honest, warm, non-preachy companion for people exploring faith. Someone asked a question a day ago. Offer ONE further thought on it — something that genuinely adds, not a summary of the obvious. Two or three sentences, plain language, no greeting, no sign-off, no "great question", no pressure toward belief. Never invent a quotation or a statistic. Write it as prose to be dropped straight into an email.',
+      messages: [{ role: 'user', content: `Their question: ${question}` }],
+    });
+    const text = msg.content.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
+    return text.length > 20 ? text : null;
+  } catch (e) {
+    console.error('[followUpThought]', e?.message);
+    return null;
+  }
+}
+
 app.post('/api/cron/nudge-incomplete', async (req, res) => {
   const secret = process.env.CRON_SECRET;
   // Fail CLOSED: if the secret isn't configured, or doesn't match, refuse — these
