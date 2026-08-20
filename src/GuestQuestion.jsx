@@ -371,11 +371,13 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
           padding: '28px 28px 24px',
           textAlign: 'center',
         }}>
+          {/* Leads on keeping the conversation rather than listing features.
+              At three questions in, someone is mid-thought — not shopping. */}
           <div style={{ fontFamily: T.serif, fontSize: 22, color: T.cream, fontWeight: 600, letterSpacing: '-0.015em', lineHeight: 1.2, marginBottom: 10 }}>
-            You're asking the right questions.
+            Your conversation is saved.
           </div>
           <div style={{ fontSize: 13.5, color: 'rgba(253,248,240,0.6)', lineHeight: 1.65, marginBottom: 6 }}>
-            Join free to keep this conversation going, go deeper in scripture,<br />and connect with people on the same road.
+            Create a free account to pick it back up<br />whenever the question comes back.
           </div>
           <div style={{ fontSize: 12, color: 'rgba(253,248,240,0.3)', marginBottom: 22 }}>
             No credit card. Takes 30 seconds.

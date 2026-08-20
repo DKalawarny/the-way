@@ -1185,6 +1185,19 @@ ${jsonLd.map((j) => `<script type="application/ld+json">${JSON.stringify(j)}</sc
   .related a{display:block;color:var(--gold);text-decoration:none;font-size:16px;margin:8px 0}
   .foot{margin-top:40px;font-size:13px;color:var(--muted)}.foot a{color:var(--gold);text-decoration:none}
   .updated{font-size:12px;color:var(--muted);margin-top:2px}
+  /* Ask box — these pages are where search and ChatGPT drop people, and until
+     now they dead-ended in two links to more static pages. The form hands the
+     question to the app's existing ?q= handler: guests get three free
+     exchanges, signed-in people get it sent straight into their chat. */
+  .askbox{margin-top:34px;border-top:1px solid var(--line);padding-top:22px}
+  .askbox .cat{margin-bottom:10px}
+  .askbox form{display:flex;gap:8px;flex-wrap:wrap}
+  .askbox input{flex:1 1 240px;min-width:0;padding:13px 15px;font-size:16px;font-family:inherit;
+    color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:10px;outline:none}
+  .askbox input:focus{border-color:var(--gold)}
+  .askbox button{padding:13px 22px;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;
+    color:#fff;background:var(--ink);border:none;border-radius:999px}
+  .askbox .note{font-size:12.5px;color:var(--muted);margin-top:9px}
 </style></head><body>
 <div class="bar"><a href="${SITE}"><span class="star">✦</span>kinwove</a></div>
 <main>${bodyHtml}</main>
@@ -1222,6 +1235,15 @@ export function renderAnswerPage(a) {
     <div class="faq">
       <div class="cat">Common questions</div>
       ${a.faqs.map((f) => `<h3>${esc(f.q)}</h3><p>${esc(f.a)}</p>`).join('')}
+    </div>
+    <div class="askbox">
+      <div class="cat">Still wondering something?</div>
+      <form action="${SITE}/" method="get">
+        <input type="text" name="q" required maxlength="500" autocomplete="off"
+               placeholder="Ask your own question…" aria-label="Ask your own question">
+        <button type="submit">Ask</button>
+      </form>
+      <div class="note">Three questions free, no account needed.</div>
     </div>
     ${related.length ? `<div class="related"><div class="cat">Keep exploring</div>${related.map((r) => `<a href="${SITE}/answers/${r.slug}">${esc(r.question)} →</a>`).join('')}</div>` : ''}
     <div class="updated">Last updated ${esc(a.updated)}</div>
