@@ -70,6 +70,9 @@ app.use((req, res, next) => {
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON = process.env.VITE_SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Same flag the client reads (VITE_ vars are ordinary env vars to this process).
+// Until it's true nothing can be bought, so nothing should expire into a wall.
+const PAYMENTS_LIVE = process.env.VITE_PAYMENTS_LIVE === 'true';
 
 // ── Auth: verify Supabase JWT via /auth/v1/user, cache 5 min in memory ──────
 const tokenCache = new Map(); // token -> { userId, expires }
@@ -1105,6 +1108,12 @@ async function getServerPlan(userId) {
     if (church) {
       const trialEnd = church.trial_started_at ? new Date(church.trial_started_at).getTime() + TRIAL_DAYS * 86400000 : 0;
       const daysLeft = Math.max(0, Math.ceil((trialEnd - Date.now()) / 86400000));
+      // While payments are off there is nothing a pastor could buy, so letting a
+      // trial lapse would cap them at the personal free plan — 5 questions a week
+      // inside their own dashboard — with no way out. usePlan.js already keeps
+      // the tools unlocked in that case; without this the two disagreed, and the
+      // server quietly won. Same env var drives both sides.
+      if (!PAYMENTS_LIVE && church.plan === 'trial') return 'trial';
       if (churchHasAccess(church.plan, daysLeft)) return church.plan === 'active' ? 'church_base' : church.plan;
     }
     return personal;

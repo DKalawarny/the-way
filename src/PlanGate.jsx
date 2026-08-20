@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { T } from './theme.js';
 import { supabase } from './supabase.js';
-import { CHURCH_BASE_PRICE, CHURCH_PRO_PRICE, UPGRADE_EMAIL, TRIAL_DAYS } from './usePlan.js';
+import { CHURCH_BASE_PRICE, CHURCH_PRO_PRICE, UPGRADE_EMAIL, TRIAL_DAYS, PAYMENTS_LIVE } from './usePlan.js';
 import { TRIAL_MSG_LIMIT } from './useSermonAiUsage.js';
 import { includedMembers, seatBlocksNeeded, SEAT_BLOCK_SIZE, SEAT_BLOCK_PRICE } from './planConfig.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
@@ -128,11 +128,17 @@ export function TrialBanner({ daysLeft, session }) {
   const borderColor = urgent ? 'rgba(165,63,43,0.35)' : 'rgba(184,115,58,0.3)';
   const accentColor = urgent ? '#A53F2B' : T.gold;
 
-  const dayLabel = daysLeft === 0
-    ? 'Trial ends today'
-    : daysLeft === 1
-      ? '1 day left in your trial'
-      : `${daysLeft} days left in your 5-week trial`;
+  // While payments are off, usePlan floors daysLeft at 14 so the tools stay
+  // unlocked — but printing "14 days left" invents a countdown that isn't real
+  // (this church's 35 days actually ran out on Aug 16). Say the true thing
+  // instead; the honest version is also the better beta message.
+  const dayLabel = !PAYMENTS_LIVE
+    ? 'Free while we’re in beta'
+    : daysLeft === 0
+      ? 'Trial ends today'
+      : daysLeft === 1
+        ? '1 day left in your trial'
+        : `${daysLeft} days left in your 5-week trial`;
 
   return (
     <div style={{
@@ -162,13 +168,18 @@ export function TrialBanner({ daysLeft, session }) {
               {dayLabel}
             </span>
             <span style={{ fontSize: 12.5, color: T.inkSoft, marginLeft: 8 }}>
-              {urgent
-                ? '— upgrade before your tools go offline.'
-                : '— your first 30 days are on us.'}
+              {!PAYMENTS_LIVE
+                ? '— every tool is open while we build this with you.'
+                : urgent
+                  ? '— upgrade before your tools go offline.'
+                  : '— your first 30 days are on us.'}
             </span>
           </div>
 
-          <button
+          {/* Every other upgrade CTA is hidden while payments are off — this one
+              wasn't, so it opened a SANDBOX checkout: test cards, no real
+              purchase, a dead end for a pastor who actually wanted to pay. */}
+          {PAYMENTS_LIVE && <button
             onClick={async () => {
               if (busy) return;
               setBusy(true);
@@ -197,7 +208,7 @@ export function TrialBanner({ daysLeft, session }) {
             }}
           >
             {busy ? 'Opening…' : urgent ? 'Upgrade now' : `Keep my tools · from ${CHURCH_BASE_PRICE}`}
-          </button>
+          </button>}
         </div>
 
         {/* Progress bar: shows how much of the trial has elapsed */}
