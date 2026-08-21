@@ -12,7 +12,24 @@ const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!URL_ || !KEY) { console.error('missing env'); process.exit(1); }
 const H = { apikey: KEY, Authorization: `Bearer ${KEY}` };
 
-const TABLES = [
+// Table list is discovered from the PostgREST OpenAPI spec so tables added
+// later are picked up automatically. The hardcoded list below is only a
+// fallback if that request fails — it went 24 tables stale once already.
+async function discoverTables() {
+  try {
+    const r = await fetch(`${URL_}/rest/v1/`, { headers: H });
+    if (!r.ok) throw new Error(`spec HTTP ${r.status}`);
+    const spec = await r.json();
+    const names = Object.keys(spec.definitions || spec.components?.schemas || {});
+    if (!names.length) throw new Error('spec listed no tables');
+    return names.sort();
+  } catch (e) {
+    console.warn(`⚠ table discovery failed (${e.message}) — using fallback list`);
+    return FALLBACK_TABLES;
+  }
+}
+
+const FALLBACK_TABLES = [
   'profiles', 'posts', 'post_comments', 'reactions', 'post_reactions', 'poll_votes',
   'personal_prayers', 'personal_prayer_support', 'personal_prayer_encouragements', 'prayers',
   'churches', 'church_roles', 'church_follows', 'church_join_requests', 'pastor_applications',
@@ -27,10 +44,13 @@ const TABLES = [
   'push_subscriptions', 'sponsored_posts',
 ];
 
+const TABLES = await discoverTables();
+
 const dir = path.join(os.homedir(), 'kinwove-backups', new Date().toISOString().slice(0, 10));
 fs.mkdirSync(dir, { recursive: true });
 
 let total = 0, skipped = [];
+const counts = {};
 for (const t of TABLES) {
   let rows = [], from = 0;
   const page = 1000;
@@ -45,8 +65,23 @@ for (const t of TABLES) {
   if (rows === null) continue;
   fs.writeFileSync(path.join(dir, `${t}.json`), JSON.stringify(rows));
   total += rows.length;
+  counts[t] = rows.length;
   console.log(`${t}: ${rows.length}`);
 }
+
+// A manifest makes it obvious later what this backup did and didn't capture.
+fs.writeFileSync(path.join(dir, '_manifest.json'), JSON.stringify({
+  finishedAt: new Date().toISOString(),
+  project: URL_,
+  tables: TABLES.length - skipped.length,
+  totalRows: total,
+  counts,
+  skipped,
+  note: 'Data only. Does NOT include auth.users, schema/DDL, RLS policies, '
+      + 'triggers, functions, or storage objects. Schema lives in '
+      + 'supabase-schema.sql + scripts/*.sql.',
+}, null, 2));
+
 console.log(`\n✓ backup complete → ${dir}`);
 console.log(`  ${total} rows across ${TABLES.length - skipped.length} tables`);
-if (skipped.length) console.log(`  skipped (no such table): ${skipped.join(', ')}`);
+if (skipped.length) console.log(`  skipped (unreadable): ${skipped.join(', ')}`);
