@@ -1997,15 +1997,62 @@ function emailToken(userId) {
 
 // Daily verse email — a calm morning touchpoint. Verse + one gentle reflection,
 // with a CTA back into the app to reflect with the AI.
-function dailyVerseEmailHtml(firstName, verse, unsubUrl, reflectUrl) {
+// Leads with kinwove's own reflection, with the verse beneath it (Daniel, 8/20:
+// "why not the daily comment, it's more inspiring"). He's right — the verse is
+// borrowed content that a dozen apps mail out the same morning, so as an opening
+// line it gives nobody a reason to open THIS one. The reflection is the only
+// part nobody else could have written, and it's the thing people actually answer:
+// the two real comments kinwove has ever had were both responses to a prompt,
+// not to a quotation. The scripture still travels, just underneath rather than
+// as the headline. Falls back to the old verse-first layout when no reflection
+// is available, so the email never breaks.
+function dailyVerseEmailHtml(firstName, verse, unsubUrl, reflectUrl, reflection) {
+  const verseBlock = `
+    <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#B8733A;font-weight:700;margin:0 0 14px">Today's verse</div>
+    <div style="font-family:Georgia,serif;font-size:${reflection ? 19 : 23}px;font-style:italic;line-height:1.5;color:#2C1810;margin:0 0 12px">&ldquo;${verse.text}&rdquo;</div>
+    <div style="font-size:14px;color:#B8733A;font-weight:600;margin:0 0 ${reflection ? 8 : 28}px">— ${verse.ref}</div>`;
+
+  if (!reflection) {
+    return emailWrap(`
+      ${verseBlock}
+      <p style="font-size:15.5px;color:#6B5344;line-height:1.75;margin:0 0 2px">Sit with it for a moment, ${firstName}. What is it stirring in you today?</p>
+      ${btnHtml('Reflect with others', reflectUrl || 'https://www.kinwove.com')}
+      <p style="font-size:13px;color:#9C7B5E;margin:0">See what others are sharing, and add your own.</p>
+    `, unsubUrl);
+  }
+
   return emailWrap(`
-    <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#B8733A;font-weight:700;margin:0 0 18px">Today's verse</div>
-    <div style="font-family:Georgia,serif;font-size:23px;font-style:italic;line-height:1.5;color:#2C1810;margin:0 0 12px">&ldquo;${verse.text}&rdquo;</div>
-    <div style="font-size:14px;color:#B8733A;font-weight:600;margin:0 0 28px">— ${verse.ref}</div>
-    <p style="font-size:15.5px;color:#6B5344;line-height:1.75;margin:0 0 2px">Sit with it for a moment, ${firstName}. What is it stirring in you today?</p>
-    ${btnHtml('Reflect with others', reflectUrl || 'https://www.kinwove.com')}
-    <p style="font-size:13px;color:#9C7B5E;margin:0">See what others are sharing, and add your own.</p>
+    <div style="font-family:Georgia,serif;font-size:22px;line-height:1.6;color:#2C1810;margin:0 0 26px">${escapeHtml(reflection).replace(/\n+/g, '<br><br>')}</div>
+    <div style="border-top:1px solid #E8D5BB;padding-top:22px;margin-bottom:24px">
+      ${verseBlock}
+    </div>
+    ${btnHtml('Add your thoughts', reflectUrl || 'https://www.kinwove.com')}
+    <p style="font-size:13px;color:#9C7B5E;margin:0">See what others are saying, ${firstName} — and say your own.</p>
   `, unsubUrl);
+}
+
+// Newest kinwove post that ISN'T the daily verse card. The verse post is written
+// by ensureVersePost and always ends with that same question, which is what
+// separates the two — both are authored by the system account with kind 'text'.
+async function latestReflection() {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null;
+  try {
+    const systemId = await getOrCreateSystemAccount();
+    if (!systemId) return null;
+    const rows = await fetch(
+      `${SUPABASE_URL}/rest/v1/posts?author_id=eq.${systemId}&select=id,body&order=created_at.desc&limit=8`,
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
+    ).then((x) => x.json());
+    if (!Array.isArray(rows)) return null;
+    const hit = rows.find((p) => {
+      const b = (p.body || '').trim();
+      return b && !b.includes('What is this stirring in you today?');
+    });
+    return hit ? { id: hit.id, body: hit.body.trim() } : null;
+  } catch (e) {
+    console.error('[daily-verse-email] latestReflection:', e?.message);
+    return null;
+  }
 }
 
 function btnHtml(label, url) {
@@ -2615,6 +2662,15 @@ app.post('/api/cron/daily-verse-email', async (req, res) => {
     console.error('[daily-verse-email] verse post:', e.message);
   }
 
+  // The reflection now leads the email, so the link should land on ITS thread —
+  // that's the post being quoted and the one worth replying to. Note this job
+  // runs an hour BEFORE the reflection is written, so what goes out is the most
+  // recent one, i.e. yesterday's. That's deliberate rather than a bug: it's
+  // still unseen by anyone who didn't open the app, and pairing it with today's
+  // verse costs nothing. Move the cron later than 14:00 UTC if same-day matters.
+  const reflection = await latestReflection();
+  if (reflection?.id) reflectUrl = `https://www.kinwove.com/?post=${reflection.id}`;
+
   // Onboarded members who haven't opted out. (Requires the daily_verse_opt_out
   // column — see the migration script; until it's added this returns an error
   // object and we safely send 0.)
@@ -2633,7 +2689,13 @@ app.post('/api/cron/daily-verse-email', async (req, res) => {
       if (!email) continue;
       const firstName = (usr.display_name || '').split(' ')[0] || 'friend';
       const unsubUrl = `https://www.kinwove.com/api/email/unsubscribe?u=${usr.id}&t=${emailToken(usr.id)}`;
-      await sendEmail(email, `Today’s verse — ${verse.ref}`, dailyVerseEmailHtml(firstName, verse, unsubUrl, reflectUrl), {
+      // Subject leads with the reflection's own opening words rather than a
+      // chapter-and-verse reference — an inbox full of "Today's verse — Psalm
+      // 33:20" gives nobody a reason to open this one over any other.
+      const subject = reflection
+        ? reflection.body.split('\n')[0].trim().replace(/\s+/g, ' ').slice(0, 68)
+        : `Today’s verse — ${verse.ref}`;
+      await sendEmail(email, subject, dailyVerseEmailHtml(firstName, verse, unsubUrl, reflectUrl, reflection?.body), {
         'List-Unsubscribe': `<${unsubUrl}>`,
       });
       sent++;
