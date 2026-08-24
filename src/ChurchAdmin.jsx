@@ -5,6 +5,7 @@ import { moderateImage } from './moderation.js';
 import { T } from './theme.js';
 import PageTour, { isPageTourDone } from './PageTour.jsx';
 import { isTourDone } from './FeatureTour.jsx';
+import { useUiFlagsVersion } from './uiFlags.js';
 import Badge, { INVITABLE_ROLES, presetForRole } from './Badge.jsx';
 import { useUiKit, EmptyState, TextButton } from './uikit.jsx';
 import ChurchModeShell from './ChurchModeShell.jsx';
@@ -2380,16 +2381,19 @@ export default function ChurchAdmin({ session, profile, churchId, onBack, onOpen
   }
   const [church, setChurch] = useState(null);
   const [showPastorTour, setShowPastorTour] = useState(false);
+  // Re-decide once the account's synced flags land (uiFlags.js) — church data
+  // usually beats them in, and the effect below would otherwise never re-run.
+  const uiFlagsV = useUiFlagsVersion();
   // Wait for church data to load before measuring — the sticky nav includes the
   // church name/city, so it's a different height until that data arrives.
   // We fire after church is loaded + a short rAF-style delay for the re-render.
   useEffect(() => {
     if (!church) return; // wait for data
-    if (!isTourDone()) return; // defer while the app-wide welcome tour is up — they stack otherwise
-    if (isPageTourDone(PASTOR_TOUR_KEY)) return;
+    // defer while the app-wide welcome tour is up — they stack otherwise
+    if (!isTourDone() || isPageTourDone(PASTOR_TOUR_KEY)) { setShowPastorTour(false); return; }
     const t = setTimeout(() => setShowPastorTour(true), 120);
     return () => clearTimeout(t);
-  }, [church]);
+  }, [church, uiFlagsV]);
   const [composerSermonId, setComposerSermonId] = useState(null);
   const { plan, hasAccess, daysLeft, trialExpired } = usePlan(churchId);
   // Trial over + unpaid: force AI surfaces to a 0-limit plan so they show their

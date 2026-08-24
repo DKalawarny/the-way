@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { acquireOverlay, releaseOverlay, overlayHolder, subscribeOverlay } from './overlayCoordinator.js';
-import { syncUiFlag } from './uiFlags.js';
+import { syncUiFlag, useUiFlagState } from './uiFlags.js';
 import { T } from './theme.js';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -69,7 +69,9 @@ export function getLoginCount() {
 
 // ── CoachMark component ────────────────────────────────────────────────────────
 export default function CoachMark() {
-  const [seen, setSeen] = useState(getSeen);
+  // useUiFlagState, not useState: the account's seen-set lands after the
+  // profile fetch, and this mounts before it (see uiFlags.js).
+  const [seen, setSeen] = useUiFlagState(getSeen);
   const [winW, setWinW] = useState(() => window.innerWidth);
   const didMount = useRef(false);
 

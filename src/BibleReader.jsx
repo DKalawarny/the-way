@@ -4,6 +4,8 @@ import { T } from './theme.js';
 import { markEngaged } from './streak.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import PageTour, { isPageTourDone } from './PageTour.jsx';
+import { useUiFlagState } from './uiFlags.js';
+import { useKeyboardViewport } from './useKeyboardViewport.js';
 import { isTourDone } from './FeatureTour.jsx';
 import { useSpeechRecognition } from './useSpeechRecognition.js';
 import { useTextToSpeech } from './useTextToSpeech.js';
@@ -1075,6 +1077,10 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   }
   const [chatDark, setChatDark] = useState(() => localStorage.getItem('rdr_chat_dark') === '1');
   const [selectedVerse, setSelectedVerse] = useState(null);
+  // The commentary sheet is pinned to the visual viewport while the keyboard is
+  // up — on a fixed 65vh the keyboard buried its composer and pushed the close
+  // button out of reach (Daniel, 8/24).
+  const kbViewport = useKeyboardViewport();
   // Tap a second verse while one is selected → the selection becomes a range
   // (share/highlight/ask a whole passage, not just one verse).
   const [selEnd, setSelEnd] = useState(null);
@@ -1130,8 +1136,8 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const [hlMap, setHlMap] = useState({}); // verseNum → highlight color name (this chapter)
   const [newBadge, setNewBadge] = useState(null); // badge just earned → show toast
   // Deferred while the app-wide welcome tour is unfinished — they stack otherwise.
-  const [showBibleTour,     setShowBibleTour]     = useState(() => isTourDone() && !isPageTourDone(BIBLE_TOUR_KEY));
-  const [showBibleReadTour, setShowBibleReadTour] = useState(() => isTourDone() && !isPageTourDone(BIBLE_READ_TOUR_KEY));
+  const [showBibleTour,     setShowBibleTour]     = useUiFlagState(() => isTourDone() && !isPageTourDone(BIBLE_TOUR_KEY));
+  const [showBibleReadTour, setShowBibleReadTour] = useUiFlagState(() => isTourDone() && !isPageTourDone(BIBLE_READ_TOUR_KEY));
 
   // ── AI usage gate ───────────────────────────────────────────────────────────
   const aiUsage = useAiUsage(session?.user?.id, profile?.plan ?? 'free');
@@ -2748,6 +2754,53 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
 
       {/* Messages */}
       <div ref={chatScrollRef} onScroll={handleChatScroll} style={{ flex: 1, overflowY: 'auto', padding: '16px 14px' }}>
+        {/* Empty state. Tapping a verse and hitting Ask used to open a blank
+            panel — the verse was already in the system prompt, but nothing on
+            screen said so, so it read as broken (Daniel, 8/24). Show the verse
+            it's holding, and ask the obvious question back. */}
+        {chatMsgs.length === 0 && (
+          <div style={{ padding: '10px 2px' }}>
+            {lastVerse ? (
+              <>
+                <div style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: CC.muted, fontWeight: 700, marginBottom: 6 }}>
+                  Looking at
+                </div>
+                <div style={{ fontFamily: T.display, fontSize: 14, fontWeight: 600, color: CC.text, marginBottom: 6 }}>
+                  {book.name} {chNum}:{lastVerse.number}
+                </div>
+                <div style={{
+                  fontFamily: T.serif, fontSize: 14.5, lineHeight: 1.6, fontStyle: 'italic',
+                  color: CC.text, opacity: 0.85, borderLeft: `2px solid ${CC.border}`,
+                  paddingLeft: 11, marginBottom: 14,
+                }}>
+                  &ldquo;{lastVerse.text}&rdquo;
+                </div>
+                <div style={{ fontFamily: T.serif, fontSize: 15, color: CC.text, marginBottom: 10 }}>
+                  What do you want to know about this verse?
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {QUICK_ACTIONS.map((a) => (
+                    <button
+                      key={a.id}
+                      onClick={() => sendQuickAction(a, lastVerse)}
+                      style={{
+                        background: 'transparent', border: `1px solid ${CC.border}`,
+                        borderRadius: 999, padding: '5px 12px',
+                        fontSize: 11.5, fontWeight: 500, color: CC.muted, cursor: 'pointer',
+                      }}
+                    >
+                      {a.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div style={{ fontFamily: T.serif, fontSize: 15, lineHeight: 1.6, color: CC.muted }}>
+                Ask anything about {book.name} {chNum} — or tap a verse in the chapter to ask about it directly.
+              </div>
+            )}
+          </div>
+        )}
         {chatMsgs.map((m, i) => {
           const isAssistant = m.role === 'assistant';
           const isStreaming  = isAssistant && chatBusy && i === chatMsgs.length - 1;
@@ -3408,8 +3461,33 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
 
       {/* Mobile bottom sheet chat */}
       {!isDesktop && chatOpen && (
-        <div onClick={() => setChatOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 110 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ position: 'absolute', bottom: 62, left: 0, right: 0, height: '65vh', borderRadius: '20px 20px 0 0', overflow: 'hidden', display: 'flex', flexDirection: 'column', animation: 'slideUp 0.25s ease' }}>
+        <div
+          onClick={() => setChatOpen(false)}
+          style={{
+            position: 'fixed', left: 0, right: 0, zIndex: 110,
+            background: 'rgba(0,0,0,0.4)',
+            // Follow the visual viewport when the keyboard is open. iOS scrolls the
+            // layout viewport instead of shrinking it, so inset:0 leaves the whole
+            // sheet stranded behind the keyboard.
+            top: kbViewport ? kbViewport.offsetTop : 0,
+            height: kbViewport ? kbViewport.height : '100%',
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'absolute', left: 0, right: 0,
+              // Keyboard up: sit directly on it, and take most of what's left so the
+              // answer stays readable while typing. Keyboard down: clear the bottom
+              // nav *and* the home indicator — bottom:62 alone overlapped the tabs.
+              bottom: kbViewport ? 0 : 'calc(62px + env(safe-area-inset-bottom, 0px))',
+              height: kbViewport ? Math.round(kbViewport.height * 0.88) : '65vh',
+              maxHeight: '100%',
+              borderRadius: '20px 20px 0 0', overflow: 'hidden',
+              display: 'flex', flexDirection: 'column',
+              animation: 'slideUp 0.25s ease',
+            }}
+          >
             {ChatPanel}
           </div>
         </div>

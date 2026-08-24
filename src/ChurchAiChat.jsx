@@ -621,7 +621,9 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
             {/* ── Switch Mode button ── */}
             <div style={{ position: 'relative' }}>
               {(() => {
-                const person = researchMode ? { emoji: '📚', label: 'Research' } : PERSON_TYPES.find((p) => p.id === personType);
+                // Same unknown-person_type gap as Chat.jsx — render a label, not an empty chip.
+                const person = researchMode ? { emoji: '📚', label: 'Research' }
+                  : (PERSON_TYPES.find((p) => p.id === personType) ?? (personType ? { emoji: '', label: 'Your mode' } : PERSON_TYPES[0]));
                 return (
                   <button
                     onClick={() => setModePickerOpen((v) => !v)}

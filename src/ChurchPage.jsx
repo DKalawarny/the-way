@@ -8,6 +8,7 @@ import { markEngaged } from './streak.js';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import PageTour, { isPageTourDone } from './PageTour.jsx';
 import { isTourDone } from './FeatureTour.jsx';
+import { useUiFlagsVersion } from './uiFlags.js';
 import { presetForRole } from './Badge.jsx';
 import { useUiKit } from './uikit.jsx';
 import JoinByCode from './JoinByCode.jsx';
@@ -49,6 +50,8 @@ export default function ChurchPage({
     },
   ];
   const [showChurchTour, setShowChurchTour] = useState(false);
+  // See ChurchAdmin: re-decide when the synced flags arrive after the profile.
+  const uiFlagsV = useUiFlagsVersion();
 
   const [church, setChurch] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -116,10 +119,10 @@ export default function ChurchPage({
   // the two tours otherwise render stacked on top of each other. Not marking
   // the page tour done means it simply shows on the next visit instead.
   useEffect(() => {
-    if (!loading && isMember && !isPastor && isTourDone() && !isPageTourDone(CHURCH_TOUR_KEY)) {
-      setShowChurchTour(true);
-    }
-  }, [loading, isMember, isPastor]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (loading || !isMember || isPastor) return;
+    if (!isTourDone() || isPageTourDone(CHURCH_TOUR_KEY)) { setShowChurchTour(false); return; }
+    setShowChurchTour(true);
+  }, [loading, isMember, isPastor, uiFlagsV]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!churchId) return;

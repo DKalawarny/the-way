@@ -120,6 +120,7 @@ import InstallPrompt from './InstallPrompt.jsx';
 import { usePushNotifications, requestNotificationPermission } from './usePushNotifications.js';
 import { ensureNativePush } from './nativePush.js';
 import { applyUiFlags } from './uiFlags.js';
+import { useKeyboardViewport } from './useKeyboardViewport.js';
 import { notifyChurchJoined } from './churchJoinNotify.js';
 
 const Community         = lazy(() => import('./Community.jsx'));
@@ -1949,38 +1950,8 @@ export default function App() {
   const [viewingUserId, setViewingUserId] = useState(null);
   const [viewingChurchId, setViewingChurchId] = useState(null);
   const [winW, setWinW] = useState(() => window.innerWidth);
-  // {height, offsetTop} of the visual viewport while the on-screen keyboard is open.
-  // iOS Safari never shrinks 100vh for the keyboard — it scrolls the layout viewport
-  // instead, which strands position:fixed panels mid-screen. Pinning the chat panel
-  // to the visual viewport keeps the composer sitting on top of the keyboard.
-  const [kbViewport, setKbViewport] = useState(null);
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const onChange = () => {
-      const kbOpen = document.documentElement.clientHeight - vv.height > 80;
-      // Expose the visual viewport height as a CSS var so full-screen modals
-      // (comments, sermon threads) shrink above the keyboard — the composer
-      // pinned at their bottom stays visible, Facebook-style.
-      if (kbOpen) {
-        document.documentElement.style.setProperty('--vvh', `${Math.round(vv.height)}px`);
-      } else {
-        document.documentElement.style.removeProperty('--vvh');
-      }
-      setKbViewport((prev) => {
-        const next = kbOpen ? { height: Math.round(vv.height), offsetTop: Math.round(vv.offsetTop) } : null;
-        if (!prev && !next) return prev;
-        if (prev && next && prev.height === next.height && prev.offsetTop === next.offsetTop) return prev;
-        return next;
-      });
-    };
-    vv.addEventListener('resize', onChange);
-    vv.addEventListener('scroll', onChange);
-    return () => {
-      vv.removeEventListener('resize', onChange);
-      vv.removeEventListener('scroll', onChange);
-    };
-  }, []);
+  // Shared with BibleReader's commentary sheet — see useKeyboardViewport.js.
+  const kbViewport = useKeyboardViewport();
   const [journeysOpen, setJourneysOpen] = useState(false);
   const [journeyProgress, setJourneyProgress] = useState({});
   const [autoSendPrompt, setAutoSendPrompt] = useState(null);

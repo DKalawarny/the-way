@@ -19,7 +19,7 @@ import Tip from './Tip.jsx';
 import { extractRefs, parseRef, toApiVerseId, VALIDATION_BIBLE_ID } from './bibleRefUtils.js';
 import { cleanText } from './moderation.js';
 import { isWiderCanonText, WiderCanonTag } from './widerCanon.jsx';
-import { syncUiFlag } from './uiFlags.js';
+import { syncUiFlag, useUiFlagState } from './uiFlags.js';
 
 const GUEST_COUNT_KEY = 'kinwove:guest_count';
 
@@ -907,9 +907,11 @@ export default function Chat({
   seededFromNote,
 }) {
   const aiPlan = profile?.plan ?? 'free';
-  const [dark, setDark] = useState(() => localStorage.getItem('chat_dark') === '1');
+  // Account-synced: this used to be bare localStorage, so a reinstall dropped
+  // everyone back to light (Daniel, 8/21).
+  const [dark, setDark] = useUiFlagState(() => localStorage.getItem('chat_dark') === '1');
   const C = dark ? CHAT_DARK : CHAT_LIGHT;
-  function toggleDark() { setDark((d) => { localStorage.setItem('chat_dark', d ? '0' : '1'); return !d; }); }
+  function toggleDark() { const next = !dark; setDark(next); syncUiFlag('chat_dark', next ? '1' : '0'); }
 
   const [messages, setMessages] = useState(initialMessages ?? []);
   const [input, setInput] = useState('');
@@ -922,7 +924,7 @@ export default function Chat({
   // One-time hint: newcomers don't know the gold reference chips are tappable.
   // Shown once under the first completed answer that contains a reference,
   // then never again (account-syncable localStorage flag).
-  const [refTipDismissed, setRefTipDismissed] = useState(() => {
+  const [refTipDismissed, setRefTipDismissed] = useUiFlagState(() => {
     try { return localStorage.getItem('kw:ref-tip-seen') === '1'; } catch { return true; }
   });
   function dismissRefTip() {
@@ -1054,7 +1056,14 @@ export default function Chat({
     const versePrompt = `Help me understand ${verse.ref} — "${verse.text}"`;
     return [versePrompt, ...base.slice(0, 2)];
   }, [personType, conversations]);
-  const person = PERSON_TYPES.find((p) => p.id === personType);
+  // GuestQuestion writes person_type values that PERSON_TYPES has never had
+  // ('believer', 'agnostic', 'questioning', 'new'), and older profiles carry
+  // 'searching'. The mode pill rendered as an empty chip with a lone caret for
+  // those users — Daniel's own account among them. Fall back to a real label
+  // rather than nothing. (The system prompt has the same gap; see prompts.js
+  // PER_TYPE — that one is a voice decision, still open.)
+  const person = PERSON_TYPES.find((p) => p.id === personType)
+    ?? (personType ? { emoji: '', label: 'Your mode' } : PERSON_TYPES[0]);
 
   useEffect(() => {
     const el = listRef.current;
