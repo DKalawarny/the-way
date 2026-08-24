@@ -13,6 +13,7 @@ import webpush from 'web-push';
 import { getDailyVerse } from './src/dailyVerse.js';
 import { ANSWERS, ANSWERS_BY_SLUG, renderAnswerPage, renderAnswerIndex } from './content/answers.js';
 import { PLAN_LIMITS, churchHasAccess, TRIAL_DAYS, effectivePersonalPlan } from './src/planConfig.js';
+import { isCrisisMessage } from './src/safetyPatterns.js';
 import { renderLegalPage } from './content/legal.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -175,8 +176,32 @@ function limitAnon({ capacity, refillPerSec }) {
 // For endpoints that allow anon callers but reward authentication with a
 // looser bucket. Authed users get authedCfg; everyone else falls back to
 // IP-based anonCfg.
+// True when this request's newest user message reads as a crisis. Only chat-shaped
+// bodies have `messages`, so this is inert on every other route.
+function requestIsCrisis(req) {
+  const msgs = req.body?.messages;
+  if (!Array.isArray(msgs)) return false;
+  const last = [...msgs].reverse().find((m) => m?.role === 'user')?.content;
+  const text = typeof last === 'string'
+    ? last
+    : Array.isArray(last) ? last.filter((b) => b?.type === 'text').map((b) => b.text ?? '').join(' ') : '';
+  return isCrisisMessage(text);
+}
+
 function limitEither(authedCfg, anonCfg) {
   return (req, res, next) => {
+    // The anon bucket is 3/day per IP, and it runs before the handler — so a
+    // first-time visitor reaching out from the landing page could be turned away
+    // by a rate limiter before the quota bypass ever got a say. Crisis messages
+    // get their own generous bucket instead: bounded so it can't be farmed for
+    // free answers, but far past anything a real conversation would need.
+    if (requestIsCrisis(req)) {
+      const crisisKey = req.userId ? `crisis:u:${req.userId}` : `crisis:ip:${clientIp(req)}`;
+      if (!rateLimit({ key: crisisKey, capacity: 12, refillPerSec: 12 / 3600 })) {
+        return res.status(429).json({ error: 'slow down — try again in a moment' });
+      }
+      return next();
+    }
     const cfg = req.userId ? authedCfg : anonCfg;
     const key = req.userId ? `u:${req.userId}` : `ip:${clientIp(req)}`;
     if (!rateLimit({ key, ...cfg })) {
@@ -1136,6 +1161,56 @@ function incrementAiUsage(userId, period) {
   }).catch((e) => console.error('[ai_usage] increment failed:', e?.message));
 }
 
+// ── Grace messages ───────────────────────────────────────────────────────────
+// When someone runs out of free questions in the middle of something heavy, the
+// honest thing is to keep going rather than hand them a price (Daniel, 8/24).
+// Crisis messages never reach here — those bypass the quota outright. This is
+// the softer tier: real distress that isn't an emergency.
+//
+// Deliberately never advertised. It only ever appears in the moment it happens,
+// so nobody learns that sounding sad unlocks messages.
+const GRACE_AMOUNT = 10;
+
+// One cheap classifier pass, only ever run at the wall — so it costs nothing
+// until someone is actually being turned away.
+async function looksLikeRealDistress(messages) {
+  try {
+    const recent = messages.filter((m) => m.role === 'user').slice(-3)
+      .map((m) => (typeof m.content === 'string' ? m.content : '')).filter(Boolean).join('\n---\n');
+    if (!recent.trim()) return false;
+    const r = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 8,
+      system: 'Decide whether the person writing these messages is going through something genuinely hard right now — grief, loss, a relationship ending, despair, fear, loneliness, being overwhelmed. Judge only what they say about their own life. Curiosity, study questions, theology debates and idle browsing are NOT distress, however dark the subject matter. Nor is asking for more messages, complaining about a limit, or asserting sadness without anything happening — a real one describes a circumstance, not just a feeling they want acted on. Answer with one word: YES or NO.',
+      messages: [{ role: 'user', content: recent.slice(0, 4000) }],
+    });
+    const verdict = r.content.filter((b) => b.type === 'text').map((b) => b.text).join('').trim().toUpperCase();
+    return verdict.startsWith('YES');
+  } catch (e) {
+    console.error('[grace] classifier failed:', e?.message);
+    return false;
+  }
+}
+
+// Returns the number of messages granted, or 0. Safe before the migration has
+// been run — a missing function just means nobody is granted anything.
+async function tryGraceGrant(userId, period, messages) {
+  if (!userId || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) return 0;
+  if (!(await looksLikeRealDistress(messages))) return 0;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/grant_ai_grace`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_user_id: userId, p_period: period, p_amount: GRACE_AMOUNT }),
+    });
+    if (!r.ok) { console.error('[grace] grant_ai_grace unavailable:', r.status); return 0; }
+    return (await r.json()) === true ? GRACE_AMOUNT : 0;
+  } catch (e) {
+    console.error('[grace] grant failed:', e?.message);
+    return 0;
+  }
+}
+
 // Appended server-side to EVERY conversational system prompt (the client supplies
 // its own system text, so safety rules must be enforced here or a stale/modified
 // client could ship without them). Kept inside the cached block — near-zero cost.
@@ -1274,10 +1349,21 @@ app.post('/api/chat', optionalAuth, limitEither(
   const realPlan = await getServerPlan(req.userId);
   const planCfg = PLAN_LIMITS[realPlan] ?? PLAN_LIMITS.free;
   const usagePeriod = serverPeriod(planCfg.period);
-  if (req.userId) {
+  const lastUserMsg = msgText([...messages].reverse().find((m) => m.role === 'user')?.content ?? '');
+  // Someone reaching out in crisis must never meet a billing wall. The crisis
+  // guidance (988, Samaritans, abuse, minors) lives in the system prompt, so
+  // refusing here hands them a price instead of a helpline. These go through,
+  // and they don't spend a question.
+  const crisisBypass = isCrisisMessage(lastUserMsg);
+  let graceGranted = 0;
+  if (req.userId && !crisisBypass) {
     const u = await getAiUsage(req.userId, usagePeriod);
     if (u.count >= planCfg.limit + u.topup) {
-      return res.status(429).json({ error: 'limit_reached', message: 'You’ve reached your questions for this period.' });
+      // Out of questions — but check whether this is a bad moment to stop.
+      graceGranted = await tryGraceGrant(req.userId, usagePeriod, messages);
+      if (!graceGranted) {
+        return res.status(429).json({ error: 'limit_reached', message: 'You’ve reached your questions for this period.' });
+      }
     }
   }
 
@@ -1292,14 +1378,17 @@ app.post('/api/chat', optionalAuth, limitEither(
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 
+  // Tell them, in the moment and only in the moment, that we kept going.
+  if (graceGranted) send('grace', { added: graceGranted });
+
   // Cache lookup is keyed on the latest user message + person type. We only
   // serve cached answers on first-turn (context-free) requests to avoid
   // returning stale follow-ups, but every ask is logged to qa_events so the
   // dataset grows with real usage. Image conversations are never cached.
-  const lastUserMsg = msgText([...messages].reverse().find((m) => m.role === 'user')?.content ?? '');
   const isFirstTurn = messages.length === 1 && messages[0].role === 'user';
 
-  if (isFirstTurn && personType && !hasImages && !internal) {
+  // Never replay a stored answer to someone in crisis — they get a live one.
+  if (isFirstTurn && personType && !hasImages && !internal && !crisisBypass) {
     const cached = await lookupCachedAnswer(personType, lastUserMsg);
     if (cached?.answer) {
       send('cache_hit', { id: cached.id });
@@ -1400,6 +1489,10 @@ app.post('/api/chat', optionalAuth, limitEither(
     if (isFirstTurn && model === 'claude-haiku-4-5-20251001') {
       model = 'claude-sonnet-4-6';
     }
+    // Crisis is the highest-stakes message in the app, on any plan or turn.
+    if (crisisBypass && model === 'claude-haiku-4-5-20251001') {
+      model = 'claude-sonnet-4-6';
+    }
     if (internal) model = 'claude-haiku-4-5-20251001';
 
     const trimmed = windowHistory(messages);
@@ -1430,7 +1523,7 @@ app.post('/api/chat', optionalAuth, limitEither(
       .map((b) => b.text)
       .join('');
 
-    if (!internal) incrementAiUsage(req.userId, usagePeriod);
+    if (!internal && !crisisBypass) incrementAiUsage(req.userId, usagePeriod);
     send('done', { stop_reason: final.stop_reason, usage: final.usage });
     res.end();
 
@@ -1438,7 +1531,9 @@ app.post('/api/chat', optionalAuth, limitEither(
 
     // Persist cache + event after the response is on its way to the client.
     // Never cache image conversations — every image is unique context.
-    if (isFirstTurn && personType && fullText.length > 0 && !hasUrlContext && !hasImages) {
+    // ...and never write one into the shared cache: qa_cache holds question_raw
+    // verbatim with no user_id, and a crisis disclosure has no business there.
+    if (isFirstTurn && personType && fullText.length > 0 && !hasUrlContext && !hasImages && !crisisBypass) {
       writeCacheEntry({ personType, question: lastUserMsg, answer: fullText, model });
     }
     logQaEvent({

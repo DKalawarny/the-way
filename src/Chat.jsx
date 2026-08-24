@@ -933,6 +933,10 @@ export default function Chat({
     syncUiFlag('kw:ref-tip-seen', '1');
   }
   const [copiedIdx, setCopiedIdx] = useState(null);
+  // Set only when the server has just handed this person extra questions
+  // because they're going through something hard. Never shown otherwise —
+  // it exists in the moment it happens and nowhere else.
+  const [graceNote, setGraceNote] = useState(null);
   // ── Scripture verification + flag state ──────────────────────────────────
   const [refStatusMap,  setRefStatusMap]  = useState({}); // { [msgIdx]: Map<refRaw, 'ok'|'invalid'|'loading'> }
   const [flaggedMsgs,   setFlaggedMsgs]   = useState(new Set());
@@ -1346,6 +1350,8 @@ export default function Chat({
               };
               return copy;
             });
+          } else if (ev === 'grace') {
+            setGraceNote(payload.added);
           } else if (ev === 'error') {
             throw new Error(payload.message || 'stream error');
           }
@@ -2084,6 +2090,22 @@ export default function Chat({
       )}
 
       {/* ── Low-messages warning strip ── */}
+      {graceNote && (
+        <div style={{
+          margin: '0 12px 8px', padding: '11px 14px',
+          background: 'rgba(184,115,58,0.07)',
+          border: `1px solid ${T.goldLight}`, borderRadius: 12,
+          fontFamily: T.serif, fontSize: 13.5, lineHeight: 1.55, color: C.text,
+          display: 'flex', gap: 10, alignItems: 'flex-start',
+        }}>
+          <span style={{ flexShrink: 0, marginTop: 1 }}><KinwoveStar size={13} /></span>
+          <span>
+            It sounds like you&rsquo;re carrying something heavy. Your free questions for this
+            week had run out — <strong>I&rsquo;ve added {graceNote} more</strong>, so we don&rsquo;t
+            have to stop here.
+          </span>
+        </div>
+      )}
       {!aiUsage.atLimit && session && <AiUsageWarning remaining={aiUsage.remaining} limit={aiUsage.limit} plan={aiPlan} />}
 
       <div
