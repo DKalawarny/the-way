@@ -1243,7 +1243,11 @@ export default function Chat({
     const img = imgOverride ?? attachedImg;
     if (!prompt && !img) return;
     if (busy) return;
-    if (aiUsage.atLimit) return; // hard gate — UI should prevent this anyway
+    // Deliberately NOT gated on aiUsage.atLimit. Someone out of questions can
+    // still say what they came to say; the server decides whether this is a
+    // moment to keep going (grace messages) or to hold the line. Gating here
+    // made that unreachable — the wall replaced the composer, so the people it
+    // was written for were the one group who could never trigger it.
     markEngaged();
     resetScroll();
     setInput('');
@@ -1352,6 +1356,7 @@ export default function Chat({
             });
           } else if (ev === 'grace') {
             setGraceNote(payload.added);
+            aiUsage.refreshAfterTopup?.();
           } else if (ev === 'error') {
             throw new Error(payload.message || 'stream error');
           }
@@ -2085,7 +2090,7 @@ export default function Chat({
       </div>
 
       {/* ── AI limit wall — replaces composer when user is out of messages ── */}
-      {aiUsage.atLimit && session && (
+      {aiUsage.atLimit && session && !graceNote && (
         <AiLimitWall plan={aiPlan} panelMode={panelMode} />
       )}
 
@@ -2117,7 +2122,7 @@ export default function Chat({
             : '14px 20px 76px',
           flexShrink: 0,
           boxSizing: 'border-box',
-          display: aiUsage.atLimit && session ? 'none' : undefined,
+          // Stays visible at the limit — see the note in send().
         }}
       >
         {!busy && !showGuestWall && (() => {
