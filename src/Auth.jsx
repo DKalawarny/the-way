@@ -210,7 +210,7 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
                 Enter your email and we'll send a link to set a new one.
               </p>
               <Field label="Email">
-                <input style={input} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@somewhere.com" required />
+                <input style={input} type="email" name="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@somewhere.com" required />
               </Field>
               {error && <div style={{ color: T.error, fontSize: 13, marginBottom: 10 }}>{error}</div>}
               <button type="submit" style={btn} disabled={loading}>{loading ? 'Sending…' : 'Send reset link'}</button>
@@ -230,7 +230,7 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
           <h2 style={title}>Set a new password</h2>
           <form onSubmit={handleUpdatePassword}>
             <Field label="New password">
-              <input style={input} type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" minLength={8} required />
+              <input style={input} type={showPassword ? 'text' : 'password'} name="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" minLength={8} required />
             </Field>
             {error && <div style={{ color: T.error, fontSize: 13, marginBottom: 10 }}>{error}</div>}
             <button type="submit" style={btn} disabled={loading}>{loading ? 'Saving…' : 'Save new password'}</button>
@@ -316,6 +316,8 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
             <input
               style={input}
               type="email"
+              name="email"
+              autoComplete="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@somewhere.com"
@@ -327,6 +329,8 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
               <input
                 style={{ ...input, paddingRight: 44 }}
                 type={showPassword ? 'text' : 'password'}
+                name="password"
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={mode === 'signup' ? 'At least 8 characters' : ''}
@@ -348,7 +352,7 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
           </Field>
 
           {mode === 'signin' && (
-            <button type="button" onClick={() => { setMode('reset'); setError(null); }} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 13, cursor: 'pointer', padding: 0, margin: '0 0 12px' }}>
+            <button type="button" onClick={() => { setMode('reset'); setError(null); }} style={{ background: 'none', border: 'none', color: T.goldDark, fontSize: 13, cursor: 'pointer', padding: '6px 0 8px', margin: '0 0 6px', textDecoration: 'underline', textUnderlineOffset: 3 }}>
               Forgot password?
             </button>
           )}
