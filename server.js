@@ -4928,6 +4928,38 @@ app.get('/api/push/vapid-key', (_req, res) => {
   res.json({ key: VAPID_PUBLIC_KEY });
 });
 
+// Is push actually configured on this deploy? There was no way to answer that
+// without the Render dashboard, which made "did the key get set correctly?" a
+// guess for days (8/21 → 8/26). Admin-only, and it never returns the key or the
+// full key id — just enough to tell a live key from a missing one.
+app.get('/api/push/status', requireAuth, async (req, res) => {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}&select=is_admin&limit=1`,
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } });
+    const rows = await r.json();
+    if (!rows[0]?.is_admin) return res.status(401).json({ error: 'unauthorized' });
+  } catch { return res.status(401).json({ error: 'unauthorized' }); }
+
+  let web = 0, native = 0;
+  try {
+    const rows = await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?select=endpoint`,
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }).then((x) => x.json());
+    for (const row of rows ?? []) (String(row.endpoint).startsWith('apns://') ? native++ : web++);
+  } catch { /* counts are best effort */ }
+
+  res.json({
+    apnsEnabled: APNS_ENABLED,
+    hasKey: !!APNS_KEY,
+    keyLooksLikeP8: !!APNS_KEY && APNS_KEY.includes('BEGIN'),
+    keyIdSet: !!APNS_KEY_ID,
+    keyIdLast4: APNS_KEY_ID ? APNS_KEY_ID.slice(-4) : null,
+    teamId: APNS_TEAM_ID,
+    topic: APNS_TOPIC,
+    webPushEnabled: PUSH_ENABLED,
+    subscriptions: { web, native },
+  });
+});
+
 // Native app device tokens (APNs). Stored even before APNS_KEY is configured
 // so enabling push later lights up every already-registered device.
 app.post('/api/push/native-register', requireAuth, limitAuthed({ capacity: 10, refillPerSec: 10 / 60 }), async (req, res) => {

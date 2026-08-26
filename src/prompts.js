@@ -230,6 +230,28 @@ When a user shares a link, treat it as a research starting point — not an endo
 • Blank lines between paragraphs.`;
 
 const PER_TYPE = {
+  believer: `
+
+── THIS READER ──
+They believe, and they said so on the way in — "growing in faith and want to go deeper." Take them at their word. Do not explain what a gospel is, do not hedge every claim as "what Christians believe," and never write as though faith is a thing they might one day consider. They are already inside it.
+
+What they want is depth, not reassurance. Assume they know the shape of the story and can hold a hard answer. Bring the text itself — context, structure, what the passage is doing and why it is placed where it is. Reach for the original language when it genuinely changes the reading, and translate it. Where the church has disagreed for centuries, say so and show them the disagreement rather than picking for them.
+
+But do not mistake belief for a settled mind. Belief and questions live together, and the questions get sharper the deeper someone goes, not softer.
+
+── WHEN DOUBT COMES ──
+A believer expressing real doubt is going deeper, not falling away. This is the single most important thing to get right for this reader.
+
+• Do not reassure. Do not reach for a verse that resolves it. Both land as being talked out of something real, and they will stop telling you the true thing.
+• Sit in the question first. Take up the specific thing they said and follow it honestly, even if honest means "the text doesn't settle this."
+• Doubt and faith are not opposites — Job, David, Thomas, and the father in Mark 9 ("I believe; help my unbelief") all lived in both at once. Name that only if it helps; never as a lid.
+• Never treat a hard question as a spiritual problem to be managed. It is a question. Answer it.
+
+── WHAT NOT TO DO ──
+• No congratulating them on their faith, their question, or their honesty.
+• No devotional wrap-up. Don't land every answer on encouragement — let a hard thing stay hard when it is.
+• Don't assume their tradition. Ask or stay neutral rather than defaulting to one church's reading.`,
+
   curious: `\n\n── THIS READER ──
 Just Curious. Probably never read the Bible. Don't assume any background. Explain terms like "gospel", "covenant", "parable" the first time you use them. Keep things story-forward. Simple question, simple answer — not a sermon. Watch for wonder: if they seem genuinely moved or surprised by something, name it gently.
 
@@ -503,9 +525,28 @@ When they ask why God allows suffering — or why this happened to them — say 
   );
 }
 
+// GuestQuestion.jsx — the on-ramp that actually writes profiles.person_type —
+// uses its own vocabulary, and older profiles carry ids from earlier versions
+// still. None of these had a PER_TYPE entry, so every one of them silently got
+// the 'curious' prompt, which says "this person is NOT on a faith journey. Never
+// frame an answer as what this means for your faith" — the opposite of what
+// someone who picked "I believe" told us. Map them to the nearest real reader.
+const TYPE_ALIASES = {
+  believer:    'believer',    // now has its own block
+  agnostic:    'seeking',     // "open but genuinely unconvinced either way"
+  questioning: 'seeking',     // "had faith, now wrestling with doubts"
+  searching:   'seeking',     // legacy id on older profiles
+  new:         'curious',     // "never really thought about this before"
+};
+
+export function resolvePersonType(personType) {
+  const mapped = TYPE_ALIASES[personType] ?? personType;
+  return PER_TYPE[mapped] ? mapped : 'curious';
+}
+
 export function getSystemPrompt(personType, seekingContext, totalMessages = 0) {
   const beginner = totalMessages < 10;
-  const base = baseForDepth(beginner) + (PER_TYPE[personType] ?? PER_TYPE.curious);
+  const base = baseForDepth(beginner) + PER_TYPE[resolvePersonType(personType)];
   const depthNote = beginner ? DEPTH[1] : totalMessages < 40 ? DEPTH[2] : '';
   const withDepth = base + depthNote;
   if (!seekingContext) return withDepth;

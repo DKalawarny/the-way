@@ -318,10 +318,35 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
                 </div>
               </div>
             ) : (
-              <span style={{ fontStyle: 'italic' }}>
-                This church hasn't set up a care team yet.<br />
-                Try reaching out to your pastor directly.
-              </span>
+              <div style={{ fontFamily: T.serif }}>
+                <span style={{ fontStyle: 'italic', color: T.inkSoft }}>
+                  This church hasn't set up a care team yet.<br />
+                  You can still reach your pastor directly — it may take a while for
+                  someone to see it.
+                </span>
+                {/* Reaching out here is asynchronous: it might be hours, and with no
+                    care team it might be longer. Someone who needs a person tonight
+                    should not have to find that out by waiting. These answer now. */}
+                <div style={{
+                  marginTop: 18, padding: '14px 16px', textAlign: 'left',
+                  background: 'rgba(184,115,58,0.06)',
+                  border: `1px solid ${T.goldLight}`, borderRadius: 12,
+                }}>
+                  <div style={{ fontSize: 13.5, color: T.ink, lineHeight: 1.6, marginBottom: 10 }}>
+                    If you need someone <strong>right now</strong>, these are answered
+                    day and night:
+                  </div>
+                  {[
+                    ['988', 'call or text — US & Canada'],
+                    ['116 123', 'Samaritans — UK'],
+                    ['findahelpline.com', 'anywhere else'],
+                  ].map(([value, note]) => (
+                    <div key={value} style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.9 }}>
+                      <strong style={{ color: T.goldDark }}>{value}</strong> — {note}
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         ) : (

@@ -1,5 +1,14 @@
 export const PERSON_TYPES = [
   {
+    // The guest on-ramp has offered "I believe" since day one, but this list
+    // never had it — so anyone who picked it had a mode the picker couldn't
+    // show and couldn't switch back to. Wording matches GuestQuestion.jsx.
+    id: 'believer',
+    emoji: '🙏',
+    label: 'I Believe',
+    description: 'Growing in faith and want to go deeper.',
+  },
+  {
     id: 'curious',
     emoji: '🌱',
     label: 'Just Curious',
