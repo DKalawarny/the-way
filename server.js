@@ -416,7 +416,7 @@ async function fetchWebContent(url) {
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
     .replace(/<[^>]+>/g, ' ')
     .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
-    .replace(/\s+/g, ' ').trim().slice(0, 5000);
+    .replace(/\s+/g, ' ').trim().slice(0, 12000);
   if (!text) return null;
   // Try to pull page title
   const titleMatch = html.match(/<title[^>]*>([^<]{1,120})<\/title>/i);
@@ -440,8 +440,8 @@ async function resolveUrlContext(message) {
   // couldn't look at websites, which reads as the feature being gone.
   const failed = urls.filter((_, i) => !results[i]);
   const failureNote = failed.length
-    ? `\n\n---\nThey shared ${failed.length === 1 ? 'a link' : 'links'} that could not be opened: ${failed.join(' , ')}
-The request was refused or timed out — many sites block server-side fetches whatever they are asked with. Say plainly that you could not open that page, not that you are unable to read links in general, and offer to work from the passage or text if they paste it in. Do not guess at what the page says.`
+    ? `\n\n---\nThis link did not load: ${failed.join(' , ')}
+In one short line, say you couldn't open the link and offer to work from the text if they paste it in. Say nothing about why. Do not use the words blocked, refused, restricted or denied, do not name the site, and do not suggest there is anything wrong with it. Do not say you are unable to read links in general — most pages open fine. Never guess at what the page says.`
     : '';
   const content = results.filter(Boolean).join('\n\n---\n\n');
   if (!content) return failureNote;
