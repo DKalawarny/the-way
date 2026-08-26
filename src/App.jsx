@@ -1354,9 +1354,12 @@ function Board({ open, onClose, notes, onRemove, onGoDeeper, onSharePublicly }) 
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'flex-start',
-        padding: '20px 16px',
+        // Same fix as the conversation-history modal (b11f8f2): the card used to
+        // grow past the screen with the backdrop scrolling, so the × at the top
+        // scrolled out of reach and the only way out was a lucky backdrop tap.
+        // The card is now capped and scrolls inside itself instead.
+        padding: 'calc(20px + env(safe-area-inset-top, 0px)) 16px calc(20px + env(safe-area-inset-bottom, 0px))',
         animation: 'fadeIn 0.15s ease',
-        overflowY: 'auto',
       }}
     >
       <div
@@ -1367,7 +1370,9 @@ function Board({ open, onClose, notes, onRemove, onGoDeeper, onSharePublicly }) 
           borderRadius: 18,
           maxWidth: 680,
           width: '100%',
-          margin: '40px 0',
+          maxHeight: '100%',
+          display: 'flex',
+          flexDirection: 'column',
           border: `1px solid ${T.line}`,
           boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
           overflow: 'hidden',
@@ -1382,6 +1387,7 @@ function Board({ open, onClose, notes, onRemove, onGoDeeper, onSharePublicly }) 
             justifyContent: 'space-between',
             gap: 12,
             background: T.cream,
+            flexShrink: 0,
           }}
         >
           <div>
@@ -1418,7 +1424,7 @@ function Board({ open, onClose, notes, onRemove, onGoDeeper, onSharePublicly }) 
           </div>
         </div>
 
-        <div style={{ padding: '8px 0' }}>
+        <div style={{ padding: '8px 0', flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
           {notes.length === 0 && (
             <div
               style={{
@@ -1945,7 +1951,18 @@ export default function App() {
   const [boardOpen, setBoardOpen] = useState(false);
   // The board is a floating overlay — navigating anywhere (Bible, feed, …)
   // should dismiss it instead of staying stacked over the new screen.
-  useEffect(() => { setBoardOpen(false); }, [stage]);
+  //
+  // But every menu entry opens it with setStage('feed') + setBoardOpen(true) in
+  // the same handler, so from anywhere except the feed this effect fired on the
+  // stage it had just caused and closed the board before it painted: "Your board"
+  // did nothing on the first tap and worked on the second. Remember the stage the
+  // board opened on and only dismiss when it actually changes afterwards.
+  const boardStageRef = useRef(null);
+  useEffect(() => {
+    if (!boardOpen) { boardStageRef.current = null; return; }
+    if (boardStageRef.current === null) { boardStageRef.current = stage; return; }
+    if (boardStageRef.current !== stage) setBoardOpen(false);
+  }, [stage, boardOpen]);
   const [chatPanelOpen, setChatPanelOpen] = useState(false);
   const [viewingUserId, setViewingUserId] = useState(null);
   const [viewingChurchId, setViewingChurchId] = useState(null);
