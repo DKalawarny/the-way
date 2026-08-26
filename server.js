@@ -1435,6 +1435,9 @@ app.post('/api/chat', optionalAuth, limitEither(
     } catch {}
   }
 
+  // Recall across their own past conversations when the question points back.
+  const historyContext = await recallContext(req.userId, lastUserMsg, messages).catch(() => '');
+
   // Grounded commentary (research mode only): if the last message references a
   // passage, pull the ACTUAL public-domain commentary text so the AI quotes real
   // sources instead of recalling — and possibly fabricating — them.
@@ -1500,7 +1503,7 @@ app.post('/api/chat', optionalAuth, limitEither(
     const stream = client.messages.stream({
       model,
       max_tokens: internal ? 500 : 2048,
-      system: cachedSystem(system + AI_SAFETY_BLOCK, urlContext + memoryContext + commentaryContext + widerContext),
+      system: cachedSystem(system + AI_SAFETY_BLOCK, urlContext + memoryContext + historyContext + commentaryContext + widerContext),
       messages: trimmed,
     });
     req.on('close', () => stream.controller?.abort?.());
@@ -3110,6 +3113,88 @@ app.post('/api/cron/pastor-rhythm', async (req, res) => {
 });
 
 // ── kinwove persona — admin manual post ────────────────────────────────────
+// ── Recall across a person's own saved conversations ────────────────────────
+// ai_memory holds a standing sketch of who someone is; it cannot answer "what
+// did we say about that trip?". Conversations are already synced to the
+// conversations table for anyone with sync_conversations on, so when a question
+// clearly points backwards we search their own history and hand the relevant
+// excerpts to the model. Scoped to req.userId — one person's history is never
+// visible to anyone else.
+
+// Only run on questions that actually reach for the past. Searching every
+// message would cost a query and a slab of context on "what is Lent".
+const LOOKS_BACKWARD = /\b(earlier|before|last time|previously|the other day|yesterday|last (week|night|month|year)|we (talked|discussed|spoke|were talking)|you (said|told|mentioned|asked)|i (told|mentioned|said) you|do you remember|remember (when|that|our)|recall|that conversation|our (last |previous )?(chat|conversation|talk)|back (when|to the)|from (before|the start)|go back)\b/i;
+
+const RECALL_STOPWORDS = new Set(('a an the and or but if then than that this these those of to in on at for with about from into over after before is are was were be been being do does did doing have has had i you he she it we they me my your our their what when where who why how can could would should will just like get got some any all not no yes said say tell told think know'
+).split(' '));
+
+function recallKeywords(text) {
+  return [...new Set(String(text).toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/)
+    .filter((w) => w.length > 3 && !RECALL_STOPWORDS.has(w)))];
+}
+
+async function recallContext(userId, question, currentMessages) {
+  if (!userId || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) return '';
+  if (!LOOKS_BACKWARD.test(question)) return '';
+  const words = recallKeywords(question);
+  if (words.length === 0) return '';
+
+  let rows;
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/conversations?user_id=eq.${userId}&select=title,messages,updated_at&order=updated_at.desc&limit=60`,
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } });
+    rows = await r.json();
+  } catch { return ''; }
+  if (!Array.isArray(rows) || rows.length === 0) return '';
+
+  // Don't hand back the conversation they're already in — it's in `messages`.
+  const currentOpener = String(currentMessages?.find((m) => m.role === 'user')?.content ?? '').slice(0, 120);
+
+  const scored = [];
+  for (const row of rows) {
+    const msgs = Array.isArray(row.messages) ? row.messages : [];
+    if (msgs.length === 0) continue;
+    if (currentOpener && String(msgs[0]?.content ?? '').slice(0, 120) === currentOpener) continue;
+    const haystack = `${row.title ?? ''}\n${msgs.map((m) => (typeof m.content === 'string' ? m.content : '')).join('\n')}`.toLowerCase();
+    let score = 0;
+    for (const w of words) if (haystack.includes(w)) score++;
+    if (score > 0) scored.push({ row, msgs, score });
+  }
+  if (scored.length === 0) return '';
+  scored.sort((a, b) => b.score - a.score || String(b.row.updated_at).localeCompare(String(a.row.updated_at)));
+
+  const CHAR_CAP = 6000;
+  let used = 0;
+  const blocks = [];
+  for (const { row, msgs } of scored.slice(0, 3)) {
+    // Centre the excerpt on the message that matches best, not just the start.
+    let bestIdx = 0, bestHits = -1;
+    msgs.forEach((m, idx) => {
+      const t = String(m?.content ?? '').toLowerCase();
+      let hits = 0;
+      for (const w of words) if (t.includes(w)) hits++;
+      if (hits > bestHits) { bestHits = hits; bestIdx = idx; }
+    });
+    const from = Math.max(0, bestIdx - 1);
+    const slice = msgs.slice(from, from + 4)
+      .map((m) => `${m.role === 'user' ? 'They' : 'You'}: ${String(m.content ?? '').slice(0, 600)}`)
+      .join('\n');
+    const when = row.updated_at ? String(row.updated_at).slice(0, 10) : 'earlier';
+    const block = `\n[${when} — "${String(row.title ?? 'untitled').slice(0, 80)}"]\n${slice}`;
+    if (used + block.length > CHAR_CAP) break;
+    used += block.length;
+    blocks.push(block);
+  }
+  if (blocks.length === 0) return '';
+
+  return `\n\n── FROM THEIR EARLIER CONVERSATIONS ──
+They are asking about something from before, so here are the closest matching excerpts from their own saved conversations. "They" is this person; "You" is you in that earlier conversation.
+${blocks.join('\n')}
+
+Use these to answer directly — quote or summarise what was actually said. If none of it is what they meant, say plainly that you looked back and couldn't find it rather than guessing, and ask what to look for. Never invent details that are not in these excerpts.`;
+}
+
 // ── AI memory: update user profile after a conversation ─────────────────────
 app.post('/api/ai/update-memory', requireAuth, async (req, res) => {
   const { messages } = req.body ?? {};
