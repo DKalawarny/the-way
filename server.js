@@ -433,8 +433,19 @@ async function resolveUrlContext(message) {
       return ytMatch ? await fetchYouTubeContent(url, ytMatch[1]) : await fetchWebContent(url);
     } catch { return null; }
   }));
+  // A page that won't open is not the same as not being able to read pages at
+  // all. Plenty of sites answer a server-side fetch with 403 no matter what user
+  // agent it carries — desiringgod.org and thegospelcoalition.org both do — and
+  // when that happened the model saw no url context and truthfully said it
+  // couldn't look at websites, which reads as the feature being gone.
+  const failed = urls.filter((_, i) => !results[i]);
+  const failureNote = failed.length
+    ? `\n\n---\nThey shared ${failed.length === 1 ? 'a link' : 'links'} that could not be opened: ${failed.join(' , ')}
+The request was refused or timed out — many sites block server-side fetches whatever they are asked with. Say plainly that you could not open that page, not that you are unable to read links in general, and offer to work from the passage or text if they paste it in. Do not guess at what the page says.`
+    : '';
   const content = results.filter(Boolean).join('\n\n---\n\n');
-  return content ? `\n\n---\nThe user has shared the following as a research resource. Use it as a starting point to go deeper — explore the ideas it raises, connect them to scripture, and offer honest perspective where relevant. Do not merely summarize it.\n\n${content}\n---` : '';
+  if (!content) return failureNote;
+  return (content ? `\n\n---\nThe user has shared the following as a research resource. Use it as a starting point to go deeper — explore the ideas it raises, connect them to scripture, and offer honest perspective where relevant. Do not merely summarize it.\n\n${content}\n---` : '') + failureNote;
 }
 
 // ── Q&A cache (Supabase-backed) + event log ─────────────────────────────────
