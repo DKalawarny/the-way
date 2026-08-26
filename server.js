@@ -5050,8 +5050,20 @@ app.get('/api/push/status', requireAuth, async (req, res) => {
     for (const row of rows ?? []) (String(row.endpoint).startsWith('apns://') ? native++ : web++);
   } catch { /* counts are best effort */ }
 
+  let diagnostics = [];
+  try {
+    const rows = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=display_name,notif_prefs&notif_prefs=not.is.null`,
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }).then((x) => x.json());
+    diagnostics = (rows ?? [])
+      .filter((r) => r.notif_prefs?.push_diag)
+      .map((r) => ({ who: r.display_name, at: r.notif_prefs.push_diag.at, trail: r.notif_prefs.push_diag.trail }))
+      .sort((a, b) => String(b.at).localeCompare(String(a.at)))
+      .slice(0, 10);
+  } catch { /* best effort */ }
+
   res.json({
     apnsEnabled: APNS_ENABLED,
+    diagnostics,
     hasKey: !!APNS_KEY,
     keyLooksLikeP8: !!APNS_KEY && APNS_KEY.includes('BEGIN'),
     keyIdSet: !!APNS_KEY_ID,
@@ -5061,6 +5073,30 @@ app.get('/api/push/status', requireAuth, async (req, res) => {
     webPushEnabled: PUSH_ENABLED,
     subscriptions: { web, native },
   });
+});
+
+// Where push registration got to on a real device. The trail was already being
+// reported, but only into an in-memory ops log that dies on every deploy — so
+// after a day of deploys the answer to "why didn't the phone register?" was
+// always gone. Parked on the profile instead, under notif_prefs (the same jsonb
+// the UI flags live in), so no migration is needed and it survives restarts.
+app.post('/api/push/diagnostic', requireAuth, limitAuthed({ capacity: 6, refillPerSec: 6 / 60 }), async (req, res) => {
+  const { trail } = req.body ?? {};
+  if (typeof trail !== 'string' || !trail) return res.status(400).json({ error: 'trail required' });
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
+  try {
+    const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
+    const [row] = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}&select=notif_prefs`, { headers: h }).then((r) => r.json());
+    const prefs = row?.notif_prefs ?? {};
+    const push_diag = { at: new Date().toISOString(), trail: String(trail).slice(0, 600) };
+    await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}`, {
+      method: 'PATCH', headers: h, body: JSON.stringify({ notif_prefs: { ...prefs, push_diag } }),
+    });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error('[push] diagnostic save failed:', e?.message);
+    res.status(500).json({ error: 'could not save' });
+  }
 });
 
 // Native app device tokens (APNs). Stored even before APNS_KEY is configured

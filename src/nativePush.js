@@ -21,8 +21,17 @@ let started = false;
 export async function ensureNativePush() {
   const trail = [];
   const note = (s) => trail.push(s);
-  const flush = (outcome) =>
-    reportClientError(`[push] ${outcome} :: ${trail.join(' → ')}`, { kind: 'push-stage' });
+  const flush = (outcome) => {
+    const line = `${outcome} :: ${trail.join(' → ')}`;
+    reportClientError(`[push] ${line}`, { kind: 'push-stage' });
+    // Also park it on the profile — the ops log it lands in is in-memory and is
+    // wiped by every deploy, which is why the 8/21 trail was never recoverable.
+    authedFetch('/api/push/diagnostic', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trail: line }),
+    }).catch(() => {});
+  };
 
   if (!isNativeApp) return;          // plain web, nothing to report
   if (started) return;
