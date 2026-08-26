@@ -1195,7 +1195,7 @@ function ConversationHistory({ open, onClose, conversations, onLoad, onDelete, o
                   }} />
                 </div>
                 <span style={{ fontSize: 12, color: T.inkMuted }}>
-                  {syncEnabled ? 'Synced across devices' : 'Sync across devices'}
+                  {syncEnabled ? 'Synced — Ask can look back at these' : 'Sync across devices — lets Ask look back'}
                 </span>
               </button>
             )}

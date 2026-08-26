@@ -3146,7 +3146,14 @@ async function recallContext(userId, question, currentMessages) {
       { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } });
     rows = await r.json();
   } catch { return ''; }
-  if (!Array.isArray(rows) || rows.length === 0) return '';
+  // Nothing to search means their history was never saved to the account —
+  // conversations stay on the device unless sync is on, and it's off by default.
+  // Say so at the one moment it matters instead of hoping they find the toggle.
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return `\n\n── THEY ASKED ABOUT AN EARLIER CONVERSATION ──
+Nothing is saved to their account, so there is nothing to look back through. Their past conversations are kept on their device only, which is the default.
+Tell them plainly that you can't see it and why, in one sentence, and that turning on "Sync across devices" in Ask's ⋮ menu under Conversation history will let you look back at future ones. Say it once, without pitching it, and then get on with answering what you can from this conversation.`;
+  }
 
   // Don't hand back the conversation they're already in — it's in `messages`.
   const currentOpener = String(currentMessages?.find((m) => m.role === 'user')?.content ?? '').slice(0, 120);
