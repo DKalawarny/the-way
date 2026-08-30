@@ -2565,9 +2565,15 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                     onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(184,115,58,0.4)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(184,115,58,0.1)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.borderColor = bEarned ? 'rgba(184,115,58,0.55)' : isCurrent ? 'rgba(184,115,58,0.4)' : C.cardBorder; e.currentTarget.style.boxShadow = bEarned ? '0 0 14px rgba(184,115,58,0.18)' : 'none'; }}
                   >
-                    <button
+                    {/* A span, not a button: this sits inside the book card button, and a button
+                        inside a button is invalid HTML that React warns about and that
+                        can swallow the inner click (audit, 8/29). */}
+                    <span
                       key={bEarned ? `${b.id}-e` : `${b.id}-l`}
                       title={bEarned ? `Tap to reset ${b.name}` : `Complete ${b.name} to unlock`}
+                      role={bEarned ? 'button' : undefined}
+                      tabIndex={bEarned ? 0 : undefined}
+                      onKeyDown={bEarned ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setConfirmReset({ label: b.name, bookIds: [b.id], chCount: b.ch }); } } : undefined}
                       onClick={bEarned ? (e) => { e.stopPropagation(); setConfirmReset({ label: b.name, bookIds: [b.id], chCount: b.ch }); } : undefined}
                       style={{
                         position: 'absolute', top: 7, right: 7, lineHeight: 0,
@@ -2577,7 +2583,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                       }}
                     >
                       <BookBadge bookId={b.id} size={28} earned={bEarned}/>
-                    </button>
+                    </span>
                     <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: C.text, letterSpacing: '-0.01em', marginBottom: 4 }}>{b.name}</div>
                     <div style={{ fontSize: 11, color: C.muted, marginBottom: pct > 0 ? 8 : 0 }}>
                       {pct === 100 ? '✓ Complete' : pct > 0 ? `${done} of ${b.ch} ch` : `${b.ch} chapters`}
