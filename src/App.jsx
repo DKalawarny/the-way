@@ -1948,6 +1948,12 @@ export default function App() {
   const [personType, setPersonType] = useState(null);
   const [seekingContext, setSeekingContext] = useState(null);
   const [peopleSearchOpen, setPeopleSearchOpen] = useState(false);
+  // Find-people is a full-screen overlay with no route of its own, so tapping a
+  // tab underneath changed the screen and left it sitting on top — the nav lit up
+  // the new tab and the list stayed (Daniel, 8/29). The board already dismissed
+  // itself this way; this one never did. Safe as a plain stage watch because none
+  // of the openers change stage, unlike the board's.
+  useEffect(() => { setPeopleSearchOpen(false); }, [stage]);
   const [boardOpen, setBoardOpen] = useState(false);
   // The board is a floating overlay — navigating anywhere (Bible, feed, …)
   // should dismiss it instead of staying stacked over the new screen.
