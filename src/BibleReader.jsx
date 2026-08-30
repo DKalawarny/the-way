@@ -1081,6 +1081,26 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   // up — on a fixed 65vh the keyboard buried its composer and pushed the close
   // button out of reach (Daniel, 8/24).
   const kbViewport = useKeyboardViewport();
+  // Opening a book kept the scroll position of the book list, so tapping a book
+  // you had scrolled down to dropped you into the middle of its chapter grid —
+  // on Genesis that lands around chapter 30 (Daniel, 8/29). The page scrolls in
+  // an app-level container rather than the window, so walk up and find it.
+  const chaptersTopRef = useRef(null);
+  useEffect(() => {
+    if (view !== 'chapters') return;
+    // After the frame: on the tick the view switches, the grid has not been laid
+    // out yet, so the container's scrollHeight still looks like the old screen's
+    // and the "is this scrollable" test misses it.
+    const id = requestAnimationFrame(() => {
+      let el = chaptersTopRef.current?.parentElement;
+      while (el) {
+        if (el.scrollTop > 0) el.scrollTop = 0;
+        el = el.parentElement;
+      }
+      window.scrollTo(0, 0);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [view, chapBook?.id]);
   // Tap a second verse while one is selected → the selection becomes a range
   // (share/highlight/ask a whole passage, not just one verse).
   const [selEnd, setSelEnd] = useState(null);
@@ -2575,7 +2595,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
     const done = bookDone(cb);
     const chapters = Array.from({ length: cb.ch }, (_, i) => i + 1);
     return (
-      <div style={{ minHeight: '100vh', flexShrink: 0, background: C.bg, fontFamily: T.sans, paddingBottom: 'calc(62px + env(safe-area-inset-bottom, 0px))' }}>
+      <div ref={chaptersTopRef} style={{ minHeight: '100vh', flexShrink: 0, background: C.bg, fontFamily: T.sans, paddingBottom: 'calc(62px + env(safe-area-inset-bottom, 0px))' }}>
         {/* Embedded (church shell): the full header is the shell's job, but the
             reader still needs its own way back — without this, the chapter
             grid is a dead end (no route to the book list). */}
@@ -2590,11 +2610,11 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
         {/* Header — hidden when embedded inside ChurchModeShell (topOffset > 0) */}
         {topOffset === 0 && (
           <div style={{ position: 'sticky', top: 'var(--global-header-h, 0px)', zIndex: 20, background: C.bg, borderBottom: `1px solid ${C.border}` }}>
-            <div style={{ padding: '0 164px 0 20px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: '0 16px 0 20px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <button onClick={() => setView('home')} style={{ background: 'none', border: 'none', color: C.verse, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
               <ArrowLeft size={15} strokeWidth={2} /> Books
             </button>
-            <span style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: C.text, letterSpacing: '-0.012em' }}>{cb.name}</span>
+            <span style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: C.text, letterSpacing: '-0.012em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>{cb.name}</span>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               {DarkToggle}
               <button onClick={() => { setSearchOpen((o) => { if (!o) setTimeout(() => searchRef.current?.focus(), 50); return !o; }); setSearchVal(''); setSearchResults(null); }} style={{ width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', background: searchOpen ? C.inputBg : 'none', border: `1px solid ${searchOpen ? C.border : 'transparent'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.muted, transition: 'all 0.15s', WebkitTapHighlightColor: 'transparent' }} title="Search verses"><Search size={15} strokeWidth={2} /></button>
