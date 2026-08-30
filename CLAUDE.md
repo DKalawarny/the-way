@@ -339,8 +339,11 @@ stage === 'church-admin' && session && (pastorChurchId || (profile?.is_pastor &&
 Uses `pastorChurchId || profile.church_id` as the churchId prop to ChurchAdmin.
 
 ### `onGoChurch` nav handler
-Sends pastors (`pastorChurchId` set OR `profile.is_pastor=true`) directly to
-`church-admin`. Members with `profile.church_id` go to the church page.
+Opens the church page for everyone, pastors included (changed 2026-08-29 — it used to
+drop pastors straight into `church-admin`, which combined with the admin remembering
+its last tab meant Church often landed on Settings). The shell's LEADER toggle is
+how a pastor gets to the dashboard. Members with `profile.church_id` go to the church
+page; everyone else goes to the directory.
 
 ### ChurchModeShell (chromeless church page)
 When `isOwnChurch=true`, ChurchPage is wrapped in ChurchModeShell showing

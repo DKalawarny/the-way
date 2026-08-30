@@ -3758,7 +3758,17 @@ export default function App() {
             onGoHome={() => { setViewingUserId(null); setStage('home'); }}
             onGoChurch={() => {
               setViewingUserId(null);
-              if (pastorChurchId || profile?.is_pastor) { setStage('church-admin'); return; }
+              // Pastors used to be dropped straight into the leader dashboard —
+              // and, because the admin remembers its last tab, often onto
+              // Settings. Church now opens the church itself for everyone; the
+              // shell's LEADER toggle is one tap away for the pastor who wants
+              // the dashboard (Daniel, 8/29).
+              const ownChurch = pastorChurchId ?? profile?.church_id;
+              if ((pastorChurchId || profile?.is_pastor) && ownChurch) {
+                setViewingChurchId(ownChurch);
+                setStage('church');
+                return;
+              }
               if (profile?.church_id) { setViewingChurchId(profile.church_id); setStage('church'); return; }
               setStage('churches');
             }}
