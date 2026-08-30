@@ -11,66 +11,19 @@ const PARAPHRASE_RE = /^\s*(paraphrasing\s+|the idea in\s+)/i;
 
 // Commentary / scholar source names — styled as slate chips so "where this
 // came from" is scannable at a glance (gold chip = scripture, slate = source).
-// One escaped-name list beats a heroic regex: research mode cites a wide but
-// finite set of scholars, church fathers, and commentary series. Possessives
-// ("Schreiner's") are matched too. Add names here as new ones show up.
-const SOURCE_NAMES = [
-  // Classic commentaries + church fathers + reformers
-  'Matthew Henry', 'Jamieson-Fausset-Brown', 'Jamieson–Fausset–Brown', 'JFB',
-  'John Calvin', 'Calvin', 'John Wesley', 'Wesley', 'Martin Luther', 'Luther',
-  'Chrysostom', 'Augustine', 'Aquinas', 'Athanasius', 'Origen', 'Jerome',
-  'Irenaeus', 'Tertullian', 'Eusebius', 'Ambrose', 'Basil', 'Jonathan Edwards',
-  'Charles Spurgeon', 'Spurgeon', 'Zwingli', 'John Knox',
-  // Modern scholars the research prompt actually surfaces
-  'N.T. Wright', 'N. T. Wright', 'Thomas Schreiner', 'Schreiner',
-  'Köstenberger', 'Kostenberger', 'Gordon Fee', 'D.A. Carson', 'D. A. Carson',
-  'Carson', 'Douglas Moo', 'Craig Keener', 'Keener', 'F.F. Bruce', 'F. F. Bruce',
-  'C.K. Barrett', 'Ben Witherington', 'Witherington', 'Anthony Thiselton',
-  'Thiselton', 'David Garland', 'Richard Hays', 'James Dunn', 'Richard Bauckham',
-  'John Stott', 'Stott', 'J.I. Packer', 'Packer', 'Walter Brueggemann',
-  'Brueggemann', 'John Goldingay', 'Goldingay', 'John Walton', 'Tremper Longman',
-  'Longman', 'Bruce Waltke', 'Waltke', 'Derek Kidner', 'Kidner', 'Alec Motyer',
-  'Motyer', 'Craig Blomberg', 'Blomberg', 'Grant Osborne', 'Cranfield',
-  'Käsemann', 'Kasemann', 'Karl Barth', 'Bonhoeffer', 'C.S. Lewis', 'C. S. Lewis',
-  'Bruce Metzger', 'Metzger', 'Timothy Keller', 'Tim Keller', 'Keller',
-  'John Piper', 'Piper', 'A.W. Tozer', 'Tozer', 'William Barclay', 'Barclay',
-  // Commentary series / study resources
-  'Word Biblical Commentary', 'WBC', 'NICNT', 'NICOT', 'BECNT', 'NIGTC',
-  'Pillar New Testament Commentary', 'Pillar', 'Tyndale Commentary', 'Tyndale',
-  'Anchor Bible', 'Hermeneia', 'ICC', 'IVP',
-];
-const SOURCE_RE = new RegExp(
-  '\\b(' + SOURCE_NAMES
-    .sort((a, b) => b.length - a.length)
-    .map((n) => n.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&'))
-    .join('|') + ")(?:['\u2019]s)?\\b",
-  'g'
-);
-
-// Splits a plain-text run into text + source-name chips, rendering **bold**
+// Scholar and commentator names used to be picked out of the text with a blue
+// chip. Removed 2026-08-29 on advice Daniel was given: in a paragraph that
+// already cites several of them it reads as clutter, and it made the answer look
+// like a search results page rather than something written.
 // markdown spans along the way (research answers use it heavily).
 function splitInline(s, keyBase) {
   const out = [];
   const boldRe = /\*\*([^*\n][^*]*?)\*\*/g;
   let last = 0, mb;
   while ((mb = boldRe.exec(s)) !== null) {
-    if (mb.index > last) out.push(...splitSources(s.slice(last, mb.index), `${keyBase}-p${last}`));
-    out.push(<strong key={`${keyBase}-b${mb.index}`} style={{ fontWeight: 700 }}>{splitSources(mb[1], `${keyBase}-bi${mb.index}`)}</strong>);
+    if (mb.index > last) out.push(<span key={`${keyBase}-p${last}`} style={{ whiteSpace: 'pre-wrap' }}>{s.slice(last, mb.index)}</span>);
+    out.push(<strong key={`${keyBase}-b${mb.index}`} style={{ fontWeight: 700 }}>{mb[1]}</strong>);
     last = mb.index + mb[0].length;
-  }
-  if (last < s.length) out.push(...splitSources(s.slice(last), `${keyBase}-p${last}`));
-  return out;
-}
-
-// Splits a plain-text run into text + source-name chips.
-function splitSources(s, keyBase) {
-  const out = [];
-  let last = 0, m2;
-  const re = new RegExp(SOURCE_RE.source, 'g');
-  while ((m2 = re.exec(s)) !== null) {
-    if (m2.index > last) out.push(<span key={`${keyBase}-t${m2.index}`} style={{ whiteSpace: 'pre-wrap' }}>{s.slice(last, m2.index)}</span>);
-    out.push(<span key={`${keyBase}-s${m2.index}`} className="src-inline">{m2[0]}</span>);
-    last = m2.index + m2[0].length;
   }
   if (last < s.length) out.push(<span key={`${keyBase}-end`} style={{ whiteSpace: 'pre-wrap' }}>{s.slice(last)}</span>);
   return out;
