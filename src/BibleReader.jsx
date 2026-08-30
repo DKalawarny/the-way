@@ -1365,6 +1365,29 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   }, [rdSpeakingId, caActive]);
 
   const isDesktop    = winW >= 768;
+  // The commentary used to sit beside the text whenever the WINDOW was wide,
+  // but the reader is also rendered inside the Study desk's Bible pane, which is
+  // about 380px. Two 380px columns inside 380px left both as unreadable slivers
+  // — the reader's verse text measured 129px (Daniel, 8/29). Decide from the
+  // space this reader actually has, not from the window.
+  const paneRef = useRef(null);
+  const [paneW, setPaneW] = useState(null);
+  useEffect(() => {
+    const el = paneRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(([e]) => setPaneW(Math.round(e.contentRect.width)));
+    ro.observe(el);
+    setPaneW(Math.round(el.getBoundingClientRect().width));
+    return () => ro.disconnect();
+    // Keyed on view: the reading root only exists in the reading view, so an
+    // effect that ran once at mount attached to nothing and left paneW null.
+  }, [view]);
+  // 760 = the 380 side panel plus enough left for the text to still read.
+  const sideChat = (paneW ?? winW) >= 760;
+  // True when this reader is living inside a column rather than owning the
+  // window — the Study desk's Bible pane. Derived from the measurement instead
+  // of a prop so it holds wherever the reader gets embedded next.
+  const embedded = paneW != null && paneW < winW - 40;
   const C = dark ? DARK : LIGHT;
   const CC = chatDark ? DARK : LIGHT;
   const book  = ALL_BOOKS.find((b) => b.id === bookId) ?? ALL_BOOKS[0];
@@ -3053,7 +3076,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
   );
 
   return (
-    <div style={{ ...(fillParent ? { flex: 1, minHeight: 0 } : { height: `calc(100vh - ${62 + topOffset}px)` }), background: C.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div ref={paneRef} style={{ position: 'relative', ...(fillParent ? { flex: 1, minHeight: 0 } : { height: `calc(100vh - ${62 + topOffset}px)` }), background: C.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Bible sub-header — sits directly below the global app header */}
       <div style={{
         background: C.bg, borderBottom: `1px solid ${C.border}`,
@@ -3472,7 +3495,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
         </div>
 
         {/* Desktop side chat */}
-        {isDesktop && chatOpen && (
+        {sideChat && chatOpen && (
           <div style={{ width: 380, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
             {ChatPanel}
           </div>
@@ -3480,17 +3503,21 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
       </div>
 
       {/* Mobile bottom sheet chat */}
-      {!isDesktop && chatOpen && (
+      {!sideChat && chatOpen && (
         <div
           onClick={() => setChatOpen(false)}
           style={{
-            position: 'fixed', left: 0, right: 0, zIndex: 110,
+            // Standalone reader: fixed to the window. Embedded in the Study desk's
+            // Bible pane: absolute inside that pane, or the sheet covers the whole
+            // desk including the notes and chat columns.
+            position: embedded ? 'absolute' : 'fixed',
+            left: 0, right: 0, zIndex: 110,
             background: 'rgba(0,0,0,0.4)',
             // Follow the visual viewport when the keyboard is open. iOS scrolls the
             // layout viewport instead of shrinking it, so inset:0 leaves the whole
-            // sheet stranded behind the keyboard.
-            top: kbViewport ? kbViewport.offsetTop : 0,
-            height: kbViewport ? kbViewport.height : '100%',
+            // sheet stranded behind the keyboard. Only meaningful when fixed.
+            top: (!embedded && kbViewport) ? kbViewport.offsetTop : 0,
+            height: (!embedded && kbViewport) ? kbViewport.height : '100%',
           }}
         >
           <div
@@ -3500,8 +3527,8 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
               // Keyboard up: sit directly on it, and take most of what's left so the
               // answer stays readable while typing. Keyboard down: clear the bottom
               // nav *and* the home indicator — bottom:62 alone overlapped the tabs.
-              bottom: kbViewport ? 0 : 'calc(62px + env(safe-area-inset-bottom, 0px))',
-              height: kbViewport ? Math.round(kbViewport.height * 0.88) : '65vh',
+              bottom: embedded ? 0 : (kbViewport ? 0 : 'calc(62px + env(safe-area-inset-bottom, 0px))'),
+              height: embedded ? '78%' : (kbViewport ? Math.round(kbViewport.height * 0.88) : '65vh'),
               maxHeight: '100%',
               borderRadius: '20px 20px 0 0', overflow: 'hidden',
               display: 'flex', flexDirection: 'column',

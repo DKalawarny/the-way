@@ -507,7 +507,12 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
         // Church feed posts this week
         supabase
           .from('posts')
-          .select('id, body, reaction_counts, author_id, profiles!author_id(display_name)', { count: 'exact' })
+          // reaction_counts is NOT a column — it's derived client-side (see
+          // Community.jsx). Asking PostgREST for it returned 42703 and failed the
+          // whole query, so the dashboard's weekly posts were always empty and
+          // "posts this week" always read 0 (audit, 8/29). Counts are hydrated
+          // from the reactions table below.
+          .select('id, body, author_id, profiles!author_id(display_name)', { count: 'exact' })
           .eq('scope', 'church')
           .eq('scope_id', churchId)
           .gte('created_at', sevenDaysAgo)
@@ -556,12 +561,20 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
       const memberPrayerCount = (prayers ?? []).filter((p) => p.profiles?.church_id === churchId).length;
       setPrayerCount(memberPrayerCount);
 
-      // Find top post: most reactions this week
-      const postsWithTotals = (recentPosts ?? []).map((p) => {
-        const rc = p.reaction_counts ?? {};
-        const total = Object.values(rc).reduce((s, v) => s + (typeof v === 'number' ? v : 0), 0);
-        return { ...p, totalReactions: total };
-      }).sort((a, b) => b.totalReactions - a.totalReactions);
+      // Find top post: most reactions this week. Counts come from the reactions
+      // table, the same way Community builds them — posts has no such column.
+      const recent = recentPosts ?? [];
+      let reactionsByPost = {};
+      if (recent.length) {
+        const { data: rx } = await supabase
+          .from('reactions')
+          .select('post_id, kind')
+          .in('post_id', recent.map((p) => p.id));
+        for (const r of rx ?? []) reactionsByPost[r.post_id] = (reactionsByPost[r.post_id] ?? 0) + 1;
+      }
+      const postsWithTotals = recent
+        .map((p) => ({ ...p, totalReactions: reactionsByPost[p.id] ?? 0 }))
+        .sort((a, b) => b.totalReactions - a.totalReactions);
       const best = postsWithTotals[0] ?? null;
       setTopPost(best ? {
         body: String(best.body ?? ''),

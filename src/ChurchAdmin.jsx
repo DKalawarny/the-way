@@ -1310,7 +1310,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
         .eq('church_id', churchId),
       supabase
         .from('church_join_requests')
-        .select('id, user_id, created_at, profiles(display_name, city, country)')
+        .select('id, user_id, created_at')
         .eq('church_id', churchId)
         .eq('status', 'pending')
         .order('created_at', { ascending: true }),
@@ -1328,10 +1328,25 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
     // Update local invite code from DB — overrides stale prop value on remount.
     if (codeRow?.invite_code != null) setLocalInviteCode(codeRow.invite_code);
     if (codeRow?.youth_invite_code != null) setYouthCode(codeRow.youth_invite_code);
-    setJoinRequests((joinReqRows ?? []).map(r => ({
-      ...r, display_name: r.profiles?.display_name ?? 'Member',
-      city: r.profiles?.city, country: r.profiles?.country,
-    })));
+    // Names come from a second query: church_join_requests has no foreign key to
+    // profiles, so asking PostgREST to embed them returns PGRST200 and fails the
+    // whole request. That is why pending requests never appeared (audit, 8/29).
+    const reqRows = joinReqRows ?? [];
+    if (reqRows.length === 0) {
+      setJoinRequests([]);
+    } else {
+      const { data: reqProfiles } = await supabase
+        .from('profiles')
+        .select('id, display_name, city, country')
+        .in('id', [...new Set(reqRows.map((r) => r.user_id))]);
+      const byId = Object.fromEntries((reqProfiles ?? []).map((p) => [p.id, p]));
+      setJoinRequests(reqRows.map((r) => ({
+        ...r,
+        display_name: byId[r.user_id]?.display_name ?? 'Member',
+        city: byId[r.user_id]?.city,
+        country: byId[r.user_id]?.country,
+      })));
+    }
 
     const rolesMap = {};
     (roleRows ?? []).forEach((r) => {
