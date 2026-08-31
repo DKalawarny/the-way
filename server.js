@@ -3139,16 +3139,26 @@ const LOOKS_BACKWARD = /\b(earlier|before|last time|previously|the other day|yes
 const RECALL_STOPWORDS = new Set(('a an the and or but if then than that this these those of to in on at for with about from into over after before is are was were be been being do does did doing have has had i you he she it we they me my your our their what when where who why how can could would should will just like get got some any all not no yes said say tell told think know'
 ).split(' '));
 
+// The words that ASK for recall must never also SCORE it. "what did we talk
+// about last time?" contains no topic at all, and scoring on talk/last/time
+// ranked conversations by how often those words happened to appear — noise
+// dressed up as relevance. Stripping them is what makes an empty result mean
+// "they asked broadly" instead of "we found nothing".
+const RECALL_META = new Set(('summarize summarise summary recap talk talks talked talking speak spoke speaking discuss discussed discussing conversation conversations convo chat chats thread threads session sessions remember remembers remembered recall recalled recollect earlier previous previously prior last time times ago again mention mentions mentioned back begin beginning start'
+).split(' '));
+
 function recallKeywords(text) {
   return [...new Set(String(text).toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/)
-    .filter((w) => w.length > 3 && !RECALL_STOPWORDS.has(w)))];
+    .filter((w) => w.length > 3 && !RECALL_STOPWORDS.has(w) && !RECALL_META.has(w)))];
 }
 
 async function recallContext(userId, question, currentMessages) {
   if (!userId || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) return '';
   if (!LOOKS_BACKWARD.test(question)) return '';
+  // No early return on an empty keyword set: "what did we talk about last time?"
+  // has no topic words left once RECALL_META is stripped, and that question is
+  // the whole point of the feature.
   const words = recallKeywords(question);
-  if (words.length === 0) return '';
 
   let rows;
   try {
@@ -3169,23 +3179,49 @@ Tell them plainly that you can't see it and why, in one sentence, and that turni
   // Don't hand back the conversation they're already in — it's in `messages`.
   const currentOpener = String(currentMessages?.find((m) => m.role === 'user')?.content ?? '').slice(0, 120);
 
-  const scored = [];
-  for (const row of rows) {
+  const others = rows.filter((row) => {
     const msgs = Array.isArray(row.messages) ? row.messages : [];
-    if (msgs.length === 0) continue;
-    if (currentOpener && String(msgs[0]?.content ?? '').slice(0, 120) === currentOpener) continue;
+    if (msgs.length === 0) return false;
+    return !(currentOpener && String(msgs[0]?.content ?? '').slice(0, 120) === currentOpener);
+  });
+
+  // Saved history that is only the thread they're already reading. Saying
+  // nothing here let the model fall back on "each conversation starts fresh",
+  // which is false — the conversation is right there in front of it.
+  if (others.length === 0) {
+    return `\n\n── THEY ASKED ABOUT AN EARLIER CONVERSATION ──
+The only conversation saved to their account is the one you are already in, above. Answer from it. Do not tell them you have no memory or that every conversation starts fresh — that is not true, and this thread is the proof.`;
+  }
+
+  const scored = [];
+  for (const row of others) {
+    const msgs = row.messages;
     const haystack = `${row.title ?? ''}\n${msgs.map((m) => (typeof m.content === 'string' ? m.content : '')).join('\n')}`.toLowerCase();
     let score = 0;
     for (const w of words) if (haystack.includes(w)) score++;
     if (score > 0) scored.push({ row, msgs, score });
   }
-  if (scored.length === 0) return '';
   scored.sort((a, b) => b.score - a.score || String(b.row.updated_at).localeCompare(String(a.row.updated_at)));
+
+  // Three shapes of question, three honest answers. A broad one ("what did we
+  // talk about last time?") names no topic, so the newest threads ARE the
+  // answer. A topical one that matches nothing gets told it matched nothing —
+  // out loud, rather than by returning '' and letting the model improvise a
+  // denial of having any memory at all, which is what it used to do.
+  const isBroad = words.length === 0;
+  if (!isBroad && scored.length === 0) {
+    return `\n\n── YOU SEARCHED THEIR EARLIER CONVERSATIONS AND FOUND NOTHING ──
+They have ${others.length} other conversation${others.length === 1 ? '' : 's'} saved, and none of them mention what they are asking about.
+Say plainly that you looked back and couldn't find it, and ask what to look for. Do NOT say you have no memory, that you can't see past conversations, or that every conversation starts fresh — none of that is true and it is the wrong thing to tell them.`;
+  }
+  const picks = isBroad
+    ? others.slice(0, 3).map((row) => ({ row, msgs: row.messages }))
+    : scored.slice(0, 3);
 
   const CHAR_CAP = 6000;
   let used = 0;
   const blocks = [];
-  for (const { row, msgs } of scored.slice(0, 3)) {
+  for (const { row, msgs } of picks) {
     // Centre the excerpt on the message that matches best, not just the start.
     let bestIdx = 0, bestHits = -1;
     msgs.forEach((m, idx) => {
@@ -3207,10 +3243,13 @@ Tell them plainly that you can't see it and why, in one sentence, and that turni
   if (blocks.length === 0) return '';
 
   return `\n\n── FROM THEIR EARLIER CONVERSATIONS ──
-They are asking about something from before, so here are the closest matching excerpts from their own saved conversations. "They" is this person; "You" is you in that earlier conversation.
+${isBroad
+  ? 'They asked broadly about what you have talked about before, without naming a topic, so here are their most recent conversations — newest first. These are the answer to the question.'
+  : 'They are asking about something from before, so here are the closest matching excerpts from their own saved conversations.'} "They" is this person; "You" is you in that earlier conversation.
 ${blocks.join('\n')}
 
-Use these to answer directly — quote or summarise what was actually said. If none of it is what they meant, say plainly that you looked back and couldn't find it rather than guessing, and ask what to look for. Never invent details that are not in these excerpts.`;
+Use these to answer directly — quote or summarise what was actually said. If none of it is what they meant, say plainly that you looked back and couldn't find it rather than guessing, and ask what to look for. Never invent details that are not in these excerpts.
+You DO have access to their saved conversations. Never tell them you have no memory, that you cannot see earlier conversations, or that each conversation starts fresh — it is untrue and it is the thing they are most likely to be testing.`;
 }
 
 // ── AI memory: update user profile after a conversation ─────────────────────
