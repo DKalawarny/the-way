@@ -12,10 +12,16 @@ import { reportClientError } from './errorReport.js';
 // This was one try/catch with an empty handler, so when no device token ever
 // arrived (8/20) there was no way to tell whether the plugin was unreachable,
 // permission was refused, or the POST failed — every case looked identical
-// from outside. It now keeps a breadcrumb trail and reports it ONCE at the
-// point it stops. Once, deliberately: reportClientError dedupes per message
-// and throttles to one send per 8 seconds, so a call per step would have had
-// all but the first silently dropped. Look for '[push]' in the Render logs.
+// from outside. It now keeps a breadcrumb trail and parks it on the profile at
+// every point it can stop, the token listeners included.
+//
+// Those listeners used to report through reportClientError alone, which dedupes
+// and throttles to one send per 8 seconds — and the flush right after register()
+// always claimed that slot a second before the token or the error arrived. So
+// the two events that actually answer "why didn't the phone register?" were the
+// only two guaranteed to be dropped (found 8/30, on a real trail from Daniel's
+// phone that stopped dead at 'awaiting token'). They flush like any other stage
+// now, and the last flush wins, so the profile ends up holding the outcome.
 let started = false;
 
 export async function ensureNativePush() {
@@ -65,20 +71,22 @@ export async function ensureNativePush() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token: value, platform: 'ios' }),
         });
-        reportClientError(`[push] token posted http=${r.status} len=${value?.length ?? 0}`, { kind: 'push-stage' });
+        flush(`token posted http=${r.status} len=${value?.length ?? 0}`);
       } catch (e) {
-        reportClientError(`[push] token POST failed: ${e?.message}`, { kind: 'push-stage' });
+        flush(`token POST failed: ${e?.message ?? String(e)}`);
       }
     });
     await PushNotifications.addListener('registrationError', (e) => {
-      reportClientError(`[push] APNs registrationError: ${JSON.stringify(e)?.slice(0, 200)}`, { kind: 'push-stage' });
+      flush(`APNs registrationError: ${JSON.stringify(e)?.slice(0, 200)}`);
     });
     note('listeners attached');
 
     await PushNotifications.register();
-    // Reaching here only means the request went to iOS — the token arrives
-    // asynchronously in the listener above, which reports separately.
-    flush('register() returned, awaiting token');
+    // Reaching here only means the request went to iOS — the token (or the
+    // error) arrives asynchronously in a listener above, and whichever fires
+    // flushes over this one.
+    note('register() returned');
+    flush('awaiting token');
   } catch (e) {
     flush(`unexpected: ${e?.message ?? String(e)}`);
   }
