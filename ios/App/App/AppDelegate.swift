@@ -33,6 +33,30 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
 
+    // ── APNs ────────────────────────────────────────────────────────────────
+    // iOS hands the device token to the AppDelegate and nowhere else. Capacitor
+    // does not swizzle these two methods: PushNotificationsPlugin subscribes to
+    // NotificationCenter and waits for the app to post them (see
+    // CAPNotifications.swift). Without them, PushNotifications.register()
+    // succeeds, iOS gets the token, the AppDelegate drops it on the floor, and
+    // neither the 'registration' nor the 'registrationError' JS listener ever
+    // fires — silence that looks exactly like a bad key or a bad entitlement.
+    //
+    // That is what had been happening since 20 Aug. The key, the entitlements,
+    // the SPM wiring and the JS were all fine; the token simply had nowhere to
+    // land. The breadcrumb trail on 2 Sep read
+    //   awaiting token :: native=true → plugin imported → perm=granted
+    //                     → listeners attached → register() returned
+    // and then nothing, ever — no token AND no error, which is the signature of
+    // a missing delegate rather than a rejected registration.
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications, object: deviceToken)
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications, object: error)
+    }
+
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
         // Called when the app was launched with a url. Feel free to add additional processing here,
         // but if you want the App API to support tracking app url opens, make sure to keep this call
