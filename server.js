@@ -1309,7 +1309,13 @@ async function widerCanonContext(lastUserMsg, probeText) {
 
 app.post('/api/chat', optionalAuth, limitEither(
   { capacity: 12, refillPerSec: 12 / 60 },      // authed: 12/min sustained
-  { capacity: 3,  refillPerSec: 3 / 86400 },    // anon (GuestQuestion): 3 per day per IP — matches MAX_EXCHANGES + GuestWall
+  // anon (GuestQuestion): the budget has to cover the guest's 3 questions AND
+  // the internal suggestion call that now follows the 1st and 2nd answer — 5
+  // requests for a full guest conversation. It was pinned at exactly 3, so
+  // adding suggestion chips silently cost every guest a question and 429'd
+  // their third. 6 leaves one spare and still bounds a single IP to well under
+  // what a real conversation needs.
+  { capacity: 6,  refillPerSec: 6 / 86400 },
 ), async (req, res) => {
   const { system, messages, personType, seekingContext, groundCommentary } = req.body ?? {};
   // Internal helper calls (suggestion chips, share headings) — not real questions.

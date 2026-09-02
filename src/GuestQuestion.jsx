@@ -214,6 +214,7 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
   const [level, setLevel] = useState('curious');
   const [denom, setDenom] = useState(null);
   const [showShare, setShowShare] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
   const [shareContent, setShareContent] = useState({ q: '', a: '' });
   const [storedCount] = useState(() => loadStoredCount());
   const taRef = useRef(null);
@@ -250,6 +251,52 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [messages, busy]);
 
+  // Signed-in users have had these since launch (Chat.fetchSuggestions). Guests
+  // got a bare "Ask a follow-up…" box — so the person least able to guess what
+  // this thing can do was the one given no help guessing. 71% of guest
+  // conversations ended after a single question; the signup gate needs three,
+  // so it had appeared 9 times in three months. Chips are the cheapest way to
+  // earn a second question, and they help rather than interrupt — the
+  // alternative, dropping MAX_EXCHANGES to 1, would ask a stranger to register
+  // mid-thought.
+  //
+  // internal:true keeps this out of qa_cache and qa_events, and off the usage
+  // counter, so a suggestion never costs the guest one of their three.
+  async function fetchGuestSuggestions(q, a) {
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: 'You suggest what the USER might want to ask next — not what the AI would ask the user. Output ONLY a JSON array of exactly 3 short questions written from the user\'s perspective, as if they are typing their next message. Each must be under 10 words, feel natural and curious, and make sense as something a person seeking faith answers would genuinely type. No explanation, no markdown — just the raw JSON array. Example: ["Why did God allow this?","How does this connect to Jesus?","What does the original Hebrew say?"]',
+          messages: [{ role: 'user', content: `Q: ${String(q).slice(0, 300)}\nA: ${String(a).slice(0, 300)}\n\nSuggest 3 questions the user might type next.` }],
+          personType: 'curious',
+          internal: true,
+        }),
+      });
+      if (!res.ok || !res.body) return;
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let full = '', buf = '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const parts = buf.split('\n\n');
+        buf = parts.pop() ?? '';
+        for (const part of parts) {
+          const line = part.split('\n').find((l) => l.startsWith('data:'));
+          if (!line) continue;
+          try { const d = JSON.parse(line.slice(5)); if (d.delta) full += d.delta; } catch {}
+        }
+      }
+      const match = full.match(/\[[\s\S]*?\]/);
+      if (!match) return;
+      const arr = JSON.parse(match[0]);
+      if (Array.isArray(arr) && arr.length) setSuggestions(arr.filter((x) => typeof x === 'string').slice(0, 3));
+    } catch { /* fail silently — suggestions are bonus UI */ }
+  }
+
   async function ask(question) {
     const q = (question ?? input).trim();
     if (!q || busy || maxReached) return;
@@ -258,6 +305,7 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
 
     const userMsg = { role: 'user', content: q };
     const nextMessages = [...messages, userMsg];
+    setSuggestions([]);
     setMessages(nextMessages);
     setBusy(true);
 
@@ -318,7 +366,11 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
       if (accumulated) {
         setShareContent({ q, a: accumulated });
         try { localStorage.setItem('kinwove:pendingConv', JSON.stringify({ q, a: accumulated, ts: Date.now() })); } catch {}
-        saveStoredCount(nextMessages.filter((m) => m.role === 'user').length);
+        const asked = nextMessages.filter((m) => m.role === 'user').length;
+        saveStoredCount(asked);
+        // Only worth suggesting while they still have a question left — at the
+        // cap the signup gate takes over and a chip would be a dead end.
+        if (asked < MAX_EXCHANGES) fetchGuestSuggestions(q, accumulated);
       }
     } catch {
       setMessages((prev) => prev.map((m, i) =>
@@ -537,6 +589,32 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
             ))}
             <div ref={bottomRef} />
           </div>
+
+          {/* ── Suggested next questions — the same help signed-in users get.
+                 Sits above the input, so the chips read as the natural next
+                 move and the box stays there for anyone with their own. ── */}
+          {showInput && suggestions.length > 0 && !busy && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', marginBottom: 12 }} className="fade-up">
+              {suggestions.map((q) => (
+                <button
+                  key={q}
+                  onClick={() => ask(q)}
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(184,115,58,0.25)',
+                    borderRadius: 999, padding: '7px 14px',
+                    fontSize: 12, color: 'rgba(253,248,240,0.65)',
+                    cursor: 'pointer', lineHeight: 1.4, transition: 'all 0.15s',
+                    maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.color = T.cream; e.currentTarget.style.background = 'rgba(184,115,58,0.1)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(184,115,58,0.25)'; e.currentTarget.style.color = 'rgba(253,248,240,0.65)'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; }}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* ── Input for follow-up ── */}
           {showInput && (
