@@ -994,31 +994,44 @@ export default function Chat({
 
   // ── Upgrade nudge — shown once/day when user asks 3+ deep questions ────────
   const NUDGE_KEY = 'kinwove:last_nudge_date';
-  const DEEP_RE = /\b(free will|theodicy|suffering|evil|trinity|predestination|salvation|atonement|resurrection|eschatology|hermeneutic|reconcil|contradict|hypocri|doubt|deconstruct|faith crisis|why would god|how can god)\b/i;
-  const [deepCount, setDeepCount] = useState(0);
+  // Words that mean someone is carrying something, not shopping. These used to
+  // be the TRIGGER for the upgrade nudge — along with "any message over 200
+  // characters" — so the more anguished you were and the more you typed, the
+  // sooner you were shown a price. That is how "$13.99 CAD/mo" came to sit under
+  // a man describing his father praying because he thought he was dying. They
+  // are the veto now. eb870f8 settled that nobody in crisis meets a billing
+  // wall; this is the same rule one step earlier, where it still only costs us
+  // a sale instead of the person.
+  const TENDER_RE = /\b(suffering|suffer|grief|grieving|mourn|died|dying|death|funeral|cancer|terminal|divorce|abuse|abused|addict|addiction|relapse|depress|anxious|anxiety|panic|suicid|kill myself|hopeless|worthless|alone|lonely|afraid|scared|terrified|ashamed|shame|guilt|doubt|deconstruct|faith crisis|lost my|walked out|why would god|how can god|is god (even )?(there|real|listening))\b/i;
+  const tenderRef = useRef(false);
   const [showNudge, setShowNudge] = useState(false);
 
   function maybeShowNudge(userMsg) {
+    // Once someone brings something heavy into a conversation, that conversation
+    // never shows a price again. The ref lives as long as the mounted Chat, and
+    // Chat is keyed on the conversation id, so it resets when they start a new
+    // one — not while they are still in this one.
+    if (TENDER_RE.test(userMsg ?? '')) tenderRef.current = true;
+
     // Nothing can be bought during the free beta, so quoting a monthly price is
     // asking for money we have decided not to take yet. PAYMENTS_LIVE is the
-    // switch that already governs the limit wall; the nudge was simply never
-    // wired to it, so it kept offering $13.99/mo to a product with no checkout.
+    // switch that already governs the limit wall; the nudge was never wired to it.
     if (!PAYMENTS_LIVE) return;
-    const plan = aiPlan;
-    if (plan === 'premium_plus') return; // Pro users don't need nudge
-    const isDeepMsg = DEEP_RE.test(userMsg) || userMsg.length > 200;
-    if (!isDeepMsg) return;
+    if (aiPlan === 'premium_plus') return; // Pro users don't need nudge
+    if (tenderRef.current) return;
+
     const today = new Date().toISOString().slice(0, 10);
-    const lastNudge = localStorage.getItem(NUDGE_KEY);
-    if (lastNudge === today) return; // already showed today
-    setDeepCount((c) => {
-      const next = c + 1;
-      if (next >= 3) {
-        setShowNudge(true);
-        localStorage.setItem(NUDGE_KEY, today);
-      }
-      return next;
-    });
+    if (localStorage.getItem(NUDGE_KEY) === today) return; // already showed today
+
+    // Engagement, not anguish. The honest moment to mention a plan is when
+    // someone is actually running out of room — they have felt the limit, so
+    // the offer answers a question they already have.
+    const allowance = (aiUsage?.limit ?? 0) + (aiUsage?.topup ?? 0);
+    if (allowance <= 0) return;
+    if ((aiUsage?.used ?? 0) / allowance < 0.8) return;
+
+    setShowNudge(true);
+    localStorage.setItem(NUDGE_KEY, today);
   }
 
   useEffect(() => {
