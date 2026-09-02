@@ -1564,16 +1564,23 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     }
   }
 
-  // Load the persisted chat once per user — one continuous conversation that
-  // follows the reader across chapters (the system prompt always carries the
-  // current passage). Auto-open if history exists.
+  // Commentary is per chapter, exactly like the verse context below it. It used
+  // to be one thread per user that followed the reader everywhere, on the theory
+  // that the system prompt always carries the current passage. What that looked
+  // like in practice: a Genesis 25:3 answer sitting under a heading that read
+  // "1 Kings 6", riding along as context for the next question, and springing
+  // the panel open on a chapter the reader had never asked anything about.
+  const chatKey = `rdr_chat_${uid}:${bibleId}:${bookId}:${chNum}`;
+  const chatKeyRef = useRef(null);
+
   useEffect(() => {
+    chatKeyRef.current = chatKey;
     try {
-      const saved = JSON.parse(localStorage.getItem(`rdr_chat_${uid}`) ?? '[]');
+      const saved = JSON.parse(localStorage.getItem(chatKey) ?? '[]');
       setChatMsgs(saved);
       if (saved.length > 0) setChatOpen(true);
     } catch { setChatMsgs([]); }
-  }, [uid]);
+  }, [chatKey]);
 
   // Load last tapped verse whenever chapter changes (verse context is per-chapter)
   useEffect(() => {
@@ -1581,10 +1588,14 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     try { setLastVerse(JSON.parse(localStorage.getItem(verseKey) ?? 'null')); } catch { setLastVerse(null); }
   }, [bibleId, bookId, chNum, uid]);
 
-  // Save chat whenever messages change; cap stored history so it can't grow unbounded
+  // Save chat whenever messages change; cap stored history so it can't grow
+  // unbounded. Deliberately keyed off the ref, not chatKey: on a chapter change
+  // both effects run in the same commit with the OLD chatMsgs still in state, so
+  // depending on chatKey here would file the previous chapter's thread under the
+  // new chapter — recreating the bug one level down.
   useEffect(() => {
-    if (chatMsgs.length === 0) return;
-    localStorage.setItem(`rdr_chat_${uid}`, JSON.stringify(chatMsgs.slice(-60)));
+    if (chatMsgs.length === 0 || !chatKeyRef.current) return;
+    localStorage.setItem(chatKeyRef.current, JSON.stringify(chatMsgs.slice(-60)));
   }, [chatMsgs]);
 
   // Save last verse whenever it changes
