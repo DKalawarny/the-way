@@ -5002,10 +5002,30 @@ function apnsJwt() {
   return apnsJwtCache;
 }
 
-function sendApns(deviceToken, title, body, tag) {
+// A token minted by a build signed with a Development profile is only valid
+// against Apple's sandbox host, and Xcode's automatic signing rewrites
+// aps-environment to 'development' no matter what App.entitlements says. Sent
+// to the production host it comes back 400 BadDeviceToken, and the caller's
+// cleanup then deletes the subscription — so a debug build on a real phone
+// quietly erased its own registration and looked identical to a bad APNs key.
+// Try production, fall back to sandbox once, and only report failure if both
+// refuse. TestFlight and App Store builds still match on the first attempt.
+const APNS_HOSTS = ['https://api.push.apple.com', 'https://api.sandbox.push.apple.com'];
+
+async function sendApns(deviceToken, title, body, tag) {
+  let last = { status: 0 };
+  for (const host of APNS_HOSTS) {
+    last = await sendApnsTo(host, deviceToken, title, body, tag);
+    const wrongEnv = last.status === 400 && String(last.data).includes('BadDeviceToken');
+    if (!wrongEnv) return last;
+  }
+  return last;
+}
+
+function sendApnsTo(host, deviceToken, title, body, tag) {
   return new Promise((resolve) => {
     try {
-      const client = http2.connect('https://api.push.apple.com');
+      const client = http2.connect(host);
       client.on('error', () => resolve({ status: 0 }));
       const req = client.request({
         ':method': 'POST',
