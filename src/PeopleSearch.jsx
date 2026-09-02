@@ -358,7 +358,11 @@ export default function PeopleSearch({ session, profile, onClose, onViewProfile,
         position: 'fixed', inset: 0, zIndex: 60,
         background: 'rgba(44,24,16,0.45)',
         display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-        padding: '64px 20px 20px',
+        // index.html sets viewport-fit=cover, so a bare 64px was measured from
+        // behind the status bar and the Dynamic Island — on a phone that pushed
+        // the header, and the ✕ living in it, up under the hardware. Twelve
+        // other overlays already add the inset; this was the one that didn't.
+        padding: 'calc(env(safe-area-inset-top, 0px) + 64px) 20px calc(env(safe-area-inset-bottom, 0px) + 20px)',
         animation: 'fadeIn 0.15s ease',
       }}
     >
@@ -419,10 +423,14 @@ export default function PeopleSearch({ session, profile, onClose, onViewProfile,
               onClick={onClose}
               aria-label="Close"
               style={{
-                background: 'none', border: 'none',
-                color: T.inkMuted, fontSize: 18, cursor: 'pointer',
+                // Was background:'none' with a muted 18px glyph, sitting beside
+                // three filled tab pills — present, but not reading as a way
+                // out, which is the second time it has been reported as missing.
+                // This is the same tinted circle every other close in the app uses.
+                background: 'rgba(101,64,24,0.10)', border: 'none',
+                color: T.ink, fontSize: 17, fontWeight: 600, cursor: 'pointer',
                 lineHeight: 1, padding: 6,
-                width: 32, height: 32, borderRadius: '50%',
+                width: 36, height: 36, borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 flexShrink: 0,
               }}
