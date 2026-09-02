@@ -9,6 +9,7 @@ import { getSystemPrompt } from './prompts.js';
 import { useSpeechRecognition } from './useSpeechRecognition.js';
 import { useTextToSpeech } from './useTextToSpeech.js';
 import { supabase, authedFetch } from './supabase.js';
+import { PAYMENTS_LIVE } from './usePlan.js';
 import MsgText from './MsgText.jsx';
 import { useImageDrafts, ImageDraftGrid, ImageAttachButton } from './imageAttach.jsx';
 import { getDailyVerse } from './dailyVerse.js';
@@ -998,6 +999,11 @@ export default function Chat({
   const [showNudge, setShowNudge] = useState(false);
 
   function maybeShowNudge(userMsg) {
+    // Nothing can be bought during the free beta, so quoting a monthly price is
+    // asking for money we have decided not to take yet. PAYMENTS_LIVE is the
+    // switch that already governs the limit wall; the nudge was simply never
+    // wired to it, so it kept offering $13.99/mo to a product with no checkout.
+    if (!PAYMENTS_LIVE) return;
     const plan = aiPlan;
     if (plan === 'premium_plus') return; // Pro users don't need nudge
     const isDeepMsg = DEEP_RE.test(userMsg) || userMsg.length > 200;

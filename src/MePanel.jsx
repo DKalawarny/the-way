@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState, useCallback } from 'react';
+import { PAYMENTS_LIVE } from './usePlan.js';
 import { Smile } from 'lucide-react';
 import SwipeableSheet from './SwipeableSheet.jsx';
 import { supabase, uploadProfileImage, directProfileUpdate } from './supabase.js';
@@ -573,14 +574,14 @@ function PlanCard({ plan, aiUsage, session, onUpgrade }) {
           >
             {openingPortal ? 'Opening…' : 'Manage subscription'}
           </button>
-        ) : (
+        ) : PAYMENTS_LIVE ? (
           <button
             onClick={() => onUpgrade?.()}
             style={{ background: 'none', border: 'none', padding: 0, fontSize: 12, fontWeight: 600, color: T.goldDark, cursor: 'pointer' }}
           >
             Upgrade →
           </button>
-        )}
+        ) : null}
       </div>
 
       {/* Usage bar */}
@@ -841,7 +842,7 @@ function PlanLine({ plan, aiUsage, session, onUpgrade }) {
         <span style={{ color: meta.color, fontWeight: 600 }}>{meta.label}</span>
         <span>·</span>
         {plan === 'free' ? (
-          <button onClick={() => onUpgrade?.()} style={{ background: 'none', border: 'none', padding: 0, color: T.goldDark, fontWeight: 600, cursor: 'pointer', fontSize: 12.5 }}>Upgrade →</button>
+          PAYMENTS_LIVE ? <button onClick={() => onUpgrade?.()} style={{ background: 'none', border: 'none', padding: 0, color: T.goldDark, fontWeight: 600, cursor: 'pointer', fontSize: 12.5 }}>Upgrade →</button> : null
         ) : (
           <button onClick={openPortal} disabled={opening} style={{ background: 'none', border: 'none', padding: 0, color: T.goldDark, fontWeight: 600, cursor: 'pointer', fontSize: 12.5 }}>
             {opening ? 'Opening…' : 'Manage →'}

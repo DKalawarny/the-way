@@ -115,7 +115,7 @@ import NotificationsBell from './NotificationsBell.jsx';
 import MessagesButton from './MessagesButton.jsx';
 import FindButton from './FindButton.jsx';
 import ChurchModeShell from './ChurchModeShell.jsx';
-import { useChurchPlanReadOnly } from './usePlan.js';
+import { useChurchPlanReadOnly, PAYMENTS_LIVE } from './usePlan.js';
 import InstallPrompt from './InstallPrompt.jsx';
 import { usePushNotifications, requestNotificationPermission } from './usePushNotifications.js';
 import { ensureNativePush } from './nativePush.js';
@@ -4038,7 +4038,7 @@ export default function App() {
       )}
 
       {/* ── Upgrade modal ── */}
-      {showUpgrade && session && (
+      {showUpgrade && session && PAYMENTS_LIVE && (
         <Suspense fallback={null}>
           <UpgradeModal session={session} onClose={() => setShowUpgrade(false)} />
         </Suspense>
