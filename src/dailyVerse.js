@@ -443,10 +443,18 @@ export const DAILY_VERSES = [
   { text: 'I am the Alpha and the Omega, the First and the Last, the Beginning and the End.', ref: 'Revelation 22:13' },
 ];
 
+// Consecutive days used to take consecutive entries (dayKey % length), and the
+// pool is grouped by book with 140 of its 400 verses in Psalms — so the feed
+// walked the list and served Psalm after Psalm in near-order for months at a
+// stretch. STRIDE is coprime with 400, so multiplying the day by it still
+// visits every verse exactly once per 400 days, but lands nowhere near
+// yesterday's entry.
+const STRIDE = 137;
+
 export function getDailyVerse() {
   const d = new Date();
   const dayKey = d.getFullYear() * 366 + d.getMonth() * 31 + d.getDate();
-  return DAILY_VERSES[dayKey % DAILY_VERSES.length];
+  return DAILY_VERSES[(dayKey * STRIDE) % DAILY_VERSES.length];
 }
 
 export function getTodayKey() {
