@@ -29,4 +29,11 @@ export const PROFILE_COLUMNS = [
   'is_system_account', 'birthday', 'is_youth_sponsored', 'sync_conversations',
   'daily_verse_opt_out', 'verse_streak', 'verse_streak_at', 'notif_prefs',
   'ai_grace_granted_at',
+  // These two ARE read by the browser, for the signed-in person's own row:
+  //   planConfig.js decides whether a paid plan has lapsed from
+  //   stripe_subscription_id, and ChurchAiChat reads the user's own
+  //   research_memory. Dropping them silently made a paying user look lapsed.
+  //   They belong in the server-only table alongside ai_memory — see
+  //   scripts/2026-09-12d — but until that lands they have to stay readable.
+  'stripe_subscription_id', 'research_memory',
 ].join(', ');
