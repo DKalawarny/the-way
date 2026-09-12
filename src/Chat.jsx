@@ -1067,6 +1067,7 @@ export default function Chat({
       ru: 'Russian', uk: 'Ukrainian', ja: 'Japanese', ko: 'Korean',
       zh: 'Simplified Chinese (Mandarin)', 'zh-TW': 'Traditional Chinese (Mandarin)',
       yue: 'Cantonese', hi: 'Hindi', id: 'Indonesian', tl: 'Tagalog',
+      th: 'Thai', my: 'Burmese (Myanmar)',
       vi: 'Vietnamese', ar: 'Arabic', am: 'Amharic', sw: 'Swahili',
       yo: 'Yorùbá', ig: 'Igbo', ha: 'Hausa',
     };

@@ -143,6 +143,8 @@ const LANGUAGES = [
   { code: 'id', label: 'Indonesian', native: 'Bahasa Indonesia' },
   { code: 'tl', label: 'Tagalog',    native: 'Tagalog' },
   { code: 'vi', label: 'Vietnamese', native: 'Tiếng Việt' },
+  { code: 'th', label: 'Thai',       native: 'ไทย' },
+  { code: 'my', label: 'Burmese',    native: 'မြန်မာ' },
   // Middle East
   { code: 'ar', label: 'Arabic',     native: 'العربية' },
   // Africa
