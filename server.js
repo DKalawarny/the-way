@@ -2149,6 +2149,21 @@ function dailyVerseEmailHtml(firstName, verse, unsubUrl, reflectUrl, reflection)
 // Newest kinwove post that ISN'T the daily verse card. The verse post is written
 // by ensureVersePost and always ends with that same question, which is what
 // separates the two — both are authored by the system account with kind 'text'.
+// The verse post's closing line. It was a single hardcoded string, so all 67
+// verse posts ever written ended with the identical sentence — which is most of
+// why the feed read as one message reworded. Rotated by date instead, and kept
+// in one place so the "is this a verse post?" filters below stay honest.
+const VERSE_CLOSERS = [
+  'What is this stirring in you today?',
+  'What do you make of that?',
+  'Where does this land for you?',
+  'What does this bring up?',
+  'Sit with that one for a minute.',
+  'What would it change if this were true?',
+  'Anything in that worth holding onto today?',
+];
+const verseCloser = () => VERSE_CLOSERS[Math.floor(Date.now() / 86400000) % VERSE_CLOSERS.length];
+
 async function latestReflection() {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null;
   try {
@@ -2161,7 +2176,7 @@ async function latestReflection() {
     if (!Array.isArray(rows)) return null;
     const hit = rows.find((p) => {
       const b = (p.body || '').trim();
-      return b && !b.includes('What is this stirring in you today?');
+      return b && !VERSE_CLOSERS.some((c) => b.includes(c));
     });
     return hit ? { id: hit.id, body: hit.body.trim() } : null;
   } catch (e) {
@@ -2735,7 +2750,7 @@ async function ensureVersePost(verse) {
   const snippet = verse.text.slice(0, 40);
   let postId = Array.isArray(existing) ? existing.find((p) => (p.body || '').includes(snippet))?.id : null;
   if (!postId) {
-    const verseBody = `“${verse.text}”\n\n— ${verse.ref}\n\nWhat is this stirring in you today?`;
+    const verseBody = `“${verse.text}”\n\n— ${verse.ref}\n\n${verseCloser()}`;
     const created = await fetch(`${SUPABASE_URL}/rest/v1/posts`, {
       method: 'POST',
       headers: { ...h, 'Content-Type': 'application/json', Prefer: 'return=representation' },
@@ -2826,7 +2841,7 @@ app.post('/api/cron/daily-verse-email', async (req, res) => {
 // ── kinwove persona — daily auto-post (cron) ────────────────────────────────
 const PERSONA_PROMPT = `You are the kinwove voice. You post once a day to a community feed.
 
-Your job: write something warm, positive, and uplifting that makes people feel like something bigger is in their corner. The feeling you are going for is: a good friend texting you something that made them feel better on a hard day. Short. Real. Leaves you lighter, not heavier.
+Your job: write something warm, positive, and uplifting that makes people feel held and not alone. The feeling you are going for is: a good friend texting you something that made them feel better on a hard day. Short. Real. Leaves you lighter, not heavier.
 
 The tone is quietly faith-adjacent — God has your back, without assuming the reader already believes that. Sensitive to people who are searching or skeptical. Never pushy. Never preachy. Just light and warmth and the quiet sense that things are going to be okay.
 
@@ -2834,7 +2849,7 @@ Posts do not need to reference Scripture. But when they do, it should feel like 
 
 Examples of exactly the right feel (vary the structure — do not copy these, use them as tone reference only):
 - "Whatever you are walking through right now, you are not walking it alone. That is not wishful thinking. That is the whole point."
-- "You do not have to earn a good day. You do not have to earn rest. You do not have to earn being loved. Some things just are."
+- "Nobody is keeping a tally of the days you got through badly. Some things are just given, and this is one of them."
 - "There is something quietly powerful about deciding today is not over yet."
 - "Peter was a fisherman who denied Jesus three times and still built the church. Whatever you think you have done wrong, you are not too far gone."
 - "The most repeated line in the Bible is do not be afraid. Not because life is not hard. Because you are not in it alone."
@@ -2845,9 +2860,9 @@ Examples of exactly the right feel (vary the structure — do not copy these, us
 
 Every post must feel different in structure and opening from the one before. Rotate between: direct encouragement, a question, a faith reference told in one line, a reframe of something hard, a simple truth about being loved.
 
-Today pick ONE type (vary across days, roughly: 4x uplift, 2x question, 1x warmth):
+You will be told below which ONE type to write today. Write only that type.
 
-UPLIFT (4x/week): Warm, positive, hopeful. Speaks to a real human feeling. Leaves the reader feeling like something good is possible and something bigger is on their side. Faith is the undercurrent, not the headline. May or may not reference Scripture — only if it lands like a lyric.
+UPLIFT (4x/week): Warm, positive, hopeful. Speaks to a real human feeling. Leaves the reader feeling like something good is possible and they are not carrying it by themselves. Faith is the undercurrent, not the headline. May or may not reference Scripture — only if it lands like a lyric.
 
 QUESTION (2x/week): One short, open question anyone could answer — about hope, belonging, what they are carrying, what changed them, what they are still looking for. Welcoming. No preamble.
 
@@ -2860,6 +2875,8 @@ Hard rules:
 - Never preachy. Never "God is telling you" or "you need to believe."
 - Never "as Christians." Never assumes the reader believes.
 - Never starts with "I."
+- BANNED PHRASES, never use any of these. They are banned because the feed measurably collapsed onto them: "something bigger", "someone bigger", "You do not have to", "You are allowed to", "That is not nothing", "What is this stirring in you". Say the thing a different way.
+- Never open two posts the same way. If the recent posts below start with "You", do not start with "You".
 - Never mention the day of the week, the date, the weekend, or the season. The post should read the same whether someone opens it Monday morning or Saturday night — timeless encouragement, not a calendar caption.
 
 Respond ONLY with valid JSON on a single line: {"body":"post text here"}`;
@@ -2888,17 +2905,42 @@ app.post('/api/cron/daily-post', async (req, res) => {
     if (!systemId) return res.status(503).json({ error: 'system account unavailable' });
 
 
-    // Fetch last 7 posts so Claude can avoid repeating themes/structure
+    // Recent posts, so Claude can avoid repeating a theme or an opening.
+    // Deliberately 12, not 60: half of what this account posts is the fixed
+    // verse template, so a 60-post window was ~30 copies of the same string,
+    // and handing a model thirty examples of a phrase under the banner "do not
+    // repeat this" primes the phrase rather than preventing it. The feed proved
+    // it — "something bigger" ran at 5% early on and 80% across the last ten.
     const recentRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/posts?author_id=eq.${systemId}&order=created_at.desc&limit=60&select=body`,
+      `${SUPABASE_URL}/rest/v1/posts?author_id=eq.${systemId}&order=created_at.desc&limit=30&select=body`,
       { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
     );
-    const recentPosts = await recentRes.json();
+    const recentAll = await recentRes.json();
+    const recentPosts = (Array.isArray(recentAll) ? recentAll : [])
+      .filter((p) => !VERSE_CLOSERS.some((c) => (p.body || '').includes(c)))
+      .slice(0, 12);
     const recentBlock = recentPosts.length
       ? `\n\nDo NOT repeat the theme, opening line, or structure of any of these recent posts:\n${recentPosts.map((p, i) => `${i + 1}. "${p.body}"`).join('\n')}`
       : '';
 
-    const prompt = PERSONA_PROMPT + recentBlock;
+    // The type is chosen HERE, not by the model. Asked to pick its own from a
+    // ratio, it picked UPLIFT essentially every day, which is the deeper reason
+    // every post read the same. 4 uplift / 2 question / 1 warmth, by weekday.
+    const TYPE_BY_DAY = ['WARMTH', 'UPLIFT', 'QUESTION', 'UPLIFT', 'UPLIFT', 'QUESTION', 'UPLIFT'];
+    const todayType = TYPE_BY_DAY[new Date().getUTCDay()];
+    // Ban the actual opening words of recent posts. The prompt asking for variety
+    // is not enough: strip one collapsed phrase and the model simply finds
+    // another (banning "something bigger" produced five posts in a row opening
+    // with "Rest"). Naming the words it just used is what actually moves it.
+    const recentOpeners = [...new Set(recentPosts
+      .map((p) => String(p.body || '').trim().split(/\s+/)[0].replace(/[^A-Za-z']/g, ''))
+      .filter(Boolean))].slice(0, 10);
+    const openerBlock = recentOpeners.length
+      ? `\n\nDo not begin the post with any of these words, all used recently: ${recentOpeners.join(', ')}.`
+      : '';
+    const typeBlock = `\n\nTODAY'S TYPE: ${todayType}. Write a ${todayType} post and nothing else.`;
+
+    const prompt = PERSONA_PROMPT + typeBlock + recentBlock + openerBlock;
 
     const msg = await client.messages.create({
       model: 'claude-opus-4-8',
@@ -2919,6 +2961,35 @@ app.post('/api/cron/daily-post', async (req, res) => {
     if (!body) {
       console.error('[daily-post] could not extract body from:', raw);
       return res.status(500).json({ error: 'generation failed' });
+    }
+
+    // Belt and braces. A banned phrase in the prompt is a request; this is the
+    // guarantee. One retry, naming the offending phrase — cheap on a once-a-day
+    // cron, and the reason "something bigger" reached 8 of the last 10 posts is
+    // that nothing ever checked the output.
+    const BANNED = ['something bigger', 'someone bigger', 'you do not have to', 'you are allowed to', 'that is not nothing'];
+    const offending = (t) => BANNED.find((b) => t.toLowerCase().includes(b));
+    let bad = offending(body);
+    if (bad) {
+      console.warn(`[daily-post] regenerating — banned phrase "${bad}" in: "${body.slice(0, 60)}…"`);
+      try {
+        const retry = await client.messages.create({
+          model: 'claude-opus-4-8',
+          max_tokens: 256,
+          messages: [{ role: 'user', content: `${prompt}\n\nYour previous attempt used the banned phrase "${bad}". That phrase is worn out in this feed. Write a different post that does not contain it or any other banned phrase.` }],
+        });
+        const rraw = retry.content?.[0]?.text?.trim() ?? '';
+        let rbody = '';
+        try { rbody = (JSON.parse(rraw).body ?? '').trim(); }
+        catch {
+          const m = rraw.match(/\{[^}]*"body"\s*:\s*"((?:[^"\\]|\\.)*)"/s);
+          rbody = m ? m[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : '';
+        }
+        if (rbody && !offending(rbody)) body = rbody;
+        else console.warn('[daily-post] retry still unusable — posting the original');
+      } catch (e) {
+        console.error('[daily-post] retry failed:', e?.message);
+      }
     }
 
     const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
