@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, lazy, Suspense } from 'react';
+import { PROFILE_COLUMNS } from './profileColumns.js';
 import { supabase, authedFetch } from './supabase.js';
 import { T } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
@@ -40,7 +41,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
 
   useEffect(() => {
     if (!userId) return;
-    supabase.from('profiles').select('*').eq('id', userId).single().then(async ({ data }) => {
+    supabase.from('profiles').select(PROFILE_COLUMNS).eq('id', userId).single().then(async ({ data }) => {
       setProfile(data ?? null);
       setChurchCtx(await loadChurchContext(data?.church_id));
     });

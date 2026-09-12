@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, lazy, Suspense, Component } from 'react';
+import { PROFILE_COLUMNS } from './profileColumns.js';
 import { T, globalCss } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
 import { isNativeApp } from './native.js';
@@ -2645,7 +2646,7 @@ export default function App() {
   }
 
   async function loadProfile(userId) {
-    let { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    let { data } = await supabase.from('profiles').select(PROFILE_COLUMNS).eq('id', userId).single();
     // Auto-age-out: youth account turns 17 → lift restriction
     if (data?.is_youth_sponsored && data?.birthday) {
       const ageMs = Date.now() - new Date(data.birthday).getTime();
