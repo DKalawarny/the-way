@@ -2801,6 +2801,22 @@ app.post('/api/cron/daily-verse-email', async (req, res) => {
   const reflection = await latestReflection();
   if (reflection?.id) reflectUrl = `https://www.kinwove.com/?post=${reflection.id}`;
 
+  // Daily verse EMAIL is off. Daniel, 11 Sep: "lets keep the message email, drop
+  // the verse emailed... i think daily message is enough."
+  //
+  // The users had already said the same thing: 10 of 23 accounts had opted out,
+  // and the newest real signup opted out the day they joined. That left ~11 real
+  // recipients, most of them family, receiving a daily email nobody asked for.
+  //
+  // Deliberately placed AFTER ensureVersePost above: this same cron creates the
+  // in-app verse post, which stays. Only the sending stops. Flip the constant to
+  // resume, or better, make it opt-IN before ever turning it back on.
+  const DAILY_VERSE_EMAIL_ENABLED = false;
+  if (!DAILY_VERSE_EMAIL_ENABLED) {
+    console.log('[daily-verse-email] sending disabled — verse post created, no email sent');
+    return res.json({ sent: 0, disabled: true });
+  }
+
   // Onboarded members who haven't opted out. (Requires the daily_verse_opt_out
   // column — see the migration script; until it's added this returns an error
   // object and we safely send 0.)
