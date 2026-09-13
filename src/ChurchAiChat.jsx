@@ -282,7 +282,9 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
 
   useEffect(() => {
     if (!userId) return;
-    supabase.from('profiles').select('research_memory').eq('id', userId).single()
+    // research_memory moved to profile_secrets, where RLS is "your own row" —
+    // it used to sit on profiles, where any signed-in account could read anyone's.
+    supabase.from('profile_secrets').select('research_memory').eq('user_id', userId).maybeSingle()
       .then(({ data }) => { if (data?.research_memory) setResearchMemory(data.research_memory); }, () => {});
   }, [userId]);
 

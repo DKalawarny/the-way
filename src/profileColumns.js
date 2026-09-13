@@ -35,5 +35,8 @@ export const PROFILE_COLUMNS = [
   //   research_memory. Dropping them silently made a paying user look lapsed.
   //   They belong in the server-only table alongside ai_memory — see
   //   scripts/2026-09-12d — but until that lands they have to stay readable.
-  'stripe_subscription_id', 'research_memory',
+  // stripe_subscription_id stays: planConfig.js decides plan lapse from it,
+  // the server reads it too, and it is an opaque id rather than content.
+  // research_memory has moved to profile_secrets.
+  'stripe_subscription_id',
 ].join(', ');

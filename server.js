@@ -1441,11 +1441,7 @@ app.post('/api/chat', optionalAuth, limitEither(
   let memoryContext = '';
   if (req.userId && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
     try {
-      const mr = await fetch(
-        `${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}&select=ai_memory&limit=1`,
-        { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
-      );
-      const [mp] = await mr.json();
+      const mp = await readSecrets(req.userId, 'ai_memory');
       if (mp?.ai_memory) {
         memoryContext = `\n\n── WHO THIS PERSON IS ──\n${mp.ai_memory}\n\nLet this quietly shape your tone and approach from the first message. Do not reference it directly, do not say you remember them — just respond as someone who already understands where they are coming from.`;
       }
@@ -3364,9 +3360,7 @@ app.post('/api/ai/update-memory', requireAuth, async (req, res) => {
 
   try {
     // Fetch existing memory
-    const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}&select=ai_memory&limit=1`, { headers: h });
-    const [profile] = await pr.json();
-    const existing = profile?.ai_memory ?? '';
+    const existing = (await readSecrets(req.userId, 'ai_memory'))?.ai_memory ?? '';
 
     // Build conversation text — cap at last 30 messages, text only
     const convoText = messages.slice(-30)
@@ -3402,11 +3396,7 @@ Write only the updated profile. No preamble, no labels.`,
     const memory = resp.content?.[0]?.text?.trim() ?? '';
     if (!memory) return res.json({ ok: true });
 
-    await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}`, {
-      method: 'PATCH',
-      headers: { ...h, Prefer: 'return=minimal' },
-      body: JSON.stringify({ ai_memory: memory }),
-    });
+    await writeSecrets(req.userId, { ai_memory: memory });
 
     res.json({ ok: true });
   } catch (e) {
@@ -3425,9 +3415,8 @@ app.post('/api/research/update-memory', requireAuth, async (req, res) => {
   const today = new Date().toISOString().slice(0, 10);
 
   try {
-    const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}&select=research_memory&limit=1`, { headers: h });
     const [profile] = await pr.json();
-    const existing = profile?.research_memory ?? '';
+    const existing = (await readSecrets(req.userId, 'research_memory'))?.research_memory ?? '';
 
     const convoText = messages.slice(-20)
       .filter(m => m.role === 'user' || m.role === 'assistant')
@@ -3460,11 +3449,7 @@ ${convoText}`,
     const memory = resp.content?.[0]?.text?.trim() ?? '';
     if (!memory) return res.json({ ok: true });
 
-    await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}`, {
-      method: 'PATCH',
-      headers: { ...h, Prefer: 'return=minimal' },
-      body: JSON.stringify({ research_memory: memory }),
-    });
+    await writeSecrets(req.userId, { research_memory: memory });
 
     res.json({ ok: true, memory });
   } catch (e) {
@@ -3478,11 +3463,7 @@ app.post('/api/research/clear-memory', requireAuth, async (req, res) => {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.json({ ok: true });
   const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}`, {
-      method: 'PATCH',
-      headers: { ...h, Prefer: 'return=minimal' },
-      body: JSON.stringify({ research_memory: null }),
-    });
+    await writeSecrets(req.userId, { research_memory: null });
     res.json({ ok: true });
   } catch (e) {
     console.error('[research/clear-memory]', e?.message);
@@ -3870,8 +3851,7 @@ app.delete('/api/church/:churchId', requireAuth, limitAuthed({ capacity: 3, refi
     const stripeKey = process.env.STRIPE_SECRET_KEY;
     if (stripeKey && church.pastor_id) {
       try {
-        const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${church.pastor_id}&select=stripe_customer_id&limit=1`, { headers: h });
-        const [prof] = await pr.json();
+        const prof = await readSecrets(church.pastor_id, 'stripe_customer_id');
         if (prof?.stripe_customer_id) {
           const sr = await fetch(`https://api.stripe.com/v1/subscriptions?customer=${encodeURIComponent(prof.stripe_customer_id)}&status=active&limit=100`,
             { headers: { Authorization: `Bearer ${stripeKey}` } });
@@ -3968,8 +3948,7 @@ app.delete('/api/account', requireAuth, async (req, res) => {
     const stripeKey = process.env.STRIPE_SECRET_KEY;
     if (stripeKey) {
       try {
-        const pr = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${req.userId}&select=stripe_customer_id&limit=1`, { headers: svcH });
-        const [prof] = await pr.json();
+        const prof = await readSecrets(req.userId, 'stripe_customer_id');
         const cust = prof?.stripe_customer_id;
         if (cust) {
           const sr = await fetch(`https://api.stripe.com/v1/subscriptions?customer=${encodeURIComponent(cust)}&status=all&limit=100`,
@@ -5168,6 +5147,39 @@ const pushSvcHeaders = () => ({
 });
 
 // Kinds worth waking a phone for, with their notification titles.
+
+// ── profile_secrets ─────────────────────────────────────────────────────────
+// ai_memory, research_memory and the Stripe ids used to live on `profiles`,
+// where any signed-in account could read any other user's copy — Daniel's
+// ai_memory held his children's ages, ~$600k in capital gains, and an
+// unannounced business exit, none of which he had typed anywhere. Three
+// attempts to fix it with column grants reported success and changed nothing.
+//
+// They live in their own table now, protected by RLS ("your own row") rather
+// than by column grants, because RLS is demonstrably working on this database.
+// These helpers use the service key, which bypasses RLS, so the server is
+// unaffected by the policy.
+async function readSecrets(userId, cols = '*') {
+  if (!userId || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null;
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/profile_secrets?user_id=eq.${userId}&select=${cols}&limit=1`,
+      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } });
+    const [row] = await r.json();
+    return row ?? null;
+  } catch { return null; }
+}
+
+async function writeSecrets(userId, patch) {
+  if (!userId || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) return false;
+  try {
+    const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+                'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' };
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/profile_secrets?on_conflict=user_id`,
+      { method: 'POST', headers: h, body: JSON.stringify({ user_id: userId, ...patch, updated_at: new Date().toISOString() }) });
+    return r.ok;
+  } catch { return false; }
+}
+
 const PUSH_KIND_TITLES = {
   dm_message:              '✉ New message on kinwove',
   group_joined:            '👋 Someone joined your circle',
