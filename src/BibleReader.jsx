@@ -858,31 +858,124 @@ const DARK = {
   inputBg: 'rgba(255,255,255,0.07)', section: 'rgba(255,255,255,0.04)',
 };
 
+// Match a typed book name to a book, forgivingly.
+//
+// The old parser required an exact full name, so "mathew 6" missed, fell
+// through to the AI verse-finder, and that finder is prompted to return VERSES
+// — handed a chapter it replied in prose, the client found no JSON array, and
+// the panel went blank with no explanation. Daniel typed exactly that.
+//
+// Four passes, cheapest first, all local — no API call, so a reference resolves
+// instantly instead of waiting on the model.
+const BOOK_ALIASES = {
+  // names that are genuinely different, not abbreviations
+  songofsongs: 'Song of Solomon', canticles: 'Song of Solomon',
+  revelations: 'Revelation',                 // the commonest slip in English
+  psalm: 'Psalms', ps: 'Psalms', pss: 'Psalms',
+  // short forms whose prefix is ambiguous or absent
+  mt: 'Matthew', mk: 'Mark', mrk: 'Mark', lk: 'Luke', jn: 'John', jhn: 'John',
+  gn: 'Genesis', ex: 'Exodus', exod: 'Exodus', lv: 'Leviticus', nm: 'Numbers',
+  dt: 'Deuteronomy', jos: 'Joshua', jdg: 'Judges', rth: 'Ruth',
+  sos: 'Song of Solomon', eccl: 'Ecclesiastes', qoheleth: 'Ecclesiastes',
+  rm: 'Romans', php: 'Philippians', phlm: 'Philemon', phm: 'Philemon',
+  hb: 'Hebrews', jas: 'James', jms: 'James', rev: 'Revelation', apocalypse: 'Revelation',
+  acts: 'Acts', actsoftheapostles: 'Acts',
+};
+
+const normBook = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+// Levenshtein, bailing out once it passes the limit we care about.
+function editDistance(a, b, limit = 2) {
+  if (Math.abs(a.length - b.length) > limit) return limit + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  let prevPrev = [];
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    let best = i;
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      // Adjacent transposition costs 1, not 2 — "jonh" is a slip for "john",
+      // and without this it matched Jonah (one insert) instead.
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        cur[j] = Math.min(cur[j], (prevPrev[j - 2] ?? 0) + 1);
+      }
+      if (cur[j] < best) best = cur[j];
+    }
+    if (best > limit) return limit + 1;
+    prevPrev = prev;
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
+function matchBook(raw) {
+  const q = normBook(raw);
+  if (!q) return null;
+  // "1 jn", "2 tim", "3 jhn" — resolve the name half on its own, then look for
+  // that book with the number attached. Without this "1jn" sits two edits from
+  // "1john" and missed entirely.
+  const numbered = q.match(/^([123])(.{1,})$/);
+  if (numbered && ALL_BOOKS.some((b) => normBook(b.name).startsWith(numbered[1]))) {
+    const base = matchBook(numbered[2]);
+    if (base) {
+      const want = numbered[1] + normBook(base.name).replace(/^[123]/, '');
+      const withNum = ALL_BOOKS.find((b) => normBook(b.name) === want);
+      if (withNum) return withNum;
+    }
+  }
+  // 1. exact
+  let hit = ALL_BOOKS.find((b) => normBook(b.name) === q);
+  if (hit) return hit;
+  // 2. curated aliases
+  if (BOOK_ALIASES[q]) {
+    hit = ALL_BOOKS.find((b) => b.name === BOOK_ALIASES[q]);
+    if (hit) return hit;
+  }
+  // 3. unique prefix — covers most abbreviations for free ("matt", "1cor", "rom").
+  //    Ambiguous prefixes like "j" deliberately match nothing rather than guess.
+  const pre = ALL_BOOKS.filter((b) => normBook(b.name).startsWith(q));
+  if (pre.length === 1) return pre[0];
+  // 4. fuzzy, for typos: "mathew", "philipians", "ecclesiasties".
+  //    Guarded, because fuzzy matching short strings guesses rather than
+  //    corrects: "J" sits two edits from "Job" and would have silently opened
+  //    Job for someone who meant John, Joel, Jonah, Joshua, Judges, James or
+  //    Jude. Under three characters we refuse; at four or fewer we allow one
+  //    edit, not two. And a single clear winner or nothing.
+  if (q.length < 3) return null;
+  const limit = q.length <= 4 ? 1 : 2;
+  const scored = ALL_BOOKS
+    .map((b) => ({ b, d: editDistance(q, normBook(b.name), limit) }))
+    .filter((x) => x.d <= limit)
+    .sort((a, b) => a.d - b.d);
+  if (scored.length && (scored.length === 1 || scored[0].d < scored[1].d)) return scored[0].b;
+  return null;
+}
+
 // Parse a human-readable Bible reference into { bookId, chapter, verse }.
-// Handles: "Romans 8:28", "Psalm 23:1", "1 Peter 5:7", "Lamentations 3:22–23"
+// Handles "Romans 8:28", "1 Peter 5:7", "Lamentations 3:22–23", and now also
+// "mathew 6", "Matt 6", "1 Cor 13", "john3:16", and a bare "Genesis".
 function parseRef(refStr) {
   if (!refStr) return null;
-  // Dotted USFM-id form from the Journal deep-link ("GEN.3.16" / "GEN.3") \u2014 this
-  // was silently failing before (parseRef only understood "Book Chapter:Verse").
+  // Dotted USFM-id form from the Journal deep-link ("GEN.3.16" / "GEN.3").
   const dot = String(refStr).trim().match(/^([A-Za-z0-9]{2,3})\.(\d+)(?:\.(\d+))?$/);
   if (dot) {
     const b = ALL_BOOKS.find((x) => x.id.toLowerCase() === dot[1].toLowerCase());
     if (b) return { bookId: b.id, chapter: parseInt(dot[2], 10), verse: dot[3] ? parseInt(dot[3], 10) : null };
   }
-  // Normalize em/en dashes
-  const norm = refStr.replace(/[\u2013\u2014]/g, '-').trim();
-  // Extract verse number (first number after colon, before any dash)
-  const verseMatch = norm.match(/:(\d+)/);
+  const norm = String(refStr).replace(/[\u2013\u2014]/g, '-').trim();
+  const verseMatch = norm.match(/:\s*(\d+)/);
   const verse = verseMatch ? parseInt(verseMatch[1], 10) : null;
-  // Strip verse portion to isolate book + chapter
   const s = norm.replace(/:.+/, '').trim();
-  const m = s.match(/^(.+?)\s+(\d+)$/);
-  if (!m) return null;
-  let bookName = m[1].trim();
-  const chapter = parseInt(m[2], 10);
-  if (/^psalm$/i.test(bookName)) bookName = 'Psalms'; // Psalm → Psalms
-  const book = ALL_BOOKS.find((b) => b.name.toLowerCase() === bookName.toLowerCase());
-  return book ? { bookId: book.id, chapter, verse } : null;
+
+  // Book and chapter, with or without a space between them ("john3" as well as "John 3").
+  const m = s.match(/^(.+?)[\s.]*(\d+)\s*$/);
+  if (m) {
+    const book = matchBook(m[1]);
+    return book ? { bookId: book.id, chapter: parseInt(m[2], 10), verse } : null;
+  }
+  // Bare book name — open it at chapter 1 rather than doing nothing.
+  const bare = matchBook(s);
+  return bare ? { bookId: bare.id, chapter: 1, verse: null } : null;
 }
 
 const BIBLE_TOUR_KEY   = 'kinwove:bible_tour_done';
@@ -1126,6 +1219,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const [searchVal,     setSearchVal]     = useState('');
   const [searchErr,     setSearchErr]     = useState(false);
   const [searchResults, setSearchResults] = useState(null); // null = idle, [] = no results, [...] = results
+  const [searchNote,    setSearchNote]    = useState('');   // prose reply when the model didn't return JSON
   const [searchBusy,    setSearchBusy]    = useState(false);
   const searchRef = useRef(null);
   const [noteText,   setNoteText]   = useState('');
@@ -1776,12 +1870,17 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     // Otherwise use Claude to identify the verse from a phrase/paraphrase
     setSearchBusy(true);
     setSearchResults(null);
+    setSearchNote('');
     try {
       const res = await authedFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: `You are a Bible verse finder. The user will describe a verse or passage they remember — possibly paraphrased, partially recalled, or with some wrong words. Identify the most likely Bible verse(s) and return ONLY a valid JSON array. Each item: {"ref": "Book Chapter:Verse", "text": "the actual verse text"}. Return up to 5 matches, best first. If nothing matches, return []. No explanation, no markdown, just the JSON array.`,
+          system: `You are a Bible reference finder. The user will describe a verse or passage they remember — possibly paraphrased, partially recalled, misspelled, or named only by book and chapter. Identify the most likely reference(s) and return ONLY a valid JSON array. Each item: {"ref": "Book Chapter:Verse", "text": "the actual verse text"}.
+
+If the user names a whole chapter rather than a verse (for example "mathew 6" or "Romans 8"), return that chapter as a single item with "ref": "Book Chapter" and no verse number, and put a one-line description of the chapter in "text". Never ask the user a clarifying question — a chapter is a perfectly good answer.
+
+Return up to 5 matches, best first. If nothing matches, return []. No explanation, no markdown, just the JSON array.`,
           messages: [{ role: 'user', content: q }],
           personType: 'curious',
           internal: true,
@@ -1812,11 +1911,17 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
         const match = raw.match(/\[[\s\S]*\]/);
         const verses = match ? JSON.parse(match[0]) : [];
         setSearchResults(Array.isArray(verses) ? verses : []);
+        // The model sometimes answers in prose instead of JSON — usually a
+        // sensible clarifying question. Showing "No verses found" in that case
+        // threw away the one useful thing it said.
+        setSearchNote(!match && raw.trim() ? raw.trim().slice(0, 300) : '');
       } catch {
         setSearchResults([]);
+        setSearchNote(raw.trim() ? raw.trim().slice(0, 300) : '');
       }
     } catch {
       setSearchResults([]);
+      setSearchNote('');
     }
     setSearchBusy(false);
   }
@@ -2217,7 +2322,9 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
           {searchBusy ? (
             <div style={{ padding: '16px 20px', fontSize: 13, color: C.muted }}>Finding verses…</div>
           ) : searchResults.length === 0 ? (
-            <div style={{ padding: '16px 20px', fontSize: 13, color: C.muted }}>No verses found — try different words.</div>
+            <div style={{ padding: '16px 20px', fontSize: 13, color: C.muted, lineHeight: 1.6 }}>
+              {searchNote || 'No verses found — try different words.'}
+            </div>
           ) : searchResults.map((v) => {
             const ref = v.ref ?? v.reference ?? '';
             const text = (v.text ?? '').replace(/<[^>]+>/g, '').trim();
