@@ -333,6 +333,45 @@ function UserNoteCard({ note, onDelete, onSave, onContinueChat }) {
   );
 }
 
+// A highlight, rendered in the book section it belongs to. Highlights used to be
+// visible only from inside the chapter they were made in — write-and-forget.
+// The colour is the one the person chose; it carries whatever meaning they gave it.
+const HL_TINTS = {
+  gold: 'rgba(212,162,74,0.32)',
+  rose: 'rgba(196,86,86,0.26)',
+  sage: 'rgba(107,153,92,0.26)',
+  sky:  'rgba(92,133,168,0.26)',
+};
+
+function HighlightCard({ hl, onOpenBible }) {
+  const chapter = String(hl.chapter_id ?? '').split('.')[1] ?? '';
+  const ref = `${hl.book_name ?? ''} ${chapter}:${hl.verse_num}`.trim();
+  return (
+    <button
+      onClick={() => onOpenBible?.(`${hl.chapter_id}.${hl.verse_num}`)}
+      style={{
+        width: '100%', textAlign: 'left', background: T.white,
+        border: `1px solid ${T.line}`, borderLeft: `4px solid ${HL_TINTS[hl.color] ?? HL_TINTS.gold}`,
+        borderRadius: 12, padding: '11px 14px', cursor: 'pointer', display: 'block',
+      }}
+    >
+      <div style={{ fontSize: 12, fontWeight: 600, color: T.goldDark, marginBottom: 4 }}>{ref}</div>
+      {hl.verse_text ? (
+        <div style={{
+          fontSize: 14, color: T.ink, lineHeight: 1.55,
+          background: HL_TINTS[hl.color] ?? HL_TINTS.gold,
+          borderRadius: 6, padding: '3px 6px', display: 'inline',
+        }}>
+          {hl.verse_text}
+        </div>
+      ) : (
+        // Highlighted before the text was stored — the reference still works.
+        <div style={{ fontSize: 13, color: T.inkMuted, fontStyle: 'italic' }}>Tap to open</div>
+      )}
+    </button>
+  );
+}
+
 function NoteCard({ note, onOpenBible, onAskVerse, onSave, onDelete }) {
   const [expanded,  setExpanded]  = useState(false);
   const [editing,   setEditing]   = useState(false);
@@ -526,6 +565,8 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse, onC
   const [verseNotes, setVerseNotes] = useState([]);
   const [userNotes,  setUserNotes]  = useState([]);
   const [prepNotes,  setPrepNotes]  = useState([]); // church Study-tab notes I authored
+  const [highlights, setHighlights] = useState([]); // bible_highlights — previously visible
+                                                    // only from inside the chapter they were made in
   const [loading,    setLoading]    = useState(true);
   const [query,      setQuery]      = useState('');
   const [newOpen,    setNewOpen]    = useState(false);
@@ -546,6 +587,12 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse, onC
       supabase.from('church_notes').select('*').eq('author_id', uid).order('created_at', { ascending: false }),
     ]).then(([{ data: bn }, { data: un }, { data: cn }]) => {
       setVerseNotes(bn ?? []);
+      // Highlights are personal and unscoped by church, so the same rows cover
+      // reading done on the personal side and inside a church Study tab.
+      supabase.from('bible_highlights')
+        .select('chapter_id, verse_num, color, verse_text, book_name')
+        .eq('user_id', session.user.id)
+        .then(({ data }) => setHighlights(Array.isArray(data) ? data : []), () => {});
       setUserNotes(un ?? []);
       setPrepNotes(cn ?? []);
       setLoading(false);
@@ -596,28 +643,42 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse, onC
     !q || n.title?.toLowerCase().includes(q) || n.body?.toLowerCase().includes(q) || n.series?.toLowerCase().includes(q)
   );
 
-  // Group bible_notes + verse bookmarks by book
+  const filteredHighlights = highlights.filter((h) =>
+    !q || h.book_name?.toLowerCase().includes(q) || h.verse_text?.toLowerCase().includes(q)
+  );
+
+  // Group bible_notes + verse bookmarks + highlights by book
   const grouped = [];
-  const bookMap = {}; // bookName → { notes: bible_note[], bookmarks: user_note[] }
+  const bookMap = {}; // bookName → { notes, bookmarks, highlights }
 
   for (const note of filteredVerse) {
     const key = note.book_name ?? 'Unknown';
-    if (!bookMap[key]) { bookMap[key] = { notes: [], bookmarks: [] }; grouped.push(key); }
+    if (!bookMap[key]) { bookMap[key] = { notes: [], bookmarks: [], highlights: [] }; grouped.push(key); }
     bookMap[key].notes.push(note);
   }
   for (const bm of filteredBookmarks) {
     const bookName = BOOK_ORDER.find((b) => bm.title?.startsWith(b)) ?? 'Unknown';
-    if (!bookMap[bookName]) { bookMap[bookName] = { notes: [], bookmarks: [] }; grouped.push(bookName); }
+    if (!bookMap[bookName]) { bookMap[bookName] = { notes: [], bookmarks: [], highlights: [] }; grouped.push(bookName); }
     bookMap[bookName].bookmarks.push(bm);
+  }
+  for (const h of filteredHighlights) {
+    const key = h.book_name ?? 'Unknown';
+    if (!bookMap[key]) { bookMap[key] = { notes: [], bookmarks: [], highlights: [] }; grouped.push(key); }
+    bookMap[key].highlights.push(h);
   }
   grouped.sort((a, b) => bookRank(a) - bookRank(b));
   const parseChVerse = (title) => { const m = title?.match(/(\d+):(\d+)$/); return m ? [parseInt(m[1]), parseInt(m[2])] : [0, 0]; };
   for (const key of grouped) {
     bookMap[key].notes.sort((a, b) => a.chapter - b.chapter || a.verse - b.verse);
     bookMap[key].bookmarks.sort((a, b) => { const [ac, av] = parseChVerse(a.title); const [bc, bv] = parseChVerse(b.title); return ac - bc || av - bv; });
+    bookMap[key].highlights.sort((a, b) => {
+      const ca = parseInt(String(a.chapter_id).split('.')[1] ?? 0, 10);
+      const cb = parseInt(String(b.chapter_id).split('.')[1] ?? 0, 10);
+      return ca - cb || a.verse_num - b.verse_num;
+    });
   }
 
-  const totalCount = verseNotes.length + userNotes.length + prepNotes.length;
+  const totalCount = verseNotes.length + userNotes.length + prepNotes.length + highlights.length;
 
   return (
     <div style={{ minHeight: '100vh', background: T.parchment, fontFamily: T.sans, display: 'flex', flexDirection: 'column' }}>
@@ -805,6 +866,13 @@ export default function Journal({ session, onClose, onOpenBible, onAskVerse, onC
                       onAskVerse={onAskVerse}
                       onSave={(id, text) => setVerseNotes((prev) => prev.map((n) => n.id === id ? { ...n, note_text: text, updated_at: new Date().toISOString() } : n))}
                       onDelete={(id) => setVerseNotes((prev) => prev.filter((n) => n.id !== id))}
+                    />
+                  ))}
+                  {bookMap[bookName].highlights.map((hl) => (
+                    <HighlightCard
+                      key={`${hl.chapter_id}-${hl.verse_num}`}
+                      hl={hl}
+                      onOpenBible={onOpenBible}
                     />
                   ))}
                   {bookMap[bookName].bookmarks.map((bm) => (

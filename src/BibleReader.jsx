@@ -858,6 +858,12 @@ const DARK = {
   inputBg: 'rgba(255,255,255,0.07)', section: 'rgba(255,255,255,0.04)',
 };
 
+// Verse text comes back with markup and a leading verse number; store it clean.
+function cleanVerseText(t) {
+  if (!t) return null;
+  return String(t).replace(/<[^>]+>/g, ' ').replace(/^\s*\d+\s*/, '').replace(/\s+/g, ' ').trim().slice(0, 1000) || null;
+}
+
 // Match a typed book name to a book, forgivingly.
 //
 // The old parser required an exact full name, so "mathew 6" missed, fell
@@ -1511,9 +1517,16 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
         .then(null, () => {});
     } else {
       setHlMap((m) => ({ ...m, ...Object.fromEntries(targets.map((t) => [t, color])) }));
+      // verse_text and book_name are stored so Notes can show the highlight
+      // without a Bible API call, and so it keeps the wording of the translation
+      // it was made in.
+      const byNum = Object.fromEntries(selVerses.map((x) => [x.number, x]));
       await supabase.from('bible_highlights')
         .upsert(
-          targets.map((t) => ({ user_id: userId, chapter_id: chapterId, verse_num: t, color })),
+          targets.map((t) => ({
+            user_id: userId, chapter_id: chapterId, verse_num: t, color,
+            verse_text: cleanVerseText(byNum[t]?.text), book_name: book?.name ?? null,
+          })),
           { onConflict: 'user_id,chapter_id,verse_num' }
         )
         .then(null, () => {});
@@ -1653,7 +1666,10 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
     } else {
       setHlMap((m) => ({ ...m, [v.number]: color }));
       await supabase.from('bible_highlights')
-        .upsert({ user_id: userId, chapter_id: chapterId, verse_num: v.number, color }, { onConflict: 'user_id,chapter_id,verse_num' })
+        .upsert({
+          user_id: userId, chapter_id: chapterId, verse_num: v.number, color,
+          verse_text: cleanVerseText(v.text), book_name: book?.name ?? null,
+        }, { onConflict: 'user_id,chapter_id,verse_num' })
         .then(null, () => {});
     }
   }
