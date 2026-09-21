@@ -514,7 +514,27 @@ async function writeCacheEntry({ personType, question, answer, model }) {
   }
 }
 
-async function logQaEvent({ personType, question, userId, wasCacheHit, isFirstTurn, model }) {
+// Where a request came from, without collecting a location.
+//
+// kinwove stores no IP and does no geo lookup — clientIp() is a rate-limit key
+// and is never written down. Accept-Language is sent by every browser anyway and
+// usually carries a region subtag ("lt-LT", "pt-BR"), which gives the coarse
+// "where are these people" signal at zero cost, zero dependency, and far less
+// identifying than an address. A Lithuanian speaker arrived on 14 Sep and opened
+// by asking whether kinwove understood Lithuanian at all; nothing in the data
+// would have told us that, and Lithuanian still is not in the language picker.
+function localeFrom(req) {
+  const raw = String(req?.headers?.['accept-language'] ?? '').slice(0, 120);
+  if (!raw) return { accept_language: null, country: null };
+  const first = raw.split(',')[0].trim();              // "lt-LT;q=0.9" → "lt-LT"
+  const region = first.split(';')[0].split('-')[1];    // → "LT"
+  return {
+    accept_language: raw,
+    country: region && /^[A-Za-z]{2}$/.test(region) ? region.toUpperCase() : null,
+  };
+}
+
+async function logQaEvent({ personType, question, answer, locale, userId, wasCacheHit, isFirstTurn, model }) {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return;
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/qa_events`, {
@@ -532,6 +552,12 @@ async function logQaEvent({ personType, question, userId, wasCacheHit, isFirstTu
         was_cache_hit: !!wasCacheHit,
         is_first_turn: !!isFirstTurn,
         model_used: model ?? null,
+        // The reply, so answer quality can be reviewed rather than guessed at.
+        // qa_events has RLS on with zero policies, so only the service role
+        // reads this — it is not reachable from a browser.
+        answer: answer ? String(answer).slice(0, 8000) : null,
+        accept_language: locale?.accept_language ?? null,
+        country: locale?.country ?? null,
       }),
     });
   } catch (e) {
@@ -1424,6 +1450,8 @@ app.post('/api/chat', optionalAuth, limitEither(
       logQaEvent({
         personType,
         question: lastUserMsg,
+        answer: cached.answer,
+        locale: localeFrom(req),
         userId: req.userId,
         wasCacheHit: true,
         isFirstTurn: true,
@@ -1555,6 +1583,8 @@ app.post('/api/chat', optionalAuth, limitEither(
     logQaEvent({
       personType,
       question: lastUserMsg,
+      answer: fullText,
+      locale: localeFrom(req),
       userId: req.userId,
       wasCacheHit: false,
       isFirstTurn,
