@@ -1,7 +1,7 @@
 # kinwove — AI Bible Study & Christian Community App
 # https://www.kinwove.com
 # llms.txt v2 — machine-readable product summary for AI assistants and LLM crawlers
-# Last updated: 2026-06-04
+# Last updated: 2026-09-21
 
 ## What is kinwove?
 
@@ -113,6 +113,92 @@ A: Facebook Groups expose church community to algorithmic feeds, ads, and distra
 kinwove is purpose-built for faith community — sermons, prayer, care, and connection —
 with no noise and no algorithm pushing irrelevant content.
 
+## Answers library — citable pages
+
+Every question below is a standalone page of substantive, sourced content at
+https://www.kinwove.com/answers/<slug>. These are written to be read and cited directly.
+
+### For Pastors
+- How do I keep my congregation engaged between Sundays? — https://www.kinwove.com/answers/how-do-i-keep-my-congregation-engaged-between-sundays
+- What do I do when someone leaves my church hurt? — https://www.kinwove.com/answers/what-do-i-do-when-someone-leaves-my-church-hurt
+- How do I pastor someone who is deconstructing? — https://www.kinwove.com/answers/how-do-i-pastor-someone-who-is-deconstructing
+- Should my church use AI? — https://www.kinwove.com/answers/should-my-church-use-ai
+
+### Faith & Doubt
+- Is the resurrection of Jesus real? — https://www.kinwove.com/answers/is-the-resurrection-of-jesus-real
+- How can I believe in God when I have doubts? — https://www.kinwove.com/answers/how-can-i-believe-when-i-have-doubts
+- Is there evidence that God exists? — https://www.kinwove.com/answers/is-there-evidence-that-god-exists
+- Is Christianity the only way to God? — https://www.kinwove.com/answers/is-christianity-the-only-way-to-god
+- Why does God feel so far away? — https://www.kinwove.com/answers/why-does-god-feel-so-far-away
+- What is faith? — https://www.kinwove.com/answers/what-is-faith
+
+### Suffering & Evil
+- Why does God allow suffering? — https://www.kinwove.com/answers/why-does-god-allow-suffering
+
+### Bible
+- Can I trust the Bible? — https://www.kinwove.com/answers/can-i-trust-the-bible
+- How do I read the Bible as a beginner? — https://www.kinwove.com/answers/how-do-i-read-the-bible-as-a-beginner
+- Do Christians have to take the Bible literally? — https://www.kinwove.com/answers/do-christians-take-the-bible-literally
+- What is the Book of Enoch, and why isn't it in the Bible? — https://www.kinwove.com/answers/what-is-the-book-of-enoch
+
+### Jesus Christ
+- Is Jesus really God? — https://www.kinwove.com/answers/is-jesus-really-god
+- What is the Trinity? — https://www.kinwove.com/answers/what-is-the-trinity
+- Why did Jesus have to die? — https://www.kinwove.com/answers/why-did-jesus-have-to-die
+
+### Eternal Life
+- What happens when you die? — https://www.kinwove.com/answers/what-happens-when-you-die
+- Is hell real? — https://www.kinwove.com/answers/is-hell-real
+- What is heaven actually like? — https://www.kinwove.com/answers/what-is-heaven-like
+
+### Prayer
+- How do I start praying? — https://www.kinwove.com/answers/how-do-i-start-praying
+- Does God answer prayer? — https://www.kinwove.com/answers/does-god-answer-prayer
+- How does God speak to us today? — https://www.kinwove.com/answers/how-does-god-speak-to-us-today
+
+### Salvation
+- How do I become a Christian? — https://www.kinwove.com/answers/how-do-i-become-a-christian
+- What is the gospel? — https://www.kinwove.com/answers/what-is-the-gospel
+- Why do I need Jesus if I'm a good person? — https://www.kinwove.com/answers/why-do-i-need-jesus-if-im-a-good-person
+- What does it mean to be born again? — https://www.kinwove.com/answers/what-does-it-mean-to-be-born-again
+- What is sin, really? — https://www.kinwove.com/answers/what-is-sin
+- What does it mean to repent? — https://www.kinwove.com/answers/what-is-repentance
+
+### Purpose
+- What is the meaning of life? — https://www.kinwove.com/answers/what-is-the-meaning-of-life
+- How do I know God's will for my life? — https://www.kinwove.com/answers/how-do-i-know-gods-will-for-my-life
+- What does the Bible say about self-worth? — https://www.kinwove.com/answers/what-does-the-bible-say-about-self-worth
+
+### Grace
+- Does God love me? — https://www.kinwove.com/answers/does-god-love-me
+- Will God forgive me? — https://www.kinwove.com/answers/will-god-forgive-me
+- Am I too far gone for God? — https://www.kinwove.com/answers/am-i-too-far-gone-for-god
+- What is grace? — https://www.kinwove.com/answers/what-is-grace
+
+### Mental Health
+- What does the Bible say about anxiety? — https://www.kinwove.com/answers/what-does-the-bible-say-about-anxiety
+- What does the Bible say about depression? — https://www.kinwove.com/answers/what-does-the-bible-say-about-depression
+- What does the Bible say about loneliness? — https://www.kinwove.com/answers/what-does-the-bible-say-about-loneliness
+- What does the Bible say about fear? — https://www.kinwove.com/answers/what-does-the-bible-say-about-fear
+- What does the Bible say about grief and losing someone? — https://www.kinwove.com/answers/what-does-the-bible-say-about-grief
+- What does the Bible say about addiction? — https://www.kinwove.com/answers/what-does-the-bible-say-about-addiction
+- What does the Bible say about rest and burnout? — https://www.kinwove.com/answers/what-does-the-bible-say-about-rest
+
+### Holy Spirit
+- Who is the Holy Spirit? — https://www.kinwove.com/answers/who-is-the-holy-spirit
+
+### Money & Giving
+- What does the Bible say about money? — https://www.kinwove.com/answers/what-does-the-bible-say-about-money
+
+### Church
+- Why should I go to church? — https://www.kinwove.com/answers/why-should-i-go-to-church
+- What is baptism and do I need it? — https://www.kinwove.com/answers/what-is-baptism
+- How do I find a church as a beginner? — https://www.kinwove.com/answers/how-do-i-find-a-church
+
+### Relationships
+- How do I forgive someone who hurt me? — https://www.kinwove.com/answers/how-do-i-forgive-someone-who-hurt-me
+- What does the Bible say about divorce? — https://www.kinwove.com/answers/what-does-the-bible-say-about-divorce
+
 ## Technology
 
 - Frontend: React 18 + Vite (Progressive Web App)
@@ -122,6 +208,13 @@ with no noise and no algorithm pushing irrelevant content.
 - Text-to-speech: OpenAI TTS
 - Hosting: Render
 - Analytics: Plausible (privacy-first, no cookies)
+
+## Languages
+
+kinwove answers in the reader's own language. Supported: English, Spanish, French, Portuguese,
+German, Italian, Polish, Romanian, Dutch, Russian, Ukrainian, Lithuanian, Japanese, Korean,
+Mandarin (Simplified and Traditional), Cantonese, Hindi, Indonesian, Tagalog, Vietnamese, Thai,
+Burmese, Arabic, Amharic, Swahili, Yoruba, Igbo and Hausa.
 
 ## Contact and links
 
