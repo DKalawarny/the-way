@@ -1322,6 +1322,86 @@ ${jsonLd.map((j) => `<script type="application/ld+json">${JSON.stringify(j)}</sc
 </body></html>`;
 }
 
+// ── /for-churches ───────────────────────────────────────────────────────────
+// On Daniel's list since 31 July. Until now /for-churches, /pastors and
+// /sermon-prep all returned the SPA fallback — a pastor who received an outreach
+// email and looked kinwove up landed on "You don't have to have it figured out
+// to belong here", which tells them nothing about what is being offered to them.
+//
+// Deliberately does not lead with sermon writing. AlignedAI gives that away free
+// to 4,600+ pastors and monetises donation processing; competing on their
+// strongest, cheapest feature is a bad trade. What kinwove has that they do not
+// is somewhere a congregation's actual doubts can go.
+export function renderForChurchesPage() {
+  const canonical = `${SITE}/for-churches`;
+  const title = 'kinwove for churches — where your congregation takes the questions they do not ask out loud';
+  const description =
+    'A place your people can take the questions they would not raise in a foyer — honest answers grounded in scripture, a prayer wall, and somewhere the week between Sundays actually goes. Free while in beta.';
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org', '@type': 'WebPage',
+      name: title, description, url: canonical,
+      publisher: { '@type': 'Organization', name: 'kinwove', url: SITE },
+    },
+    {
+      '@context': 'https://schema.org', '@type': 'FAQPage',
+      mainEntity: [
+        { q: 'What does kinwove actually do for a church?',
+          a: 'It gives your congregation somewhere to take the questions they are not raising on a Sunday — answered honestly, grounded in scripture, without pressure. Alongside that: a prayer wall, a feed for your church, and sermon discussion.' },
+        { q: 'Is this a sermon writing tool?',
+          a: 'No. There are good tools for that and kinwove is not trying to be one. This is about the six days after the sermon rather than the writing of it.' },
+        { q: 'What does it cost?',
+          a: 'Nothing at the moment. kinwove is in free beta and is not taking payment from churches while that lasts.' },
+        { q: 'What happens to what people type into it?',
+          a: 'Conversations belong to the person who had them. A pastor does not get a feed of what their congregation has been asking, and kinwove stores no IP address and does no location tracking.' },
+        { q: 'How much work is this for me?',
+          a: 'A church page takes a few minutes to set up. After that the useful part runs without you — people ask what they were going to ask anyway, and you see the prayer wall.' },
+      ].map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+    },
+  ];
+
+  const bodyHtml = `
+    <div class="cat">kinwove for churches</div>
+    <h1>The questions your people are not asking you</h1>
+    <div class="answer">Most of what someone is wrestling with never reaches the foyer. Not because they distrust you — because asking the pastor makes a doubt official. kinwove gives them somewhere to ask it at eleven at night, honestly, and usually that is what leads to a conversation with you rather than replacing one.</div>
+
+    <h2>What it is</h2>
+    <p>A place your congregation can take a hard question and get a straight answer — grounded in scripture, willing to say "I don't know", and built for people who are doubting or new rather than people who already speak the language. Around that sits a prayer wall, a feed for your church, and somewhere the week between Sundays can go.</p>
+
+    <h2>What it is not</h2>
+    <p>It is not a sermon writer. There are several good ones and kinwove is not trying to be another. It is not church management, giving, or a website builder. It does not hand you a dashboard of what your congregation has been confessing at midnight — those conversations belong to the people who had them.</p>
+
+    <h2>Why a pastor might want it</h2>
+    <p>Because the discipleship problem is Tuesday, not Sunday. People leave with something real and by midweek it has been crowded out, and nothing in a normal church app is built for the moment they wanted to keep pulling the thread. A question asked honestly midweek does more than a devotional nobody opens.</p>
+    <p>And because some of your people are already typing their hardest questions into an AI tonight. That is happening whether or not a church is involved. The only open question is whether anything in that conversation points back toward a real person in a real church.</p>
+
+    <blockquote>Now the Berean Jews were of more noble character than those in Thessalonica, for they received the message with great eagerness and examined the Scriptures every day to see if what Paul said was true.<span class="ref">Acts 17:11</span></blockquote>
+
+    <h2>Honest about where this is</h2>
+    <p>kinwove is young. It is in free beta, it is not taking money from churches, and it does not yet have a congregation using it at scale — you would be early, with everything that means both ways. If that is the wrong stage for your church, that is a completely reasonable read.</p>
+    <p>What that also means: if you tell us what your people actually need, it can still be built around that.</p>
+
+    <h2>Questions</h2>
+    <div class="faq">
+      <h3>Is this a sermon writing tool?</h3>
+      <p>No. This is about the six days after the sermon rather than the writing of it.</p>
+      <h3>What does it cost?</h3>
+      <p>Nothing while kinwove is in beta. No card, no trial clock.</p>
+      <h3>Do I see what my congregation asks?</h3>
+      <p>No. Their conversations are theirs. You see the prayer wall, and what people choose to post.</p>
+      <h3>How much setup is it?</h3>
+      <p>A few minutes for a church page and a join code. After that it mostly runs without you.</p>
+      <h3>What do you do with people's data?</h3>
+      <p>kinwove stores no IP address and does no location tracking. Conversations belong to the person who had them.</p>
+    </div>
+
+    <p style="margin-top:32px"><a class="cta" href="${SITE}/?church=1">Set up your church page →</a></p>
+    <p style="font-size:14px;color:var(--muted)">Or write to <a href="mailto:hello@kinwove.com" style="color:var(--gold)">hello@kinwove.com</a> and ask a real question first. A person answers.</p>
+  `;
+
+  return shell({ title, description, canonical, jsonLd, bodyHtml });
+}
+
 export function renderAnswerPage(a) {
   const canonical = `${SITE}/answers/${a.slug}`;
   const askUrl = `${SITE}/?q=${encodeURIComponent(a.question)}`;

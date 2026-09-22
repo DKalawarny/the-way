@@ -11,7 +11,7 @@ import http2 from 'node:http2';
 import Anthropic from '@anthropic-ai/sdk';
 import webpush from 'web-push';
 import { getDailyVerse } from './src/dailyVerse.js';
-import { ANSWERS, ANSWERS_BY_SLUG, renderAnswerPage, renderAnswerIndex } from './content/answers.js';
+import { ANSWERS, ANSWERS_BY_SLUG, renderAnswerPage, renderAnswerIndex, renderForChurchesPage } from './content/answers.js';
 import { PLAN_LIMITS, churchHasAccess, TRIAL_DAYS, effectivePersonalPlan } from './src/planConfig.js';
 import { isCrisisMessage } from './src/safetyPatterns.js';
 import { renderLegalPage } from './content/legal.js';
@@ -6029,6 +6029,7 @@ if (process.env.NODE_ENV !== 'development') {
       // Blog / conversations index — changes every time someone shares a conversation
       `<url><loc>${host}/conversations</loc><changefreq>hourly</changefreq><priority>0.9</priority><lastmod>${today}</lastmod></url>`,
       `<url><loc>${host}/llms.txt</loc><changefreq>monthly</changefreq><priority>0.4</priority></url>`,
+      `<url><loc>${host}/for-churches</loc><changefreq>monthly</changefreq><priority>0.9</priority><lastmod>${today}</lastmod></url>`,
       // Answers library — crawlable faith-question pages (Google + AI engines)
       `<url><loc>${host}/answers</loc><changefreq>weekly</changefreq><priority>0.9</priority><lastmod>${today}</lastmod></url>`,
       ...ANSWERS.map((a) =>
@@ -6173,6 +6174,15 @@ app.get('/.well-known/apple-app-site-association', (req, res) => {
       }],
     },
   });
+});
+
+// /for-churches — real server-rendered HTML, like the answers pages, so a pastor
+// who googles kinwove after an outreach email lands on something written for
+// them rather than the seeker homepage. /pastors and /sermon-prep are aliases
+// because those are the words people actually type. All of them returned the SPA
+// fallback until now.
+app.get(['/for-churches', '/for-church', '/pastors', '/sermon-prep', '/churches'], (_req, res) => {
+  res.type('html').send(renderForChurchesPage());
 });
 
 app.get('/answers', (_req, res) => {
