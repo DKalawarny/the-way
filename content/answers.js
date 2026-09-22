@@ -14,6 +14,124 @@
 // welcoming to skeptics (see src/prompts.js).
 
 export const ANSWERS = [
+  // ── For pastors ────────────────────────────────────────────────────────────
+  // Every stranger who has ever signed up for kinwove arrived via an AI search
+  // engine, and the /answers pages are why — real server-rendered HTML a model
+  // can read and cite. There were 48 of them and all 48 were written for
+  // seekers, so a pastor could not find kinwove at all.
+  //
+  // These deliberately target pastoral problems rather than tool queries.
+  // "AI sermon generator" is contested by eight dedicated products with
+  // exact-match domains; "what do I do when someone leaves my church hurt" is
+  // not, and it is closer to what kinwove is actually for.
+  {
+    slug: 'how-do-i-keep-my-congregation-engaged-between-sundays',
+    question: 'How do I keep my congregation engaged between Sundays?',
+    category: 'For Pastors',
+    updated: '2026-09-21',
+    answer:
+      'The gap is not attention, it is continuity. Most people leave on Sunday with a real question and no way to keep pulling the thread before it fades by Tuesday. What works is giving them somewhere to take the question during the week, not sending them more content.',
+    body: [
+      { h: 'The problem is Tuesday, not Sunday',
+        p: 'Almost nobody disengages during the sermon. They disengage on Tuesday, when the thing that landed on Sunday meets a week that has no room for it. By the time the next Sunday comes around, the thread is gone and you start again. More announcements and more posts do not fix that, because the issue is not that people forgot — it is that they had nowhere to put what they were thinking.' },
+      { h: 'A question travels further than a reminder',
+        p: 'One honest question from Sunday, asked again midweek, does more than a devotional nobody opens. It gives someone a reason to think rather than a thing to consume. And the answers tell you something a headcount never will — what your people are actually wrestling with, in their words, while it is still live.' },
+      { h: 'Most of what people want to ask, they will not ask you',
+        p: 'Not because they distrust you, but because asking the pastor makes a doubt official. People will type a question at eleven at night that they would never raise in a foyer. A church that gives them a private place to ask is not competing with pastoral conversation — it is usually the thing that leads to one.' },
+    ],
+    scriptures: [
+      { ref: 'Acts 17:11', text: 'Now the Berean Jews were of more noble character than those in Thessalonica, for they received the message with great eagerness and examined the Scriptures every day to see if what Paul said was true.' },
+      { ref: 'Deuteronomy 6:7', text: 'Impress them on your children. Talk about them when you sit at home and when you walk along the road, when you lie down and when you get up.' },
+    ],
+    faqs: [
+      { q: 'Is a church app just another thing nobody opens?', a: 'Usually, when it is built around announcements. Attendance tools get opened when there is an event. Something people take a real question to gets opened when they have one, which is more often and less predictable.' },
+      { q: 'How do I know if it is working?', a: 'Not by installs. By whether questions are being asked midweek, and whether they are the kind of questions people were not asking out loud before.' },
+      { q: 'Does this replace small groups?', a: 'No, and it should not try. It tends to surface what someone brings to a group rather than substitute for the room.' },
+    ],
+    related: ['what-do-i-do-when-someone-leaves-my-church-hurt', 'should-my-church-use-ai'],
+  },
+
+  {
+    slug: 'what-do-i-do-when-someone-leaves-my-church-hurt',
+    question: 'What do I do when someone leaves my church hurt?',
+    category: 'For Pastors',
+    updated: '2026-09-21',
+    answer:
+      'Most people who leave hurt do not leave loudly. They step back from serving, then from attending, then they are gone, and the first real conversation about it never happens. What helps is making it possible to stay connected without having to stage a confrontation first.',
+    body: [
+      { h: 'They rarely tell you the real reason',
+        p: 'The stated reason is usually a scheduling change or a season of busyness. The actual reason is often something smaller and sharper — a comment, being overlooked, carrying too much for too long without anyone noticing. By the time someone can name it, they have usually already left, and the naming happens to a friend rather than to you.' },
+      { h: 'Burnout in a volunteer looks like commitment right up until it does not',
+        p: 'The people who leave hurt are very often the ones who were doing the most. They say yes, they cover gaps, they are dependable, and then they are gone. The warning sign is not complaining — it is a reliable person going quiet.' },
+      { h: 'The door back has to be low',
+        p: 'Someone who left hurt will not book a meeting with the pastor. They might read something. They might ask a question anonymously at midnight. Keeping a low, undramatic way to stay near a church matters more than any exit conversation, because it does not require them to decide anything first.' },
+    ],
+    scriptures: [
+      { ref: 'Psalm 34:18', text: 'The Lord is close to the brokenhearted and saves those who are crushed in spirit.' },
+      { ref: 'Galatians 6:2', text: 'Carry each other\u2019s burdens, and in this way you will fulfill the law of Christ.' },
+    ],
+    faqs: [
+      { q: 'Should I chase someone who has stepped back?', a: 'Contact them, but without an agenda about returning. A message that asks how they are and expects nothing lands very differently from one that is trying to recover an attender.' },
+      { q: 'What if I was part of the hurt?', a: 'Then saying so plainly, without explaining why it happened, does more than any process. Most people are not waiting for an explanation. They are waiting to hear that it was seen.' },
+      { q: 'How do I stop this happening to the next person?', a: 'Watch the people carrying the most, and check on them when nothing is wrong. Church hurt concentrates among the committed.' },
+    ],
+    related: ['how-do-i-pastor-someone-who-is-deconstructing', 'how-do-i-keep-my-congregation-engaged-between-sundays'],
+  },
+
+  {
+    slug: 'how-do-i-pastor-someone-who-is-deconstructing',
+    question: 'How do I pastor someone who is deconstructing?',
+    category: 'For Pastors',
+    updated: '2026-09-21',
+    answer:
+      'Deconstruction is usually not a rejection of Jesus. It is the collapse of a particular account of him, often one that was over-certain. The fastest way to lose someone is to answer questions they have not asked yet, and the surest way to keep them is to let the questions stay open longer than is comfortable.',
+    body: [
+      { h: 'Early pushback loses them permanently',
+        p: 'Someone who has started asking hard questions has usually been asking them privately for a long time before you hear one. The first time they say it out loud is a test of whether it is safe to say the second one. Correcting quickly, even gently, answers that test in the wrong direction.' },
+      { h: 'It is usually a person, not an argument',
+        p: 'Very few people deconstruct because of a book. Most deconstruct because something happened — a leader who was not what they seemed, a prayer that went unanswered in the worst way, a church that closed ranks. The intellectual questions come later and are real, but they are rarely the root.' },
+      { h: 'Honest uncertainty is more credible than a tidy answer',
+        p: 'Saying you do not know, when you do not, buys more trust than any apologetic. People in this position have usually had enough confident answers. What they have not had is someone who could stay in the room without needing the question resolved.' },
+    ],
+    scriptures: [
+      { ref: 'Mark 9:24', text: 'Immediately the boy\u2019s father exclaimed, "I do believe; help me overcome my unbelief!"' },
+      { ref: 'John 20:27', text: 'Then he said to Thomas, "Put your finger here; see my hands. Reach out your hand and put it into my side. Stop doubting and believe."' },
+    ],
+    faqs: [
+      { q: 'Should I recommend apologetics resources?', a: 'Only if they ask. Handing someone material unprompted usually reads as being handled rather than heard.' },
+      { q: 'What if they stop attending?', a: 'Attendance is often the last thing to go and the first thing to come back. Staying in contact while they are not attending matters more than getting them back in a seat.' },
+      { q: 'Is deconstruction the same as losing faith?', a: 'Frequently not. A good number of people who go through it end up with a faith that holds better, precisely because it survived the questions.' },
+    ],
+    related: ['what-do-i-do-when-someone-leaves-my-church-hurt', 'how-can-i-believe-when-i-have-doubts'],
+  },
+
+  {
+    slug: 'should-my-church-use-ai',
+    question: 'Should my church use AI?',
+    category: 'For Pastors',
+    updated: '2026-09-21',
+    answer:
+      'For research and preparation, it is a reasonable tool and a fast one. For anything that speaks to your congregation in your name, the risk is not that it writes badly — it is that it writes confidently about things it has got wrong, and nobody checks.',
+    body: [
+      { h: 'The real failure mode is confident invention',
+        p: 'A language model will produce a quotation from a commentator who never wrote it, in the right register, with the right cadence. It does not sound uncertain when it is wrong. That is manageable for your own study, where you check sources anyway, and much less manageable when the output goes straight to a congregation.' },
+      { h: 'Preparation is a different question from proclamation',
+        p: 'Using AI to find every place a word appears, or to summarise four views on a passage before you pick one, is closer to a concordance than to ghostwriting. Using it to produce the sermon is a different act, and worth being honest with yourself about which one you are doing.' },
+      { h: 'Your people will ask it anyway',
+        p: 'Whether or not a church adopts AI, its members are already typing their hardest questions into one at eleven at night. The practical question is not whether AI enters the conversation, but whether anything in it points back toward a real person in a real church.' },
+    ],
+    scriptures: [
+      { ref: '1 Thessalonians 5:21', text: 'But test them all; hold on to what is good.' },
+      { ref: 'Proverbs 18:17', text: 'In a lawsuit the first to speak seems right, until someone comes forward and cross-examines.' },
+    ],
+    faqs: [
+      { q: 'Is it dishonest to use AI in sermon prep?', a: 'Not inherently, any more than using a commentary is. It becomes a problem when it replaces the study rather than speeding it up, or when it is hidden.' },
+      { q: 'How do I stop it inventing citations?', a: 'Check every quotation against the source before it leaves your desk. Tools that quote retrieved text rather than recalling it from memory are meaningfully safer.' },
+      { q: 'Should I tell my congregation we use it?', a: 'For administration, nobody expects disclosure. For anything presented as your own words, most people would want to know, and finding out later costs more than saying so.' },
+    ],
+    related: ['how-do-i-keep-my-congregation-engaged-between-sundays', 'how-do-i-pastor-someone-who-is-deconstructing'],
+  },
+
   {
     slug: 'is-the-resurrection-of-jesus-real',
     question: 'Is the resurrection of Jesus real?',
