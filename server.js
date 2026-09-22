@@ -2596,7 +2596,7 @@ app.post('/api/cron/nudge-incomplete', async (req, res) => {
 
   // Profiles created 24–72 h ago with no display_name
   const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?daily_verse_opt_out=eq.false&display_name=is.null&created_at=gte.${since}&created_at=lte.${after}&select=id&limit=50`,
+    `${SUPABASE_URL}/rest/v1/profiles?email_opt_out=eq.false&display_name=is.null&created_at=gte.${since}&created_at=lte.${after}&select=id&limit=50`,
     { headers: h }
   );
   const incomplete = await r.json().catch(() => []);
@@ -2649,7 +2649,7 @@ app.post('/api/cron/welcome-sequence', async (req, res) => {
     counts[st.name] = 0;
     // created between (olderThan) and (newerThan) hours ago, onboarding finished
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?daily_verse_opt_out=eq.false&display_name=not.is.null&created_at=gte.${hrsAgo(st.olderThan)}&created_at=lte.${hrsAgo(st.newerThan)}&select=id,display_name,is_pastor&limit=200`,
+      `${SUPABASE_URL}/rest/v1/profiles?email_opt_out=eq.false&display_name=not.is.null&created_at=gte.${hrsAgo(st.olderThan)}&created_at=lte.${hrsAgo(st.newerThan)}&select=id,display_name,is_pastor&limit=200`,
       { headers: h }
     );
     const rows = await r.json().catch(() => []);
@@ -2707,7 +2707,7 @@ app.post('/api/cron/welcome-backfill', async (req, res) => {
   const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
   const hrsAgo = (n) => new Date(Date.now() - n * 60 * 60 * 1000).toISOString();
   const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?daily_verse_opt_out=eq.false&display_name=not.is.null&created_at=gte.${hrsAgo(24 * maxDays)}&created_at=lte.${hrsAgo(24 * minDays)}&select=id,display_name,is_pastor&limit=1000`,
+    `${SUPABASE_URL}/rest/v1/profiles?email_opt_out=eq.false&display_name=not.is.null&created_at=gte.${hrsAgo(24 * maxDays)}&created_at=lte.${hrsAgo(24 * minDays)}&select=id,display_name,is_pastor&limit=1000`,
     { headers: h }
   );
   const rows = await r.json().catch(() => []);
@@ -2737,12 +2737,18 @@ app.post('/api/cron/welcome-backfill', async (req, res) => {
 app.get('/api/email/unsubscribe', async (req, res) => {
   const { u, t, resub } = req.query;
   const ok = u && t && t === emailToken(u);
-  const optOut = resub !== '1'; // ?resub=1 turns the daily verse back on
+  const optOut = resub !== '1'; // ?resub=1 turns email back on
+  // One click stops ALL non-transactional email, and the page below says so.
+  // It used to set daily_verse_opt_out and tell the person "you won't get the
+  // daily verse email anymore" — while in fact silencing the welcome sequence,
+  // the profile nudge and the invite as well, because every sender filtered on
+  // that one flag. Telling someone you have done a narrow thing while doing a
+  // broad one is the part CASL is particular about.
   if (ok && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
     await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${u}`, {
       method: 'PATCH',
       headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ daily_verse_opt_out: optOut }),
+      body: JSON.stringify({ email_opt_out: optOut, daily_verse_opt_out: optOut }),
     }).catch((e) => console.error('[unsubscribe]', e.message));
   }
   let title, body, action = '';
@@ -2751,11 +2757,11 @@ app.get('/api/email/unsubscribe', async (req, res) => {
     body  = 'Please use the unsubscribe link from a recent email.';
   } else if (optOut) {
     title  = 'You’re unsubscribed';
-    body   = 'You won’t get the daily verse email anymore.';
+    body   = 'You won’t get any more emails from kinwove — no verse, no invitations, nothing. Account emails like a password reset still work, because you have to be able to get back in.';
     action = `<a href="https://www.kinwove.com/api/email/unsubscribe?u=${u}&t=${t}&resub=1" style="color:#A85530;text-decoration:none">Changed your mind? Resubscribe</a>`;
   } else {
     title = 'You’re back on';
-    body  = 'The daily verse will land in your inbox each morning again.';
+    body  = 'Emails from kinwove are switched back on. You can stop them again from the link at the bottom of any of them.';
   }
   res.set('Content-Type', 'text/html').send(
     `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head>` +
@@ -2856,7 +2862,7 @@ app.post('/api/cron/daily-verse-email', async (req, res) => {
   // column — see the migration script; until it's added this returns an error
   // object and we safely send 0.)
   const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?daily_verse_opt_out=eq.false&display_name=not.is.null&select=id,display_name&limit=5000`,
+    `${SUPABASE_URL}/rest/v1/profiles?email_opt_out=eq.false&display_name=not.is.null&select=id,display_name&limit=5000`,
     { headers: h }
   );
   const users = await r.json().catch(() => []);
@@ -4629,7 +4635,7 @@ app.post('/api/send-sermon-digest', requireAuth, async (req, res) => {
 
     // 3. Fetch church members (honoring the global email opt-out — CASL)
     const membersRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?church_id=eq.${churchId}&daily_verse_opt_out=eq.false&select=id,display_name&limit=500`,
+      `${SUPABASE_URL}/rest/v1/profiles?church_id=eq.${churchId}&email_opt_out=eq.false&select=id,display_name&limit=500`,
       { headers: h }
     );
     const members = await membersRes.json();
