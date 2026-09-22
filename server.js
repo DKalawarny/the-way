@@ -5531,7 +5531,7 @@ if (SUPABASE_URL && SUPABASE_SERVICE_KEY && process.env.RESEND_API_KEY) {
 // SQL to run in Supabase to create get_platform_stats() — see MEMORY / README.
 app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
   try {
-    const [platformStats, topicRows, topQuestions, recentShared, pendingApps, recentFeedback, userReports, postReports, promoCodes, promoRedemptions] = await Promise.all([
+    const [platformStats, topicRows, topQuestions, recentShared, pendingApps, recentFeedback, userReports, postReports, promoCodes, promoRedemptions, reach] = await Promise.all([
       adminRpc('get_platform_stats'),
       adminFetch('topic_counts', 'order=count.desc'),
       adminFetch('qa_cache', 'select=question_raw,hit_count&order=hit_count.desc&limit=15'),
@@ -5541,6 +5541,10 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
       adminFetch('user_reports', 'select=id,category,subject,body,status,admin_note,created_at,profiles!user_id(display_name)&status=eq.open&order=created_at.desc&limit=100'),
       adminFetch('post_reports', 'select=id,type,note,created_at,reporter_id,post_id,posts!post_id(body,author_id,profiles!author_id(display_name))&order=created_at.desc&limit=100'),
       adminFetch('promo_codes', 'select=code,plan,months,uses,max_uses,active&order=uses.desc'),
+      // Where the questions are coming from. Daniel, 21 Sep: "reason being to
+      // know where we are getting hits... maybe the people that take on this
+      // platform are from a completely different country we didn't plan on."
+      adminFetch('qa_reach', 'order=questions.desc&limit=40'),
       adminFetch('profiles', 'select=display_name,plan,promo_redeemed_at&promo_redeemed_at=not.is.null&order=promo_redeemed_at.desc&limit=25'),
     ]);
 
@@ -5569,6 +5573,7 @@ app.get('/api/admin/dashboard', requireAdmin, async (req, res) => {
       promoRedemptions: Array.isArray(promoRedemptions) ? promoRedemptions : [],
       stats: statsOut,
       topics: Array.isArray(topicRows) ? topicRows : [],
+      reach: Array.isArray(reach) ? reach : [],
       topQuestions: Array.isArray(topQuestions) ? topQuestions : [],
       recentShared: Array.isArray(recentShared) ? recentShared : [],
       pendingApps: Array.isArray(pendingApps) ? pendingApps : [],

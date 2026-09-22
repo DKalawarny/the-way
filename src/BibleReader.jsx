@@ -2080,7 +2080,7 @@ Return up to 5 matches, best first. If nothing matches, return []. No explanatio
       ru: 'Russian', uk: 'Ukrainian', ja: 'Japanese', ko: 'Korean',
       zh: 'Simplified Chinese (Mandarin)', 'zh-TW': 'Traditional Chinese (Mandarin)',
       yue: 'Cantonese', hi: 'Hindi', id: 'Indonesian', tl: 'Tagalog',
-      th: 'Thai', my: 'Burmese (Myanmar)',
+      th: 'Thai', my: 'Burmese (Myanmar)', lt: 'Lithuanian',
       vi: 'Vietnamese', ar: 'Arabic', am: 'Amharic', sw: 'Swahili',
       yo: 'Yorùbá', ig: 'Igbo', ha: 'Hausa',
     };

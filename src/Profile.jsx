@@ -145,6 +145,9 @@ const LANGUAGES = [
   { code: 'vi', label: 'Vietnamese', native: 'Tiếng Việt' },
   { code: 'th', label: 'Thai',       native: 'ไทย' },
   { code: 'my', label: 'Burmese',    native: 'မြန်မာ' },
+  // Added 21 Sep because someone turned up and asked, in Lithuanian, whether
+  // kinwove understood Lithuanian before asking what they came to ask.
+  { code: 'lt', label: 'Lithuanian', native: 'Lietuvių' },
   // Middle East
   { code: 'ar', label: 'Arabic',     native: 'العربية' },
   // Africa

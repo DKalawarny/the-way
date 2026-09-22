@@ -645,6 +645,10 @@ export default function AdminPage({ onBack }) {
   const topicTotal = topics.reduce((sum, t) => sum + t.count, 0);
   const topicsWithPct = topics.map((t) => ({ ...t, pct: topicTotal > 0 ? Math.round((t.count / topicTotal) * 100) : 0 }));
 
+  const reachRows = (dash?.reach ?? []).map((r) => ({
+    ...r, questions: Number(r.questions ?? 0), signed_out: Number(r.signed_out ?? 0),
+  }));
+
   const modelDist = (s.model_dist ?? []).map((m) => ({ ...m, count: Number(m.count ?? 0) }));
   const modelTotal = modelDist.reduce((sum, m) => sum + m.count, 0);
 
@@ -969,6 +973,36 @@ export default function AdminPage({ onBack }) {
                 </div>
               );
             })()}
+
+            <SectionTitle>Where the questions come from</SectionTitle>
+            <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 16 }}>
+              Country is read from the browser's own language setting, not from an IP address —
+              kinwove stores no IP and does no location lookup. So it under-reports: someone on a
+              US-English browser abroad shows as US. Treat it as "who is turning up", not a census.
+              A language appearing here that kinwove does not support is worth acting on.
+            </div>
+            {reachRows.length === 0
+              ? <EmptyNote>Nothing yet — this fills as questions come in from 21 Sep onward.</EmptyNote>
+              : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
+                  {reachRows.map((r) => (
+                    <div key={r.country + r.language} style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '7px 10px', background: T.white,
+                      border: `1px solid ${T.line}`, borderRadius: 8, fontSize: 13,
+                    }}>
+                      <span style={{ fontWeight: 700, color: T.ink, minWidth: 34 }}>{r.country}</span>
+                      <span style={{ color: T.inkSoft, flex: 1 }}>{r.language}</span>
+                      <span style={{ color: T.inkMuted, fontSize: 12 }}>
+                        {r.signed_out > 0 ? `${r.signed_out} signed-out · ` : ''}{r.questions} question{r.questions === 1 ? '' : 's'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )
+            }
+
+            <div style={{ height: 32 }} />
 
             <SectionTitle>What people are asking about</SectionTitle>
             <div style={{ fontSize: 12, color: T.inkMuted, marginBottom: 16 }}>
