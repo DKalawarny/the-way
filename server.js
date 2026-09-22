@@ -3406,15 +3406,30 @@ app.post('/api/ai/update-memory', requireAuth, async (req, res) => {
       max_tokens: 300,
       messages: [{
         role: 'user',
-        content: `You are building a brief memory profile so an AI faith companion can understand a person across multiple conversations.
+        content: `You are noting how to talk WITH a person, not building a file ON them.
 
-Based on the conversation below, write a concise profile (under 150 words, third person) capturing:
-- Their background and relationship to faith or religion
-- What they are genuinely wrestling with or curious about
-- How they tend to engage (emotionally, intellectually, open, skeptical, resistant, etc.)
-- Any meaningful things they have revealed about themselves
+Write under 120 words, third person, covering only:
+- Where they are with faith, and what they are wrestling with or curious about
+- How they engage — intellectually, emotionally, guardedly, with humour, needing space
+- What kind of answer tends to land with them, and what would not
 
-Only include what is clearly evident. Do not infer beyond what is shown.${existing ? `\n\nExisting profile to update (keep what is still true, add what is new):\n${existing}` : ''}
+NEVER record any of the following, even when they say it plainly, and even when it
+feels relevant:
+- money, income, property, debts, or anything financial
+- family composition — partners, children, ages, pregnancies, who lives with whom
+- health, diagnoses, medication, therapy, or anything medical
+- employment, business dealings, or anything about their work situation
+- addresses, cities, workplaces, or anything locating them
+- names of other people
+- anything a person would be alarmed to find written down about them by software
+
+This used to say "any meaningful things they have revealed about themselves", and
+what came back was one user's five children with their exact ages, roughly \$600k in
+capital gains, and a business exit he had not announced. None of it was needed to
+talk to him well, and all of it was a liability. If in doubt, leave it out — a thinner
+note costs nothing, and the conversations themselves are recalled separately.
+
+Only what is clearly evident. Do not infer.${existing ? `\n\nExisting note to update (keep what is still true and still allowed, add what is new):\n${existing}` : ''}
 
 Conversation:
 ${convoText}
