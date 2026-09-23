@@ -167,7 +167,7 @@ const WIZARD_STEPS = [
   // strangers whose country Daniel most wants to know. Pre-selected from the
   // browser so it is a confirm rather than a decision, which keeps the wizard
   // short for the people the fast track exists to protect.
-  { key: 'country',           question: 'Where are you from?',                 hint: 'Shows as a flag on your profile. We have guessed from your browser — change it if we got it wrong.' },
+  { key: 'country',           question: 'Where are you from?',                 hint: 'Shows as a flag on your profile.' },
   { key: 'person_type',       question: 'Where are you at right now?',          hint: 'Be honest — there\'s no wrong answer here.' },
   { key: 'preferred_language',question: 'What language do you prefer?',        hint: 'Your AI companion will respond in your language.' },
   { key: 'tradition',         question: 'Any tradition you identify with?',     hint: null },
@@ -199,7 +199,13 @@ function ProfileWizard({ user, existing, onSave }) {
     first_name:         '',
     last_name:          '',
     preferred_language: existing?.preferred_language ?? navigator.language?.split('-')[0] ?? 'en',
-    country: existing?.flags?.[0] ?? (navigator.language?.split('-')[1] ?? '').toUpperCase(),
+    // Deliberately NOT pre-filled from navigator.language. Daniel: "i still want
+    // people to give there flag not just default to browser." He is right — the
+    // first real locale we captured was en-US from someone whose actual country
+    // we do not know, because en-US is the default in Canada and on any
+    // US-configured device anywhere. A pre-filled guess that gets tapped past
+    // produces data that looks true and is not, which is worse than a blank.
+    country: existing?.flags?.[0] ?? '',
     person_type:        existing?.person_type ?? '',
     tradition:          existing?.tradition ?? 'Still Discovering',
     exploring_since:    existing?.exploring_since ?? '',
