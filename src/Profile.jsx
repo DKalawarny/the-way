@@ -6,7 +6,7 @@ import { T } from './theme.js';
 import { PERSON_TYPES } from './constants.js';
 import HomeFound from './HomeFound.jsx';
 import FlagPicker from './FlagPicker.jsx';
-import { COUNTRIES } from './countries.js';
+import { COUNTRIES, codeToFlag } from './countries.js';
 
 // Spiritual-state options only — chat-mode types (group, guided, kids) are
 // intentionally excluded here; they live in constants.js for the AI prompts.
@@ -162,6 +162,12 @@ const LANGUAGES = [
 // steps — a real skeptic told us the full wizard made them want to bail.
 const WIZARD_STEPS = [
   { key: 'name',              question: 'What\'s your name?',                  hint: 'First and last name.' },
+  // Second on purpose. FAST_TRACK_TYPES finish right after person_type, so a
+  // step placed any later is skipped by curious and skeptical signups — the
+  // strangers whose country Daniel most wants to know. Pre-selected from the
+  // browser so it is a confirm rather than a decision, which keeps the wizard
+  // short for the people the fast track exists to protect.
+  { key: 'country',           question: 'Where are you from?',                 hint: 'Shows as a flag on your profile. We have guessed from your browser — change it if we got it wrong.' },
   { key: 'person_type',       question: 'Where are you at right now?',          hint: 'Be honest — there\'s no wrong answer here.' },
   { key: 'preferred_language',question: 'What language do you prefer?',        hint: 'Your AI companion will respond in your language.' },
   { key: 'tradition',         question: 'Any tradition you identify with?',     hint: null },
@@ -193,6 +199,7 @@ function ProfileWizard({ user, existing, onSave }) {
     first_name:         '',
     last_name:          '',
     preferred_language: existing?.preferred_language ?? navigator.language?.split('-')[0] ?? 'en',
+    country: existing?.flags?.[0] ?? (navigator.language?.split('-')[1] ?? '').toUpperCase(),
     person_type:        existing?.person_type ?? '',
     tradition:          existing?.tradition ?? 'Still Discovering',
     exploring_since:    existing?.exploring_since ?? '',
@@ -240,8 +247,9 @@ function ProfileWizard({ user, existing, onSave }) {
       exploring_since: form.exploring_since,
       what_brought:    form.what_brought,
       tts_voice:       existing?.tts_voice ?? 'onyx',
-      flags:           existing?.flags ?? [],
-      show_flag:       existing?.show_flag ?? false,
+      flags:           form.country ? [form.country] : (existing?.flags ?? []),
+      country:         (COUNTRIES.find(([c]) => c === form.country) ?? [])[1] ?? existing?.country ?? null,
+      show_flag:       form.country ? true : (existing?.show_flag ?? false),
       preferred_language: form.preferred_language,
       updated_at: new Date().toISOString(),
     };
@@ -317,6 +325,31 @@ function ProfileWizard({ user, existing, onSave }) {
                 color: T.ink, padding: '8px 0', outline: 'none', textAlign: 'center',
               }}
             />
+          </div>
+        )}
+
+        {current.key === 'country' && (
+          <div>
+            <div style={{ textAlign: 'center', marginBottom: 14 }}>
+              <div style={{ fontSize: 64, lineHeight: 1.1 }}>{codeToFlag(form.country) || '🏳️'}</div>
+              <div style={{ fontSize: 15, color: T.inkSoft, marginTop: 4 }}>
+                {(COUNTRIES.find(([c]) => c === form.country) ?? [])[1] ?? 'Pick your country'}
+              </div>
+            </div>
+            <select
+              value={form.country}
+              onChange={(e) => set('country', e.target.value)}
+              style={{
+                width: '100%', padding: '14px 12px', borderRadius: 12,
+                border: `1px solid ${T.line}`, background: T.white,
+                fontSize: 15, fontFamily: T.serif, color: T.ink, cursor: 'pointer',
+              }}
+            >
+              <option value="">Choose…</option>
+              {COUNTRIES.map(([code, name]) => (
+                <option key={code} value={code}>{codeToFlag(code)}  {name}</option>
+              ))}
+            </select>
           </div>
         )}
 
