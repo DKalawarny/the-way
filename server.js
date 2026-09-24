@@ -2292,7 +2292,7 @@ function nudgeEmailHtml(unsubUrl) {
       <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#7A756F;font-family:-apple-system,Helvetica,Arial,sans-serif;margin-bottom:14px">Matthew 5 &nbsp;·&nbsp; KJV</div>
       <div style="font-family:Georgia,'Times New Roman',serif;font-size:15px;font-weight:700;color:#C4763F;letter-spacing:-0.01em;margin:0 0 10px">The Sermon on the Mount</div>
       <div style="font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.85;color:#EAE5DD;margin:0">
-        <span style="float:left;font-family:Georgia,'Times New Roman',serif;font-size:50px;line-height:0.86;color:#C4763F;margin:2px 7px 0 0">A</span>nd seeing the multitudes, he went up into a mountain: and when he was set, his disciples came unto him:
+        <img src="https://www.kinwove.com/email/illuminated-cap.png" width="76" height="76" alt="A" align="left" style="float:left;width:76px;height:76px;margin:3px 12px 2px 0;border:0;outline:none;text-decoration:none;font-family:Georgia,'Times New Roman',serif;font-size:50px;line-height:0.86;color:#C4763F">nd seeing the multitudes, he went up into a mountain: and when he was set, his disciples came unto him:
         ${num(2)}And he opened his mouth, and taught them, saying,
         <span style="background:#3E2614;border-radius:4px;padding:2px 4px;color:${RED}">${num(3)}Blessed are the poor in spirit: for theirs is the kingdom of heaven.</span>
         <span style="color:${RED}">${num(4)}Blessed are they that mourn: for they shall be comforted. ${num(5)}Blessed are the meek: for they shall inherit the earth. ${num(6)}Blessed are they which do hunger and thirst after righteousness: for they shall be filled.</span>
