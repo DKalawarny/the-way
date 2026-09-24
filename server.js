@@ -2277,30 +2277,12 @@ function nudgeEmailHtml(unsubUrl) {
   // flattened to #F0E3D6 here because Outlook drops rgba() backgrounds.
   // Matthew 5:3 because "poor in spirit" is the archetype of the problem being
   // sold: plain English you can read three times and still not be sure of.
-  const RED = '#E0796F';
-  const num = (n) => `<sup style="font-size:11px;font-weight:700;color:#C4763F;vertical-align:super;line-height:1;margin-right:2px">${n}</sup>`;
-  const chip = (label, on) => on
-    ? `<span style="display:inline-block;background:#B8733A;color:#FDF8F0;border-radius:999px;padding:7px 14px;font-size:13px;font-family:-apple-system,Helvetica,Arial,sans-serif;margin:0 6px 8px 0">${label}</span>`
-    : `<span style="display:inline-block;background:#1A0E07;color:#D9C4AC;border:1px solid #402A18;border-radius:999px;padding:6px 13px;font-size:13px;font-family:-apple-system,Helvetica,Arial,sans-serif;margin:0 6px 8px 0">${label}</span>`;
-
   return emailWrap(`
     <h1 style="font-size:24px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">You stopped one screen before the good part.</h1>
     <p style="font-size:16px;line-height:1.7;color:#5A4733">Hi, it's Danny. You made a kinwove account and stopped at the setup screen — which is fair, because it asked you for a pile of things before it showed you anything.</p>
     <p style="font-size:16px;line-height:1.7;color:#5A4733">Here's what was behind it. You're reading a chapter, and one verse doesn't sit right. You tap it:</p>
 
-    <div style="background:#0E0906;border:1px solid #301E10;border-radius:14px;padding:24px 22px 16px;margin:24px 0 10px">
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#7A756F;font-family:-apple-system,Helvetica,Arial,sans-serif;margin-bottom:14px">Matthew 5 &nbsp;·&nbsp; KJV</div>
-      <div style="font-family:Georgia,'Times New Roman',serif;font-size:15px;font-weight:700;color:#C4763F;letter-spacing:-0.01em;margin:0 0 10px">The Sermon on the Mount</div>
-      <div style="font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.85;color:#EAE5DD;margin:0">
-        <img src="https://www.kinwove.com/email/illuminated-cap.png" width="76" height="76" alt="A" align="left" style="float:left;width:76px;height:76px;margin:3px 12px 2px 0;border:0;outline:none;text-decoration:none;font-family:Georgia,'Times New Roman',serif;font-size:50px;line-height:0.86;color:#C4763F">nd seeing the multitudes, he went up into a mountain: and when he was set, his disciples came unto him:
-        ${num(2)}And he opened his mouth, and taught them, saying,
-        <span style="background:#3E2614;border-radius:4px;padding:2px 4px;color:${RED}">${num(3)}Blessed are the poor in spirit: for theirs is the kingdom of heaven.</span>
-        <span style="color:${RED}">${num(4)}Blessed are they that mourn: for they shall be comforted. ${num(5)}Blessed are the meek: for they shall inherit the earth. ${num(6)}Blessed are they which do hunger and thirst after righteousness: for they shall be filled.</span>
-      </div>
-      <div style="clear:both;border-top:1px solid #301E10;margin-top:18px;padding-top:14px">
-        ${chip('Explain simply', true)}${chip('Historical context')}${chip('Cross-references')}${chip('Original Greek')}${chip('Compare versions')}
-      </div>
-    </div>
+    <img src="https://www.kinwove.com/email/verse-card.png" width="416" height="613" alt="Matthew 5 in the kinwove reader, verse 3 tapped — Explain simply, Historical context, Cross-references, Original Greek, Compare versions" style="display:block;width:100%;max-width:416px;height:auto;border:0;outline:none;text-decoration:none;margin:24px 0 10px;border-radius:14px">
 
     <div style="background:#130B05;border:1px solid #301E10;border-radius:14px;overflow:hidden;margin:0 0 14px">
       <div style="background:#1A1108;border-bottom:1px solid #301E10;padding:11px 16px">
