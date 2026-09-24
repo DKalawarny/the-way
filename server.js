@@ -2285,7 +2285,7 @@ function nudgeEmailHtml(unsubUrl) {
 
   return emailWrap(`
     <h1 style="font-size:24px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">You stopped one screen before the good part.</h1>
-    <p style="font-size:16px;line-height:1.7;color:#5A4733">It's Danny. You made a kinwove account and stopped at the setup screen — which is fair, because it asked you for a pile of things before it showed you anything.</p>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733">Hi, it's Danny. You made a kinwove account and stopped at the setup screen — which is fair, because it asked you for a pile of things before it showed you anything.</p>
     <p style="font-size:16px;line-height:1.7;color:#5A4733">Here's what was behind it. You're reading a chapter, and one verse doesn't sit right. You tap it:</p>
 
     <div style="background:#0E0906;border:1px solid #301E10;border-radius:14px;padding:24px 22px 16px;margin:24px 0 10px">
@@ -2683,6 +2683,11 @@ app.post('/api/cron/nudge-incomplete', async (req, res) => {
   for (const { id, email } of incomplete) {
     try {
       if (!email) continue;
+      // Deliberately NOT greeting by name. These accounts have no profiles row,
+      // so the only name available is the OAuth metadata, which is whatever the
+      // user typed into their Google account — Daniel: "we shouldnt add names
+      // incase its a weird email your pulling a name from just keep it out."
+      // A wrong or odd name in the first line is worse than no name at all.
       const unsubUrl = `https://www.kinwove.com/api/email/unsubscribe?u=${id}&t=${emailToken(id)}`;
       await sendEmail(email, 'the part of kinwove you never got to see', nudgeEmailHtml(unsubUrl), { 'List-Unsubscribe': `<${unsubUrl}>` });
       sent++;
