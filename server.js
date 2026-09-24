@@ -2286,7 +2286,7 @@ function nudgeEmailHtml(unsubUrl) {
   return emailWrap(`
     <h1 style="font-size:24px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">You stopped one screen before the good part.</h1>
     <p style="font-size:16px;line-height:1.7;color:#5A4733">It's Danny. You made a kinwove account and stopped at the setup screen — which is fair, because it asked you for a pile of things before it showed you anything.</p>
-    <p style="font-size:16px;line-height:1.7;color:#5A4733">Here is what was behind it. You're reading a chapter, and one verse doesn't sit right. You tap it:</p>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733">Here's what was behind it. You're reading a chapter, and one verse doesn't sit right. You tap it:</p>
 
     <div style="background:#0E0906;border:1px solid #301E10;border-radius:14px;padding:24px 22px 16px;margin:24px 0 10px">
       <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#7A756F;font-family:-apple-system,Helvetica,Arial,sans-serif;margin-bottom:14px">Matthew 5 &nbsp;·&nbsp; KJV</div>
@@ -2321,13 +2321,13 @@ function nudgeEmailHtml(unsubUrl) {
         </div>
       </div>
     </div>
-    <p style="font-size:13px;line-height:1.6;color:#9C7B5E;margin:0 0 26px;font-family:-apple-system,Helvetica,Arial,sans-serif">That is a real answer from the app, not one I wrote for this email.</p>
+    <p style="font-size:13px;line-height:1.6;color:#9C7B5E;margin:0 0 26px;font-family:-apple-system,Helvetica,Arial,sans-serif">That's a real answer from the app, not one I wrote for this email.</p>
 
-    <p style="font-size:16px;line-height:1.7;color:#5A4733">It is for the verses you read three times and still don't quite get — what it meant, who it was written to, what the word underneath actually says.</p>
-    <p style="font-size:16px;line-height:1.7;color:#5A4733">And you can ask it anything else: about God, about doubt, something you wouldn't say out loud in a church. It answers honestly and says “I don't know” when it doesn't know.</p>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733">It's for the verses you read three times and still don't quite get — what it meant, who it was written to, what the word underneath actually says.</p>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733">And you can ask it anything else — or argue with it. Tell it a verse doesn't sit right with you, or that you think it has something wrong. Put two translations side by side and ask why they differ. Debate it until the thing actually makes sense, instead of nodding along at words you never really got. It answers honestly, says “I don't know” when it doesn't, and it won't flinch at a hard question — about God, about doubt, about something you wouldn't say out loud in a church.</p>
     <p style="font-size:16px;line-height:1.7;color:#5A4733"><strong>It's free right now while we're in beta</strong>, and your account already works — there's nothing left to set up. Give it a try and tell me what you think; reply to this email and it comes straight to me.</p>
     ${btnHtml('Open the Bible', 'https://www.kinwove.com/?utm_source=nudge&utm_medium=email')}
-    <p style="font-size:14px;line-height:1.6;color:#9C7B5E">And if it turns out not to be for you, that is genuinely fine — <a href="${unsubUrl}" style="color:#B8733A">unsubscribe here</a> and I won't write again.</p>
+    <p style="font-size:14px;line-height:1.6;color:#9C7B5E">And if it turns out not to be for you, that's genuinely fine — <a href="${unsubUrl}" style="color:#B8733A">unsubscribe here</a> and I won't write again.</p>
   `);
 }
 
