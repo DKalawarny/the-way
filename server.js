@@ -2259,17 +2259,22 @@ function roleInviteEmailHtml({ memberName, pastorName, roleLabel, churchName, in
   `);
 }
 
-function nudgeEmailHtml(firstName) {
+// Abandoned-cart, with a twist Daniel spotted: they never got the item. Not one
+// of the six who did this has asked a single question. So the old copy —
+// "Your profile is waiting… Complete my profile" — asked them to go back and
+// finish the exact form that lost them, and greeted them by a first name they
+// do not have, because the name is only saved when the wizard completes.
+//
+// This gives them the thing instead of asking for the form, owns the reason
+// plainly, and makes leaving easy. One email, no sequence.
+function nudgeEmailHtml(unsubUrl) {
   return emailWrap(`
-    <h1 style="font-size:26px;font-weight:600;margin:0 0 14px;letter-spacing:-0.02em;color:#2C1810">Your profile is waiting.</h1>
-    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 14px">
-      Hey ${firstName} — you started setting up your kinwove profile but haven't quite finished.
-    </p>
-    <p style="font-size:16px;color:#6B5344;line-height:1.75;margin:0 0 4px">
-      It only takes a minute, and it helps kinwove give you much better answers from the start.
-    </p>
-    ${btnHtml('Complete my profile', 'https://www.kinwove.com')}
-    <p style="font-size:13px;color:#9C7B5E;margin:0">No pressure — we'll be here whenever you're ready.</p>
+    <h1 style="font-size:24px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">You never got to ask it anything.</h1>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733">It's Danny. You made an account on kinwove and stopped at the setup screen — which is fair, because it asked you for a pile of things before showing you anything worth having.</p>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733">So here is the part you missed. You can ask it anything — about God, doubt, a verse that bothers you, something you would not say out loud in a church. It answers honestly, it says "I don't know" when it doesn't, and it will not push anything on you.</p>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733">No setup. Your account already works.</p>
+    ${btnHtml('Ask it something', 'https://www.kinwove.com/?utm_source=nudge&utm_medium=email')}
+    <p style="font-size:14px;line-height:1.6;color:#9C7B5E">And if it turned out not to be for you, that is genuinely fine — <a href="${unsubUrl}" style="color:#B8733A">unsubscribe here</a> and I will not write again.</p>
   `);
 }
 
@@ -2591,25 +2596,42 @@ app.post('/api/cron/nudge-incomplete', async (req, res) => {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
 
   const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
-  const since = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
-  const after  = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-  // Profiles created 24–72 h ago with no display_name
-  const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?email_opt_out=eq.false&display_name=is.null&created_at=gte.${since}&created_at=lte.${after}&select=id&limit=50`,
-    { headers: h }
-  );
-  const incomplete = await r.json().catch(() => []);
+  // This looked for `profiles` rows with a null display_name, and that column is
+  // NOT NULL — so the query could never match a single row, no matter when the
+  // cron ran. Worse, it was aimed at the wrong table: the profiles row is only
+  // created by finish() at the END of the setup wizard, so somebody who starts
+  // it and leaves exists in auth.users and nowhere else. Six strangers had done
+  // exactly that, confirmed an email address, asked zero questions, and were
+  // invisible to the one email written for them.
+  //
+  // ?days= widens the window for a one-off catch-up on people missed while this
+  // was broken; the daily cron passes nothing and keeps the 24–72 h cohort.
+  const days = Math.min(parseInt(req.query.days ?? '3', 10) || 3, 120);
+  const since = new Date(Date.now() - days * 24 * 3600 * 1000).toISOString();
+  const after = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+
+  let incomplete = [];
+  try {
+    const users = await fetch(`${SUPABASE_URL}/auth/v1/admin/users?per_page=200`, { headers: h })
+      .then((x) => x.json()).then((j) => j.users ?? []);
+    const profiles = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=id,email_opt_out`, { headers: h })
+      .then((x) => x.json());
+    const haveProfile = new Set((Array.isArray(profiles) ? profiles : []).map((p) => p.id));
+    incomplete = users.filter((u) =>
+      !haveProfile.has(u.id) && u.email && u.created_at >= since && u.created_at <= after);
+  } catch (e) {
+    console.error('[nudge-incomplete] lookup:', e?.message);
+    return res.status(500).json({ error: 'lookup failed' });
+  }
   if (!incomplete.length) return res.json({ sent: 0 });
 
   let sent = 0;
-  for (const { id } of incomplete) {
+  for (const { id, email } of incomplete) {
     try {
-      const email = await getUserEmail(id);
       if (!email) continue;
-      const firstName = email.split('@')[0] || 'friend'; // best we can do without a name
       const unsubUrl = `https://www.kinwove.com/api/email/unsubscribe?u=${id}&t=${emailToken(id)}`;
-      await sendEmail(email, 'Your kinwove profile is waiting', nudgeEmailHtml(firstName), { 'List-Unsubscribe': `<${unsubUrl}>` });
+      await sendEmail(email, 'you never got to ask it anything', nudgeEmailHtml(unsubUrl), { 'List-Unsubscribe': `<${unsubUrl}>` });
       sent++;
       await new Promise((r) => setTimeout(r, 200)); // gentle rate-limit between sends
     } catch (e) {
