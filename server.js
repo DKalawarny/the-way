@@ -2268,21 +2268,41 @@ function roleInviteEmailHtml({ memberName, pastorName, roleLabel, churchName, in
 // This gives them the thing instead of asking for the form, owns the reason
 // plainly, and makes leaving easy. One email, no sequence.
 function nudgeEmailHtml(unsubUrl) {
+  // The win-back email. Daniel's call on the content: don't describe the Bible
+  // tools, SHOW one. So this depicts a real verse card, the real quick-action
+  // chips from BibleReader's QUICK_ACTIONS, and a real answer pulled from the
+  // live app — not copy invented for an email. The verse is Matthew 5:3
+  // because "poor in spirit" is the archetypal case of plain English that
+  // still leaves you unsure what was meant, which is the whole pitch.
+  const chip = (label, on) => on
+    ? `<span style="display:inline-block;background:#B8733A;color:#FDF8F0;border-radius:999px;padding:7px 14px;font-size:13px;font-family:-apple-system,Helvetica,Arial,sans-serif;margin:0 6px 8px 0">${label}</span>`
+    : `<span style="display:inline-block;background:#ffffff;color:#8A6B4F;border:1px solid #E8D5BB;border-radius:999px;padding:6px 13px;font-size:13px;font-family:-apple-system,Helvetica,Arial,sans-serif;margin:0 6px 8px 0">${label}</span>`;
+
   return emailWrap(`
-    <h1 style="font-size:24px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">You never got to the part worth having.</h1>
-    <p style="font-size:16px;line-height:1.7;color:#5A4733">It's Danny. You made an account on kinwove and stopped at the setup screen — which is fair, because it asked you for a pile of things before showing you anything.</p>
-    <p style="font-size:16px;line-height:1.7;color:#5A4733">So here is the part you missed. Open the Bible and <strong>tap any verse</strong>. You get:</p>
-    <ul style="font-size:16px;line-height:1.8;color:#5A4733;padding-left:20px;margin:0 0 16px">
-      <li><strong>Explain simply</strong> — what it actually means, in plain words</li>
-      <li><strong>Historical context</strong> — who wrote it, to whom, and what was going on</li>
-      <li><strong>Cross-references</strong> — where else scripture touches the same thing</li>
-      <li><strong>The original Hebrew or Greek</strong> — what the word underneath really says</li>
-      <li><strong>Compare versions</strong> — side by side, when a translation reads oddly</li>
-    </ul>
-    <p style="font-size:16px;line-height:1.7;color:#5A4733">It is for the verses you read three times and still do not quite get. And you can ask it anything else too — about God, doubt, something you would not say out loud in a church. It answers honestly and says "I don't know" when it doesn't.</p>
-    <p style="font-size:16px;line-height:1.7;color:#5A4733"><strong>No setup. Your account already works.</strong></p>
+    <h1 style="font-size:24px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">You stopped one screen before the good part.</h1>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733">It's Danny. You made a kinwove account and stopped at the setup screen — which is fair, because it asked you for a pile of things before it showed you anything.</p>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733">Here is what was behind it. Open any chapter and tap a verse:</p>
+
+    <div style="background:#FDF8F0;border:1px solid #E8D5BB;border-radius:14px;padding:18px 18px 12px;margin:22px 0 8px">
+      <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#9C7B5E;font-family:-apple-system,Helvetica,Arial,sans-serif;margin-bottom:8px">Matthew 5:3</div>
+      <div style="font-size:17px;line-height:1.65;color:#2C1810;margin-bottom:16px">“Blessed are the poor in spirit, for theirs is the kingdom of heaven.”</div>
+      <div style="border-top:1px solid #E8D5BB;padding-top:14px">
+        ${chip('Explain simply', true)}${chip('Historical context')}${chip('Cross-references')}${chip('Original Greek')}${chip('Compare versions')}
+      </div>
+    </div>
+
+    <div style="background:#ffffff;border-left:3px solid #B8733A;padding:4px 0 4px 16px;margin:0 0 20px">
+      <p style="font-size:15px;line-height:1.7;color:#5A4733;margin:10px 0">Most translations make this sound like a compliment for being spiritually weak or defeated — but that's not quite it.</p>
+      <p style="font-size:15px;line-height:1.7;color:#5A4733;margin:10px 0">“Poor in spirit” means knowing you don't have it all figured out. Not pretending to be fine when you're not. Not performing confidence you don't feel.</p>
+      <p style="font-size:15px;line-height:1.7;color:#5A4733;margin:10px 0">Jesus is saying: the people who know they're empty — who aren't full of themselves — those are the ones who can actually receive something. An already-full cup can't be filled.</p>
+    </div>
+    <p style="font-size:13px;line-height:1.6;color:#9C7B5E;margin:0 0 24px;font-family:-apple-system,Helvetica,Arial,sans-serif">That is a real answer from the app, not one I wrote for this email.</p>
+
+    <p style="font-size:16px;line-height:1.7;color:#5A4733">It is for the verses you read three times and still don't quite get — what it meant, who it was written to, what the word underneath actually says.</p>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733">And you can ask it anything else: about God, about doubt, something you wouldn't say out loud in a church. It answers honestly and says “I don't know” when it doesn't know.</p>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733"><strong>It's free right now while we're in beta</strong>, and your account already works — there's nothing left to set up. Give it a try and tell me what you think; reply to this email and it comes straight to me.</p>
     ${btnHtml('Open the Bible', 'https://www.kinwove.com/?utm_source=nudge&utm_medium=email')}
-    <p style="font-size:14px;line-height:1.6;color:#9C7B5E">And if it turned out not to be for you, that is genuinely fine — <a href="${unsubUrl}" style="color:#B8733A">unsubscribe here</a> and I will not write again.</p>
+    <p style="font-size:14px;line-height:1.6;color:#9C7B5E">And if it turns out not to be for you, that is genuinely fine — <a href="${unsubUrl}" style="color:#B8733A">unsubscribe here</a> and I won't write again.</p>
   `);
 }
 
@@ -2639,7 +2659,7 @@ app.post('/api/cron/nudge-incomplete', async (req, res) => {
     try {
       if (!email) continue;
       const unsubUrl = `https://www.kinwove.com/api/email/unsubscribe?u=${id}&t=${emailToken(id)}`;
-      await sendEmail(email, 'the part of kinwove you never got to', nudgeEmailHtml(unsubUrl), { 'List-Unsubscribe': `<${unsubUrl}>` });
+      await sendEmail(email, 'the part of kinwove you never got to see', nudgeEmailHtml(unsubUrl), { 'List-Unsubscribe': `<${unsubUrl}>` });
       sent++;
       await new Promise((r) => setTimeout(r, 200)); // gentle rate-limit between sends
     } catch (e) {
