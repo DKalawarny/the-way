@@ -2302,10 +2302,24 @@ function nudgeEmailHtml(unsubUrl) {
       </div>
     </div>
 
-    <div style="border-left:3px solid #B8733A;padding:2px 0 2px 16px;margin:0 0 18px">
-      <p style="font-size:15px;line-height:1.7;color:#5A4733;margin:10px 0">Most translations make this sound like a compliment for being spiritually weak or defeated — but that's not quite it.</p>
-      <p style="font-size:15px;line-height:1.7;color:#5A4733;margin:10px 0">“Poor in spirit” means knowing you don't have it all figured out. Not pretending to be fine when you're not. Not performing confidence you don't feel.</p>
-      <p style="font-size:15px;line-height:1.7;color:#5A4733;margin:10px 0">Jesus is saying: the people who know they're empty — who aren't full of themselves — those are the ones who can actually receive something. An already-full cup can't be filled.</p>
+    <div style="background:#130B05;border:1px solid #301E10;border-radius:14px;overflow:hidden;margin:0 0 14px">
+      <div style="background:#1A1108;border-bottom:1px solid #301E10;padding:11px 16px">
+        <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#7A756F;font-weight:700;font-family:-apple-system,Helvetica,Arial,sans-serif;margin-bottom:3px">Commentary</div>
+        <div style="font-family:Georgia,'Times New Roman',serif;font-size:15px;font-weight:600;color:#EAE5DD;letter-spacing:-0.01em">Matthew 5<span style="font-weight:400;color:#7A756F;margin-left:7px;font-size:12px">KJV</span></div>
+      </div>
+      <div style="padding:16px 14px">
+        <div style="text-align:right;margin-bottom:10px">
+          <span style="display:inline-block;max-width:88%;text-align:left;background:#A85530;color:#F5EDD8;border-radius:16px 16px 4px 16px;padding:10px 14px;font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.65">Explain Matthew 5:3 in plain, simple language.</span>
+        </div>
+        <div style="text-align:left">
+          <span style="display:inline-block;max-width:88%;background:#211A14;border:1px solid #342010;color:#EAE5DD;border-radius:16px 16px 16px 4px;padding:10px 14px;font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.65">
+            Most translations make this sound like a compliment for being spiritually weak or defeated — but that's not quite it.<br><br>
+            “Poor in spirit” means knowing you don't have it all figured out. Not pretending to be fine when you're not. Not performing confidence you don't feel.<br><br>
+            Jesus is saying: the people who know they're empty — who aren't full of themselves — those are the ones who can actually receive something. An already-full cup can't be filled.<br><br>
+            What's your instinct on that? Does it land differently than you expected?
+          </span>
+        </div>
+      </div>
     </div>
     <p style="font-size:13px;line-height:1.6;color:#9C7B5E;margin:0 0 26px;font-family:-apple-system,Helvetica,Arial,sans-serif">That is a real answer from the app, not one I wrote for this email.</p>
 
