@@ -2269,11 +2269,19 @@ function roleInviteEmailHtml({ memberName, pastorName, roleLabel, churchName, in
 // plainly, and makes leaving easy. One email, no sequence.
 function nudgeEmailHtml(unsubUrl) {
   return emailWrap(`
-    <h1 style="font-size:24px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">You never got to ask it anything.</h1>
-    <p style="font-size:16px;line-height:1.7;color:#5A4733">It's Danny. You made an account on kinwove and stopped at the setup screen — which is fair, because it asked you for a pile of things before showing you anything worth having.</p>
-    <p style="font-size:16px;line-height:1.7;color:#5A4733">So here is the part you missed. You can ask it anything — about God, doubt, a verse that bothers you, something you would not say out loud in a church. It answers honestly, it says "I don't know" when it doesn't, and it will not push anything on you.</p>
-    <p style="font-size:16px;line-height:1.7;color:#5A4733">No setup. Your account already works.</p>
-    ${btnHtml('Ask it something', 'https://www.kinwove.com/?utm_source=nudge&utm_medium=email')}
+    <h1 style="font-size:24px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">You never got to the part worth having.</h1>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733">It's Danny. You made an account on kinwove and stopped at the setup screen — which is fair, because it asked you for a pile of things before showing you anything.</p>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733">So here is the part you missed. Open the Bible and <strong>tap any verse</strong>. You get:</p>
+    <ul style="font-size:16px;line-height:1.8;color:#5A4733;padding-left:20px;margin:0 0 16px">
+      <li><strong>Explain simply</strong> — what it actually means, in plain words</li>
+      <li><strong>Historical context</strong> — who wrote it, to whom, and what was going on</li>
+      <li><strong>Cross-references</strong> — where else scripture touches the same thing</li>
+      <li><strong>The original Hebrew or Greek</strong> — what the word underneath really says</li>
+      <li><strong>Compare versions</strong> — side by side, when a translation reads oddly</li>
+    </ul>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733">It is for the verses you read three times and still do not quite get. And you can ask it anything else too — about God, doubt, something you would not say out loud in a church. It answers honestly and says "I don't know" when it doesn't.</p>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733"><strong>No setup. Your account already works.</strong></p>
+    ${btnHtml('Open the Bible', 'https://www.kinwove.com/?utm_source=nudge&utm_medium=email')}
     <p style="font-size:14px;line-height:1.6;color:#9C7B5E">And if it turned out not to be for you, that is genuinely fine — <a href="${unsubUrl}" style="color:#B8733A">unsubscribe here</a> and I will not write again.</p>
   `);
 }
@@ -2631,7 +2639,7 @@ app.post('/api/cron/nudge-incomplete', async (req, res) => {
     try {
       if (!email) continue;
       const unsubUrl = `https://www.kinwove.com/api/email/unsubscribe?u=${id}&t=${emailToken(id)}`;
-      await sendEmail(email, 'you never got to ask it anything', nudgeEmailHtml(unsubUrl), { 'List-Unsubscribe': `<${unsubUrl}>` });
+      await sendEmail(email, 'the part of kinwove you never got to', nudgeEmailHtml(unsubUrl), { 'List-Unsubscribe': `<${unsubUrl}>` });
       sent++;
       await new Promise((r) => setTimeout(r, 200)); // gentle rate-limit between sends
     } catch (e) {
