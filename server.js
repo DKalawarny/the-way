@@ -2106,7 +2106,18 @@ async function sendEmail(to, subject, html, headers) {
 
 // Wordmark as plain HTML text — SVG/remote images are blocked by Gmail, iOS
 // Mail, etc., so an <img> logo shows up blank. Text renders everywhere.
-const KW_LOGO = `<div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:600;color:#FDF8F0;letter-spacing:0.3px;line-height:1"><span style="color:#D4A24A;margin-right:2px">✦</span>kinwove</div>`.trim();
+// The real KinwoveWordmark, rendered by scripts/render-wordmark.mjs.
+//
+// ⚠️ THIS CANNOT BE HTML AND THAT IS NOT A SHORTCUT. The mark is Fraunces with
+// the star as the tittle of the "i", over a dotless ı. Gmail strips @font-face
+// (so Fraunces falls back to Georgia) AND strips `position` (which is what
+// lifts the star onto the i) — neither half of the mark survives. This used to
+// be a bare ✦ glyph set in front of the word in Georgia, which is a different
+// logo. Daniel: "why defaulting to this it is not on brand."
+//
+// alt carries the wordmark in cream for clients with images off, so a blocked
+// image degrades to the name rather than to nothing.
+const KW_LOGO = `<img src="https://www.kinwove.com/email/wordmark.png" width="106" height="56" alt="kinwove" style="display:block;width:106px;height:56px;border:0;outline:none;text-decoration:none;font-family:Georgia,serif;font-size:28px;color:#F5EDD8">`.trim();
 
 // Shared brand wrapper — keeps all kinwove emails visually consistent.
 // Pass unsubUrl to add a one-click unsubscribe line (required for recurring
@@ -2116,7 +2127,7 @@ function emailWrap(bodyHtml, unsubUrl) {
     ? `<br><a href="${unsubUrl}" style="color:#9C7B5E;text-decoration:underline">Unsubscribe from the daily verse</a>`
     : '';
   return `<div style="font-family:Georgia,serif;max-width:480px;margin:0 auto;color:#2C1810;background:#ffffff">
-    <!-- Wordmark header: dark chocolate bar with ✦ + serif kinwove -->
+    <!-- Wordmark header: dark chocolate bar with the real KinwoveWordmark -->
     <div style="background:#1A1108;padding:22px 32px;margin-bottom:36px">
       ${KW_LOGO}
     </div>
