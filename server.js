@@ -2664,8 +2664,17 @@ app.post('/api/cron/nudge-incomplete', async (req, res) => {
     const profiles = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=id,email_opt_out`, { headers: h })
       .then((x) => x.json());
     const haveProfile = new Set((Array.isArray(profiles) ? profiles : []).map((p) => p.id));
+    // ?only=<email> sends to exactly one address and ignores the date window.
+    // This is how the email gets proof-read in a real inbox before it goes to
+    // strangers: same route, same From, same unsubscribe token, same headers —
+    // a side-channel script would test none of that. It can only ever reach an
+    // account that is genuinely in the incomplete cohort, so it cannot be used
+    // to mail an arbitrary address.
+    const only = (req.query.only ?? '').trim().toLowerCase();
     incomplete = users.filter((u) =>
-      !haveProfile.has(u.id) && u.email && u.created_at >= since && u.created_at <= after);
+      !haveProfile.has(u.id) && u.email && (only
+        ? u.email.toLowerCase() === only
+        : (u.created_at >= since && u.created_at <= after)));
   } catch (e) {
     console.error('[nudge-incomplete] lookup:', e?.message);
     return res.status(500).json({ error: 'lookup failed' });
