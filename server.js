@@ -2664,6 +2664,17 @@ app.post('/api/cron/nudge-incomplete', async (req, res) => {
     const profiles = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=id,email_opt_out`, { headers: h })
       .then((x) => x.json());
     const haveProfile = new Set((Array.isArray(profiles) ? profiles : []).map((p) => p.id));
+    // ?preview=<email> sends ONE copy to any existing account, cohort or not,
+    // so the email can be proof-read in a real inbox. Daniel's own address has
+    // a profiles row, so it is not in the abandoned cohort and ?only= can never
+    // match it. Still gated by CRON_SECRET, and still restricted to an address
+    // that already has an account — it will not mail a stranger.
+    const preview = (req.query.preview ?? '').trim().toLowerCase();
+    if (preview) {
+      const u = users.find((x) => (x.email ?? '').toLowerCase() === preview);
+      if (!u) return res.status(404).json({ error: 'no account with that email' });
+      incomplete = [u];
+    } else {
     // ?only=<email> sends to exactly one address and ignores the date window.
     // This is how the email gets proof-read in a real inbox before it goes to
     // strangers: same route, same From, same unsubscribe token, same headers —
@@ -2675,6 +2686,7 @@ app.post('/api/cron/nudge-incomplete', async (req, res) => {
       !haveProfile.has(u.id) && u.email && (only
         ? u.email.toLowerCase() === only
         : (u.created_at >= since && u.created_at <= after)));
+    }
   } catch (e) {
     console.error('[nudge-incomplete] lookup:', e?.message);
     return res.status(500).json({ error: 'lookup failed' });
