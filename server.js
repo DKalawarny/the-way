@@ -2662,13 +2662,28 @@ async function followUpThought(question) {
   }
 }
 
-app.post('/api/cron/nudge-incomplete', async (req, res) => {
+// Cron endpoints are triggered two ways: by the scheduler with CRON_SECRET, or
+// by an admin from the Operations tab with their own session. Copied from the
+// shape /api/cron/daily-post already used and kept in one place so the two
+// cannot drift. ⚠️ Header-only for the secret — never accept it in a query
+// string, it leaks into access logs. If CRON_SECRET is unset the secret path is
+// CLOSED, not open, and only an admin bearer works.
+async function cronOrAdmin(req) {
   const secret = process.env.CRON_SECRET;
-  // Fail CLOSED: if the secret isn't configured, or doesn't match, refuse — these
-  // send real email to real users, so an unset secret must never leave them open.
-  if (!secret || req.headers['x-cron-secret'] !== secret) {
-    return res.status(401).json({ error: 'unauthorized' });
-  }
+  if (secret && req.headers['x-cron-secret'] === secret) return true;
+  const userId = await attachUser(req);
+  if (!userId || !SUPABASE_URL || !SUPABASE_SERVICE_KEY) return false;
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=is_admin&limit=1`,
+    { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } });
+  const rows = await r.json().catch(() => []);
+  return !!rows?.[0]?.is_admin;
+}
+
+app.post('/api/cron/nudge-incomplete', async (req, res) => {
+  // Still fails CLOSED — an unset CRON_SECRET closes the secret path rather than
+  // opening it; an admin bearer token is the only other way in. These send real
+  // email to real people.
+  if (!(await cronOrAdmin(req))) return res.status(401).json({ error: 'unauthorized' });
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
 
   const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
@@ -2744,6 +2759,13 @@ app.post('/api/cron/nudge-incomplete', async (req, res) => {
     return res.status(500).json({ error: 'lookup failed' });
   }
   if (!incomplete.length) return res.json({ sent: 0 });
+
+  // ?dry=1 answers "who would get this" without sending anything. The button in
+  // the admin Operations tab calls this first and shows the list, so nobody
+  // finds out who was on it by reading the replies.
+  if (req.query.dry === '1') {
+    return res.json({ dry: true, total: incomplete.length, emails: incomplete.map((u) => u.email) });
+  }
 
   let sent = 0;
   for (const { id, email } of incomplete) {

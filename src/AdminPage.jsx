@@ -455,6 +455,21 @@ export default function AdminPage({ onBack }) {
   const [voiceLoading, setVoiceLoading] = useState(false);
   const [voiceDraft, setVoiceDraft] = useState('');
   const [voicePosting, setVoicePosting] = useState(false);
+  // Win-back email (Operations tab). Two steps on purpose: ?dry=1 lists who
+  // would receive it, and only then does the send button appear. This mails
+  // real people and there is no undo, so "who is on this list" must be
+  // answerable BEFORE it fires, not by reading the replies afterwards.
+  const [wbList, setWbList] = useState(null);
+  const [wbBusy, setWbBusy] = useState(false);
+  const [wbSent, setWbSent] = useState(null);
+  const [wbError, setWbError] = useState('');
+  async function wbCall(qs) {
+    const { data: { session: sess } } = await supabase.auth.getSession();
+    const r = await fetch(`/api/cron/nudge-incomplete?${qs}`, {
+      method: 'POST', headers: { Authorization: `Bearer ${sess?.access_token}` },
+    });
+    return r.json();
+  }
   const [voiceError, setVoiceError] = useState(null);
   const [voiceSuccess, setVoiceSuccess] = useState(false);
 
@@ -1225,6 +1240,50 @@ export default function AdminPage({ onBack }) {
         {/* ── OPERATIONS ────────────────────────────────────────────────────── */}
         {tab === 'operations' && !dashLoading && !dashError && dash && (
           <div>
+            <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: 18, marginBottom: 24 }}>
+              <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.ink, marginBottom: 4 }}>Win-back email</div>
+              <div style={{ fontSize: 13, color: T.inkMuted, lineHeight: 1.6, marginBottom: 12 }}>
+                Sends once to everyone who signed up. Opted-out accounts, demo accounts and the system account are excluded automatically. There is no follow-up.
+              </div>
+              {wbError && <div style={{ fontSize: 13, color: '#B4462F', marginBottom: 10 }}>{wbError}</div>}
+              {wbSent != null ? (
+                <div style={{ fontSize: 14, color: T.ink, fontWeight: 600 }}>Sent to {wbSent} {wbSent === 1 ? 'person' : 'people'}.</div>
+              ) : wbList == null ? (
+                <button
+                  disabled={wbBusy}
+                  onClick={async () => {
+                    setWbBusy(true); setWbError('');
+                    const d = await wbCall('audience=all&dry=1');
+                    setWbBusy(false);
+                    if (d.error) setWbError(d.error); else setWbList(d.emails ?? []);
+                  }}
+                  style={{ background: 'none', border: `1px solid ${T.line}`, borderRadius: 999, padding: '8px 16px', fontSize: 13, fontWeight: 600, color: T.inkSoft, cursor: 'pointer' }}
+                >
+                  {wbBusy ? 'Checking…' : 'Show me who would get it'}
+                </button>
+              ) : (
+                <div>
+                  <div style={{ fontSize: 13, color: T.inkSoft, maxHeight: 190, overflowY: 'auto', border: `1px solid ${T.line}`, borderRadius: 10, padding: 10, marginBottom: 12, lineHeight: 1.7 }}>
+                    {wbList.map((e) => <div key={e}>{e}</div>)}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <button
+                      disabled={wbBusy}
+                      onClick={async () => {
+                        setWbBusy(true); setWbError('');
+                        const d = await wbCall('audience=all');
+                        setWbBusy(false);
+                        if (d.error) setWbError(d.error); else setWbSent(d.sent ?? 0);
+                      }}
+                      style={{ background: T.gold, border: 'none', borderRadius: 999, padding: '9px 18px', fontSize: 13, fontWeight: 600, color: T.white, cursor: 'pointer' }}
+                    >
+                      {wbBusy ? 'Sending…' : `Send to these ${wbList.length}`}
+                    </button>
+                    <button onClick={() => setWbList(null)} style={{ background: 'none', border: 'none', fontSize: 13, color: T.inkMuted, cursor: 'pointer' }}>Cancel</button>
+                  </div>
+                </div>
+              )}
+            </div>
             {getInsights('operations', s, dash).length > 0 && (
               <div style={{ marginBottom: 24 }}>
                 <SectionTitle>Insights</SectionTitle>
