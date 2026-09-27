@@ -1252,6 +1252,346 @@ export const ANSWERS = [
     ],
     related: ['can-i-trust-the-bible', 'do-christians-take-the-bible-literally', 'how-do-i-read-the-bible-as-a-beginner'],
   },
+  // ── Added 2026-09-26 from real questions asked by logged-out visitors ───────
+  // Every one of these came out of qa_events — someone typed it into the box
+  // with no account. Demand is measured, not guessed. Judas and "was the Bible
+  // rewritten" were each asked by two different people.
+  {
+    slug: 'did-judas-go-to-heaven',
+    question: 'Did Judas go to heaven?',
+    category: 'Eternal Life',
+    updated: '2026-09-26',
+    answer: 'The Bible never says. Jesus calls Judas "the son of destruction" (John 17:12) and Acts says he "went where he belongs" (Acts 1:25), which sounds final — but Scripture stops short of a verdict, and Christians have disagreed for two thousand years. The honest answer is that we are not told.',
+    body: [
+      {
+        h: 'What the text actually says',
+        p: 'Matthew says Judas was "seized with remorse," returned the thirty pieces of silver, said "I have sinned, for I have betrayed innocent blood," and hanged himself (Matthew 27:3–5). Jesus had earlier said of him that it would be better for that man if he had not been born (Matthew 26:24). Acts 1:25 says he left his apostolic ministry "to go where he belongs." Those are heavy words. But none of them is a sentence pronounced on his soul, and the Bible — which is not shy about judgment elsewhere — does not give one here.',
+      },
+      {
+        h: 'The word behind "remorse" is worth knowing',
+        p: 'Matthew 27:3 uses metamelomai, a word meaning regret or being sorry afterward. The New Testament\'s usual word for repentance is metanoia, which means a change of mind that turns you around. Some readers make a great deal of that difference: Judas felt the weight of what he had done, but grief is not the same as turning back. Others point out that the two words overlap in Greek and that building a doctrine of someone\'s eternity on one verb is more than the text can carry. Both cautions are fair.',
+      },
+      {
+        h: 'Peter is the comparison the Gospels invite',
+        p: 'On the same night, Peter denied knowing Jesus three times — publicly, with curses (Matthew 26:69–75). He also wept bitterly. The difference in the story is not the size of the failure but what each man did next: one went back to the others and was restored by Jesus on a beach (John 21:15–19), the other went off alone. That is the contrast the Gospels draw, and it is about despair versus return, not about a sin too big to forgive.',
+      },
+      {
+        h: 'Why the answer stays open',
+        p: 'Christians have landed in different places. Many read John 17:12 and Acts 1:25 as settling it. Others note that Jesus said he lost none the Father gave him "except" Judas — and that the same Jesus prayed forgiveness over the people killing him. The reason this page will not hand you a verdict is that Scripture does not, and pretending otherwise would be inventing an answer to make the question stop. What the Bible is unambiguous about is the door: "whoever comes to me I will never drive away" (John 6:37).',
+      },
+    ],
+    scriptures: [
+      { ref: 'Matthew 27:3–5', text: 'When Judas, who had betrayed him, saw that Jesus was condemned, he was seized with remorse and returned the thirty pieces of silver.' },
+      { ref: 'John 17:12', text: 'None has been lost except the one doomed to destruction so that Scripture would be fulfilled.' },
+      { ref: 'Acts 1:25', text: 'To take over this apostolic ministry, which Judas left to go where he belongs.' },
+      { ref: 'John 6:37', text: 'Whoever comes to me I will never drive away.' },
+    ],
+    faqs: [
+      { q: 'Does the Bible say Judas went to hell?', a: 'It does not say so directly. John 17:12 calls him "the one doomed to destruction" and Acts 1:25 says he went "where he belongs," and many Christians read those as a verdict. But neither line is a statement about his eternal destiny in the way the question expects, and the New Testament never says plainly where Judas is.' },
+      { q: 'Could Judas have been forgiven if he had asked?', a: 'On the Bible\'s own terms, yes. Peter denied Jesus and was restored days later. Paul described himself as the worst of sinners and was forgiven. Nothing in Scripture describes betrayal as the one sin placed beyond reach — what it describes is Judas not coming back.' },
+      { q: 'Did Judas have a choice, if the betrayal was prophesied?', a: 'This is one of the oldest arguments in Christian thought, and it is not settled. Scripture holds both that the betrayal fulfilled prophecy and that Judas is held responsible for it, without explaining how both are true. Anyone who tells you the tension resolves neatly is adding to the text.' },
+      { q: 'Why does it matter what happened to Judas?', a: 'Usually because of the question underneath it: is there a point past which someone has gone too far? The Bible\'s answer to that one is much clearer than its answer about Judas — the invitation stays open to anyone who comes.' },
+    ],
+    related: ['will-god-forgive-me', 'am-i-too-far-gone-for-god', 'is-hell-real'],
+  },
+  {
+    slug: 'has-the-bible-been-changed',
+    question: 'Has the Bible been changed or rewritten over the centuries?',
+    category: 'Bible',
+    updated: '2026-09-26',
+    answer: 'Not in the way the question usually imagines. We do not have one late copy at the end of a chain — we have thousands of early ones from scattered places, and they can be compared against each other. Most differences are spelling and word order. The handful that matter are printed in your Bible, in the footnotes.',
+    body: [
+      {
+        h: 'Why the "telephone game" picture does not fit',
+        p: 'Telephone works because each person hears only the previous whisper. Manuscripts do not work that way. Copies spread outward across Egypt, Syria, Greece, Italy and North Africa, in different languages, under communities that disagreed with each other — and we have those copies. There are roughly 5,800 Greek manuscripts of the New Testament, plus thousands in Latin, Syriac and Coptic, some within a century or so of the originals. Comparing them is how scholars detect changes rather than guess about them.',
+      },
+      {
+        h: 'The Dead Sea Scrolls were a live test',
+        p: 'Before 1947, the oldest complete Hebrew manuscripts of Isaiah were medieval. Then a scroll of Isaiah turned up at Qumran roughly a thousand years older. If a millennium of copying quietly rewrote the text, this was where it would show. It did not: the scroll matches the later text closely, with differences that are overwhelmingly spelling and minor wording. That is a real, checkable result, not an article of faith.',
+      },
+      {
+        h: 'What the real differences look like',
+        p: 'Most variants are invisible in translation — a spelling, a swapped word order, a repeated line, a name written in full instead of short. Two longer passages are genuinely disputed: the ending of Mark (16:9–20) and the woman caught in adultery (John 7:53–8:11). Notice what your Bible already does with them. It prints them with a footnote saying the earliest manuscripts do not include them. A text being quietly rewritten does not advertise its own uncertain passages in the margin.',
+      },
+      {
+        h: 'Where the honest uncertainty actually is',
+        p: 'You can say truthfully that we do not possess the original documents, that scribes made mistakes, and that a small number of passages are contested. What the evidence does not support is the bigger claim — that the content was reshaped to say something new. The doctrines people assume were inserted later are in the earliest manuscripts we have. If you want to press on this, press on the footnotes; that is where the real argument lives, and it is smaller and more interesting than the rumour.',
+      },
+    ],
+    scriptures: [
+      { ref: 'Isaiah 40:8', text: 'The grass withers and the flowers fall, but the word of our God endures forever.' },
+      { ref: 'Luke 1:1–3', text: 'Many have undertaken to draw up an account of the things that have been fulfilled among us... I myself have carefully investigated everything from the beginning.' },
+    ],
+    faqs: [
+      { q: 'Did the Council of Nicaea change the Bible?', a: 'No. Nicaea (325 AD) debated how to describe Jesus\' relationship to the Father and produced a creed. It did not edit the biblical text and did not decide the canon — that is a persistent internet claim with no support in the records of the council itself.' },
+      { q: 'What about all the translation differences?', a: 'Those are translation choices, not changes to the text. Versions differ over how to render Hebrew and Greek into English — word-for-word versus meaning-for-meaning. You can compare several versions of a verse side by side and see the range for yourself.' },
+      { q: 'Were books removed from the Bible?', a: 'Some books were weighed and not included, which is different from removal. Catholic and Orthodox Bibles include books Protestant Bibles do not. The disagreement is old, public, and documented — not a secret deletion.' },
+      { q: 'How can scholars know what the original said?', a: 'By comparing manuscripts. When copies from different centuries and regions agree, that reading is almost certainly early; when they diverge, the divergence itself is visible and gets footnoted. It is the same method used on any ancient text, and the New Testament has far more surviving copies than most.' },
+    ],
+    related: ['can-i-trust-the-bible', 'who-decided-which-books-are-in-the-bible', 'what-is-the-book-of-enoch'],
+  },
+  {
+    slug: 'who-decided-which-books-are-in-the-bible',
+    question: 'Who decided which books are in the Bible?',
+    category: 'Bible',
+    updated: '2026-09-26',
+    answer: 'No single person or council picked them. Books that were already being read everywhere, that traced back to apostles, and that agreed with the rest gradually became recognised as Scripture. Later councils confirmed a list the churches were already using — they ratified, they did not choose.',
+    body: [
+      {
+        h: 'It was recognition, not selection',
+        p: 'The usual picture is a committee in a room with a pile of books and a vote. The history is slower and more ordinary. Letters and Gospels circulated, were read aloud in gatherings, copied, and sent on. Over time some were used everywhere and treated as carrying apostolic authority; others were valued but local, or clearly later. By the time anyone drew up an official list, the list mostly described existing practice.',
+      },
+      {
+        h: 'The tests they applied',
+        p: 'Three criteria come up again and again in the ancient sources. Was it connected to an apostle or their circle? Was it received broadly, not just by one region or faction? Did it agree with the faith already handed down? Those are the tests that kept out later writings — many second-century gospels fail the first test plainly, being written long after the people whose names they carry.',
+      },
+      {
+        h: 'The dates worth knowing',
+        p: 'The Muratorian Fragment, usually dated around 170 AD, already lists most of the New Testament. Athanasius\' Easter letter of 367 AD names the 27 books we now have. The councils of Hippo (393) and Carthage (397) affirmed that list. Note the order: the list existed in use for generations before the councils, which is the opposite of the story where a council invents it.',
+      },
+      {
+        h: 'Where the genuine arguments were',
+        p: 'Some books were debated for a long time — Hebrews, James, 2 Peter, 2 and 3 John, Jude, Revelation. That debate is recorded; nobody hid it. And the disagreement never fully closed: Catholic and Orthodox Bibles include books Protestant Bibles place outside the canon, and the Ethiopian Orthodox canon is wider still. You can hold that history honestly without concluding the whole thing was arbitrary.',
+      },
+    ],
+    scriptures: [
+      { ref: '2 Peter 3:15–16', text: 'Paul also wrote you... His letters contain some things that are hard to understand, which ignorant and unstable people distort, as they do the other Scriptures.' },
+      { ref: '1 Thessalonians 2:13', text: 'You accepted it not as a human word, but as it actually is, the word of God.' },
+    ],
+    faqs: [
+      { q: 'Did Constantine choose the books of the Bible?', a: 'No. This claim spread through popular fiction rather than history. Constantine convened Nicaea in 325 to address a dispute about Christ\'s divinity; the canon was not its subject, and lists resembling our New Testament predate him.' },
+      { q: 'Why were the "lost gospels" left out?', a: 'Most were written well after the apostolic period — the Gospel of Thomas, Judas and Mary come from the second century or later — so they failed the apostolic test, and several conflict sharply with the earlier material. They were known and rejected, not undiscovered.' },
+      { q: 'Why do Catholic Bibles have more books?', a: 'Catholic and Orthodox Bibles include the deuterocanonical books (Tobit, Judith, Wisdom, Sirach, Baruch, 1–2 Maccabees and additions). They were in the Greek Old Testament used by early Christians; the Reformers followed the Hebrew canon instead. Both sides have argued it in public for five centuries.' },
+      { q: 'Could a book still be added?', a: 'In practice, no. The tests themselves rule it out — nothing new can now be apostolic in origin or already received by the ancient churches.' },
+    ],
+    related: ['what-is-the-book-of-enoch', 'has-the-bible-been-changed', 'can-i-trust-the-bible'],
+  },
+  {
+    slug: 'can-you-believe-in-evolution-and-the-bible',
+    question: 'Can you believe in evolution and the Bible?',
+    category: 'Faith & Doubt',
+    updated: '2026-09-26',
+    answer: 'Many Christians do, including scientists and pastors. Others hold a young earth and read Genesis 1 as sequential days. Christianity has not settled this, and no historic creed makes a position on it a condition of faith — the creeds say God made the world, not how long it took.',
+    body: [
+      {
+        h: 'The range of views, stated fairly',
+        p: 'Young-earth creationism reads the six days as six ordinary days and the earth as thousands of years old. Old-earth creationism accepts the scientific age of the universe while holding that God acted specially at points. Evolutionary creation holds that evolution is the mechanism God used, the way gravity is the mechanism by which he holds planets in orbit. Intelligent design argues some structures point to a designer. These are all held by people who take the Bible seriously.',
+      },
+      {
+        h: 'The real question is what kind of writing Genesis 1 is',
+        p: 'That is not a dodge; it is the actual disagreement. Genesis 1 is patterned — three days of forming, three of filling, a refrain closing each. Ancient readers encountered it alongside other creation accounts and would have noticed what it pointedly does not say: no warring gods, sun and moon demoted to lamps rather than deities. Whether that patterning signals poetry making a theological claim, or a plain chronological record, is where the argument lives.',
+      },
+      {
+        h: 'This debate is older than Darwin',
+        p: 'Augustine, writing around 400 AD, warned Christians not to make confident scientific pronouncements from Genesis that informed outsiders could see were false — he thought it brought the faith into disrepute. He had no stake in evolution; he was arguing about how to read the text. Origen raised similar questions earlier. The idea that a non-literal reading is a modern retreat is not historically accurate.',
+      },
+      {
+        h: 'What does not change either way',
+        p: 'On every one of these views, the world is made rather than accidental, human beings bear God\'s image and carry a dignity that is given rather than earned, and something has gone wrong that we did not fix ourselves. If you are weighing Christianity, you do not have to resolve the age of the earth first. Plenty of believers hold that question open for life.',
+      },
+    ],
+    scriptures: [
+      { ref: 'Genesis 1:1', text: 'In the beginning God created the heavens and the earth.' },
+      { ref: 'Psalm 19:1', text: 'The heavens declare the glory of God; the skies proclaim the work of his hands.' },
+      { ref: 'Colossians 1:16–17', text: 'In him all things were created... and in him all things hold together.' },
+    ],
+    faqs: [
+      { q: 'Do you have to believe in a literal six-day creation to be a Christian?', a: 'No historic creed requires it, and major traditions — Catholic, Orthodox, Anglican and many Protestant bodies — contain people on both sides. Some individual churches and denominations do hold a required position, so it can matter locally even though it is not a universal test of faith.' },
+      { q: 'Are there scientists who are Christians?', a: 'Yes, including prominent ones. Francis Collins led the Human Genome Project and writes as a Christian who accepts evolution. The categories "scientist" and "believer" have never been mutually exclusive in practice.' },
+      { q: 'What about Adam and Eve?', a: 'This is the sharpest point in the discussion, and views genuinely differ: a first historical couple, a representative pair within a population, or a theological portrait of humanity. Christians who accept evolution hold a range of positions here rather than one.' },
+      { q: 'Does evolution disprove God?', a: 'It is a description of a mechanism, and a mechanism does not settle whether there is intention behind it. Knowing how a process works tells you how, not whether anyone meant it. People draw opposite conclusions from the same biology, which is a clue the biology alone is not doing the deciding.' },
+    ],
+    related: ['do-christians-take-the-bible-literally', 'is-there-evidence-that-god-exists', 'do-genesis-1-and-2-contradict'],
+  },
+  {
+    slug: 'are-there-dinosaurs-in-the-bible',
+    question: 'Are there dinosaurs in the Bible?',
+    category: 'Bible',
+    updated: '2026-09-26',
+    answer: 'Not by name — the word "dinosaur" was coined in 1841, long after the Bible was written. Two creatures in Job, Behemoth and Leviathan, are sometimes proposed. Most scholars read them as a hippopotamus and a crocodile, or as symbols of untamed chaos, rather than as dinosaurs.',
+    body: [
+      {
+        h: 'Behemoth and Leviathan',
+        p: 'In Job 40–41 God describes two creatures at length. Behemoth eats grass like an ox, lies among the reeds in the marsh, and has a tail that "sways like a cedar." Leviathan is armoured, breathes fire and smoke, and cannot be caught with a hook. Some readers see a sauropod and a dragon-like reptile. Others note the marsh habitat and grass diet fit a hippo, and the armour and river setting fit a crocodile, with the fire imagery doing what poetry does.',
+      },
+      {
+        h: 'What those chapters are doing',
+        p: 'Context matters more than the zoology. God is answering Job out of a storm, and the whole speech is a list of things Job did not make and cannot control — the sea, the stars, the wild ox, the ostrich, the hawk. Behemoth and Leviathan are the climax of that argument. Whatever animal stands behind them, they are there to make Job feel small, and the poetry is heightened deliberately.',
+      },
+      {
+        h: 'Why the Bible does not discuss them',
+        p: 'Scripture is not a catalogue of the natural world. It never mentions kangaroos, penguins or bacteria either, and no one finds that suspicious. It is written to people in a particular place about who God is and what he is doing, in the categories they had. Expecting a species list is asking it for a kind of book it is not.',
+      },
+      {
+        h: 'Where the actual disagreement is',
+        p: 'Nobody disputes that fossils exist. The disagreement is about timeline: whether dinosaurs died out tens of millions of years before humans, or co-existed with them on a young-earth reading. That is the same argument as the age of the earth, and Christians land in different places on it — see the evolution page for the range.',
+      },
+    ],
+    scriptures: [
+      { ref: 'Job 40:15', text: 'Look at Behemoth, which I made along with you and which feeds on grass like an ox.' },
+      { ref: 'Job 41:1', text: 'Can you pull in Leviathan with a fishhook or tie down its tongue with a rope?' },
+      { ref: 'Psalm 104:24–26', text: 'How many are your works, Lord!... There is the sea, vast and spacious... and Leviathan, which you formed to frolic there.' },
+    ],
+    faqs: [
+      { q: 'Is Leviathan a dragon?', a: 'In the Old Testament\'s imagery, Leviathan often functions as a sea monster standing for chaos that only God can master — the same role sea-monsters play in other ancient Near Eastern literature. Isaiah 27:1 uses it symbolically of God\'s enemies. Whether a real animal lies behind the image is debated.' },
+      { q: 'Does the Bible say how old the earth is?', a: 'No. It gives genealogies, and a young-earth figure is reached by adding those up — an approach associated with Archbishop Ussher in the 1600s. Whether biblical genealogies are complete lists or selective ones is itself disputed, since they demonstrably skip generations elsewhere.' },
+      { q: 'Did dinosaurs go on the ark?', a: 'The text does not say. Young-earth accounts often propose juveniles were taken aboard; readers who accept an old earth see no issue because the animals were long extinct. It depends entirely on the timeline you hold.' },
+    ],
+    related: ['can-you-believe-in-evolution-and-the-bible', 'do-christians-take-the-bible-literally', 'can-i-trust-the-bible'],
+  },
+  {
+    slug: 'do-men-have-fewer-ribs-than-women',
+    question: 'Do men have one fewer rib than women?',
+    category: 'Bible',
+    updated: '2026-09-26',
+    answer: 'No. Men and women both have twelve pairs — twenty-four ribs. The idea comes from Genesis 2, but the Bible never claims men are short a rib, and it would not follow anyway: an injury to a parent does not change what their children are born with.',
+    body: [
+      {
+        h: 'The anatomy, plainly',
+        p: 'Every standard anatomy text gives the same count for both sexes: twelve pairs. A small percentage of people of either sex are born with an extra cervical rib or one fewer, and that variation is not sex-linked. This is about as settled as a medical fact can be, and it has been checkable for as long as anyone has been able to count.',
+      },
+      {
+        h: 'Genesis does not say what people think it says',
+        p: 'Genesis 2:21–22 describes God taking something from the man\'s side while he sleeps and building the woman from it. That is the whole claim. There is no verse anywhere saying men therefore have fewer ribs — that inference was added by readers, not by the text. Notably, it is also the wrong kind of inference: acquired changes are not inherited, which is why circumcision has never produced a generation born circumcised.',
+      },
+      {
+        h: 'The Hebrew word is more interesting than the myth',
+        p: 'The word is tsela. Everywhere else in the Old Testament it usually means "side" — the side of the tabernacle, the side of a hill, side chambers of the temple. "Rib" is a reasonable rendering here but not the obvious one. Read as "side," the picture shifts: not a spare part, but one being divided into two. Ancient Jewish commentators made much of that, and so did Matthew Henry, in a line often quoted — not from the head to rule over him, nor from the feet to be trampled, but from the side to stand beside him.',
+      },
+      {
+        h: 'Why this question is worth asking out loud',
+        p: 'People usually raise it as a gotcha, sometimes half-expecting embarrassment. It deserves a straight answer instead: the science is clear, and the text never made the claim. Plenty of arguments against Christianity are substantial and worth a long conversation. This one is a misreading that got repeated, and it is fine to just set it down.',
+      },
+    ],
+    scriptures: [
+      { ref: 'Genesis 2:21–22', text: 'So the Lord God caused the man to fall into a deep sleep; and while he was sleeping, he took one of the man\'s ribs and then closed up the place with flesh.' },
+      { ref: 'Genesis 2:23', text: 'This is now bone of my bones and flesh of my flesh; she shall be called "woman," for she was taken out of man.' },
+    ],
+    faqs: [
+      { q: 'Where did the missing-rib idea come from?', a: 'From assuming Genesis 2 must have left a permanent mark, and from repetition. It was widespread enough in the 1500s that the anatomist Vesalius had to publicly point out that the count is the same in both sexes.' },
+      { q: 'Does it matter whether tsela means rib or side?', a: 'Not for doctrine, but it changes the picture. "Side" suggests one whole being separated into two who belong together, which is exactly what the man\'s response in verse 23 is reaching for.' },
+      { q: 'Does Genesis 2 make women secondary?', a: 'The text argues the opposite of what it is often quoted for. The man is alone and it is "not good"; the woman is called a helper using a Hebrew word most often applied to God himself, and the man\'s reaction is recognition, not ownership.' },
+    ],
+    related: ['do-genesis-1-and-2-contradict', 'do-christians-take-the-bible-literally', 'can-i-trust-the-bible'],
+  },
+  {
+    slug: 'do-genesis-1-and-2-contradict',
+    question: 'Do Genesis 1 and 2 contradict each other?',
+    category: 'Bible',
+    updated: '2026-09-26',
+    answer: 'They tell the same story at different scales. Genesis 1 is a wide shot of the whole cosmos across six days; Genesis 2 zooms in on one garden and one couple. The tension people notice — the order of trees, animals and the man — turns on whether chapter 2 is sequential at all.',
+    body: [
+      {
+        h: 'What actually differs',
+        p: 'In Genesis 1, vegetation appears on day three, animals on days five and six, and humanity last — male and female together. In Genesis 2, the man is formed, then a garden is planted, then animals are brought to him to name, then the woman. Read as two chronologies, they clash. That is a real observation, and it has been noticed for a very long time.',
+      },
+      {
+        h: 'The wide-shot, close-up convention',
+        p: 'Ancient Near Eastern narrative often gives a general account and then doubles back to treat one part in detail. Genesis does it repeatedly afterwards — the nations are listed in chapter 10, then chapter 11 goes back to explain Babel. Chapter 2 opens by marking the seventh day, which reads as closing the first account rather than continuing it. On that reading it is not a second timeline but a close-up.',
+      },
+      {
+        h: 'The verb question',
+        p: 'Genesis 2:19 says God "formed" the animals and brought them to the man. Hebrew narrative verbs do not carry tense the way English does, and some translations render it "had formed" — the NIV does. If that is right, the verse is recalling something already done, not sequencing it after the man. Hebrew scholars disagree about whether the pluperfect is justified here, which is worth knowing rather than glossing over.',
+      },
+      {
+        h: 'The two-source reading',
+        p: 'Many scholars hold that the chapters come from different sources — the first more structured and liturgical, the second earthier, using a different name for God. Christians respond in different ways: some reject the theory, others accept it and hold that the final text is composed deliberately, two complementary angles set side by side by an editor who could plainly see the differences and kept both anyway.',
+      },
+      {
+        h: 'What each is for',
+        p: 'The two chapters answer different questions. Genesis 1 asks who made everything and says it is ordered, intended, good. Genesis 2 asks what human beings are for and answers with dust and breath, work, limits, and the first thing called "not good" — being alone. Read together they say the universe has an author and you are not incidental to it.',
+      },
+    ],
+    scriptures: [
+      { ref: 'Genesis 1:27', text: 'So God created mankind in his own image, in the image of God he created them; male and female he created them.' },
+      { ref: 'Genesis 2:7', text: 'Then the Lord God formed a man from the dust of the ground and breathed into his nostrils the breath of life.' },
+      { ref: 'Genesis 2:18', text: 'It is not good for the man to be alone. I will make a helper suitable for him.' },
+    ],
+    faqs: [
+      { q: 'Are there two creation stories in the Bible?', a: 'There are two accounts in Genesis 1 and 2, and poetic passages elsewhere — Psalm 104, Proverbs 8, Job 38 — that describe creation differently again. Whether "two stories" or one told twice depends on how you read chapter 2\'s relationship to chapter 1.' },
+      { q: 'Why does God have different names in the two chapters?', a: 'Chapter 1 uses Elohim, chapter 2 uses YHWH Elohim. Source critics treat this as evidence of different authors; others argue the shift is deliberate — the transcendent creator of chapter 1 named personally in chapter 2, where he is walking in a garden.' },
+      { q: 'Does this mean the Bible has errors?', a: 'It means the Bible was written by real people in real genres, which its own authors never hid. Whether the difference is an error depends on whether chapter 2 claims to be sequential, and the text does not say that it does.' },
+    ],
+    related: ['can-you-believe-in-evolution-and-the-bible', 'do-christians-take-the-bible-literally', 'has-the-bible-been-changed'],
+  },
+  {
+    slug: 'what-does-christianity-say-about-reincarnation',
+    question: 'What does Christianity say about reincarnation?',
+    category: 'Eternal Life',
+    updated: '2026-09-26',
+    answer: 'Christianity does not teach it. The New Testament describes one life, then judgment, then resurrection — not a return in another body. The hope it offers is not coming back as someone else, but being raised as yourself, recognisably you, with the damage undone.',
+    body: [
+      {
+        h: 'The verse that sets the shape',
+        p: 'Hebrews 9:27 says people are destined to die once, and after that to face judgment. That is the assumption underneath the whole New Testament: a single life that counts, not a sequence of attempts. Whatever else Christians argue about regarding the afterlife, none of the historic traditions teach rebirth into another body on earth.',
+      },
+      {
+        h: 'Resurrection is a different idea, and the difference matters',
+        p: 'Reincarnation treats the body as temporary housing — you move on, the shell is discarded. Christianity claims the opposite: bodies matter, and the promise is that yours is raised and made new. Paul spends a whole chapter on it (1 Corinthians 15), and the resurrection accounts are pointed about it — the risen Jesus eats fish, is touched, keeps his scars. Not a spirit escaping a body. A body brought back.',
+      },
+      {
+        h: 'The two passages people raise',
+        p: 'In John 9:2 the disciples ask whether a man born blind sinned, which sounds like pre-existence — Jesus rejects the premise of the question entirely. And Jesus says of John the Baptist that he is "the Elijah who was to come" (Matthew 11:14), while John himself denies being Elijah (John 1:21). Luke 1:17 resolves it: John comes "in the spirit and power of Elijah." A role taken up, not a soul returned.',
+      },
+      {
+        h: 'If reincarnation is what you actually believe',
+        p: 'It is worth naming what draws people to it, because it is usually something reasonable — a sense that one life is too short to get anywhere, or that justice needs more time than we get. Christianity answers those with different machinery: not more attempts, but grace, which is the claim that you are not working your way up across lifetimes because the distance was closed from the other side. You can find that unconvincing. But it is a real answer to the real concern, not an evasion of it.',
+      },
+    ],
+    scriptures: [
+      { ref: 'Hebrews 9:27', text: 'Just as people are destined to die once, and after that to face judgment.' },
+      { ref: '1 Corinthians 15:42–44', text: 'The body that is sown is perishable, it is raised imperishable... it is sown a natural body, it is raised a spiritual body.' },
+      { ref: 'Luke 1:17', text: 'And he will go on before the Lord, in the spirit and power of Elijah.' },
+    ],
+    faqs: [
+      { q: 'Did early Christians believe in reincarnation?', a: 'There is no evidence the mainstream did. Origen speculated about the pre-existence of souls, which is a different idea and was later condemned. The claim that reincarnation was taught and then removed from the Bible has no manuscript support — and we have manuscripts old enough to check.' },
+      { q: 'What about near-death experiences or past-life memories?', a: 'Christians vary in how they interpret these. Some see genuine spiritual experience, others psychological or cultural explanations. What is fair to say is that such accounts are interpreted through the framework the person already holds, which is why they tend to match the expectations of the culture they occur in.' },
+      { q: 'If there is only one life, what about people who never hear about Jesus?', a: 'One of the oldest open questions in Christian thought, and answers genuinely differ. What most traditions hold in common is that God is just and nobody is judged for information they could not have had. Beyond that, Christians disagree, and pretending otherwise would be false.' },
+    ],
+    related: ['what-happens-when-you-die', 'is-hell-real', 'what-is-heaven-like'],
+  },
+  {
+    slug: 'what-if-church-hurt-you',
+    question: 'What if church hurt you, or felt like it was all about money?',
+    category: 'Church',
+    updated: '2026-09-26',
+    answer: 'Then you saw something real and you are right to name it. Jesus was angrier about religious money and religious pretending than about almost anything else. Leaving a church that was harming you is not leaving God, and nothing here will tell you to go back to it.',
+    body: [
+      {
+        h: 'Your read was probably accurate',
+        p: 'People who walk out of churches are often told they were too sensitive, or looking for an excuse. Usually they were not. If the giving talk arrived every week, if questions were treated as disloyalty, if a leader was untouchable, if you left services feeling smaller — those are not misperceptions. They are the things the New Testament warns about, written down because they were already happening in the first century.',
+      },
+      {
+        h: 'What Jesus did about religious money',
+        p: 'The one time the Gospels show Jesus physically overturning anything, it is tables in a temple where faith had been turned into commerce. He reserved his hardest language not for the irreligious but for religious professionals — calling them whitewashed tombs, saying they loaded people with burdens they would not lift themselves. If church money made you angry, you are in the same place the story puts Jesus.',
+      },
+      {
+        h: 'The distinction that has to be made honestly',
+        p: 'It is easy to say "the church failed you, God did not" — and it can sound like a dodge, because for a lot of people the church was the only face God had. So take it slowly. A church is people with authority, and authority can be misused. That is a claim Christianity makes about human beings, not an exception to it. Every character in the Bible who abuses religious power is in there as a warning, not an embarrassment to be explained away.',
+      },
+      {
+        h: 'You are allowed to take your time',
+        p: 'There is no obligation to find a new church this month, or this year. Some people need a long distance before anything churchlike is safe again. If you eventually want to try, it is fair to ask blunt questions first — who has power here, where does the money go, what happens when someone disagrees, can I leave without being pursued. Any healthy church can answer those. A church that treats the questions as an attack has answered them.',
+      },
+      {
+        h: 'And in the meantime',
+        p: 'You can keep asking about God without a building. Reading, praying badly, arguing with it, asking the questions you were told not to ask — none of that requires an institution\'s permission. Plenty of people do their most honest thinking about faith in exactly this stretch, after they stop performing it for a room.',
+      },
+    ],
+    scriptures: [
+      { ref: 'Matthew 21:12–13', text: 'Jesus entered the temple courts and drove out all who were buying and selling there... "My house will be called a house of prayer, but you are making it a den of robbers."' },
+      { ref: 'Matthew 23:4', text: 'They tie up heavy, cumbersome loads and put them on other people\'s shoulders, but they themselves are not willing to lift a finger to move them.' },
+      { ref: '1 Timothy 3:3', text: 'Not violent but gentle, not quarrelsome, not a lover of money.' },
+      { ref: 'Matthew 11:28', text: 'Come to me, all you who are weary and burdened, and I will give you rest.' },
+    ],
+    faqs: [
+      { q: 'Is it a sin to stop going to church?', a: 'The New Testament encourages Christians not to give up meeting together, and it is written to people in community. But it is not a command to stay somewhere harmful, and nothing in it suggests God is keeping an attendance record against someone who left a place that was hurting them.' },
+      { q: 'Does the Bible actually require tithing?', a: 'Christians disagree. Tithing is Old Testament law; the New Testament talks about generous, un-pressured giving — "not reluctantly or under compulsion" (2 Corinthians 9:7). Compulsion is the part that gets quietly dropped when giving is being pushed from a stage.' },
+      { q: 'How do I know if a church is healthy?', a: 'Watch what happens to people who disagree, whether the finances are open, whether leaders are accountable to anyone who can actually say no, and whether you can leave without pressure. Those tell you more than the preaching or the music.' },
+      { q: 'Can I be a Christian without a church?', a: 'People do, and many are in that position for reasons that were not their choice. Most Christians would say community matters and is worth finding eventually — but "eventually," and not the one that hurt you.' },
+    ],
+    related: ['why-should-i-go-to-church', 'how-do-i-find-a-church', 'does-god-love-me'],
+  },
 ];
 
 export const ANSWERS_BY_SLUG = Object.fromEntries(ANSWERS.map((a) => [a.slug, a]));

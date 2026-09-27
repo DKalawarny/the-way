@@ -5969,6 +5969,13 @@ if (process.env.NODE_ENV !== 'development') {
         .replace(/<meta property="og:description"[^>]*>/, `<meta property="og:description" content="${dEsc}" />`)
         .replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${cEsc}" />`)
         .replace(/<meta property="og:type"[^>]*>/, `<meta property="og:type" content="article" />`)
+        // Shared conversations are NOT search content. All 41 carried the SAME
+        // title — "A response from kinwove — kinwove AI Bible Study" — because
+        // the title came from the template and the real question only reached
+        // the <h1>. That made them 42% of the sitemap, competing as duplicates
+        // against the 51 /answers pages written to rank. The links still work
+        // and still open for whoever they were sent to; they stop being crawled.
+        .replace(/<meta name="robots"[^>]*>/, `<meta name="robots" content="noindex, follow" />`)
         .replace(/<meta name="twitter:title"[^>]*>/, `<meta name="twitter:title" content="${tEsc}" />`)
         .replace(/<meta name="twitter:description"[^>]*>/, `<meta name="twitter:description" content="${dEsc}" />`)
         // Inject Article schema + prerender blog content
@@ -6130,24 +6137,9 @@ if (process.env.NODE_ENV !== 'development') {
         `<url><loc>${host}/answers/${escapeXml(a.slug)}</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>${escapeXml(a.updated)}</lastmod></url>`),
     ];
 
-    // Add all public shared conversations (user-generated content Google can index)
-    if (SUPABASE_URL && SUPABASE_ANON) {
-      try {
-        const r = await fetch(
-          `${SUPABASE_URL}/rest/v1/shared_conversations?select=id,created_at&order=created_at.desc&limit=10000`,
-          { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` } }
-        );
-        if (r.ok) {
-          const rows = await r.json();
-          for (const row of rows) {
-            const lastmod = row.created_at ? new Date(row.created_at).toISOString().slice(0, 10) : today;
-            entries.push(`<url><loc>${host}/share/${escapeXml(row.id)}</loc><lastmod>${lastmod}</lastmod><changefreq>never</changefreq><priority>0.7</priority></url>`);
-          }
-        }
-      } catch (e) {
-        console.error('[kinwove] /sitemap.xml error:', e?.message);
-      }
-    }
+    // Shared conversations are deliberately NOT listed. They are noindex now
+    // (see /share/:id), and listing a noindex URL asks Google to crawl a page
+    // it is then told to drop. This sitemap is only pages written to be found.
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -6248,8 +6240,39 @@ ${entries.join('\n')}
   });
 
   // /llms.txt — also serve from root (canonical: /.well-known/llms.txt handled by static)
-  app.get('/llms.txt', (_req, res) => {
-    res.sendFile(path.join(distPath, '..', 'public', 'llms.txt'));
+  // The answers list inside llms.txt is GENERATED from ANSWERS, not maintained
+  // by hand. It was hand-written and had already drifted out of sync with the
+  // library — which is the worst possible failure for this file, because it is
+  // the one thing AI crawlers read to find out what is here. A page missing
+  // from it is a page they never learn exists. Everything between the
+  // "### " group headings and the next "## " section is rebuilt on each
+  // request, so adding a page to content/answers.js is all anyone ever has to
+  // do. The rest of the file is still edited by hand in public/llms.txt.
+  app.get('/llms.txt', async (_req, res) => {
+    try {
+      // NOTE: fs here is node:fs/promises (see the import at the top) — the
+      // sync API does not exist on it, and a readFileSync call would throw
+      // straight into the catch below and silently serve the stale file.
+      const raw = await fs.readFile(path.join(distPath, '..', 'public', 'llms.txt'), 'utf8');
+      const start = raw.indexOf('### ');
+      const end = raw.indexOf('\n## ', start);
+      if (start === -1 || end === -1) return res.type('text/plain').send(raw);
+
+      const byCategory = new Map();
+      for (const a of ANSWERS) {
+        if (!byCategory.has(a.category)) byCategory.set(a.category, []);
+        byCategory.get(a.category).push(a);
+      }
+      const list = [...byCategory.entries()]
+        .map(([cat, items]) => `### ${cat}\n` + items
+          .map((a) => `- ${a.question} — https://www.kinwove.com/answers/${a.slug}`)
+          .join('\n'))
+        .join('\n\n');
+
+      res.type('text/plain').send(raw.slice(0, start) + list + raw.slice(end));
+    } catch {
+      res.sendFile(path.join(distPath, '..', 'public', 'llms.txt'));
+    }
   });
 
   // ── Answers library — crawlable, GEO-optimized faith-question pages ──────────
