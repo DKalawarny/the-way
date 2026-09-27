@@ -2108,8 +2108,6 @@ async function sendEmail(to, subject, html, headers) {
   trackEmail();
 }
 
-// Wordmark as plain HTML text — SVG/remote images are blocked by Gmail, iOS
-// Mail, etc., so an <img> logo shows up blank. Text renders everywhere.
 // The real KinwoveWordmark, rendered by scripts/render-wordmark.mjs.
 //
 // ⚠️ THIS CANNOT BE HTML AND THAT IS NOT A SHORTCUT. The mark is Fraunces with
@@ -2121,6 +2119,33 @@ async function sendEmail(to, subject, html, headers) {
 //
 // alt carries the wordmark in cream for clients with images off, so a blocked
 // image degrades to the name rather than to nothing.
+// ── The real KinwoveWordmark, for server-rendered WEB pages ──────────────────
+//
+// Note the contrast with KW_LOGO above, which is a PNG: that one is for EMAIL,
+// where Gmail strips both @font-face and `position` so neither half of the mark
+// survives. These are ordinary web pages in a real browser, so the mark can be
+// built properly in HTML and stays selectable text, scales, and needs no image
+// request. Same component, two renderings, for two different reasons.
+//
+// ⚠️ EVERY VALUE HERE IS LOCKED IN CLAUDE.md — the star path and viewBox, the
+// -0.72em offset, and the dotless ı (U+0131). Do not nudge them to taste; fix
+// KinwoveWordmark.jsx and mirror it here. starEm 0.38 matches the app's own
+// header call sites, which is what these nav bars are.
+const KW_MARK_CSS = `
+  .kw-mark{font-family:'Fraunces',Georgia,serif;font-weight:500;letter-spacing:-0.022em;
+           color:#F5EDD8;position:relative;display:inline-block;line-height:1}
+  .kw-mark-i{position:relative;display:inline-block}
+  .kw-mark-star{position:absolute;top:-0.72em;left:50%;transform:translateX(-50%);
+                width:0.38em;height:0.38em;display:block}
+`;
+const KW_MARK_FONT = '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+  + '<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&display=swap" rel="stylesheet">';
+const KW_MARK_HTML = 'k<span class="kw-mark-i">\u0131'
+  + '<span class="kw-mark-star" aria-hidden="true">'
+  + '<svg width="100%" height="100%" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
+  + '<path fill="#D4A24A" d="M12 1 L13.4 9.6 L22 11 L13.4 12.4 L12 23 L10.6 12.4 L2 11 L10.6 9.6 Z"/>'
+  + '</svg></span></span>nwove';
+
 const KW_LOGO = `<img src="https://www.kinwove.com/email/wordmark.png" width="106" height="56" alt="kinwove" style="display:block;width:106px;height:56px;border:0;outline:none;text-decoration:none;font-family:Georgia,serif;font-size:28px;color:#F5EDD8">`.trim();
 
 // Shared brand wrapper — keeps all kinwove emails visually consistent.
@@ -5758,13 +5783,13 @@ function topicTags(text) {
 }
 
 // Inline CSS for the share blog post page — parchment/ink kinwove brand
-const SHARE_PAGE_CSS = `
+const SHARE_PAGE_CSS = `${KW_MARK_CSS}
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:Georgia,serif;background:#FAF3E2;color:#2C1810;line-height:1.7}
   a{color:#8E5528;text-decoration:none}
   a:hover{text-decoration:underline}
   .kw-nav{background:#1A1108;color:#F5EDD8;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
-  .kw-nav-logo{font-family:Georgia,serif;font-size:20px;font-weight:700;color:#F5EDD8;letter-spacing:-0.02em}
+  .kw-nav-logo{font-size:20px;font-weight:700;color:#F5EDD8;letter-spacing:-0.02em}
   .kw-nav-cta{background:#B8733A;color:#fff;padding:8px 18px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap}
   .kw-nav-cta:hover{background:#a0622e;text-decoration:none}
   .kw-layout{max-width:860px;margin:0 auto;padding:40px 20px 60px;display:grid;grid-template-columns:1fr 280px;gap:48px;align-items:start}
@@ -5915,9 +5940,10 @@ if (process.env.NODE_ENV !== 'development') {
       // Full blog-post body — visible to humans + crawlers before React mounts
       const blogContent = `
 <div class="kw-share-wrap" id="kw-prerender">
+  ${KW_MARK_FONT}
   <style>${SHARE_PAGE_CSS}</style>
   <nav class="kw-nav">
-    <a href="https://www.kinwove.com/" class="kw-nav-logo">✦ kinwove</a>
+    <a href="https://www.kinwove.com/" class="kw-nav-logo"><span class="kw-mark" aria-label="kinwove">${KW_MARK_HTML}</span></a>
     <a href="https://www.kinwove.com/" class="kw-nav-cta">Ask your own question →</a>
   </nav>
   <div class="kw-layout">
@@ -6040,6 +6066,7 @@ if (process.env.NODE_ENV !== 'development') {
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  ${KW_MARK_FONT}
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI Bible Study Conversations — kinwove</title>
   <meta name="description" content="Browse real conversations from kinwove's AI Bible companion — questions about scripture, faith, doubt, and Christian living answered honestly and without judgment." />
@@ -6059,6 +6086,7 @@ if (process.env.NODE_ENV !== 'development') {
     body{font-family:Georgia,serif;background:#FAF3E2;color:#2C1810;line-height:1.7;min-height:100vh}
     a{color:#8E5528;text-decoration:none}a:hover{text-decoration:underline}
     .cv-nav{background:#1A1108;color:#F5EDD8;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+    ${KW_MARK_CSS}
     .cv-nav-logo{font-size:20px;font-weight:700;color:#F5EDD8;letter-spacing:-0.02em}
     .cv-nav-cta{background:#B8733A;color:#fff;padding:8px 18px;border-radius:999px;font-size:13px;font-weight:600}
     .cv-nav-cta:hover{background:#a0622e;text-decoration:none}
@@ -6090,7 +6118,7 @@ if (process.env.NODE_ENV !== 'development') {
 </head>
 <body>
   <nav class="cv-nav">
-    <a href="https://www.kinwove.com/" class="cv-nav-logo">✦ kinwove</a>
+    <a href="https://www.kinwove.com/" class="cv-nav-logo"><span class="kw-mark" aria-label="kinwove">${KW_MARK_HTML}</span></a>
     <a href="https://www.kinwove.com/" class="cv-nav-cta">Ask your own question →</a>
   </nav>
   <div class="cv-wrap">
