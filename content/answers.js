@@ -1923,6 +1923,186 @@ export const ANSWERS = [
     ],
     related: ['how-do-i-pastor-someone-who-is-deconstructing', 'how-can-i-believe-when-i-have-doubts', 'what-if-church-hurt-you'],
   },
+  // ── Added 2026-09-26 — SEARCH-INTENT pages ─────────────────────────────────
+  // Daniel: "i mean a pastor looking for a study platform or a place to organize
+  // his congregation a chat board etc."
+  //
+  // A different axis from every other page here. The rest answer someone with a
+  // QUESTION; these answer someone already SHOPPING — they have decided they
+  // need a tool and are comparing. That person searches in categories ("church
+  // discussion board", "online bible study platform"), not in questions.
+  //
+  // ⚠️ THESE MUST STAY HONEST TO WORK. A buyer comparing options can tell a
+  // sales page from a useful one in about ten seconds, and this audience talks
+  // to each other. Each page names what kinwove does NOT do and says it is in
+  // free beta. No competitor is named with specifics I have not verified.
+  {
+    slug: 'best-platform-for-church-small-groups',
+    question: 'What is the best platform for church small groups and Bible study?',
+    category: 'For Pastors',
+    updated: '2026-09-26',
+    answer: 'There is no single best one — the honest question is which of four jobs you need done: midweek messaging, structured study, private prayer, or admin and giving. Most churches try to buy one tool for all four, and that is usually why it ends up unused.',
+    body: [
+      {
+        h: 'Separate the four jobs before you compare anything',
+        p: 'Midweek chatter is one job. Structured study — a plan, a passage, questions that carry over week to week — is another. Prayer that people would not post in a group chat is a third. Admin, rotas, check-in and giving is a fourth, and it is the one most "church platforms" are actually built around. Tools that are excellent at the fourth are often weak at the second, which is how a church ends up paying for software its small groups never open.',
+      },
+      {
+        h: 'What general-purpose tools do well, and where they stop',
+        p: 'Group messaging apps are free, everyone already has them, and nobody needs training — for reminders and quick coordination they are hard to beat. They stop at three points: conversation scrolls away, so a study thread is gone by the following week; there is no privacy boundary, so sensitive prayer sits in the same place as the rota; and there is no way for a newcomer to read quietly before joining in. Social network groups add reach but put your congregation\'s spiritual conversation inside an advertising business.',
+      },
+      {
+        h: 'What to actually check before committing',
+        p: 'Who can read prayer requests, and is that enforced by the database or by a promise in the marketing copy? What happens to everything your people wrote if you stop paying — can you export it? What does year two cost? How are minors handled? Does it work for the member who only has a phone and limited data? Ask those five in writing. The answers, and the willingness to give them, tell you more than any feature list.',
+      },
+      {
+        h: 'The adoption problem is bigger than the feature problem',
+        p: 'Almost every church that regrets a platform decision regrets it for the same reason: nobody used it. Assume that anything requiring a new account, a new app and a new habit will lose most of your congregation unless a leader is in there every week giving people a reason to return. Before buying, decide who that person is. If the answer is "the pastor, on top of everything else," look again at the page on being the only one leading.',
+      },
+      {
+        h: 'Where kinwove fits, honestly',
+        p: 'kinwove is built for the second and third jobs — Bible study, questions people are nervous to ask out loud, prayer, and sermon discussion that continues through the week. It is in free beta. It does not do check-in, rotas, childcare records or giving, and if those are your actual problem, a church management system is the right category and this is not it. It is also worth knowing it works for individuals, so a leader can try it alone before asking a congregation to sign up for anything.',
+      },
+    ],
+    scriptures: [
+      { ref: 'Acts 2:42', text: 'They devoted themselves to the apostles\' teaching and to fellowship, to the breaking of bread and to prayer.' },
+      { ref: 'Colossians 3:16', text: 'Let the message of Christ dwell among you richly as you teach and admonish one another with all wisdom.' },
+    ],
+    faqs: [
+      { q: 'Do we need paid software for small groups?', a: 'Often not. Plenty of thriving small groups run on a messaging thread and a printed study guide. Paid tools earn their place when you need privacy boundaries, content that persists, or study material you are not writing yourself.' },
+      { q: 'What is the difference between a church management system and a study platform?', a: 'A church management system is an administrative database — membership, giving, rotas, attendance. A study platform is where the spiritual conversation happens. Some products claim both; be sceptical about which half was built first and which was added to complete a feature grid.' },
+      { q: 'How do we get people to actually use it?', a: 'One named person posting into it every week, and a real reason to open it — a question people want to answer, a study that continues. Tools do not create habits; someone tending it does.' },
+      { q: 'What about churches with older congregations?', a: 'Anything digital has to be additive, never the only channel. If an announcement exists only online, part of your congregation does not have it — and the people most likely to need pastoral care are often the ones least likely to be there.' },
+    ],
+    related: ['does-my-church-need-an-app', 'how-do-we-organize-our-congregation-online', 'how-do-i-keep-my-congregation-engaged-between-sundays'],
+  },
+  {
+    slug: 'how-do-we-organize-our-congregation-online',
+    question: 'How do we organise our congregation online?',
+    category: 'For Pastors',
+    updated: '2026-09-26',
+    answer: 'Decide what has to reach everyone, what is a conversation, and what is private — then give each its own channel. Most church communication problems are one channel doing all three jobs, which is why announcements get missed and prayer requests end up somewhere they should not be.',
+    body: [
+      {
+        h: 'Three channels, not one',
+        p: 'Broadcast is anything that must reach everyone: service changes, closures, deaths. Conversation is the ongoing life of the church — study, questions, encouragement. Confidential is prayer and pastoral need. Collapse all three into one group chat and each undermines the others: the announcement is buried under conversation, and someone shares something private in front of two hundred people because it was the only place to say it.',
+      },
+      {
+        h: 'Broadcast should be boring and duplicated',
+        p: 'Use something with near-universal reach, keep the volume low enough that people still read it, and always duplicate offline for members who are not online — a notice sheet, a phone call rota. The test of a broadcast channel is whether an urgent message on a Saturday night actually lands. If you are not confident it would, it is not a broadcast channel.',
+      },
+      {
+        h: 'Conversation needs a reason to return',
+        p: 'This is where most church spaces die. A forum nobody posts in is worse than none, because the silence is visible. Conversation works when something recurring lives there — the sermon discussion each week, a study people are working through, a question worth answering. Someone has to tend it, and that should be a named person who is not the pastor if at all possible.',
+      },
+      {
+        h: 'Confidential needs a real boundary',
+        p: 'Prayer requests routinely contain health information, family breakdown, addiction and mental health. That deserves more than an honour system. Ask any tool you are considering who can technically read it — the answer for a normal group chat is everyone in the group, and for many platforms it is any administrator. Decide deliberately who that should be and tell your congregation plainly, because they are entitled to know before they type.',
+      },
+      {
+        h: 'Write the rules down once',
+        p: 'A short, public note on what goes where, who moderates, and what happens if someone is unkind, saves an enormous amount of pastoral repair later. Include what you do with people\'s data and how someone leaves. Churches routinely collect more personal information than they have any plan for.',
+      },
+    ],
+    scriptures: [
+      { ref: '1 Corinthians 14:40', text: 'But everything should be done in a fitting and orderly way.' },
+      { ref: 'Proverbs 11:13', text: 'A gossip betrays a confidence, but a trustworthy person keeps a secret.' },
+      { ref: 'Galatians 6:2', text: 'Carry each other\'s burdens, and in this way you will fulfill the law of Christ.' },
+    ],
+    faqs: [
+      { q: 'Is a group chat enough for a small church?', a: 'For a genuinely small congregation that already knows each other, often yes — for broadcast and conversation. The gap it leaves is confidential prayer, which most churches only notice after something private has been shared with everyone.' },
+      { q: 'Should the church have its own space or use social media?', a: 'Social platforms bring reach and cost nothing up front. The trade is that your congregation\'s spiritual conversation sits inside an advertising business, beside a feed designed to pull attention away, and you do not control who sees what.' },
+      { q: 'Who should moderate?', a: 'Not the pastor alone. Name two or three people, agree in advance what gets removed, and make sure someone other than the person being complained about can act.' },
+      { q: 'What about safeguarding and young people?', a: 'Any space including minors needs a policy before it opens — who has access, whether adults can message children directly, and how concerns are reported. If a platform cannot tell you how it handles this, that is an answer.' },
+    ],
+    related: ['best-platform-for-church-small-groups', 'church-discussion-board-for-congregations', 'does-my-church-need-an-app'],
+  },
+  {
+    slug: 'church-discussion-board-for-congregations',
+    question: 'How do we set up a discussion board for our congregation?',
+    category: 'For Pastors',
+    updated: '2026-09-26',
+    answer: 'The hard part is not setting one up, it is giving people a reason to post. Most church boards die within two months because they launched empty and general. The ones that survive are anchored to something recurring — usually the sermon — and tended by a named person.',
+    body: [
+      {
+        h: 'Why most church boards go quiet',
+        p: 'A board launches with a general invitation to discuss anything, which gives nobody a specific reason to be the first to speak. People look, see three posts from the pastor, and do not return. Silence then becomes self-reinforcing, because an empty board signals that nobody is there. The fix is not promotion; it is anchoring it to something that happens every week regardless.',
+      },
+      {
+        h: 'Anchor it to Sunday',
+        p: 'The sermon is the one thing your whole congregation shares and already has opinions about. A question posted from it each week — a real question, not a comprehension check — gives people something specific to answer. It also means the board is never empty, because there is new content whether or not anyone replies. Churches that report a working discussion space almost always describe some version of this.',
+      },
+      {
+        h: 'Someone has to tend it, and not the pastor',
+        p: 'Every living board has a person who reads everything, replies to the quiet contributors, and makes sure nobody\'s first post sits ignored. That is a real job of maybe twenty minutes a week. It should not default to the pastor: if the pastor is the only voice, it becomes a broadcast channel with a comment box, and members write for approval rather than to each other.',
+      },
+      {
+        h: 'Decide the rules before you need them',
+        p: 'Agree in advance what is out of bounds, who can remove a post, and how someone raises a concern about another member. Church boards tend to break on politics, on doctrinal disputes between members, and on one person posting far more than everyone else. All three are much easier to handle with a written norm to point at than as a judgement call about a specific person.',
+      },
+      {
+        h: 'Let people read without joining in',
+        p: 'The majority will never post, and that is normal rather than failure. Newcomers especially need to watch for weeks before they are ready to be visible — forcing an introduction post is one of the reliable ways to lose them. Judge it by whether people are reading and whether the ones who do post get answered, not by how many contribute.',
+      },
+      {
+        h: 'Where kinwove fits',
+        p: 'kinwove includes a sermon discussion space of exactly this shape — a question carried through the week, with the congregation able to answer and reply — plus a prayer wall and Bible study alongside it. It is in free beta. It is not a general-purpose forum with categories and threads, so if you want a traditional message board with sub-forums, that is a different kind of product.',
+      },
+    ],
+    scriptures: [
+      { ref: 'Proverbs 27:17', text: 'As iron sharpens iron, so one person sharpens another.' },
+      { ref: 'Acts 17:11', text: 'They received the message with great eagerness and examined the Scriptures every day to see if what Paul said was true.' },
+      { ref: 'Ephesians 4:29', text: 'Do not let any unwholesome talk come out of your mouths, but only what is helpful for building others up.' },
+    ],
+    faqs: [
+      { q: 'How many people do we need for a board to work?', a: 'Fewer than most expect — twenty engaged members can sustain a weekly conversation. What matters is consistency of the anchor post and someone replying, not headcount.' },
+      { q: 'What do we do about arguments?', a: 'Have a stated norm, act early and privately rather than publicly, and be willing to close a thread. Most church board conflicts are not really about the topic, and moving the conversation off the board and into a phone call usually resolves what replies will not.' },
+      { q: 'Should posting be anonymous?', a: 'An anonymous option lets people ask things they would never sign their name to, which is often where the real questions are. The trade-off is accountability, so most spaces that offer it keep it to specific areas such as prayer or questions rather than everywhere.' },
+      { q: 'Can we just use a Facebook group?', a: 'Many churches do, and the reach is genuine. The trade-offs are that not everyone has an account, the conversation sits next to an attention-optimised feed, and you do not own or control the space.' },
+    ],
+    related: ['how-do-we-organize-our-congregation-online', 'best-platform-for-church-small-groups', 'how-do-i-keep-my-congregation-engaged-between-sundays'],
+  },
+  {
+    slug: 'online-bible-study-platform-for-churches',
+    question: 'What should we look for in an online Bible study platform?',
+    category: 'For Pastors',
+    updated: '2026-09-26',
+    answer: 'Look at what it does when someone asks a hard question. Study tools are easy to compare on features and hard to compare on the thing that matters — whether a member with a real doubt gets a serious answer or a deflection that teaches them not to ask again.',
+    body: [
+      {
+        h: 'The feature list is the least useful comparison',
+        p: 'Every product in this category has reading plans, notes, highlights and a search. Those are table stakes and they look identical on a website. What separates them is editorial: which translations, whose commentary, what happens at the edges where Christians disagree, and whether the tool will admit uncertainty. None of that appears on a pricing page.',
+      },
+      {
+        h: 'Test it with the question your members actually have',
+        p: 'Before deciding, put a genuinely hard question into whatever you are evaluating. Did Judas go to heaven. Why does Genesis 1 not match Genesis 2. Why did God command what he commanded in Joshua. A tool that hands back confident certainty where the church has argued for centuries will eventually embarrass you in front of a member who knows better. One that says "Christians differ here, and this is why" is safe to put in front of a congregation.',
+      },
+      {
+        h: 'Ask where the answers come from',
+        p: 'If a platform uses AI — most new ones do — ask what it is grounded in, whether it cites what it draws on, and what it does when it does not know. AI that fabricates a plausible-sounding commentary attribution is worse than no AI, because it is wrong in a register that sounds authoritative. Ask also whether a member\'s conversations are private from church staff, and be clear with your congregation either way.',
+      },
+      {
+        h: 'Consider who it is for',
+        p: 'Tools built for seminary-trained users assume vocabulary most congregations do not have. Tools built for daily devotion often cannot go deep enough for someone in real difficulty. Be honest about which of your people you are buying for — and whether the sceptic, the new believer and the forty-year member can all use the same thing.',
+      },
+      {
+        h: 'What kinwove does and does not do',
+        p: 'kinwove is built around asking: tap any verse for a plain explanation, the historical context, cross-references, the underlying Hebrew or Greek, or a comparison of translations, and ask follow-up questions in plain language. It answers honestly where Christians disagree and says when it does not know, which is the test above. It is in free beta. It has no curriculum library, no video content and no group-admin tooling, so a church wanting a packaged course to run on a projector is better served elsewhere.',
+      },
+    ],
+    scriptures: [
+      { ref: '2 Timothy 2:15', text: 'Do your best to present yourself to God as one approved, a worker who does not need to be ashamed and who correctly handles the word of truth.' },
+      { ref: 'Acts 8:30–31', text: '"Do you understand what you are reading?" "How can I," he said, "unless someone explains it to me?"' },
+      { ref: 'Nehemiah 8:8', text: 'They read from the Book of the Law of God, making it clear and giving the meaning so that the people understood what was being read.' },
+    ],
+    faqs: [
+      { q: 'Is it safe to let AI answer Bible questions?', a: 'It depends entirely on how it behaves at the limits. The risks are confident invention and flattening genuine disagreement into one answer. Test it with a contested question before putting it in front of your congregation, and prefer tools that cite and that will say they do not know.' },
+      { q: 'Will this replace our in-person study?', a: 'It should not, and the good ones do not try. What a tool adds is the six days between meetings — the question someone has on Wednesday that will be forgotten by the next gathering.' },
+      { q: 'What about members who ask things they would not say in group?', a: 'That is the strongest argument for having one. A great deal of honest doubt never gets voiced in a room, and a private place to ask often surfaces what pastoral conversation never reaches.' },
+      { q: 'How much should this cost?', a: 'The range runs from free to per-seat subscriptions. Judge it on whether members will actually use it — an unused paid platform is the most common outcome in this category, and it is not primarily a pricing failure.' },
+    ],
+    related: ['best-platform-for-church-small-groups', 'should-my-church-use-ai', 'church-discussion-board-for-congregations'],
+  },
 ];
 
 export const ANSWERS_BY_SLUG = Object.fromEntries(ANSWERS.map((a) => [a.slug, a]));
