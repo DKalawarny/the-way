@@ -239,6 +239,10 @@ export const ANSWERS = [
 
   {
     slug: 'is-jesus-really-god',
+    // Reciprocal half of the hreflang pair with content/answers-fa.js. Without
+    // it the Farsi page points here and gets nothing back, and Google treats
+    // the two as unrelated pages rather than translations of one another.
+    translations: ['fa'],
     question: `Is Jesus really God?`,
     category: 'Jesus Christ',
     updated: '2026-07-06',
@@ -2118,13 +2122,21 @@ function esc(s) {
 const SITE = 'https://www.kinwove.com';
 const HEAD_FONT = "Georgia,'Times New Roman',serif";
 
-function shell({ title, description, canonical, jsonLd, bodyHtml }) {
-  return `<!doctype html><html lang="en"><head>
+function shell({ title, description, canonical, jsonLd, bodyHtml, lang = 'en', dir = 'ltr', alternates = [] }) {
+  // hreflang pairs must be RECIPROCAL — each page has to point at the other and
+  // at itself — or Google treats them as unrelated duplicates rather than
+  // translations of one another. Callers pass the full set, their own URL
+  // included.
+  const altTags = alternates
+    .map((x) => `<link rel="alternate" hreflang="${esc(x.lang)}" href="${esc(x.href)}">`)
+    .join('\n');
+  return `<!doctype html><html lang="${esc(lang)}" dir="${esc(dir)}"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title>
 <meta name="description" content="${esc(description)}">
 <link rel="canonical" href="${esc(canonical)}">
+${altTags}
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
 <meta property="og:type" content="article">
 <meta property="og:title" content="${esc(title)}">
@@ -2253,8 +2265,21 @@ export function renderForChurchesPage() {
   return shell({ title, description, canonical, jsonLd, bodyHtml });
 }
 
-export function renderAnswerPage(a) {
-  const canonical = `${SITE}/answers/${a.slug}`;
+export function renderAnswerPage(a, lang = 'en') {
+  // A translated page lives at /<lang>/answers/<slug> and is its OWN canonical.
+  // Pointing it at the English URL would ask Google to drop it, which defeats
+  // the point of translating it at all.
+  const isTranslated = lang !== 'en';
+  const canonical = isTranslated ? `${SITE}/${lang}/answers/${a.slug}` : `${SITE}/answers/${a.slug}`;
+  const alternates = (isTranslated || (a.translations ?? []).length)
+    ? [
+        { lang: 'en', href: `${SITE}/answers/${a.source ?? a.slug}` },
+        ...(isTranslated
+          ? [{ lang, href: `${SITE}/${lang}/answers/${a.slug}` }]
+          : (a.translations ?? []).map((t) => ({ lang: t, href: `${SITE}/${t}/answers/${a.slug}` }))),
+        { lang: 'x-default', href: `${SITE}/answers/${a.source ?? a.slug}` },
+      ]
+    : [];
   const askUrl = `${SITE}/?q=${encodeURIComponent(a.question)}`;
   const jsonLd = [
     {
@@ -2304,6 +2329,7 @@ export function renderAnswerPage(a) {
     title: `${a.question} | kinwove`,
     description: a.answer.slice(0, 155),
     canonical, jsonLd, bodyHtml,
+    lang, dir: a.dir ?? 'ltr', alternates,
   });
 }
 

@@ -11,6 +11,10 @@ import http2 from 'node:http2';
 import Anthropic from '@anthropic-ai/sdk';
 import webpush from 'web-push';
 import { getDailyVerse } from './src/dailyVerse.js';
+import { ANSWERS_FA_BY_SLUG } from './content/answers-fa.js';
+// Same table the /:lang/answers route serves. Declared here because the route
+// lives in the static-serving block and the sitemap builder does not.
+const TRANSLATED = { fa: ANSWERS_FA_BY_SLUG };
 import { ANSWERS, ANSWERS_BY_SLUG, renderAnswerPage, renderAnswerIndex, renderForChurchesPage } from './content/answers.js';
 import { PLAN_LIMITS, churchHasAccess, TRIAL_DAYS, effectivePersonalPlan } from './src/planConfig.js';
 import { isCrisisMessage } from './src/safetyPatterns.js';
@@ -6135,6 +6139,11 @@ if (process.env.NODE_ENV !== 'development') {
       `<url><loc>${host}/answers</loc><changefreq>weekly</changefreq><priority>0.9</priority><lastmod>${today}</lastmod></url>`,
       ...ANSWERS.map((a) =>
         `<url><loc>${host}/answers/${escapeXml(a.slug)}</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>${escapeXml(a.updated)}</lastmod></url>`),
+      // Translated pages are distinct URLs with their own canonical, so they
+      // belong in the sitemap in their own right.
+      ...Object.entries(TRANSLATED).flatMap(([lang, table]) =>
+        Object.keys(table).map((slug) =>
+          `<url><loc>${host}/${lang}/answers/${escapeXml(slug)}</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>${today}</lastmod></url>`)),
     ];
 
     // Shared conversations are deliberately NOT listed. They are noindex now
@@ -6273,6 +6282,17 @@ ${entries.join('\n')}
     } catch {
       res.sendFile(path.join(distPath, '..', 'public', 'llms.txt'));
     }
+  });
+
+  // ── Translated answers — /:lang/answers/:slug ───────────────────────────────
+  // Farsi first: Iran was the largest gap in the language list, and a real
+  // logged-out visitor asked about leaving Islam for Jesus. Translations live in
+  // their own table rather than as a `lang` field on ANSWERS, so an untranslated
+  // page can never accidentally be served as though it had been translated.
+  app.get('/:lang/answers/:slug', (req, res, next) => {
+    const a = TRANSLATED[req.params.lang]?.[req.params.slug];
+    if (!a) return next();          // fall through to the SPA rather than 404
+    res.type('html').send(renderAnswerPage(a, req.params.lang));
   });
 
   // ── Answers library — crawlable, GEO-optimized faith-question pages ──────────
