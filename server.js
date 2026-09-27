@@ -2319,7 +2319,7 @@ function nudgeEmailHtml(unsubUrl) {
   // sold: plain English you can read three times and still not be sure of.
   return emailWrap(`
     <h1 style="font-size:24px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">You probably never got to the good part.</h1>
-    <p style="font-size:16px;line-height:1.7;color:#5A4733">Hi, it's Danny. You made a kinwove account a while back, and I don't think you ever got to the part it's actually for. That's fair — it asked you for a pile of things before it showed you anything worth having.</p>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733">Hi, it's Danny. You made a kinwove account a while back, and I don't think you ever got to the part it's actually for — or maybe you asked it one thing and never came back. That's fair. It asked you for a pile of things before it showed you anything worth having.</p>
     <p style="font-size:16px;line-height:1.7;color:#5A4733">Here's what was behind it. You're reading a chapter, and one verse doesn't sit right. You tap it:</p>
 
     <img src="https://www.kinwove.com/email/verse-card.png" width="416" height="613" alt="Matthew 5 in the kinwove reader, verse 3 tapped — Explain simply, Historical context, Cross-references, Original Greek, Compare versions" style="display:block;width:100%;max-width:416px;height:auto;border:0;outline:none;text-decoration:none;margin:24px 0 10px;border-radius:14px">
@@ -2348,6 +2348,7 @@ function nudgeEmailHtml(unsubUrl) {
     <p style="font-size:16px;line-height:1.7;color:#5A4733">It's for the verses you read three times and still don't get. Or two passages that seem to contradict each other — honour your father and mother, then hate them — and you want to know how both are meant. Or whether “pluck out your eye,” further down this same chapter, was meant literally.</p>
     <p style="font-size:16px;line-height:1.7;color:#5A4733">You can debate it, and it holds its ground instead of folding the moment you push back. It takes the questions you wouldn't say out loud in a church, and it says “I don't know” when it doesn't know.</p>
     <p style="font-size:16px;line-height:1.7;color:#5A4733"><strong>It's free while we're in beta</strong>, and your account already works — nothing left to set up. Give it a try and tell me what you think; just reply, it comes straight to me.</p>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733">And if you came here once carrying something hard, it's still here for that too — whenever, or not at all. This isn't a sequence; I'm not going to keep turning up in your inbox about it.</p>
     ${btnHtml('Open the Bible', 'https://www.kinwove.com/?utm_source=nudge&utm_medium=email')}
     <p style="font-size:14px;line-height:1.6;color:#9C7B5E">And if it turns out not to be for you, that's genuinely fine — <a href="${unsubUrl}" style="color:#B8733A">unsubscribe here</a> and I won't write again.</p>
   `);
