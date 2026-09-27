@@ -2318,8 +2318,8 @@ function nudgeEmailHtml(unsubUrl) {
   // Matthew 5:3 because "poor in spirit" is the archetype of the problem being
   // sold: plain English you can read three times and still not be sure of.
   return emailWrap(`
-    <h1 style="font-size:24px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">You stopped one screen before the good part.</h1>
-    <p style="font-size:16px;line-height:1.7;color:#5A4733">Hi, it's Danny. You made a kinwove account and stopped at the setup screen — which is fair, because it asked you for a pile of things before it showed you anything.</p>
+    <h1 style="font-size:24px;font-weight:600;margin:0 0 16px;letter-spacing:-0.02em;color:#2C1810">You probably never got to the good part.</h1>
+    <p style="font-size:16px;line-height:1.7;color:#5A4733">Hi, it's Danny. You made a kinwove account a while back, and I don't think you ever got to the part it's actually for. That's fair — it asked you for a pile of things before it showed you anything worth having.</p>
     <p style="font-size:16px;line-height:1.7;color:#5A4733">Here's what was behind it. You're reading a chapter, and one verse doesn't sit right. You tap it:</p>
 
     <img src="https://www.kinwove.com/email/verse-card.png" width="416" height="613" alt="Matthew 5 in the kinwove reader, verse 3 tapped — Explain simply, Historical context, Cross-references, Original Greek, Compare versions" style="display:block;width:100%;max-width:416px;height:auto;border:0;outline:none;text-decoration:none;margin:24px 0 10px;border-radius:14px">
@@ -2692,7 +2692,14 @@ app.post('/api/cron/nudge-incomplete', async (req, res) => {
       .then((x) => x.json()).then((j) => j.users ?? []);
     const profiles = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=id,email_opt_out`, { headers: h })
       .then((x) => x.json());
-    const haveProfile = new Set((Array.isArray(profiles) ? profiles : []).map((p) => p.id));
+    const rows = Array.isArray(profiles) ? profiles : [];
+    const haveProfile = new Set(rows.map((p) => p.id));
+    // 🔴 THE OPT-OUT GUARD. Until now this route only ever targeted accounts
+    // with NO profiles row, so opt-out could not apply and was never checked.
+    // ?audience=all changes that: three real people have set email_opt_out and
+    // would receive mail they explicitly refused. Not a preference — under CASL
+    // an unsubscribe must be honoured, and the penalties reach individuals.
+    const optedOut = new Set(rows.filter((p) => p.email_opt_out).map((p) => p.id));
     // ?preview=<email> sends ONE copy to any existing account, cohort or not,
     // so the email can be proof-read in a real inbox. Daniel's own address has
     // a profiles row, so it is not in the abandoned cohort and ?only= can never
@@ -2711,10 +2718,25 @@ app.post('/api/cron/nudge-incomplete', async (req, res) => {
     // account that is genuinely in the incomplete cohort, so it cannot be used
     // to mail an arbitrary address.
     const only = (req.query.only ?? '').trim().toLowerCase();
-    incomplete = users.filter((u) =>
-      !haveProfile.has(u.id) && u.email && (only
-        ? u.email.toLowerCase() === only
-        : (u.created_at >= since && u.created_at <= after)));
+
+    // ?audience=all reaches everyone who signed up, not just the people who
+    // quit at setup. Daniel: "we dont need custome ones just send them."
+    // Excluded regardless of audience, and deliberately:
+    //   • anyone who opted out — see above
+    //   • the demo accounts — fake people on our own domain
+    //   • hello@kinwove.com — the system account; it would mail itself
+    const everyone = req.query.audience === 'all';
+    const excluded = (u) =>
+      optedOut.has(u.id)
+      || /^demo\..*@kinwove\.com$/i.test(u.email ?? '')
+      || (u.email ?? '').toLowerCase() === 'hello@kinwove.com';
+
+    incomplete = users.filter((u) => {
+      if (!u.email || excluded(u)) return false;
+      if (only) return u.email.toLowerCase() === only;
+      if (everyone) return true;
+      return !haveProfile.has(u.id) && u.created_at >= since && u.created_at <= after;
+    });
     }
   } catch (e) {
     console.error('[nudge-incomplete] lookup:', e?.message);
