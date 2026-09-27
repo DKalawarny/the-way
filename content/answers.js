@@ -2299,9 +2299,20 @@ export function renderAnswerPage(a, lang = 'en') {
     },
   ];
   const related = a.related.map((s) => ANSWERS_BY_SLUG[s]).filter(Boolean);
+  // Translation notice. Rendered ONLY when the translation supplies its own
+  // wording — never auto-generated in English, which would be useless to the
+  // reader it is meant to warn.
+  const noticeHtml = a.notice
+    ? `<aside style="border:1px solid #E8D5BB;background:#FDF8F0;border-radius:10px;padding:14px 16px;margin:0 0 26px;font-size:14px;line-height:1.85;color:#5A4733">`
+      + a.notice.lines.map((l) => `<div>${esc(l)}</div>`).join('')
+      + `<div style="margin-top:8px"><a href="${SITE}/answers/${esc(a.source ?? a.slug)}" style="color:#B8733A">${esc(a.notice.linkLabel)}</a></div>`
+      + `</aside>`
+    : '';
+
   const bodyHtml = `
     <div class="cat">${esc(a.category)}</div>
     <h1>${esc(a.question)}</h1>
+    ${noticeHtml}
     <div class="answer">${esc(a.answer)}</div>
     ${a.body.map((s) => `<h2>${esc(s.h)}</h2><p>${esc(s.p)}</p>`).join('')}
     ${a.scriptures.map((s) => `<blockquote>${esc(s.text)}<span class="ref">— ${esc(s.ref)}</span></blockquote>`).join('')}

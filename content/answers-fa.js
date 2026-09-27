@@ -51,6 +51,18 @@ export const ANSWERS_FA = [
       { q: 'اگر مطمئن نیستم او خداست، آیا می‌توانم پیرو او باشم؟', a: 'بسیاری پیش از آنکه به یقین برسند، پیروی و جست‌وجو را آغاز می‌کنند. ایمان اغلب در طول راه رشد می‌کند، نه پیش از آنکه به راه بیفتید.' },
     ],
     related: [],
+    // Shown at the top of the page, in Farsi, because there is no Persian
+    // reviewer on this project and the reader is entitled to know that before
+    // they trust a word of it. Daniel: "put a disclaimer about translations
+    // could be off... i dont have anyone in farsi." Round-trip checked like
+    // everything else here.
+    notice: {
+      lines: [
+        'این صفحه از انگلیسی ترجمه شده و هنوز به‌دست یک فارسی‌زبان بازبینی نشده است. ممکن است در ترجمه خطا یا نارسایی وجود داشته باشد.',
+        'آیات کتاب مقدس در این صفحه برگردانی از متن انگلیسی است، نه نقل‌قول از یک ترجمهٔ شناخته‌شدهٔ فارسی.',
+      ],
+      linkLabel: 'خواندن متن اصلی انگلیسی',
+    },
     // The English page this was translated from. Used for the hreflang pair and
     // so a reader can reach the source.
     source: 'is-jesus-really-god',
