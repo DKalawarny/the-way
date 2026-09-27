@@ -1592,6 +1592,337 @@ export const ANSWERS = [
     ],
     related: ['why-should-i-go-to-church', 'how-do-i-find-a-church', 'does-god-love-me'],
   },
+  // ── Added 2026-09-26 — the church side ─────────────────────────────────────
+  // Two kinds here. The leader-pain and sermon-craft pages come from qa_events:
+  // three separate people described burning out or being hurt while leading,
+  // and two asked for real sermon help. The adoption pages are Daniel's call —
+  // "maybe someone comes across it and wants to sign up passively" — and he is
+  // right that a page nobody wrote cannot be stumbled on.
+  //
+  // ⚠️ NOTE ON VOICE. These are written FOR the pastor, not ABOUT them, and the
+  // existing pastor pages are all about caring for somebody else. Nothing here
+  // tells a hurting leader to try harder.
+  {
+    slug: 'what-do-i-do-when-im-the-pastor-who-is-burned-out',
+    question: "What do I do when I'm the pastor who's burned out?",
+    category: 'For Pastors',
+    updated: '2026-09-26',
+    answer: 'Stop treating it as a spiritual failure first. Burnout in ministry is usually a load problem, not a faith problem — too many roles, no day off that holds, and nobody pastoring you. The first move is telling one person the truth, before deciding anything bigger.',
+    body: [
+      {
+        h: 'It is not a sign you were never called',
+        p: 'The first thing most burned-out pastors reach for is the possibility that they were wrong about all of it. That is worth naming because it is so common and so rarely true. Exhaustion is a poor witness in its own trial — it argues that everything was always false, using evidence it collected while depleted. Elijah asked to die immediately after the most public victory of his life. What God sent first was food and sleep, twice, before any conversation.',
+      },
+      {
+        h: 'The load is usually the actual problem',
+        p: 'Small-church ministry quietly becomes six jobs: preaching, counselling, admin, facilities, finance, and being publicly cheerful about it. Any one of those is a role. Together they are unsustainable no matter how strong the calling, and the sustainability question is separate from the calling question. Before deciding whether to leave, it is worth writing down every actual task of the last month. Most pastors are shocked by the list, and it reframes the problem from "what is wrong with me" to "what would be wrong with anyone doing this."',
+      },
+      {
+        h: 'Nobody is pastoring you',
+        p: 'This is the part that makes ministry burnout different. The person the congregation brings its worst weeks to has, very often, nowhere to bring their own. You cannot be pastored by the people you pastor — the roles will not hold it. That means it has to come from outside: another pastor in a different town, a spiritual director, a counsellor, a denominational contact if you have one. Not a friend inside the congregation, however close. That arrangement fails for both of you.',
+      },
+      {
+        h: 'What to do this week',
+        p: 'Tell one person outside your church the unedited version. Not a prayer-request version. If you are having thoughts of ending your life, treat that as urgent and tell someone today — a doctor, a crisis line, someone who can sit with you. Then, if you can, take a real day off with your phone somewhere else, and notice how strongly you resist it. That resistance is information about how far this has gone.',
+      },
+      {
+        h: 'Leaving is a legitimate option, but not this week',
+        p: 'Some pastors do need to leave a post, and some need to leave vocational ministry, and neither is a betrayal. But exhaustion is a bad chair to make that decision from. The usual counsel is to get rest and outside support in place first, and revisit it clear-headed. The decision made when you are slept and supported is the one worth trusting.',
+      },
+    ],
+    scriptures: [
+      { ref: '1 Kings 19:5–7', text: 'All at once an angel touched him and said, "Get up and eat."... "Get up and eat, for the journey is too much for you."' },
+      { ref: 'Exodus 18:17–18', text: 'What you are doing is not good. You and these people who come to you will only wear yourselves out. The work is too heavy for you; you cannot handle it alone.' },
+      { ref: 'Matthew 11:28–29', text: 'Come to me, all you who are weary and burdened, and I will give you rest.' },
+      { ref: 'Mark 6:31', text: 'Come with me by yourselves to a quiet place and get some rest.' },
+    ],
+    faqs: [
+      { q: 'Is burnout a sin or a lack of faith?', a: 'No. Scripture shows exhausted leaders — Moses, Elijah, Jeremiah, Paul describing being "under great pressure, far beyond our ability to endure." In every case the response is provision and help, not rebuke. Jethro\'s advice to Moses is essentially an organisational restructure.' },
+      { q: 'Should I tell my elders or my congregation?', a: 'Usually elders or whoever you are accountable to, first, and in a form you control. Congregations vary enormously in how they receive this. If there is any chance the information will be used against you, get outside counsel before disclosing anything.' },
+      { q: 'How do I take a sabbath when Sunday is a work day?', a: 'Pick a different fixed day and defend it like an appointment, because that is what it is. The common failure is leaving it flexible — a flexible day off is absorbed within about three weeks.' },
+      { q: 'What if I cannot afford to take time off?', a: 'Many pastors cannot, and pretending otherwise is useless. Then the realistic move is subtraction: what can be dropped, delegated badly, or done to a lower standard for three months. Something is going to give. It is better for that to be a choice than a collapse.' },
+    ],
+    related: ['i-was-hurt-serving-in-church-leadership', 'what-does-the-bible-say-about-rest', 'what-does-the-bible-say-about-depression'],
+  },
+  {
+    slug: 'i-was-hurt-serving-in-church-leadership',
+    question: 'What if I was hurt while serving in church leadership?',
+    category: 'For Pastors',
+    updated: '2026-09-26',
+    answer: 'It is a particular kind of injury: the place you served became the place that hurt you, so the usual source of comfort is the wound. That is not fragility. Leaders get criticised in ways members never see, and often have nowhere to say so.',
+    body: [
+      {
+        h: 'Why this one cuts differently',
+        p: 'When someone is hurt at work, church is often where they go to recover. When you are hurt at church while leading it, that route closes — the community, the building, the songs and the people are all inside the injury. Add that most of the criticism arrived about you rather than to you, and that you were expected to keep leading worship the following Sunday as though none of it had happened.',
+      },
+      {
+        h: 'What you are not allowed to say out loud',
+        p: 'Leaders absorb things they cannot repeat. You know why a family really left. You were told something in confidence that was about you. You heard the meeting-after-the-meeting. Carrying information you cannot discharge is its own weight, and it is one of the reasons leadership hurt lingers longer than it seems it should.',
+      },
+      {
+        h: 'Some of it was ordinary, some was not',
+        p: 'Worth separating honestly, because the response differs. Ordinary hardship: people leaving, disagreement, criticism of a decision, the loneliness of the role. Not ordinary: being bullied, having your character attacked, financial pressure tied to compliance, being pushed out without process, or being told that submission meant silence. The first is the cost of the work. The second is abuse and should be named as such, not spiritualised into a lesson.',
+      },
+      {
+        h: 'You are allowed to step back',
+        p: 'Stepping down from a role is not stepping away from God, and you do not need to have forgiven everyone before you are permitted to rest. Forgiveness in the Bible is not the same as returning to the arrangement that injured you, and it is not a prerequisite for getting out of it. Reconciliation takes two; you only ever controlled your half.',
+      },
+      {
+        h: 'Coming back, if you ever want to',
+        p: 'Some people return to leadership, some to a pew somewhere else, some take years. All of those are real outcomes. If you do try again, it is reasonable to ask blunt questions first — who holds the leaders accountable, what happens when someone disagrees, can a person step down without being punished for it. You have earned the right to ask.',
+      },
+    ],
+    scriptures: [
+      { ref: 'Psalm 55:12–14', text: 'If an enemy were insulting me, I could endure it... But it is you, a man like myself, my companion, my close friend, with whom I once enjoyed sweet fellowship at the house of God.' },
+      { ref: '2 Corinthians 1:8', text: 'We were under great pressure, far beyond our ability to endure, so that we despaired of life itself.' },
+      { ref: '2 Timothy 4:16', text: 'At my first defense, no one came to my support, but everyone deserted me. May it not be held against them.' },
+    ],
+    faqs: [
+      { q: 'Am I bitter for still being angry about it?', a: 'Anger at genuine wrong is not bitterness — Scripture is full of it, most of the Psalms included. Bitterness is a direction it can settle into over years. Being angry about something that actually happened, recently, is just accurate.' },
+      { q: 'Do I have to forgive the people who did this?', a: 'Christians are called to forgive, and it is worth saying clearly that forgiveness is not pretending it was acceptable, not resuming the relationship, and not a switch you can throw on command. It is usually slow, and it does not require the other person to have access to you.' },
+      { q: 'Should I warn the next church about what happened?', a: 'If there was misconduct affecting others — especially anything involving safeguarding — reporting it is a responsibility, not gossip. If it was conflict and hurt without misconduct, most counsellors advise dealing with it in a safe setting first rather than carrying the case forward.' },
+      { q: 'Can I still love God if I cannot walk into a church?', a: 'Yes. Plenty of people have done their most honest praying in exactly that stretch. The building is not the relationship, and God is not standing behind the people who hurt you.' },
+    ],
+    related: ['what-do-i-do-when-im-the-pastor-who-is-burned-out', 'what-if-church-hurt-you', 'how-do-i-forgive-someone-who-hurt-me'],
+  },
+  {
+    slug: 'im-the-only-one-leading-my-church',
+    question: "What if I'm the only one leading, with no team and no support?",
+    category: 'For Pastors',
+    updated: '2026-09-26',
+    answer: 'Most churches are small and most pastors are doing several jobs at once — often bivocational, frequently unpaid. The trap is measuring a one-person church against a resourced one with staff. Sustainability, not scale, is the thing to solve first, and it starts with deciding what is allowed to be done badly.',
+    body: [
+      {
+        h: 'You are the norm, not the exception',
+        p: 'Media attention goes to large churches, so solo pastors often assume they are failing at something everyone else has worked out. Most congregations worldwide are small, and most of the people leading them are doing it alongside other work, with no staff. The model in your head — a team, a budget, a building manager — describes a minority of churches.',
+      },
+      {
+        h: 'Decide what is allowed to be done badly',
+        p: 'One person cannot do six roles well, and trying is how the whole thing ends. The useful exercise is deciding in advance which things are done properly and which are done to a lower standard on purpose. Perhaps the preaching and the visiting are protected, and the newsletter goes out late, the social media stops, and the building fund waits. Naming it as a decision keeps it from becoming a private sense of failure.',
+      },
+      {
+        h: 'Delegate badly rather than not at all',
+        p: 'Solo leaders often hold on because nobody else will do it to the standard they would. That reasoning ends in one exhausted person doing everything. A volunteer doing a task at seventy per cent is a genuine gain, and the drop in quality is usually less visible to everyone else than it is to you. It also gives people a stake, which is how churches grow leaders.',
+      },
+      {
+        h: 'Find one peer outside your church',
+        p: 'The single most protective factor solo pastors report is one other pastor to talk to — someone with no stake in your congregation. A monthly call is enough. Denominational networks, local ministerial associations and online groups exist for this, and if none is available near you, pastors in other towns are usually glad to be asked.',
+      },
+    ],
+    scriptures: [
+      { ref: 'Exodus 18:21–22', text: 'Select capable men... and appoint them as officials... That will make your load lighter, because they will share it with you.' },
+      { ref: 'Ecclesiastes 4:9–10', text: 'Two are better than one... If either of them falls down, one can help the other up. But pity anyone who falls and has no one to help them up.' },
+      { ref: 'Zechariah 4:10', text: 'Who dares despise the day of small things?' },
+    ],
+    faqs: [
+      { q: 'Is a small church a failing church?', a: 'Nothing in the New Testament measures a church by size. The letters are written to house churches. Faithfulness, care and truth are the measures used; attendance is not one of them.' },
+      { q: 'How do I lead when I also work another job?', a: 'Bivocational ministry has a long history — Paul made tents. It usually means fewer commitments held properly rather than many held loosely, and being honest with the congregation about what you can and cannot do.' },
+      { q: 'What if my congregation expects more than I can give?', a: 'Expectations that are never discussed tend to grow. Stating plainly what is realistic, ideally with elders or leaders present, is usually better received than pastors fear — and it gives people the chance to step up.' },
+    ],
+    related: ['what-do-i-do-when-im-the-pastor-who-is-burned-out', 'how-do-i-keep-my-congregation-engaged-between-sundays', 'what-does-the-bible-say-about-rest'],
+  },
+  {
+    slug: 'how-do-i-preach-on-lament-without-losing-hope',
+    question: 'How do I preach on lament without losing hope?',
+    category: 'For Pastors',
+    updated: '2026-09-26',
+    answer: "Let the lament be as long as the text makes it. Most sermons on grief rush to resolution in the last five minutes, which teaches people their sorrow is a stage to get through. The Bible's laments sit in it — and one of them never resolves at all.",
+    body: [
+      {
+        h: 'The pressure to resolve is the problem',
+        p: 'Preachers feel it acutely: you cannot send people home in despair. So the sermon spends twenty minutes on the pain and five on the hope, and the five minutes carry all the weight. What the congregation actually hears is that grief is the setup and comfort is the point — so anyone still in the grief a year later concludes they are doing it wrong.',
+      },
+      {
+        h: 'Psalm 88 is the permission slip',
+        p: 'Psalm 88 is in the Bible and it does not turn. It ends with darkness as the psalmist\'s closest friend. No resolution, no "but yet." That psalm is a pastoral gift precisely because someone decided it belonged in the book of prayers. Preaching it as written — without patching the ending — tells people their unresolved season is not outside the life of faith.',
+      },
+      {
+        h: 'Where the turn belongs, when there is one',
+        p: 'Most laments do turn, and the turn is worth showing rather than asserting. In Psalm 13 the shift comes after four verses of "how long"; in Lamentations 3 the famous line about mercies new every morning sits in the middle of a book about a destroyed city, surrounded on both sides by grief. Show the structure. Hope that is earned by the text lands differently from hope bolted on because the service has to end.',
+      },
+      {
+        h: 'Practical moves in the room',
+        p: 'Say plainly that some people present are in this today and are not being asked to feel better by the end. Use the text\'s own words rather than paraphrasing the pain into something milder. Resist illustrations where the grief gets fixed. If you pray at the close, pray the lament too, not only the hope — congregations learn what is permitted by what gets prayed aloud.',
+      },
+      {
+        h: 'And for the preacher',
+        p: 'Pastors often preach lament while in it. That can be the most honest sermon a congregation hears, and it can also be more than you can carry from the front. It is legitimate to preach this text in a season when you cannot say the hopeful part with full conviction — the text says it for you, which is part of why it was written down.',
+      },
+    ],
+    scriptures: [
+      { ref: 'Psalm 88:18', text: 'You have taken from me friend and neighbor — darkness is my closest friend.' },
+      { ref: 'Psalm 13:1–2', text: 'How long, Lord? Will you forget me forever? How long will you hide your face from me?' },
+      { ref: 'Lamentations 3:22–23', text: "Because of the Lord's great love we are not consumed, for his compassions never fail. They are new every morning." },
+      { ref: 'John 11:35', text: 'Jesus wept.' },
+    ],
+    faqs: [
+      { q: 'Is it wrong to end a sermon without resolution?', a: 'Not if the text does. Psalm 88 ends in darkness, and preaching it honestly may be the most comforting thing a grieving person hears that year — because it tells them Scripture has a category for where they are.' },
+      { q: 'How much of my own grief should I share?', a: 'Enough to be honest, not so much that the congregation ends up caring for you from the pews. A useful test: are you telling them about a wound, or bleeding on them? Processed pain preaches; raw pain usually needs somewhere else first.' },
+      { q: 'What about people who need hope right now?', a: 'They still get it — hope that has taken the loss seriously is sturdier than hope that skipped it. What honest lament removes is the pressure to perform recovery on someone else\'s schedule.' },
+      { q: 'Should lament ever be part of a normal Sunday?', a: 'Many pastors argue it should be, precisely so that grief is not reserved for funerals. Congregations that only ever sing triumph give people nothing to say to God on the worst week of their lives.' },
+    ],
+    related: ['what-does-the-bible-say-about-grief', 'where-do-i-find-sermon-illustrations', 'what-do-i-do-when-im-the-pastor-who-is-burned-out'],
+  },
+  {
+    slug: 'where-do-i-find-sermon-illustrations',
+    question: "Where do I find sermon illustrations that don't feel canned?",
+    category: 'For Pastors',
+    updated: '2026-09-26',
+    answer: 'The recycled ones — the starfish, the footprints, the drowning man refusing three rescues — fail because the congregation has heard them. Better sources are close at hand: the text itself, your own week, the work your people actually do, and history that is specific enough to be surprising.',
+    body: [
+      {
+        h: 'Why the famous ones stopped working',
+        p: 'An illustration works by making an abstract claim concrete and slightly surprising. The circulated classics have lost the surprise — many in your congregation have heard them from two other preachers — and a recognised illustration signals that the sermon came from a file rather than from wrestling with the passage. That signal costs more than the illustration gains.',
+      },
+      {
+        h: 'Four sources that stay fresh',
+        p: 'Your own week, told small and without a hero: the argument in the kitchen, the thing you got wrong on Tuesday. The work your congregation actually does — nurses, tradespeople, teachers, carers all have processes that map onto grace, patience and repair, and using them tells people their working life is visible from the pulpit. History specific enough to be strange rather than the same three anecdotes. And the Bible itself: the surrounding narrative is usually a better illustration of the doctrine than anything imported.',
+      },
+      {
+        h: 'Make it carry one thing',
+        p: 'The common failure is an illustration that is more interesting than the point, so people remember the story and not the claim. Test it by asking what a listener would say the sermon was about if they only remembered this. If the answer is the story, it needs shortening or cutting.',
+      },
+      {
+        h: 'Using AI for this honestly',
+        p: 'A model is useful for the first stage — analogies you have not thought of, historical examples to go and verify, a way into a passage you have preached too often. It is not a source of facts. Anything specific it hands you (a date, a study, a quotation, a moving story about a named person) has to be checked before it goes in front of people, because fabricated detail in a sermon is a real cost to your credibility. Using it as a thinking partner is fine; using it as a research assistant without verification is not.',
+      },
+    ],
+    scriptures: [
+      { ref: 'Matthew 13:34', text: 'Jesus spoke all these things to the crowd in parables; he did not say anything to them without using a parable.' },
+      { ref: 'Mark 4:33', text: 'With many similar parables Jesus spoke the word to them, as much as they could understand.' },
+      { ref: '1 Corinthians 2:1', text: 'I did not come with eloquence or human wisdom as I proclaimed to you the testimony about God.' },
+    ],
+    faqs: [
+      { q: 'Is it dishonest to tell a story that happened to someone else?', a: 'Not if you say so. Telling another person\'s story as your own is the line, and congregations rarely forget catching a preacher at it. "A friend told me" costs nothing and keeps you honest.' },
+      { q: 'How many illustrations should a sermon have?', a: 'Most preaching guides suggest one strong image per main point at most, and many good sermons carry a single one throughout. More than that and they compete with each other.' },
+      { q: 'Can I use stories about my own family?', a: 'With their permission, and with real care as children get older. A good rule many pastors adopt: nothing your child would be embarrassed to have repeated at school, and nothing your spouse has not heard first.' },
+      { q: 'Are illustration websites worth it?', a: 'They are convenient and they are also where the overused ones come from — if it is in a database, others have used it. Better as a prompt for your own thinking than as a source to lift from.' },
+    ],
+    related: ['how-do-i-preach-on-lament-without-losing-hope', 'should-my-church-use-ai', 'how-do-i-keep-my-congregation-engaged-between-sundays'],
+  },
+  {
+    slug: 'does-my-church-need-an-app',
+    question: 'Does my church need an app?',
+    category: 'For Pastors',
+    updated: '2026-09-26',
+    answer: 'Most small churches do not need a custom app, and the ones that buy one often find it sits unused. The real question is narrower: is there something your congregation needs between Sundays that a website and a group chat genuinely cannot do?',
+    body: [
+      {
+        h: 'Start with the problem, not the product',
+        p: 'Churches usually arrive at "we need an app" by way of a different frustration — people are disconnected midweek, announcements are not landing, newcomers disappear after three visits. An app may or may not touch those. Write the actual problem down first in one sentence. If it is "our announcements are not read," an app mostly relocates the unread announcement.',
+      },
+      {
+        h: 'What a free website and a group chat already do',
+        p: 'Service times, location, what to expect on a first visit, a sermon archive, a giving link — a plain website does all of that and is what visitors search for. Group messaging handles reminders and prayer chains. Between them they cover a large share of what small churches say they want, at no cost, and people are already competent with both.',
+      },
+      {
+        h: 'Where a dedicated space earns its place',
+        p: 'The case is stronger when something needs to be ongoing, private, and not tangled with the rest of someone\'s digital life. Prayer requests people would not post in a group chat. Sermon discussion that continues through the week. A place a newcomer can read and lurk without having to announce themselves. Those are hard to do in a chat thread, which scrolls, and on a website, which does not hold a conversation.',
+      },
+      {
+        h: 'The questions worth asking any provider',
+        p: 'What happens to our data if we stop paying? Who can see prayer requests and personal information, and is that enforced technically or by policy? What does it cost after the first year? Can we export what our congregation has written? How do you handle minors? A provider that answers those plainly is telling you something; one that deflects is also telling you something.',
+      },
+      {
+        h: 'An honest note about kinwove',
+        p: 'kinwove is one of the tools in this category, and it is in free beta — so this page would be poor advice if it pretended otherwise. It is built around Bible study, questions people are nervous to ask aloud, prayer and sermon discussion, rather than around push notifications and event admin. If what your church needs is check-in, rotas and giving, other tools do that better and this page would rather say so than sell you something you will not use.',
+      },
+    ],
+    scriptures: [
+      { ref: 'Acts 2:46', text: 'Every day they continued to meet together in the temple courts. They broke bread in their homes and ate together with glad and sincere hearts.' },
+      { ref: 'Hebrews 10:24–25', text: 'And let us consider how we may spur one another on toward love and good deeds, not giving up meeting together.' },
+    ],
+    faqs: [
+      { q: 'Will an app make our congregation more connected?', a: 'Only if it carries something people already want to do. Tools amplify existing habits more than they create them — a congregation that talks midweek will talk more, and one that does not usually will not start because of software.' },
+      { q: 'How much do church apps cost?', a: 'Widely — from free tiers to several hundred dollars a month for platforms with giving, check-in and event management. The larger cost is usually staff time to keep it populated, which is easy to underestimate.' },
+      { q: 'What about older members who are not online?', a: 'Any digital tool has to be additional rather than the only channel, or you exclude the people most likely to need care. If an announcement only exists in the app, some of your congregation does not have it.' },
+      { q: 'Is it safe to put prayer requests in an app?', a: 'Depends entirely on the provider. Prayer requests contain health, family and mental-health information. Ask specifically who can read them and whether that is enforced by the database or by a promise — the difference matters.' },
+    ],
+    related: ['should-my-church-use-ai', 'how-do-i-keep-my-congregation-engaged-between-sundays', 'how-do-we-follow-up-with-first-time-visitors'],
+  },
+  {
+    slug: 'how-do-we-follow-up-with-first-time-visitors',
+    question: 'How do we follow up with first-time visitors?',
+    category: 'For Pastors',
+    updated: '2026-09-26',
+    answer: 'Lightly, quickly, and with an exit. One short message within a few days, from a person rather than the church, that does not ask for anything. The most common mistake is not following up too little — it is following up too hard.',
+    body: [
+      {
+        h: 'What visitors are actually worried about',
+        p: 'Most first-time visitors arrive braced for two things: being singled out during the service, and being pursued afterwards. That fear shapes everything — it is why people sit at the back, leave during the last song, and give a fake-ish email if a card is pressed on them. Any follow-up that confirms the fear ends the relationship faster than no follow-up at all.',
+      },
+      {
+        h: 'The shape that works',
+        p: 'One message, a few days later, from a named human being. Warm, three or four sentences, no request attached. Say you were glad they came, offer one concrete thing they might want to know, and make the exit explicit — that there is no obligation to reply and no one will chase them. Then actually do not chase them. A second unanswered message is usually where people decide the place is not safe to explore quietly.',
+      },
+      {
+        h: 'Stop making people identify themselves at the door',
+        p: 'Connection cards, stand-up-and-wave welcomes and visitor gifts all force a decision on someone whose main need is to observe without commitment. Letting people be anonymous for as long as they want is a feature, not a gap. The ones who want contact will find a way to make it; the ones who do not will come back, which is the actual goal.',
+      },
+      {
+        h: 'Make the first visit legible before it happens',
+        p: 'Much of what follow-up tries to repair could be prevented by the website. What time it really starts, how long it runs, what people wear, whether children stay in, where to park, whether anyone will ask them to speak, what happens with money. Anxiety about those details keeps people away and makes the ones who come guarded. Answering them plainly does more than any follow-up sequence.',
+      },
+      {
+        h: 'A realistic measure',
+        p: 'Most visitors do not return, and that is normal — people are looking for a fit, and yours will not be it for many of them. The useful question is not whether someone came back but whether leaving was easy and being there was comfortable. Those are the things that make someone recommend you to a friend even after they chose elsewhere.',
+      },
+    ],
+    scriptures: [
+      { ref: 'Romans 15:7', text: 'Accept one another, then, just as Christ accepted you, in order to bring praise to God.' },
+      { ref: 'Hebrews 13:2', text: 'Do not forget to show hospitality to strangers, for by so doing some people have shown hospitality to angels without knowing it.' },
+      { ref: 'Luke 14:13–14', text: 'When you give a banquet, invite the poor, the crippled, the lame, the blind, and you will be blessed.' },
+    ],
+    faqs: [
+      { q: 'How soon should we contact someone?', a: 'Within a few days is usual — soon enough to be connected to the visit, late enough not to feel like surveillance. Same-day messages often read as intense to someone who has not decided anything yet.' },
+      { q: 'Should the pastor do the follow-up?', a: 'In a small church it is natural, though it can feel weightier to the visitor than a message from an ordinary member. What matters more is that it comes from a person with a name rather than a church-wide account.' },
+      { q: 'What if they gave us their details but never replied?', a: 'Treat that as an answer and leave it. Giving contact details under mild social pressure is not consent to a sequence, and people notice the difference between welcome and pursuit.' },
+      { q: 'Is it worth asking why someone did not come back?', a: 'Rarely useful and often uncomfortable to receive. If you want that information, it is better gathered from people who stayed — asking what nearly stopped them coming back in the first month.' },
+    ],
+    related: ['does-my-church-need-an-app', 'how-do-i-find-a-church', 'how-do-i-keep-my-congregation-engaged-between-sundays'],
+  },
+  {
+    slug: 'why-are-young-adults-leaving-our-church',
+    question: 'Why are young adults leaving our church, and what can we do?',
+    category: 'For Pastors',
+    updated: '2026-09-26',
+    answer: 'Surveys keep finding the same reasons, and they are not the ones churches expect. Not music, not style — but questions being shut down, hypocrisy in leadership, and how the church treats people it disagrees with. Programmes aimed at the symptom rarely move it.',
+    body: [
+      {
+        h: 'What people actually say when they leave',
+        p: 'Asked directly, young adults cite being unable to raise doubts without becoming a project, watching how leaders behaved when they thought it did not count, and how people outside the church were spoken about. Style complaints come up, but far down the list and usually as an acceptable thing to say instead of the real one. Churches that respond with a rebrand are answering the polite version of the question.',
+      },
+      {
+        h: 'Doubt is the hinge',
+        p: 'The single most repeated theme is what happened when someone admitted uncertainty. If the response was concern, correction, or a quiet change in how they were treated, they learned the community was conditional on agreement — and most people will not stay in a place where honesty costs them standing. Churches where doubt can be said out loud and survive it keep a noticeably higher share of their young adults, which makes sense: they never forced the choice.',
+      },
+      {
+        h: 'What tends to help',
+        p: 'Give questions somewhere real to go — a setting where hard ones get taken seriously rather than deflected, and where "we do not know" is an available answer. Give young adults actual responsibility rather than a designated ministry slot. Be visibly accountable about money and power, because that generation assumes institutions hide both and is watching to see if yours does. And speak about people who disagree with you as you would if they were in the room.',
+      },
+      {
+        h: 'What usually does not',
+        p: 'A separate young adults service, a new band, coffee, social media, or an event series aimed at a demographic. None of these is bad. They just do not address why people said they left, and they can make things worse by signalling that the church heard "we are boring" when what was said was closer to "we did not trust you with the truth."',
+      },
+      {
+        h: 'Some of them come back, and how you part matters',
+        p: 'A meaningful share of people who leave in their twenties return later, and the biggest factor in whether that door stays open is how they were treated on the way out. Someone pursued, guilted, or gossiped about does not come back. Someone who left and was told they were still welcome sometimes does, years later.',
+      },
+    ],
+    scriptures: [
+      { ref: 'Mark 9:24', text: 'Immediately the boy\'s father exclaimed, "I do believe; help me overcome my unbelief!"' },
+      { ref: 'Jude 1:22', text: 'Be merciful to those who doubt.' },
+      { ref: 'John 20:27', text: 'Then he said to Thomas, "Put your finger here; see my hands. Reach out your hand and put it into my side. Stop doubting and believe."' },
+      { ref: '1 Timothy 4:12', text: 'Don\'t let anyone look down on you because you are young, but set an example for the believers.' },
+    ],
+    faqs: [
+      { q: 'Is this just a phase they grow out of?', a: 'Some return, many do not, and treating it as a phase is itself one of the complaints — it tells someone their reasoning is being waited out rather than engaged. Better to take the stated reasons at face value.' },
+      { q: 'Should we change our music or service style?', a: 'Only if you want to for its own sake. Style shows up in surveys but well below integrity, honesty about doubt, and how outsiders are treated. Changing the music and nothing else tends to disappoint everyone.' },
+      { q: 'How do we let people doubt without teaching error?', a: 'By separating the question from the verdict. A church can hold clear convictions and still be a place where someone can say "I am not sure I believe this" without consequence. What drives people out is not being corrected, it is being managed.' },
+      { q: 'What about young adults who moved away?', a: 'Plenty of departures are practical rather than spiritual — university, work, rent. Worth knowing which you are dealing with before diagnosing a crisis, and worth staying in touch with the ones who simply moved.' },
+    ],
+    related: ['how-do-i-pastor-someone-who-is-deconstructing', 'how-can-i-believe-when-i-have-doubts', 'what-if-church-hurt-you'],
+  },
 ];
 
 export const ANSWERS_BY_SLUG = Object.fromEntries(ANSWERS.map((a) => [a.slug, a]));
