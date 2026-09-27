@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { languageInstruction } from './languages.js';
 import { ArrowLeft, ChevronLeft, ChevronRight, X, Search } from 'lucide-react';
 import { T } from './theme.js';
 import { markEngaged } from './streak.js';
@@ -2074,20 +2075,7 @@ Return up to 5 matches, best first. If nothing matches, return []. No explanatio
 
   const getSystemPrompt = useCallback(() => {
     const passage = verses.map((v) => `[${v.number}] ${v.text}`).join('\n');
-    const LANG_NAMES = {
-      es: 'Spanish', fr: 'French', pt: 'Portuguese', de: 'German',
-      it: 'Italian', pl: 'Polish', ro: 'Romanian', nl: 'Dutch',
-      ru: 'Russian', uk: 'Ukrainian', ja: 'Japanese', ko: 'Korean',
-      zh: 'Simplified Chinese (Mandarin)', 'zh-TW': 'Traditional Chinese (Mandarin)',
-      yue: 'Cantonese', hi: 'Hindi', id: 'Indonesian', tl: 'Tagalog',
-      th: 'Thai', my: 'Burmese (Myanmar)', lt: 'Lithuanian',
-      vi: 'Vietnamese', ar: 'Arabic', am: 'Amharic', sw: 'Swahili',
-      yo: 'Yorùbá', ig: 'Igbo', ha: 'Hausa',
-    };
-    const lang = profile?.preferred_language ?? 'en';
-    const langInstruction = lang !== 'en'
-      ? `\n\nRespond in ${LANG_NAMES[lang] ?? lang}. Use the script and conventions native speakers expect.`
-      : '';
+    const langInstruction = languageInstruction(profile?.preferred_language);
     const tapped = lastVerse
       ? `\nThe reader most recently tapped verse ${lastVerse.number}: "${lastVerse.text}". If their question is ambiguous ("why is this here?", "what does this mean?"), assume it refers to that verse.\n`
       : '';

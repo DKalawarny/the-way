@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { languageInstruction } from './languages.js';
 import { T } from './theme.js';
 import { isNativeApp, openMailto } from './native.js';
 import { markEngaged } from './streak.js';
@@ -1060,19 +1061,7 @@ export default function Chat({
 
   const system = useMemo(() => {
     const base = getSystemPrompt(personType, seekingContext, totalMessages);
-    const lang = preferredLanguage ?? 'en';
-    const LANG_NAMES = {
-      es: 'Spanish', fr: 'French', pt: 'Portuguese', de: 'German',
-      it: 'Italian', pl: 'Polish', ro: 'Romanian', nl: 'Dutch',
-      ru: 'Russian', uk: 'Ukrainian', ja: 'Japanese', ko: 'Korean',
-      zh: 'Simplified Chinese (Mandarin)', 'zh-TW': 'Traditional Chinese (Mandarin)',
-      yue: 'Cantonese', hi: 'Hindi', id: 'Indonesian', tl: 'Tagalog',
-      th: 'Thai', my: 'Burmese (Myanmar)', lt: 'Lithuanian',
-      vi: 'Vietnamese', ar: 'Arabic', am: 'Amharic', sw: 'Swahili',
-      yo: 'Yorùbá', ig: 'Igbo', ha: 'Hausa',
-    };
-    const langName = LANG_NAMES[lang] ?? lang;
-    return lang !== 'en' ? `${base}\n\nRespond in ${langName}. Use the script and conventions native speakers expect.` : base;
+    return base + languageInstruction(preferredLanguage);
   }, [personType, seekingContext, totalMessages, preferredLanguage]);
   const starters = useMemo(() => {
     const base = getStarters(personType, conversations ?? []);
