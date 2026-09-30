@@ -465,10 +465,16 @@ export default function AdminPage({ onBack }) {
   const [wbError, setWbError] = useState('');
   async function wbCall(qs) {
     const { data: { session: sess } } = await supabase.auth.getSession();
+    if (!sess?.access_token) return { error: 'Not signed in — reload the page and try again.' };
     const r = await fetch(`/api/cron/nudge-incomplete?${qs}`, {
-      method: 'POST', headers: { Authorization: `Bearer ${sess?.access_token}` },
+      method: 'POST', headers: { Authorization: `Bearer ${sess.access_token}` },
     });
-    return r.json();
+    // Surface the actual status. A bare "Failed" told Daniel nothing when this
+    // did not work, and the 401-vs-503 distinction is the whole diagnosis:
+    // 401 = auth, 503 = Supabase env missing on the server.
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) return { error: body.error ? `${r.status}: ${body.error}` : `HTTP ${r.status}` };
+    return body;
   }
   const [voiceError, setVoiceError] = useState(null);
   const [voiceSuccess, setVoiceSuccess] = useState(false);
@@ -1238,7 +1244,7 @@ export default function AdminPage({ onBack }) {
         )}
 
         {/* ── OPERATIONS ────────────────────────────────────────────────────── */}
-        {tab === 'operations' && !dashLoading && !dashError && dash && (
+        {tab === 'operations' && (
           <div>
             <div style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 14, padding: 18, marginBottom: 24 }}>
               <div style={{ fontFamily: T.display, fontSize: 15, fontWeight: 600, color: T.ink, marginBottom: 4 }}>Win-back email</div>
@@ -1281,6 +1287,11 @@ export default function AdminPage({ onBack }) {
                     </button>
                     <button onClick={() => setWbList(null)} style={{ background: 'none', border: 'none', fontSize: 13, color: T.inkMuted, cursor: 'pointer' }}>Cancel</button>
                   </div>
+          </div>
+        )}
+
+        {tab === 'operations' && !dashLoading && !dashError && dash && (
+          <div>
                 </div>
               )}
             </div>
