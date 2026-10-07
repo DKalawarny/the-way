@@ -6347,7 +6347,7 @@ ${entries.join('\n')}
       }
       const list = [...byCategory.entries()]
         .map(([cat, items]) => `### ${cat}\n` + items
-          .map((a) => `- ${a.question} — https://www.kinwove.com/answers/${a.slug}`)
+          .map((a) => `- ${a.question}: https://www.kinwove.com/answers/${a.slug}`)
           .join('\n'))
         .join('\n\n');
 
