@@ -6,7 +6,7 @@ export default function ShareSheet({
   body,
   url,
   title,
-  intro = '— shared on kinwove',
+  intro = 'shared on kinwove',
   previewBody,
   customActions = [],
   onClose,
@@ -465,7 +465,7 @@ export default function ShareSheet({
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: copied ? T.goldDark : T.ink }}>
-                  {copied ? 'Copied — paste anywhere!' : 'Copy to clipboard'}
+                  {copied ? 'Copied, paste anywhere!' : 'Copy to clipboard'}
                 </div>
                 {!copied && (
                   <div style={{ fontSize: 11.5, color: T.inkMuted, marginTop: 2 }}>

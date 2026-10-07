@@ -32,7 +32,7 @@ export default function ReportModal({ onClose }) {
       setDone(true);
       setTimeout(onClose, 2000);
     } catch {
-      setError('Something went wrong — please try again.');
+      setError('Something went wrong, please try again.');
     } finally {
       setSending(false);
     }
@@ -58,7 +58,7 @@ export default function ReportModal({ onClose }) {
 
         {done ? (
           <div style={{ textAlign: 'center', padding: '32px 0', color: T.goldDark, fontFamily: T.serif, fontSize: 17 }}>
-            ✓ Thanks — we'll look into it.
+            ✓ Thanks, we'll look into it.
           </div>
         ) : (
           <>

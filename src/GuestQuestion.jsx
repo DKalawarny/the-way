@@ -36,12 +36,12 @@ const EXAMPLE_QUESTIONS = [
 
 const LEVELS = [
   { id: 'curious',     emoji: '🤔', label: 'A bit curious',   hint: 'Heard of it, wondering where to start' },
-  { id: 'skeptic',     emoji: '🤨', label: "I'm skeptical",   hint: "Doubt it's true — want honest answers, not a pitch" },
+  { id: 'skeptic',     emoji: '🤨', label: "I'm skeptical",   hint: "Doubt it's true, want honest answers, not a pitch" },
   { id: 'agnostic',    emoji: '🤷', label: "Not sure",        hint: 'Open but genuinely unconvinced either way' },
   { id: 'questioning', emoji: '💭', label: 'Used to Believe', hint: 'Had faith, now wrestling with doubts' },
   { id: 'believer',    emoji: '🙏', label: 'I believe',       hint: 'Growing in faith and want to go deeper' },
   { id: 'new',         emoji: '🌱', label: 'Brand new',       hint: 'Never really thought about this before' },
-  { id: 'kids',        emoji: '🧒', label: 'For my kids',     hint: 'Any question — answered simply enough for a child to understand' },
+  { id: 'kids',        emoji: '🧒', label: 'For my kids',     hint: 'Any question, answered simply enough for a child to understand' },
 ];
 
 const DENOMS = [
@@ -60,7 +60,7 @@ const DENOM_NOTES = {
   pentecostal:       'They come from a Pentecostal or Charismatic background. They may be questioning experiences, spiritual pressure, or prosperity-gospel-adjacent teachings that felt more about performance than genuine faith.',
   lds:               'They come from a Mormon / LDS background, where additional scriptures, prophets, and a distinct theology of salvation through works and ordinances shape everything. They may be questioning how this aligns with the Jesus of the New Testament.',
   jw:                "They come from a Jehovah's Witness background, shaped by the Watchtower's specific doctrines, restricted access to outside information, and a salvation framework heavily tied to organisational loyalty and conduct.",
-  nondenominational: 'They come from a non-denominational background. They may be questioning a specific church culture, leadership, or community rather than core doctrine — or feeling like "just the Bible" still left big questions unanswered.',
+  nondenominational: 'They come from a non-denominational background. They may be questioning a specific church culture, leadership, or community rather than core doctrine, or feeling like "just the Bible" still left big questions unanswered.',
   other:             'Their exact faith background is unclear or mixed. Treat their question on its own terms without assuming a specific tradition.',
 };
 
@@ -99,7 +99,7 @@ const SYSTEMS = {
   believer: `You are a thoughtful Bible companion answering for someone who already believes and wants to understand their faith more deeply. You can reference scripture directly, use theological terms (with brief context where helpful), and engage with nuance. Bring in history, interpretation, and the richness of the text. 2–3 paragraphs. No markdown formatting — plain prose only. Be honest where things are complex or debated. End with a question that invites them to go deeper.`,
 
   questioning: (denom) => {
-    const denomNote = denom && denom !== 'other' ? `\n\nBackground context: ${DENOM_NOTES[denom] ?? ''} Use this to gently help them see the difference between denominational rules or works-based systems and the core of what Jesus actually taught — grace, relationship, and love. Never attack their tradition, but be honest where human-made rules have been added on top of scripture.` : '';
+    const denomNote = denom && denom !== 'other' ? `\n\nBackground context: ${DENOM_NOTES[denom] ?? ''} Use this to gently help them see the difference between denominational rules or works-based systems and the core of what Jesus actually taught: grace, relationship, and love. Never attack their tradition, but be honest where human-made rules have been added on top of scripture.` : '';
     return `You are a compassionate, honest friend answering for someone who once had faith and is now wrestling with real doubts. Be especially gentle and non-defensive. Honour their doubts — don't rush to resolve them or paper over difficulty. Be honest where things are genuinely hard or uncertain. A key insight to hold: many people are questioning the denomination or religious system they grew up in, not Jesus himself. If that distinction is relevant, name it carefully and without pressure. 2–3 paragraphs. Never pressure. End with a question that shows you respect wherever they land.${denomNote}`;
   },
 
@@ -137,7 +137,7 @@ function LeadCapture({ firstQuestion }) {
   if (state === 'done') {
     return (
       <div style={{ marginTop: 18, fontSize: 13, color: 'rgba(253,248,240,0.55)', lineHeight: 1.6 }}>
-        Sent. We'll follow up once on that question — nothing after it.
+        Sent. We'll follow up once on that question. Nothing after it.
       </div>
     );
   }
@@ -374,7 +374,7 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
       }
     } catch {
       setMessages((prev) => prev.map((m, i) =>
-        i === assistantIdx ? { ...m, content: 'Something went wrong — try again.', streaming: false } : m
+        i === assistantIdx ? { ...m, content: 'Something went wrong. Try again.', streaming: false } : m
       ));
     }
 
@@ -469,7 +469,7 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
                     ))}
                   </div>
                   <div style={{ fontSize: 11, color: 'rgba(253,248,240,0.25)', textAlign: 'center', marginTop: 10 }}>
-                    Optional — helps us understand where you're coming from
+                    Optional. Helps us understand where you're coming from
                   </div>
                 </div>
               )}
@@ -533,7 +533,7 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
               cursor: 'pointer', boxShadow: '0 4px 20px rgba(184,115,58,0.4)',
             }}
           >
-            Join free — keep going →
+            Join free. Keep going →
           </button>
           <LeadCapture firstQuestion={firstQuestion} />
         </div>
@@ -660,7 +660,7 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
                     cursor: 'pointer', boxShadow: '0 4px 20px rgba(184,115,58,0.4)',
                   }}
                 >
-                  Join free — keep going →
+                  Join free. Keep going →
                 </button>
                 <button
                   onClick={() => setShowShare(true)}
@@ -690,7 +690,7 @@ export default function GuestQuestion({ onSignUp, initialQuestion, landingMode =
           body={`Q: ${shareContent.q}\n\n${shareContent.a}`}
           previewBody={shareContent.a.slice(0, 90)}
           url={typeof window !== 'undefined' ? `${window.location.origin}/?q=${encodeURIComponent(shareContent.q)}` : ''}
-          intro="— answered on kinwove"
+          intro="answered on kinwove"
           onClose={() => setShowShare(false)}
         />
       )}

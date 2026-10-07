@@ -173,7 +173,7 @@ export default function ConnectScreen({ session, profile, onClose, onStartDM }) 
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
             <div style={{ fontSize: 32, marginBottom: 10 }}>🤝</div>
             <div style={{ fontFamily: T.display, fontSize: 19, fontWeight: 600, color: T.ink, marginBottom: 8 }}>
-              No one here yet — be the first.
+              No one here yet, be the first.
             </div>
             <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, maxWidth: 320, margin: '0 auto 20px' }}>
               Every community starts with one person willing to show up. Open yourself to a conversation and you'll appear right here.

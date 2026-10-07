@@ -123,7 +123,7 @@ function NotificationRow({ n, onClick, onFriendAction, onAvatarClick, onRoleAcce
       setRoleState(null); // reset so they can try again
       setRoleError(error.message.includes('not a member')
         ? 'You need to be a member of this church first.'
-        : 'Something went wrong — please try again.');
+        : 'Something went wrong, please try again.');
       return;
     }
     setRoleError(null);
@@ -431,7 +431,7 @@ export default function NotificationsBell({ session, rightOffset = 0, isDesktop 
             right: isDesktop ? bellRight : 12,
             background: T.white, borderRadius: 16, border: `1px solid ${T.line}`,
             boxShadow: '0 8px 40px rgba(0,0,0,0.16)',
-            width: 380, maxWidth: 'calc(100vw - 24px)',
+            width: 380, maxWidth: 'calc(100vw, 24px)',
             maxHeight: 'min(72vh, 600px)',
             display: 'flex', flexDirection: 'column',
             zIndex: 300,

@@ -354,7 +354,7 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession, onUseI
           />
           <input
             value={formSeries} onChange={e => setFormSeries(e.target.value)}
-            placeholder="Series (optional — e.g. Romans, Christmas 2026)"
+            placeholder="Series (optional, e.g. Romans, Christmas 2026)"
             list="series-list"
             style={{ width: '100%', border: 'none', borderTop: '1px solid rgba(26,17,8,0.08)', background: 'transparent', fontSize: 12, color: T.inkSoft, outline: 'none', padding: '7px 0 0', marginTop: 6, boxSizing: 'border-box' }}
           />
@@ -523,7 +523,7 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession, onUseI
                       </button>
                     )}
                   </div>
-                  {saveState === 'error' && <div style={{ fontSize: 11, color: '#A53F2B', marginTop: 6 }}>Could not save — check your connection.</div>}
+                  {saveState === 'error' && <div style={{ fontSize: 11, color: '#A53F2B', marginTop: 6 }}>Could not save. Check your connection.</div>}
                   {/* Unsaved-changes prompt */}
                   {showDonePrompt && (
                     <div style={{ background: 'rgba(184,115,58,0.08)', border: '1px solid rgba(184,115,58,0.25)', borderRadius: 10, padding: '10px 12px', marginTop: 10 }}>
@@ -613,7 +613,7 @@ function NotesSection({ session, churchId, refreshKey = 0, onOpenSession, onUseI
           <div style={{ background: '#FFFDF5', border: '1.5px solid rgba(184,115,58,0.35)', borderRadius: 14, boxShadow: '0 8px 32px rgba(26,17,8,0.18)', width: '100%', maxWidth: 380, maxHeight: '85%', display: 'flex', flexDirection: 'column', padding: '16px 16px 14px' }}>
             <div style={{ fontFamily: T.serif, fontSize: 16, fontWeight: 600, color: T.ink, letterSpacing: '-0.01em' }}>Use in sermon</div>
             <div style={{ fontSize: 12, color: T.inkSoft, lineHeight: 1.55, margin: '4px 0 12px' }}>
-              These notes will start a sermon draft, in this order. Uncheck anything personal — your notes stay here either way.
+              These notes will start a sermon draft, in this order. Uncheck anything personal, your notes stay here either way.
             </div>
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
               {seriesNotesInOrder(pickerSeries).map(n => {

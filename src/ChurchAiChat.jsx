@@ -106,19 +106,19 @@ SOURCING & TRUST (this is what earns a pastor's confidence):
 const STARTERS = [
   'What does the Greek word "charis" (grace) actually mean in its New Testament context?',
   'How do I preach on lament without losing hope?',
-  'Walk me through Romans 8:28 — what does "all things work together" really promise?',
+  'Walk me through Romans 8:28, what does "all things work together" really promise?',
   'What should I know about pastoral care for someone leaving the faith?',
-  'How did the early church understand communion — what do the church fathers say?',
+  'How did the early church understand communion, what do the church fathers say?',
 ];
 
 const RESEARCH_STARTERS = [
-  'Walk me through John 3:16 — what do the major commentators say?',
-  'Research Romans 9 — how do Reformed and Arminian scholars read it differently?',
+  'Walk me through John 3:16, what do the major commentators say?',
+  'Research Romans 9, how do Reformed and Arminian scholars read it differently?',
   'What does "hesed" mean in the Psalms? Original Hebrew + commentary perspectives.',
   'Survey what the early church fathers said about the resurrection accounts.',
-  'What\'s the scholarly debate around 1 Corinthians 14:34 — women in the church?',
-  'Break down Ephesians 2:8-9 — faith, grace, works — where do scholars land?',
-  'Find me illustrations for a sermon on forgiveness — a story, an analogy, and a quotation.',
+  'What\'s the scholarly debate around 1 Corinthians 14:34, women in the church?',
+  'Break down Ephesians 2:8-9, faith, grace, works, where do scholars land?',
+  'Find me illustrations for a sermon on forgiveness: a story, an analogy, and a quotation.',
 ];
 
 // ── Tiny shared icons ────────────────────────────────────────────────────────
@@ -218,7 +218,7 @@ function HistoryModal({ open, onClose, conversations, onLoad, onDelete, onNew })
         </div>
         {convs.length === 0 && (
           <div style={{ padding: '48px 32px', textAlign: 'center', color: T.inkMuted, fontFamily: T.serif, fontSize: 16, lineHeight: 1.6 }}>
-            No conversations yet.<br />Start asking — your history will appear here.
+            No conversations yet.<br />Start asking. Your history will appear here.
           </div>
         )}
         {convs.map((c) => (
@@ -447,7 +447,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
     let assistantContent = '';
     try {
       const researchSystem = researchMemory
-        ? `${RESEARCH_SYSTEM}\n\n── YOUR SERIES CONTEXT ──\nThe pastor is mid-series. Use this to connect dots across weeks — reference established terms and decisions naturally, as a colleague who was in the room. Do not announce that you have memory.\n${researchMemory}`
+        ? `${RESEARCH_SYSTEM}\n\n── YOUR SERIES CONTEXT ──\nThe pastor is mid-series. Use this to connect dots across weeks, reference established terms and decisions naturally, as a colleague who was in the room. Do not announce that you have memory.\n${researchMemory}`
         : RESEARCH_SYSTEM;
       const system = researchMode ? researchSystem : PASTORAL_SYSTEM + (PER_TYPE[personType] ?? '');
       const res = await authedFetch('/api/chat', {
@@ -652,7 +652,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
                   background: T.white, border: `1px solid ${T.line}`,
                   borderRadius: 16, boxShadow: '0 12px 48px rgba(44,24,16,0.18)',
                   padding: 10, zIndex: 200,
-                  width: 'min(calc(100vw - 32px), 420px)',
+                  width: 'min(calc(100vw, 32px), 420px)',
                   maxHeight: '85vh', overflowY: 'auto',
                 }}>
                   <div style={{ padding: '2px 4px 8px', fontSize: 10, letterSpacing: '0.07em', textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700 }}>
@@ -792,10 +792,10 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
                 <>
                   <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.muted, marginBottom: 12 }}>📚 Sermon Research</div>
                   <div style={{ fontSize: 13, color: C.soft, lineHeight: 1.6, maxWidth: 380, margin: '0 auto 6px' }}>
-                    Multi-source commentary briefs — Calvin, Wesley, N.T. Wright, Church Fathers, and more.
+                    Multi-source commentary briefs: Calvin, Wesley, N.T. Wright, Church Fathers, and more.
                   </div>
                   <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, maxWidth: 360, margin: '0 auto 24px' }}>
-                    Every response shows what different scholars say and where they disagree — so you can come to your own conclusion.
+                    Every response shows what different scholars say and where they disagree, so you can come to your own conclusion.
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 480, margin: '0 auto', textAlign: 'left' }}>
                     {RESEARCH_STARTERS.map((s) => (
@@ -806,7 +806,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
               ) : (
                 <>
                   <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.muted, marginBottom: 12 }}>Pastoral AI</div>
-                  <div style={{ fontSize: 13, color: C.soft, lineHeight: 1.6, maxWidth: 340, margin: '0 auto 24px' }}>Theology, sermon prep, pastoral care, exegesis — ask anything.</div>
+                  <div style={{ fontSize: 13, color: C.soft, lineHeight: 1.6, maxWidth: 340, margin: '0 auto 24px' }}>Theology, sermon prep, pastoral care, exegesis. Ask anything.</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 440, margin: '0 auto', textAlign: 'left' }}>
                     {STARTERS.map((s) => (
                       <button key={s} onClick={() => send(s)} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: '10px 14px', fontSize: 13, color: C.soft, cursor: 'pointer', textAlign: 'left', lineHeight: 1.45, fontFamily: T.serif, fontStyle: 'italic' }}>{s}</button>
@@ -841,7 +841,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
                     <div data-msg-role="assistant" style={{ maxWidth: '100%', background: 'transparent', fontSize: 15, lineHeight: 1.72, color: C.text, fontFamily: T.serif, letterSpacing: '-0.01em', wordBreak: 'break-word' }}>
                       {isStreaming
                         ? <span style={{ color: T.inkMuted, fontStyle: 'italic' }}>…</span>
-                        : <MsgText text={m.content} onRefClick={handleRefClick} refStatus={refStatusMap[i]} />
+                        : <MsgText text={m.content} onRefClick={handleRefClick} refStatus={refStatusMap[i]} plain={m.role === 'assistant'} />
                       }
                     </div>
 
@@ -880,7 +880,7 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
                         {!flaggedMsgs.has(i) ? (
                           <ActionBtn
                             onClick={() => handleFlag(i, m.content)}
-                            title="Something seems off — flag this response"
+                            title="Something seems off, flag this response"
                             onMouseEnter={(e) => (e.currentTarget.style.color = '#c05050')}
                             onMouseLeave={(e) => (e.currentTarget.style.color = T.inkMuted)}
                           >

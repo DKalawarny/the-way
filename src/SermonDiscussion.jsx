@@ -234,7 +234,7 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
           <div style={{ color: T.inkMuted, fontFamily: T.serif, textAlign: 'center', padding: 16, fontSize: 13 }}>Loading…</div>
         ) : top.length === 0 ? (
           <div style={{ color: T.inkMuted, fontStyle: 'italic', fontSize: 14, textAlign: 'center', padding: '20px 0' }}>
-            No comments yet — be the first.
+            No comments yet, be the first.
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 10 }}>
@@ -253,7 +253,7 @@ export default function SermonDiscussion({ sermonContentId, sermonId, churchId, 
         <div style={{ color: T.inkMuted, fontFamily: T.serif, textAlign: 'center', padding: 16, fontSize: 13 }}>Loading…</div>
       ) : top.length === 0 ? (
         <div style={{ color: T.inkMuted, fontStyle: 'italic', fontSize: 14, textAlign: 'center', padding: '20px 0' }}>
-          No comments yet — be the first.
+          No comments yet, be the first.
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 10 }}>

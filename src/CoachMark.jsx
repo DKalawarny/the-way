@@ -28,7 +28,7 @@ const STEPS = [
     id: 'ask',
     tabPct: 50,
     title: 'Ask anything',
-    body: 'Tap ✦ to open your AI Bible companion. Ask hard questions about faith, doubt, or Scripture. It walks alongside — never lectures.',
+    body: 'Tap ✦ to open your AI Bible companion. Ask hard questions about faith, doubt, or Scripture. It walks alongside, never lectures.',
   },
   {
     id: 'bible',

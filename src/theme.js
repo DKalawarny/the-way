@@ -140,7 +140,7 @@ export const globalCss = `
 
   /* Accessibility (audit 2026-07-09): visible keyboard focus (keyboard-only, so
      mouse/touch aesthetics are untouched), and respect the OS "reduce motion"
-     setting — one of the most-enabled senior/vestibular accessibility options. */
+     setting. One of the most-enabled senior/vestibular accessibility options. */
   :focus-visible { outline: 2px solid ${T.gold}; outline-offset: 2px; border-radius: 4px; }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
@@ -201,7 +201,7 @@ export const globalCss = `
     animation-delay: calc(var(--i, 0) * 80ms);
   }
 
-  /* Subtle warmth across the page — replaces flat cream with depth */
+  /* Subtle warmth across the page: replaces flat cream with depth */
   .scene {
     background:
       radial-gradient(ellipse 80% 60% at 50% -10%, rgba(168,85,48,0.10), transparent 70%),
@@ -243,7 +243,7 @@ export const globalCss = `
   }
   .lift:active { transform: translateY(0); transition-duration: 0.08s; }
 
-  /* The single magnet — primary CTA on a screen */
+  /* The single magnet: primary CTA on a screen */
   .magnet {
     position: relative;
     box-shadow: 0 6px 20px rgba(168,85,48,0.20), 0 1px 4px rgba(26,17,8,0.08);
@@ -411,7 +411,7 @@ export const globalCss = `
   /* iOS Safari zooms the viewport on focus when input font-size < 16px.
      Clamping to max(16px, 1em) prevents the zoom while preserving theme size.
      Several composers set smaller sizes via inline styles, which beat this
-     rule — so on touch widths it must win with !important. Inputs that are
+     rule, so on touch widths it must win with !important. Inputs that are
      intentionally large (verify-code) opt out via .keep-font-size. */
   input, textarea, select { font-size: max(16px, 1em); }
   @media (max-width: 1023px) {
@@ -420,7 +420,7 @@ export const globalCss = `
     }
   }
 
-  /* Prevent rubber-band overscroll on iOS — the app is SPA-modal, not a
+  /* Prevent rubber-band overscroll on iOS: the app is SPA-modal, not a
      traditional document, so native bounce feels wrong. */
   html { overscroll-behavior: none; }
 
@@ -429,7 +429,7 @@ export const globalCss = `
 
   /* ── Responsive system ──────────────────────────────────────────── */
 
-  /* Touch-friendly minimum tap target — apply to any interactive element
+  /* Touch-friendly minimum tap target, apply to any interactive element
      that's smaller than 44px in either dimension. */
   .touch-target {
     min-height: 44px;
@@ -453,7 +453,7 @@ export const globalCss = `
   /* ── Mobile (<640px): bottom-sheet modals ── */
   /* Add class="modal-sheet" to a modal's inner panel to slide it up from the
      bottom on small screens. The outer backdrop can stay as-is (fixed inset-0
-     flex center) — the sheet's position:fixed escapes the flex context. */
+     flex center), the sheet's position:fixed escapes the flex context. */
   @media (max-width: 639px) {
     .modal-sheet {
       position: fixed !important;
@@ -475,7 +475,7 @@ export const globalCss = `
 
   /* ── Mobile (<640px): full-screen takeover for rich content dialogs ── */
   /* Use on tall scrollable dialogs (post detail, comment threads) that have
-     their own internal header — these work better as full-screen overlays
+     their own internal header. These work better as full-screen overlays
      than bottom sheets. */
   @media (max-width: 639px) {
     .full-screen-mobile {
@@ -484,8 +484,7 @@ export const globalCss = `
       border-radius: 0 !important;
       max-width: 100% !important;
       max-height: 100% !important;
-      /* --vvh = visual viewport height, set while the keyboard is open —
-         shrinks the modal so its bottom-pinned composer sits on the keyboard */
+      /* --vvh = visual viewport height, set while the keyboard is open: shrinks the modal so its bottom-pinned composer sits on the keyboard */
       height: var(--vvh, 100dvh) !important;
       width: 100% !important;
       margin: 0 !important;
@@ -505,7 +504,7 @@ export const globalCss = `
   }
 
   /* ── Desktop (≥1024px): sidebar nav ── */
-  /* The JS layout shifts content with marginLeft: 240px inline — these
+  /* The JS layout shifts content with marginLeft: 240px inline. These
      classes are helpers for one-off spacing needs inside component trees. */
   @media (min-width: 1024px) {
     /* Ensure no accidental content hides behind the sidebar */

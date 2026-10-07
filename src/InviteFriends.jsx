@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { T } from './theme.js';
 import { isNativeApp, openMailto } from './native.js';
 
-const DEFAULT_MESSAGE = 'Thought of you — kinwove is a place for the big questions: life, meaning, faith, doubt. Honest conversation, no pressure, no agenda. Wherever you\u2019re at.';
+const DEFAULT_MESSAGE = 'Thought of you: kinwove is a place for the big questions: life, meaning, faith, doubt. Honest conversation, no pressure, no agenda. Wherever you\u2019re at.';
 
 function isValidEmail(s) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
@@ -93,7 +93,7 @@ export default function InviteFriends({ onClose, profile }) {
   }
 
   function openEmail() {
-    const subject = encodeURIComponent("Something I've been using — thought of you");
+    const subject = encodeURIComponent("Something I've been using, thought of you");
     const text = `${message}\n\n${taggedUrl('email')}`;
     const body = encodeURIComponent(text);
     openMailto(`mailto:?subject=${subject}&body=${body}`);
@@ -117,7 +117,7 @@ export default function InviteFriends({ onClose, profile }) {
 
   function sendBulkEmail() {
     if (!validBulkEmails.length) return;
-    const subject = encodeURIComponent("Something I've been using — thought of you");
+    const subject = encodeURIComponent("Something I've been using, thought of you");
     const text = `${message}\n\n${taggedUrl('email-bulk')}`;
     const body = encodeURIComponent(text);
     const bcc = validBulkEmails.join(',');
@@ -157,7 +157,7 @@ export default function InviteFriends({ onClose, profile }) {
       id: 'messenger',
       icon: '💬',
       label: 'Messenger',
-      sub: 'Text is copied — paste it in Messenger',
+      sub: 'Text is copied, paste it in Messenger',
       bg: '#0099FF',
       onClick: openMessenger,
     },
@@ -197,7 +197,7 @@ export default function InviteFriends({ onClose, profile }) {
       id: 'bulk',
       icon: '📨',
       label: 'Email a group',
-      sub: 'Paste a list — sent BCC so addresses are private',
+      sub: 'Paste a list. Sent BCC so addresses are private',
       bg: T.goldDark,
       onClick: () => setBulkOpen(true),
     },
@@ -239,7 +239,7 @@ export default function InviteFriends({ onClose, profile }) {
             Invite friends
           </div>
           <div style={{ fontSize: 11, color: T.inkMuted, marginTop: 1 }}>
-            Send to one — or to many at once
+            Send to one, or to many at once
           </div>
         </div>
       </header>
@@ -368,7 +368,7 @@ export default function InviteFriends({ onClose, profile }) {
                   {copied ? 'Copied!' : 'Copy link & message'}
                 </div>
                 <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 2 }}>
-                  Paste anywhere — DMs, notes, group chats
+                  Paste anywhere: DMs, notes, group chats
                 </div>
               </div>
             </button>
@@ -380,7 +380,7 @@ export default function InviteFriends({ onClose, profile }) {
             background: T.parchment, border: `1px dashed ${T.goldLight}`,
             borderRadius: 12, fontSize: 11, color: T.inkSoft, lineHeight: 1.6,
           }}>
-            <strong style={{ color: T.ink }}>Why no auto-import of contacts?</strong> Facebook stopped letting apps read friend lists in 2018, and Gmail requires an annual security audit. The options above are how modern apps actually invite friends — pick recipients in their own app, paste a list, or share a link/QR.
+            <strong style={{ color: T.ink }}>Why no auto-import of contacts?</strong> Facebook stopped letting apps read friend lists in 2018, and Gmail requires an annual security audit. The options above are how modern apps actually invite friends: pick recipients in their own app, paste a list, or share a link/QR.
           </div>
         </div>
       </div>

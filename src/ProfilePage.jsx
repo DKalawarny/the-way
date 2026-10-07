@@ -164,7 +164,7 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
       onProfileUpdate?.({ ...profile, ...updates });
     } catch (err) {
       console.error('saveAvatar failed:', err.message);
-      setBannerError("Couldn't save avatar — try again.");
+      setBannerError("Couldn't save avatar. Try again.");
     }
   }
 
@@ -581,8 +581,8 @@ export default function ProfilePage({ profile, session, onEdit, onSignOut, onClo
 
       {shareOpen && (
         <ShareSheet
-          body={`Find me on kinwove${profile?.display_name ? ` — I'm ${profile.display_name}` : ''}.`}
-          intro="Real questions about faith, doubt, and the Bible — for believers, doubters, and everyone in between."
+          body={`Find me on kinwove${profile?.display_name ? `I'm ${profile.display_name}` : ''}.`}
+          intro="Real questions about faith, doubt, and the Bible: for believers, doubters, and everyone in between."
           title="Share your profile"
           onClose={() => setShareOpen(false)}
         />

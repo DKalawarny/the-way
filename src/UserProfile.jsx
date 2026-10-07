@@ -429,7 +429,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
                         }}
                       >
                         <span style={{ fontSize: 16 }}>🚩</span>
-                        {reportState === 'done' ? 'Reported — our team will review' : `Report ${firstName}`}
+                        {reportState === 'done' ? 'Reported. Our team will review' : `Report ${firstName}`}
                       </button>
                       {/* Block */}
                       <button
@@ -613,7 +613,7 @@ export default function UserProfile({ userId, session, onClose, onStartChat, onS
                 //     viewer can't see, so this copy is the honest read of the situation.
                 //   - viewing someone with no church: plain empty
                 session?.user?.id === userId
-                  ? 'Nothing shared yet — say hello to your page.'
+                  ? 'Nothing shared yet. Say hello to your page.'
                   : churchCtx.church
                     ? `Posts here are visible to ${churchCtx.church.name} family.`
                     : 'Nothing shared yet.'

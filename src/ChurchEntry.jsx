@@ -134,7 +134,7 @@ export default function ChurchEntry({ churchId, session, onAskAI, onAskSomeone, 
           </div>
 
           <div style={{ '--i': 5, marginTop: 18, fontSize: 12, color: T.inkMuted, fontStyle: 'italic', lineHeight: 1.5 }}>
-            Your pastor never sees what you write — only the person you choose.
+            Your pastor never sees what you write, only the person you choose.
           </div>
 
           <button onClick={onClose} style={{ '--i': 6,

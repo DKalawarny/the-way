@@ -209,7 +209,7 @@ export default function MessagesButton({
             position: 'absolute',
             top: isDesktop ? 56 : 'calc(env(safe-area-inset-top, 0px) + 56px)',
             right,
-            width: 360, maxWidth: 'calc(100vw - 24px)',
+            width: 360, maxWidth: 'calc(100vw, 24px)',
             background: T.white, borderRadius: 16,
             border: `1px solid ${T.line}`,
             boxShadow: '0 8px 40px rgba(0,0,0,0.16)',

@@ -85,13 +85,13 @@ export function SeatNudge({ churchId, plan, session, seatBlocks = 0 }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <KinwoveStar size={15} />
         <div style={{ fontFamily: T.serif, fontSize: 16, fontWeight: 600, color: T.ink }}>
-          Your congregation has grown past {included} — that's a joy to see.
+          Your congregation has grown past {included}, that's a joy to see.
         </div>
       </div>
       <div style={{ fontFamily: T.display, fontSize: 14.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 14, maxWidth: '60ch' }}>
         Because every member can lean on the AI companion, and that carries a real cost for us,
         plans grow gently with your church. Adding {SEAT_BLOCK_SIZE} seats keeps it running for
-        everyone you're reaching — and helps us keep kinwove within reach for smaller churches too.
+        everyone you're reaching, and helps us keep kinwove within reach for smaller churches too.
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <button
@@ -103,7 +103,7 @@ export function SeatNudge({ churchId, plan, session, seatBlocks = 0 }) {
             opacity: busy ? 0.7 : 1, fontFamily: T.sans,
           }}
         >
-          {busy ? 'Opening checkout…' : `Add ${SEAT_BLOCK_SIZE} seats — $${SEAT_BLOCK_PRICE}/month`}
+          {busy ? 'Opening checkout…' : `Add ${SEAT_BLOCK_SIZE} seats, $${SEAT_BLOCK_PRICE}/month`}
         </button>
         <span style={{ fontSize: 12, color: T.inkMuted }}>Secure checkout through Stripe. Cancel any time.</span>
       </div>
@@ -169,10 +169,10 @@ export function TrialBanner({ daysLeft, session }) {
             </span>
             <span style={{ fontSize: 12.5, color: T.inkSoft, marginLeft: 8 }}>
               {!PAYMENTS_LIVE
-                ? '— every tool is open while we build this with you.'
+                ? 'every tool is open while we build this with you.'
                 : urgent
-                  ? '— upgrade before your tools go offline.'
-                  : '— your first 30 days are on us.'}
+                  ? 'upgrade before your tools go offline.'
+                  : 'your first 30 days are on us.'}
             </span>
           </div>
 
@@ -243,8 +243,8 @@ export function UpgradeWall({ onBack, session }) {
   const [selectedPlan, setSelectedPlan] = useState('church_base');
   const features = [
     { icon: '📊', text: 'Pastor dashboard & congregation insights' },
-    { icon: '✍️', text: 'AI sermon composer — draft a full sermon in minutes' },
-    { icon: '🤝', text: 'Care team — follow up personally with your flock' },
+    { icon: '✍️', text: 'AI sermon composer, draft a full sermon in minutes' },
+    { icon: '🤝', text: 'Care team, follow up personally with your flock' },
     { icon: '🗺️', text: 'Custom discipleship journeys & walk announcements' },
     { icon: '👥', text: 'Full congregation access & feed' },
   ];
@@ -323,7 +323,7 @@ export function UpgradeWall({ onBack, session }) {
             lineHeight: 1.7,
             margin: '0 0 14px',
           }}>
-            Your 5-week trial is up — but the people depending on your tools aren't going anywhere.
+            Your 5-week trial is up, but the people depending on your tools aren't going anywhere.
             Upgrade to keep your dashboard, care team, sermon tools, and congregation running.
           </p>
           <p style={{

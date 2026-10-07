@@ -289,7 +289,7 @@ function ThreadCard({ thread, groupId, myId, isPastor, onDelete, onPin, refreshK
             <div style={{ background: T.parchment, padding: '0 18px 6px' }}>
               {replies.length === 0 && (
                 <div style={{ padding: '14px 0', fontSize: 13, color: T.inkMuted, fontStyle: 'italic' }}>
-                  No replies yet — be the first
+                  No replies yet, be the first
                 </div>
               )}
               {replies.map((r) => (
@@ -462,9 +462,9 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
   // should read as a connection problem, not a raw TypeError.
   function friendlyPostError(message) {
     if (/load failed|failed to fetch|network/i.test(message ?? '')) {
-      return "Couldn't reach the server — check your connection and tap Post again.";
+      return "Couldn't reach the server. Check your connection and tap Post again.";
     }
-    return message || 'Something went wrong — please try again.';
+    return message || 'Something went wrong, please try again.';
   }
 
   async function postThread(e) {
@@ -611,7 +611,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
               <textarea
                 value={threadText}
                 onChange={(e) => setThreadText(e.target.value)}
-                placeholder="Start a discussion — a question, a verse, something on your heart…"
+                placeholder="Start a discussion: a question, a verse, something on your heart…"
                 rows={3}
                 style={{
                   width: '100%', boxSizing: 'border-box', resize: 'none',
@@ -648,7 +648,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
             {/* Thread feed */}
             {threads.length === 0 && threadsError && (
               <div style={{ textAlign: 'center', padding: '48px 20px', fontFamily: T.serif, fontSize: 15, color: T.inkMuted, lineHeight: 1.7 }}>
-                Couldn't load discussions — check your connection.
+                Couldn't load discussions. Check your connection.
                 <div style={{ marginTop: 12 }}>
                   <button onClick={loadThreads} style={{ background: 'transparent', border: `1px solid ${T.line}`, color: T.inkSoft, borderRadius: 999, padding: '7px 18px', fontSize: 13, cursor: 'pointer' }}>
                     Try again
@@ -796,7 +796,7 @@ export default function GroupSpace({ group, role, session, profile, onLeave, onC
                 </div>
                 <div style={{ fontSize: 12, color: T.inkMuted }}>
                   Code: <strong style={{ color: T.ink, letterSpacing: 2, fontFamily: 'monospace' }}>{group.invite_code}</strong>
-                  <span style={{ marginLeft: 8, opacity: 0.6 }}>— they enter it under Groups → Join with code</span>
+                  <span style={{ marginLeft: 8, opacity: 0.6 }}>they enter it under Groups → Join with code</span>
                 </div>
               </div>
               {/* Filter */}

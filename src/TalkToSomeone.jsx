@@ -49,7 +49,7 @@ function PrivacyHeader() {
     }}>
       <div style={{ color: T.goldDark, lineHeight: 1 }}><Lock size={14} strokeWidth={2} /></div>
       <div>
-        <strong style={{ color: T.ink }}>Private.</strong> Whoever you talk to — only the two of you see it. Your pastor cannot read these conversations. You choose who, and whether to share your name.
+        <strong style={{ color: T.ink }}>Private.</strong> Whoever you talk to, only the two of you see it. Your pastor cannot read these conversations. You choose who, and whether to share your name.
       </div>
     </div>
   );
@@ -272,7 +272,7 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
         </h1>
         <p style={{ color: T.inkSoft, fontSize: 14.5, lineHeight: 1.65, margin: '0 0 18px' }}>
           Doubt. Grief. A marriage under strain. A season you can't name yet.
-          Some things need a person, not a post — {churchName ? <>these are people at <strong>{churchName}</strong> who said they're here to listen.</> : <>reach out to someone who said they're here to listen.</>}
+          Some things need a person, not a post {churchName ? <>these are people at <strong>{churchName}</strong> who said they're here to listen.</> : <>reach out to someone who said they're here to listen.</>}
         </p>
 
         <PrivacyHeader />
@@ -314,14 +314,14 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
                   This is how members reach you
                 </div>
                 <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.65 }}>
-                  Members who tap "Talk to someone" get connected with your care team — or you directly if no care team is set up. Add care team members in People → Roles to share the load.
+                  Members who tap "Talk to someone" get connected with your care team, or you directly if no care team is set up. Add care team members in People → Roles to share the load.
                 </div>
               </div>
             ) : (
               <div style={{ fontFamily: T.serif }}>
                 <span style={{ fontStyle: 'italic', color: T.inkSoft }}>
                   This church hasn't set up a care team yet.<br />
-                  You can still reach your pastor directly — it may take a while for
+                  You can still reach your pastor directly. It may take a while for
                   someone to see it.
                 </span>
                 {/* Reaching out here is asynchronous: it might be hours, and with no
@@ -337,12 +337,12 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
                     day and night:
                   </div>
                   {[
-                    ['988', 'call or text — US & Canada'],
-                    ['116 123', 'Samaritans — UK'],
+                    ['988', 'call or text, US & Canada'],
+                    ['116 123', 'Samaritans, UK'],
                     ['findahelpline.com', 'anywhere else'],
                   ].map(([value, note]) => (
                     <div key={value} style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.9 }}>
-                      <strong style={{ color: T.goldDark }}>{value}</strong> — {note}
+                      <strong style={{ color: T.goldDark }}>{value}</strong>: {note}
                     </div>
                   ))}
                 </div>
@@ -410,7 +410,7 @@ export default function TalkToSomeone({ session, profile, churchId, onBack }) {
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Write what's on your mind. This goes directly to the person you reach out to — no one else sees it."
+                placeholder="Write what's on your mind. This goes directly to the person you reach out to. No one else sees it."
                 rows={5}
                 style={{
                   width: '100%', boxSizing: 'border-box',

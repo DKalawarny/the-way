@@ -5,7 +5,7 @@ const url = import.meta.env.VITE_SUPABASE_URL;
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!url || !key) {
-  console.warn('[the way] Supabase env vars missing — profiles/auth will not work.');
+  console.warn('[the way] Supabase env vars missing. Profiles/auth will not work.');
 }
 
 export const supabase = (url && key)
@@ -44,7 +44,7 @@ export async function directProfileUpdate(userId, updates) {
   });
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
-    try { const j = await res.json(); msg = `${j.message || j.error || msg}${j.details ? ` — ${j.details}` : ''}`; } catch (_) {}
+    try { const j = await res.json(); msg = `${j.message || j.error || msg}${j.details ? `, ${j.details}` : ''}`; } catch (_) {}
     throw new Error(msg);
   }
 }

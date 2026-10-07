@@ -98,7 +98,7 @@ export default function PastorApply({ session, profile, onClose, onBecamePastor 
     });
     setSaving(false);
     const body = await res.json().catch(() => ({}));
-    if (!res.ok) return setError(body.error || 'Submit failed — try again.');
+    if (!res.ok) return setError(body.error || 'Submit failed. Try again.');
     const data = body.application;
 
     // Instant auto-approval via domain match trigger
@@ -135,11 +135,11 @@ export default function PastorApply({ session, profile, onClose, onBecamePastor 
         body: JSON.stringify({ application_id: applicationId, email: activeEmail }),
       });
       const body = await res.json();
-      if (!res.ok) { setVerifyError(body.error || 'Could not send — try again.'); setSendingCode(false); return; }
+      if (!res.ok) { setVerifyError(body.error || 'Could not send. Try again.'); setSendingCode(false); return; }
       setCodeSent(true);
       setSendingCode(false);
       setTimeout(() => codeRef.current?.focus(), 100);
-    } catch { setVerifyError('Network error — try again.'); setSendingCode(false); }
+    } catch { setVerifyError('Network error. Try again.'); setSendingCode(false); }
   }
 
   async function handleVerifyCode() {
@@ -154,7 +154,7 @@ export default function PastorApply({ session, profile, onClose, onBecamePastor 
       if (!res.ok) { setVerifyError(body.error || 'Incorrect code.'); setVerifying(false); return; }
       setStep('approved');
       setTimeout(() => onBecamePastor?.(), 1800);
-    } catch { setVerifyError('Network error — try again.'); setVerifying(false); }
+    } catch { setVerifyError('Network error. Try again.'); setVerifying(false); }
   }
 
   async function handleSkipVerification() {
@@ -167,7 +167,7 @@ export default function PastorApply({ session, profile, onClose, onBecamePastor 
       });
       if (!res.ok) { const b = await res.json().catch(() => ({})); setVerifyError(b.error || 'Failed.'); setSubmittingUnverified(false); return; }
       setStep('self-reported');
-    } catch { setVerifyError('Network error — try again.'); setSubmittingUnverified(false); }
+    } catch { setVerifyError('Network error. Try again.'); setSubmittingUnverified(false); }
   }
 
   // ── Approved screen ────────────────────────────────────────────────────────
@@ -194,7 +194,7 @@ export default function PastorApply({ session, profile, onClose, onBecamePastor 
         <div style={{ textAlign: 'center', maxWidth: 440 }}>
           <div style={{ fontSize: 40, marginBottom: 20 }}>🏛</div>
           <div style={{ fontFamily: T.serif, fontSize: 26, fontWeight: 600, color: T.ink, marginBottom: 12, letterSpacing: '-0.02em' }}>
-            You're in — with one note.
+            You're in, with one note.
           </div>
           <div style={{ fontFamily: T.serif, fontSize: 15, color: T.inkSoft, lineHeight: 1.7, marginBottom: 16 }}>
             Your church page is active and your dashboard is ready. Because we couldn't verify an email, your church shows a <strong style={{ color: T.ink }}>"Self-reported"</strong> badge and won't appear in the public directory yet.
@@ -382,13 +382,13 @@ export default function PastorApply({ session, profile, onClose, onBecamePastor 
         )}
 
         <div style={{ fontSize: 12, letterSpacing: 2, textTransform: 'uppercase', color: T.goldDark, marginBottom: 10 }}>
-          Step 1 of 2 — About your church
+          Step 1 of 2, About your church
         </div>
         <h2 style={{ fontFamily: T.serif, fontSize: 32, fontWeight: 600, color: T.ink, letterSpacing: '-0.022em', lineHeight: 1.08, margin: '0 0 10px' }}>
           Bring your church to kinwove
         </h2>
         <p style={{ color: T.inkSoft, fontSize: 15, lineHeight: 1.65, margin: '0 0 28px' }}>
-          A quiet space for your congregation between Sundays. Free. Takes two minutes — we verify instantly via a code to your church email.
+          A quiet space for your congregation between Sundays. Free. Takes two minutes. We verify instantly via a code to your church email.
         </p>
 
         <form onSubmit={handleSubmit} style={{ background: T.white, border: `1px solid ${T.line}`, borderRadius: 16, padding: 24 }}>

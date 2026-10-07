@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { testamentOf } from './bibleRefUtils.js';
+import { plainDashes } from './lib/plainDashes.js';
 
 // Matches: (Book Ch:v) parenthesised refs, **Book Ch:v** bold refs, and extended/historical tags
 const REF_REGEX =
@@ -40,7 +41,10 @@ function splitInline(s, keyBase) {
  *   onRefClick — optional (refRaw: string) => void called on canonical ref click
  *   refStatus  — optional Map<refRaw, 'ok' | 'invalid' | 'loading'>
  */
-export default function MsgText({ text, onRefClick, refStatus }) {
+export default function MsgText({ text, onRefClick, refStatus, plain = false }) {
+  // ⭐ No dashes in AI replies (Daniel, 6 Oct: "looks AI"). Opt-in so human DMs
+  // are never rewritten. Verse ranges like 3:16–18 are digit-ranges and kept.
+  if (plain) text = plainDashes(text);
   // Split into paragraphs, then within each paragraph apply the ref regex.
   // This lets us detect paraphrase paragraphs as a whole unit.
   const segments = useMemo(() => {
@@ -107,7 +111,7 @@ export default function MsgText({ text, onRefClick, refStatus }) {
                 }}
                 title={
                   status === 'ok'      ? 'Verified ✓'                            :
-                  status === 'invalid' ? 'Could not verify — please check this reference' :
+                  status === 'invalid' ? 'Could not verify, please check this reference' :
                   status === 'loading' ? 'Checking…'                              :
                   clickable            ? 'Tap to preview this verse'              : undefined
                 }

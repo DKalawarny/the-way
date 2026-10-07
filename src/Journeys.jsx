@@ -97,7 +97,7 @@ function JourneyDetail({ journey, currentStep, onStartStep, onBack }) {
               <div style={{ fontSize: 28, marginBottom: 14 }}><KinwoveStar size={28} /></div>
               <div style={{ fontFamily: T.serif, fontSize: 24, color: T.ink, fontWeight: 600, marginBottom: 10, letterSpacing: '-0.015em', lineHeight: 1.15 }}>Path complete.</div>
               <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.65 }}>
-                You've walked the whole way. Keep exploring — or start another path.
+                You've walked the whole way. Keep exploring, or start another path.
               </div>
             </div>
           )}

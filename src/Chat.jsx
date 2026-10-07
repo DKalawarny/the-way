@@ -203,7 +203,7 @@ function PersonTypeWelcome({ personType }) {
     deeper:        { icon: 'scripture',label: 'Going deeper',  desc: 'Go further into what you already hold as true.' },
     'inter-faith': { icon: 'peace',    label: 'Comparing faiths', desc: 'Honest questions across traditions, no pressure.' },
     kids:          { icon: 'creation', label: 'For kids',      desc: 'Big questions, made simple and kind.' },
-    relationships: { icon: 'peace',    label: 'Relationships', desc: 'Real people, real situations — through a faith lens.' },
+    relationships: { icon: 'peace',    label: 'Relationships', desc: 'Real people, real situations, through a faith lens.' },
     life:          { icon: 'scripture',label: 'Life Questions',desc: 'Real life, grounded in scripture.' },
   };
   const c = config[personType] ?? config.curious;
@@ -420,7 +420,7 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            system: 'You write short, intriguing headings for faith-based social posts. Return ONLY the heading — no quotes, no punctuation at the end, no explanation. Maximum 10 words.',
+            system: 'You write short, intriguing headings for faith-based social posts. Return ONLY the heading. No quotes, no punctuation at the end, no explanation. Maximum 10 words.',
             messages: [{ role: 'user', content: `Write an intriguing heading for this post:\n\n${text.slice(0, 600)}` }],
             personType: 'curious',
             internal: true,
@@ -596,7 +596,7 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
       sub: 'Post to your timeline or to a group', onClick: handleFacebook, done: false,
     },
     !isNativeApp && {
-      icon: '💬', label: messengerNote ? 'Copied — paste in Messenger' : 'Send via Messenger',
+      icon: '💬', label: messengerNote ? 'Copied, paste in Messenger' : 'Send via Messenger',
       sub: 'Opens Messenger; text is copied to paste', onClick: handleMessenger, done: messengerNote,
     },
     !isNativeApp && {
@@ -821,7 +821,7 @@ function ChatShareSheet({ text, label, rawMessages, convTitle, session, profile,
 
 // ── Capability hint strip near the camera / attach button ────────────────────
 const IMG_HINTS = [
-  { icon: '📷', text: 'Attach a photo — Bible pages, handwritten notes, journal entries' },
+  { icon: '📷', text: 'Attach a photo: Bible pages, handwritten notes, journal entries' },
   { icon: '📜', text: 'Photo a Hebrew scroll or Greek manuscript — kinwove can read it' },
   { icon: '🔤', text: 'Ask about the original Hebrew or Greek word behind any translation' },
   { icon: '✍️', text: 'Snap a handwritten question or note and ask about it' },
@@ -1066,7 +1066,7 @@ export default function Chat({
   const starters = useMemo(() => {
     const base = getStarters(personType, conversations ?? []);
     const verse = getDailyVerse();
-    const versePrompt = `Help me understand ${verse.ref} — "${verse.text}"`;
+    const versePrompt = `Help me understand ${verse.ref}, "${verse.text}"`;
     return [versePrompt, ...base.slice(0, 2)];
   }, [personType, conversations]);
   // GuestQuestion writes person_type values that PERSON_TYPES has never had
@@ -1385,11 +1385,11 @@ export default function Chat({
       if (e?.status === 429) {
         setError(e.message || 'You’ve reached your questions for now.');
       } else if (assistantContent) {
-        setError('That answer got cut off partway — sorry about that. Ask again and it’ll pick the thought back up.');
+        setError('That answer got cut off partway, sorry about that. Ask again and it’ll pick the thought back up.');
       } else if (e?.name === 'AbortError') {
-        setError('That answer took too long to arrive — it happens sometimes. Tap Retry and we’ll try again.');
+        setError('That answer took too long to arrive. It happens sometimes. Tap Retry and we’ll try again.');
       } else {
-        setError('That one didn’t come through — a hiccup on our end, not yours. Your question is safe; tap Retry.');
+        setError('That one didn’t come through, a hiccup on our end, not yours. Your question is safe; tap Retry.');
       }
     } finally {
       clearTimeout(watchdog);
@@ -1487,7 +1487,7 @@ export default function Chat({
                 background: T.white, border: `1px solid ${T.line}`,
                 borderRadius: 16, boxShadow: '0 12px 48px rgba(44,24,16,0.18)',
                 padding: 10, zIndex: 200,
-                width: 'min(calc(100vw - 32px), 420px)',
+                width: 'min(calc(100vw, 32px), 420px)',
                 maxHeight: '85vh', overflowY: 'auto',
               }}>
                 <div style={{ padding: '2px 4px 8px', fontSize: 10, letterSpacing: '0.07em', textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700 }}>
@@ -1650,7 +1650,7 @@ export default function Chat({
             whiteSpace: 'nowrap',
           }}
         >
-          ↓ {busy ? 'Still loading — scroll down' : 'Scroll to bottom'}
+          ↓ {busy ? 'Still loading, scroll down' : 'Scroll to bottom'}
         </button>
       )}
 
@@ -1715,7 +1715,7 @@ export default function Chat({
                 Take your time.
               </div>
               <div style={{ fontSize: 14.5, color: C.muted, lineHeight: 1.55, maxWidth: 360, marginBottom: 22 }}>
-                Ask anything — a question, a doubt, a verse you want to understand.
+                Ask anything: a question, a doubt, a verse you want to understand.
               </div>
               <div style={{
                 fontSize: 10, letterSpacing: 1.6, textTransform: 'uppercase',
@@ -1760,7 +1760,7 @@ export default function Chat({
               <Tip
                 tipId="chat_save_note"
                 icon="📌"
-                text="Save any answer as a note — tap the bookmark icon on a response to keep it on your board."
+                text="Save any answer as a note, tap the bookmark icon on a response to keep it on your board."
                 style={{ marginTop: 20, width: '100%', maxWidth: 440, textAlign: 'left' }}
               />
             </div>
@@ -1846,6 +1846,7 @@ export default function Chat({
                           text={m.content}
                           onRefClick={handleRefClick}
                           refStatus={refStatusMap[i]}
+                          plain={m.role === 'assistant'}
                         />
                         {isAssistant && !isStreaming && !refTipDismissed && extractRefs(m.content).size > 0 && messages.findIndex((mm) => mm.role === 'assistant' && mm.content && extractRefs(mm.content).size > 0) === i && (
                           <button
@@ -1857,12 +1858,12 @@ export default function Chat({
                               fontFamily: T.sans, cursor: 'pointer', textAlign: 'left', lineHeight: 1.5,
                             }}
                           >
-                            <span aria-hidden="true">👆</span> The gold references are tappable — read the verse right here. <span style={{ opacity: 0.6 }}>Got it</span>
+                            <span aria-hidden="true">👆</span> The gold references are tappable. Read the verse right here. <span style={{ opacity: 0.6 }}>Got it</span>
                           </button>
                         )}
                       </div>
                     ) : !m._imagePreview ? (
-                      <MsgText text={m.content} onRefClick={handleRefClick} refStatus={refStatusMap[i]} />
+                      <MsgText text={m.content} onRefClick={handleRefClick} refStatus={refStatusMap[i]} plain={m.role === 'assistant'} />
                     ) : null
                   )}
                 </div>
@@ -1908,7 +1909,7 @@ export default function Chat({
                     {!flaggedMsgs.has(i) ? (
                       <button
                         onClick={() => handleFlag(i, m.content)}
-                        title="Something seems off — flag this response"
+                        title="Something seems off, flag this response"
                         style={{
                           background: 'transparent', border: 'none',
                           padding: '4px 8px', cursor: 'pointer',
@@ -2027,8 +2028,8 @@ export default function Chat({
                 </div>
                 <div style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.5 }}>
                   {aiPlan === 'free'
-                    ? 'Upgrade for longer responses and higher weekly limits — $6.99 CAD/mo.'
-                    : 'Go further with priority responses and higher limits — $13.99 CAD/mo.'}
+                    ? 'Upgrade for longer responses and higher weekly limits, $6.99 CAD/mo.'
+                    : 'Go further with priority responses and higher limits, $13.99 CAD/mo.'}
                 </div>
                 <div style={{ fontSize: 11.5, color: T.inkMuted, lineHeight: 1.5, marginTop: 5 }}>
                   Your plan helps keep kinwove free for those who can't afford it.
@@ -2115,7 +2116,7 @@ export default function Chat({
           <span style={{ flexShrink: 0, marginTop: 1 }}><KinwoveStar size={13} /></span>
           <span>
             It sounds like you&rsquo;re carrying something heavy. Your free questions for this
-            week had run out — <strong>I&rsquo;ve added {graceNote} more</strong>, so we don&rsquo;t
+            week had run out <strong>I&rsquo;ve added {graceNote} more</strong>, so we don&rsquo;t
             have to stop here.
           </span>
         </div>
@@ -2208,7 +2209,7 @@ export default function Chat({
                 ×
               </button>
             </div>
-            <div style={{ fontSize: 12, color: C.muted, fontStyle: 'italic' }}>Image attached — ask a question about it</div>
+            <div style={{ fontSize: 12, color: C.muted, fontStyle: 'italic' }}>Image attached. Ask a question about it</div>
           </div>
         ) : !showGuestWall && (
           /* Capability hint — rotates every 5 s to surface image features */
@@ -2381,7 +2382,7 @@ export default function Chat({
           boxShadow: '0 4px 20px rgba(44,24,16,0.4)',
           animation: 'fadeIn 0.2s ease both',
         }}>
-          Thanks — we'll take a look at this response.
+          Thanks, we'll take a look at this response.
         </div>
       )}
       {showGuestWall && <GuestWall onSignUp={onSignUp} />}

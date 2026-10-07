@@ -422,7 +422,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
     if (!w) return;
     setWalkBusy(true); setWalkError(null);
     const body = walkNote.trim()
-      || `We're walking through "${w.title}" together. Pace is yours — start when you're ready.`;
+      || `We're walking through "${w.title}" together. Pace is yours. Start when you're ready.`;
     const [{ error: postErr }, { error: chErr }] = await Promise.all([
       supabase.from('posts').insert({
         author_id: session.user.id,
@@ -607,14 +607,14 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
     {
       id: 'welcome',
       title: 'Write a welcome note',
-      hint: 'A sentence or two — the first thing visitors read on your page.',
+      hint: 'A sentence or two, the first thing visitors read on your page.',
       done: hasWelcomeNote,
       onClick: () => onOpenSettings?.(),
     },
     {
       id: 'sermon',
       title: 'Publish your first sermon',
-      hint: 'Paste an outline — we turn Sunday into a week of devotionals.',
+      hint: 'Paste an outline. We turn Sunday into a week of devotionals.',
       done: hasPublishedSermon,
       onClick: () => onOpenComposer?.(),
     },
@@ -638,8 +638,8 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
       id: 'invite',
       title: 'Invite 5 members',
       hint: memberCount >= 5
-        ? '5+ joined — your church is moving.'
-        : `${memberCount} of 5 so far — share the QR or your invite code.`,
+        ? '5+ joined. Your church is moving.'
+        : `${memberCount} of 5 so far, share the QR or your invite code.`,
       done: memberCount >= 5,
       onClick: () => onOpenPeople?.(),
     },
@@ -666,7 +666,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
     setSermonBusy(null);
     if (err) {
       console.error('toggle publish failed', err.message);
-      setPublishError("Couldn't update sermon status — try again.");
+      setPublishError("Couldn't update sermon status. Try again.");
       return;
     }
     setPublishError(null);
@@ -719,7 +719,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
               {church?.name ?? 'Your church'} · this week
             </h1>
             <p style={{ color: T.inkSoft, fontSize: 14.5, lineHeight: 1.65, margin: '0 0 18px' }}>
-              The pulse of your congregation — themes only, no individual data. You'll never see who said what.
+              The pulse of your congregation, themes only, no individual data. You'll never see who said what.
             </p>
 
             {/* Quick actions */}
@@ -783,7 +783,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
         >
           {themes.length === 0 ? (
             <div style={{ color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', textAlign: 'center', padding: '20px 0', lineHeight: 1.6 }}>
-              No questions yet. Share your church's anonymous-ask QR code so visitors can chat without signing up — themes (never names or words) will land here.
+              No questions yet. Share your church's anonymous-ask QR code so visitors can chat without signing up. Themes (never names or words) will land here.
             </div>
           ) : (
             themes.map((t) => <ThemeBar key={t.theme} theme={t.theme} count={t.count} max={themeMax} />)
@@ -853,7 +853,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
               background: T.parchment, border: `1px dashed ${T.goldLight}`, borderRadius: 12,
               padding: '14px 16px', color: T.inkSoft, fontSize: 14, lineHeight: 1.55, fontFamily: T.serif,
             }}>
-              <strong style={{ color: T.ink }}>Nothing scheduled yet.</strong> Paste this Sunday's outline — we'll turn it into 5 days of devotionals, group questions, and a kid version. <span style={{ color: T.goldDark, fontWeight: 600 }}>Start →</span>
+              <strong style={{ color: T.ink }}>Nothing scheduled yet.</strong> Paste this Sunday's outline: we'll turn it into 5 days of devotionals, group questions, and a kid version. <span style={{ color: T.goldDark, fontWeight: 600 }}>Start →</span>
             </button>
           ) : (
             sermons.map((s) => (
@@ -875,7 +875,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
         {!embedded && (
         <Section
           title="Care team"
-          hint={`${careTeamSize} active member${careTeamSize === 1 ? '' : 's'}. ${careCount} conversation${careCount === 1 ? '' : 's'} this week. (Counts only — content is private.)`}
+          hint={`${careTeamSize} active member${careTeamSize === 1 ? '' : 's'}. ${careCount} conversation${careCount === 1 ? '' : 's'} this week. (Counts only. Content is private.)`}
           action={onOpenCareAdmin}
           actionLabel="Manage"
         >
@@ -885,7 +885,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
               background: T.parchment, border: `1px dashed ${T.goldLight}`, borderRadius: 12,
               padding: '14px 16px', color: T.inkSoft, fontSize: 14, lineHeight: 1.55, fontFamily: T.serif,
             }}>
-              <strong style={{ color: T.ink }}>No care team yet.</strong> Add 3–5 trusted people — elders, lay counselors, ministry leads. Members can then reach out anonymously, by topic, or by name. <span style={{ color: T.goldDark, fontWeight: 600 }}>Add people →</span>
+              <strong style={{ color: T.ink }}>No care team yet.</strong> Add 3–5 trusted people: elders, lay counselors, ministry leads. Members can then reach out anonymously, by topic, or by name. <span style={{ color: T.goldDark, fontWeight: 600 }}>Add people →</span>
             </button>
           )}
           {careTeamSize > 0 && (
@@ -910,7 +910,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
               background: T.parchment, border: `1px dashed ${T.goldLight}`, borderRadius: 12,
               padding: '14px 16px', color: T.inkSoft, fontSize: 14, lineHeight: 1.55, fontFamily: T.serif,
             }}>
-              <strong style={{ color: T.ink }}>No team members yet.</strong> Add associate pastors, worship leaders, or elders — each with exactly the permissions they need. <span style={{ color: T.goldDark, fontWeight: 600 }}>Add someone →</span>
+              <strong style={{ color: T.ink }}>No team members yet.</strong> Add associate pastors, worship leaders, or elders. Each with exactly the permissions they need. <span style={{ color: T.goldDark, fontWeight: 600 }}>Add someone →</span>
             </button>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1050,7 +1050,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
             <textarea
               value={walkNote}
               onChange={(e) => setWalkNote(e.target.value.slice(0, 500))}
-              placeholder="e.g. We're doing this together for Lent. No pressure on pace — pick it up when you can."
+              placeholder="e.g. We're doing this together for Lent. No pressure on pace, pick it up when you can."
               rows={3}
               style={{
                 width: '100%', boxSizing: 'border-box',
@@ -1187,7 +1187,7 @@ export default function PastorDashboard({ session, profile, churchId, onBack, on
                     )}
                     {memberSearch.trim().length > 1 && memberResults.length === 0 && (
                       <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 6, fontStyle: 'italic' }}>
-                        No members found — they need to join your church first.
+                        No members found. They need to join your church first.
                       </div>
                     )}
                   </>

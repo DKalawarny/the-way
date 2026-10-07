@@ -12,13 +12,13 @@ const STEPS = [
   {
     tourId: null,
     title: 'Welcome to kinwove',
-    body: "A place for the whole journey — whether you're just curious, rebuilding your faith, or leading a congregation. No pressure, no judgment.",
+    body: "A place for the whole journey: whether you're just curious, rebuilding your faith, or leading a congregation. No pressure, no judgment.",
     color: T.gold,
   },
   {
     tourId: 'ask',
     title: 'Ask anything',
-    body: 'Your AI companion. Ask hard questions about faith, doubt, or Scripture — it walks alongside you without judgment or pressure.',
+    body: 'Your AI companion. Ask hard questions about faith, doubt, or Scripture. It walks alongside you without judgment or pressure.',
     color: T.goldDark,
   },
   {
@@ -36,7 +36,7 @@ const STEPS = [
   {
     tourId: 'bible',
     title: 'Open the Bible',
-    body: 'Read any chapter — or tap Listen and it reads aloud to you. Tap any verse for plain-English explanations, historical context, and original-language insights.',
+    body: 'Read any chapter, or tap Listen and it reads aloud to you. Tap any verse for plain-English explanations, historical context, and original-language insights.',
     color: '#4a1542',
   },
   {
@@ -48,7 +48,7 @@ const STEPS = [
   {
     tourId: 'you',
     title: 'Your space',
-    body: 'Your profile, faith walks, messages, prayer wall, and milestones — everything that\'s yours to explore and come back to.',
+    body: 'Your profile, faith walks, messages, prayer wall, and milestones. Everything that\'s yours to explore and come back to.',
     color: '#1a3050',
   },
 ];
@@ -298,7 +298,7 @@ export default function FeatureTour({ onClose }) {
         <div
           key={step}
           style={{
-            width: 'min(420px, calc(100vw - 32px))',
+            width: 'min(420px, calc(100vw, 32px))',
             background: T.cream,
             borderRadius: 24, overflow: 'hidden',
             boxShadow: '0 32px 80px rgba(0,0,0,0.45)',

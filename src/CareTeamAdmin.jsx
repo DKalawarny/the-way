@@ -170,7 +170,7 @@ function MemberForm({ initial, onSave, onCancel, saving }) {
       </select>
 
       <label style={{ fontSize: 12, color: T.inkSoft, fontWeight: 500, display: 'block', marginBottom: 6 }}>
-        Specialties (optional — helps members find the right person)
+        Specialties (optional. Helps members find the right person)
       </label>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
         {SPECIALTIES.map((s) => (
@@ -184,13 +184,13 @@ function MemberForm({ initial, onSave, onCancel, saving }) {
       </div>
 
       <label style={{ fontSize: 12, color: T.inkSoft, fontWeight: 500, display: 'block', marginBottom: 4 }}>
-        Bio (shown to members when they pick someone — optional)
+        Bio (shown to members when they pick someone, optional)
       </label>
       <textarea
         value={bio}
         onChange={(e) => setBio(e.target.value.slice(0, 240))}
         rows={2}
-        placeholder="A line or two — helps members feel safe choosing you."
+        placeholder="A line or two. Helps members feel safe choosing you."
         style={{
           width: '100%', border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 12px',
           fontSize: 13, fontFamily: T.serif, background: T.cream, outline: 'none', resize: 'vertical',
@@ -299,7 +299,7 @@ export default function CareTeamAdmin({ session, churchId, onBack, embedded = fa
               Who's available to talk
             </h1>
             <p style={{ color: T.inkSoft, fontSize: 14.5, lineHeight: 1.65, margin: '0 0 20px' }}>
-              People your members can choose to talk to — elders, ministry leads, prayer team, lay counselors. You won't see what's said. Each conversation is private to the two participants.
+              People your members can choose to talk to: elders, ministry leads, prayer team, lay counselors. You won't see what's said. Each conversation is private to the two participants.
             </p>
           </>
         )}

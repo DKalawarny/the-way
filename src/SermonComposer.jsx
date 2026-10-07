@@ -75,7 +75,7 @@ function ContentItem({ item, onChange, onRemove, onRegenerate, regenerating, any
             title={regenerating
               ? 'Regenerating this question…'
               : atLimit
-                ? 'AI uses exhausted — upgrade to regenerate'
+                ? 'AI uses exhausted, upgrade to regenerate'
                 : anyBusy
                   ? 'Another generation is in progress'
                   : 'Replace this one with a fresh angle from the sermon'}
@@ -174,7 +174,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
       if (!res.ok) throw new Error();
       setRepurposed(await res.json());
     } catch {
-      setRepError("Couldn't generate just now — try again in a moment.");
+      setRepError("Couldn't generate just now. Try again in a moment.");
     } finally {
       setRepBusy(false);
     }
@@ -603,7 +603,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
           console.warn('sermon announcement insert failed', eAnn.message);
           showToast(`Sermon saved, but it didn't post to the feed: ${eAnn.message}`, 'error');
         } else {
-          showToast('Sermon published — your congregation is being emailed now.', 'success');
+          showToast('Sermon published. Your congregation is being emailed now.', 'success');
           // First publish (no announcement existed yet) → email the congregation.
           // Fire-and-forget, same as the PastorDashboard draft→Live toggle.
           authedFetch('/api/send-sermon-digest', {
@@ -616,7 +616,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
     } else if (existingAnn) {
       // Sermon was unpublished — pull the announcement from the feed.
       await supabase.from('posts').delete().eq('id', existingAnn.id);
-      showToast('Sermon unpublished — the feed post is gone.', 'info');
+      showToast('Sermon unpublished. The feed post is gone.', 'info');
     }
 
     // Refresh list
@@ -681,7 +681,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
               <option value="">Standalone (no series)</option>
               {seriesList.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.name}{s.scripture_arc ? ` — ${s.scripture_arc}` : ''}
+                  {s.name}{s.scripture_arc ? `, ${s.scripture_arc}` : ''}
                 </option>
               ))}
               <option value="__new__">+ New series…</option>
@@ -753,7 +753,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
           <textarea
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
-            placeholder={`Paste your outline. Bullet points, paragraphs, partial thoughts — whatever you have.\n\nThe AI uses this to draft daily verses, small-group questions, a "going deeper" track, and a kid-friendly version. You'll be able to edit everything before publishing.`}
+            placeholder={`Paste your outline. Bullet points, paragraphs, partial thoughts: whatever you have.\n\nThe AI uses this to draft daily verses, small-group questions, a "going deeper" track, and a kid-friendly version. You'll be able to edit everything before publishing.`}
             rows={8}
             style={{ ...inputCss, fontFamily: T.serif, lineHeight: 1.7, resize: 'vertical', marginBottom: 14 }}
           />
@@ -800,7 +800,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
                     <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> {sermonAi.isTrial ? `You've used all ${sermonAi.limit} trial AI uses` : `You've used your ${FREE_SERMON_LIMIT} free AI sermons`}
                   </div>
                   <div style={{ fontSize: 12.5, color: T.inkSoft, lineHeight: 1.5 }}>
-                    Upgrade to keep generating — your congregation won't notice the difference in prep time, but you will.
+                    Upgrade to keep generating. Your congregation won't notice the difference in prep time, but you will.
                   </div>
                 </div>
                 <button
@@ -1034,8 +1034,8 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
                       }}>
                         <div style={{ fontFamily: T.serif, fontStyle: 'italic', marginBottom: 16 }}>
                           {content.length === 0
-                            ? 'Paste an outline above and tap Generate the week — or fill in each day yourself.'
-                            : 'No daily questions yet — generate or fill in each day yourself.'}
+                            ? 'Paste an outline above and tap Generate the week, or fill in each day yourself.'
+                            : 'No daily questions yet, generate or fill in each day yourself.'}
                         </div>
                         <button
                           onClick={() => {
@@ -1076,8 +1076,8 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
                         color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', lineHeight: 1.6,
                       }}>
                         {content.length === 0
-                          ? 'Paste an outline above and tap Generate the week — or add one manually.'
-                          : `No ${activeKindMeta.label.toLowerCase()} yet — hit Repopulate or add one manually.`}
+                          ? 'Paste an outline above and tap Generate the week, or add one manually.'
+                          : `No ${activeKindMeta.label.toLowerCase()} yet, hit Repopulate or add one manually.`}
                       </div>
                     )}
                   </div>
@@ -1124,7 +1124,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
                 📣 Repurpose this sermon
               </div>
               <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 12 }}>
-                Social captions and a newsletter blurb from the same outline — copy and paste them wherever your church shares.
+                Social captions and a newsletter blurb from the same outline, copy and paste them wherever your church shares.
               </div>
               {!repurposed && (
                 <button
@@ -1142,7 +1142,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
                     <div key={i} style={{ background: T.parchment, border: `1px solid ${T.line}`, borderRadius: 10, padding: '12px 14px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
                         <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: T.inkMuted }}>
-                          {p.platform === 'short' ? 'Short — story / X' : p.platform === 'medium' ? 'Medium — Facebook / Instagram' : 'Long — reflection post'}
+                          {p.platform === 'short' ? 'Short, story / X' : p.platform === 'medium' ? 'Medium, Facebook / Instagram' : 'Long, reflection post'}
                         </span>
                         <button onClick={() => copyRep(`s${i}`, p.text)} style={{ marginLeft: 'auto', background: 'none', border: `1px solid ${T.line}`, borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 600, color: T.goldDark, cursor: 'pointer' }}>
                           {repCopied === `s${i}` ? '✓ Copied' : 'Copy'}
@@ -1216,7 +1216,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
               Sunday → the week
             </h1>
             <p style={{ color: T.inkSoft, fontSize: 14.5, lineHeight: 1.65, margin: '0 0 20px' }}>
-              Paste a sermon, get a week of daily discussion questions, a deeper track, and a kid-friendly version. Schedule the questions to drop one per day — or trim down to whatever cadence fits.
+              Paste a sermon, get a week of daily discussion questions, a deeper track, and a kid-friendly version. Schedule the questions to drop one per day, or trim down to whatever cadence fits.
             </p>
           </>
         )}
@@ -1237,7 +1237,7 @@ export default function SermonComposer({ session, churchId, onBack, initialSermo
             <div style={{ fontFamily: T.serif, fontSize: 14.5, color: T.ink, lineHeight: 1.6 }}>
               Paste this Sunday's outline. We turn it into 7 daily discussion
               questions (drop one per day), a deeper track, and a kid-friendly
-              version — ready in about a minute. Keep them all, trim to 1 or 2
+              version, ready in about a minute. Keep them all, trim to 1 or 2
               a week, reschedule, edit, or add a question on the fly.
             </div>
           </div>

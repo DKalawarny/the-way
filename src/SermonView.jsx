@@ -222,7 +222,7 @@ export default function SermonView({ session, profile, sermonId, onBack, onChang
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  {pastorPreview ? '✓ Previewing — show visitor view' : '⏰ Preview scheduled'}
+                  {pastorPreview ? '✓ Previewing, show visitor view' : '⏰ Preview scheduled'}
                 </button>
               </div>
             )}
@@ -233,7 +233,7 @@ export default function SermonView({ session, profile, sermonId, onBack, onChang
                 padding: `${SPACE[5]}px ${SPACE[4]}px`, textAlign: 'center',
                 fontFamily: T.serif, fontStyle: 'italic', color: T.inkMuted, fontSize: 14, lineHeight: 1.6,
               }}>
-                No questions have dropped yet — they'll appear here on their scheduled days.
+                No questions have dropped yet, they'll appear here on their scheduled days.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>

@@ -371,7 +371,7 @@ export default function PeopleSearch({ session, profile, onClose, onViewProfile,
         style={{
           background: T.cream, borderRadius: 20,
           width: '100%', maxWidth: 520,
-          maxHeight: 'calc(100vh - 100px)',
+          maxHeight: 'calc(100vh, 100px)',
           display: 'flex', flexDirection: 'column',
           border: `1px solid ${T.line}`,
           boxShadow: '0 20px 60px rgba(44,24,16,0.25)',

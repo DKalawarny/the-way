@@ -13,7 +13,7 @@ const SECTIONS = [
     items: [
       {
         q: 'What is kinwove?',
-        a: 'kinwove is a faith community for people at every stage of their spiritual journey — from the curious to the committed. You can share posts, pray together, study the Bible, find a church, and connect with others walking the same road.',
+        a: 'kinwove is a faith community for people at every stage of their spiritual journey, from the curious to the committed. You can share posts, pray together, study the Bible, find a church, and connect with others walking the same road.',
       },
       {
         q: 'How do I set up my profile?',
@@ -21,15 +21,15 @@ const SECTIONS = [
       },
       {
         q: 'Who can see my posts?',
-        a: 'When you write a post you choose the audience — Public (anyone on kinwove), Church (your church family only), or Only me. You can change this at any time from the ⋯ menu on the post.',
+        a: 'When you write a post you choose the audience: Public (anyone on kinwove), Church (your church family only), or Only me. You can change this at any time from the ⋯ menu on the post.',
       },
       {
         q: 'What does Ask do?',
-        a: 'Ask is kinwove\'s AI — powered by Claude. It answers Scripture questions, explores theology, helps you work through doubt, and never judges where you are in your journey. Tap Ask in the sidebar or the ⋮ menu on mobile to open it. Your conversation history is saved and accessible any time from the Conversations panel inside Ask.',
+        a: 'Ask is kinwove\'s AI, powered by Claude. It answers Scripture questions, explores theology, helps you work through doubt, and never judges where you are in your journey. Tap Ask in the sidebar or the ⋮ menu on mobile to open it. Your conversation history is saved and accessible any time from the Conversations panel inside Ask.',
       },
       {
         q: 'Can I access my Ask conversations on another device?',
-        a: 'Yes — open the Conversations panel inside Ask and turn on "Sync across devices." Your history will be saved to your account and loaded automatically whenever you sign in on any device.',
+        a: 'Yes. Open the Conversations panel inside Ask and turn on "Sync across devices." Your history will be saved to your account and loaded automatically whenever you sign in on any device.',
       },
     ],
   },
@@ -44,11 +44,11 @@ const SECTIONS = [
       },
       {
         q: 'How do I save a post to read later?',
-        a: 'Tap the bookmark icon at the bottom-right of any post. Your saved posts are collected under the Saved tab on your profile — tap the bookmark again, or tap Unsave, to remove it.',
+        a: 'Tap the bookmark icon at the bottom-right of any post. Your saved posts are collected under the Saved tab on your profile: tap the bookmark again, or tap Unsave, to remove it.',
       },
       {
         q: 'How do I react to a post?',
-        a: 'Use the four reaction buttons below each post — 👍 Yes, ❤️ Love, 🙏 Amen, and 💡 Insightful. Tap again to remove your reaction.',
+        a: 'Use the four reaction buttons below each post: 👍 Yes, ❤️ Love, 🙏 Amen, and 💡 Insightful. Tap again to remove your reaction.',
       },
       {
         q: 'How do I comment?',
@@ -60,11 +60,11 @@ const SECTIONS = [
       },
       {
         q: 'How do I block someone?',
-        a: 'Tap ⋯ on any post you didn\'t write and choose Block user. The block takes effect immediately — their content will no longer appear for you. Blocking is silent; they won\'t be notified.',
+        a: 'Tap ⋯ on any post you didn\'t write and choose Block user. The block takes effect immediately. Their content will no longer appear for you. Blocking is silent; they won\'t be notified.',
       },
       {
         q: 'How do I report a post?',
-        a: 'Tap ⋯ on a post you didn\'t write, then choose Report post. Select a reason — spam, harmful content, offensive material, misinformation, or other — then tap Submit. Reports are confidential and reviewed by our team.',
+        a: 'Tap ⋯ on a post you didn\'t write, then choose Report post. Select a reason, spam, harmful content, offensive material, misinformation, or other, then tap Submit. Reports are confidential and reviewed by our team.',
       },
       {
         q: 'Can I post anonymously?',
@@ -79,11 +79,11 @@ const SECTIONS = [
     items: [
       {
         q: 'What are Circles?',
-        a: 'Circles are small private groups — for a Bible study, a friend group, or any community you want to keep close. Open the Groups section from the sidebar (desktop) or the navigation menu (mobile).',
+        a: 'Circles are small private groups: for a Bible study, a friend group, or any community you want to keep close. Open the Groups section from the sidebar (desktop) or the navigation menu (mobile).',
       },
       {
         q: 'How do I start a Circle?',
-        a: 'Open Groups and tap "Start a circle." Give it a name, and share the join code with people you want to invite. You\'re the host — you can manage the group and its members.',
+        a: 'Open Groups and tap "Start a circle." Give it a name, and share the join code with people you want to invite. You\'re the host. You can manage the group and its members.',
       },
       {
         q: 'How do I join a Circle?',
@@ -91,7 +91,7 @@ const SECTIONS = [
       },
       {
         q: 'Can I be in more than one Circle?',
-        a: 'Yes — you can be in as many as you like. Each circle has its own discussion thread. A dot appears on the circle card when there are new posts since you last visited.',
+        a: 'Yes. You can be in as many as you like. Each circle has its own discussion thread. A dot appears on the circle card when there are new posts since you last visited.',
       },
     ],
   },
@@ -102,15 +102,15 @@ const SECTIONS = [
     items: [
       {
         q: 'How do I add a prayer request?',
-        a: 'Open the Prayer tab and tap the compose area. Prayers are private by default — tap the visibility toggle to share a request with the community if you\'d like others praying alongside you.',
+        a: 'Open the Prayer tab and tap the compose area. Prayers are private by default, tap the visibility toggle to share a request with the community if you\'d like others praying alongside you.',
       },
       {
         q: 'How do I mark a prayer as answered?',
-        a: 'Find the prayer in your Prayer tab and tap Answered. You can write a praise report to share what happened — these are an encouragement for the whole community.',
+        a: 'Find the prayer in your Prayer tab and tap Answered. You can write a praise report to share what happened. These are an encouragement for the whole community.',
       },
       {
         q: 'Can I pray for someone else\'s request?',
-        a: 'Yes — on any public prayer request, tap Pray for this. The person receives a quiet notification that someone is praying for them. One tap, and it genuinely means the world.',
+        a: 'Yes, on any public prayer request, tap Pray for this. The person receives a quiet notification that someone is praying for them. One tap, and it genuinely means the world.',
       },
       {
         q: 'What is the Community Prayer Wall?',
@@ -125,19 +125,19 @@ const SECTIONS = [
     items: [
       {
         q: 'How does the Bible reader work?',
-        a: 'Open the Bible tab to read Scripture with a built-in study interface. Tap any verse to access explanations, cross-references, original language insights, and more. The Daily Verse shown in the header is tappable — it opens the reader directly to that passage.',
+        a: 'Open the Bible tab to read Scripture with a built-in study interface. Tap any verse to access explanations, cross-references, original language insights, and more. The Daily Verse shown in the header is tappable. It opens the reader directly to that passage.',
       },
       {
         q: 'Can I listen to a chapter being read aloud?',
-        a: 'Yes. Once a chapter loads, tap "▶ Read chapter" above the verses. The chapter is read in your chosen voice (James or Grace — set in Edit Profile → Preferences). While playing you get full controls: ⏮ back 10 seconds, ⏸ pause, ⏭ skip 10 seconds, and ✕ to stop. Flipping to the next chapter automatically stops the current one and starts reading the new chapter.',
+        a: 'Yes. Once a chapter loads, tap "▶ Read chapter" above the verses. The chapter is read in your chosen voice (James or Grace, set in Edit Profile → Preferences). While playing you get full controls: ⏮ back 10 seconds, ⏸ pause, ⏭ skip 10 seconds, and ✕ to stop. Flipping to the next chapter automatically stops the current one and starts reading the new chapter.',
       },
       {
         q: 'Can I start listening from a specific verse?',
-        a: 'Yes — tap any verse in the chapter and choose "▶ Read from here" in the popup. The audio will start from that verse and continue to the end of the chapter. kinwove remembers where you left off, so when you return the button says "Resume from v.X."',
+        a: 'Yes, tap any verse in the chapter and choose "▶ Read from here" in the popup. The audio will start from that verse and continue to the end of the chapter. kinwove remembers where you left off, so when you return the button says "Resume from v.X."',
       },
       {
         q: 'How do I change the reading voice?',
-        a: 'Go to Settings → Edit Profile → Preferences and choose between James (deep, unhurried) and Grace (soft, soothing). The change applies everywhere voices are used — Bible read-aloud and AI response playback.',
+        a: 'Go to Settings → Edit Profile → Preferences and choose between James (deep, unhurried) and Grace (soft, soothing). The change applies everywhere voices are used, Bible read-aloud and AI response playback.',
       },
       {
         q: 'How do I open a passage from a post?',
@@ -145,7 +145,7 @@ const SECTIONS = [
       },
       {
         q: 'What can the AI help me with in Bible study?',
-        a: 'Tap Ask and ask anything — explanation of a passage, word study, historical background, theological questions, or just working through doubt. The AI draws on multiple translations and always responds with grace.',
+        a: 'Tap Ask and ask anything: explanation of a passage, word study, historical background, theological questions, or just working through doubt. The AI draws on multiple translations and always responds with grace.',
       },
       {
         q: 'What are Walks?',
@@ -164,15 +164,15 @@ const SECTIONS = [
       },
       {
         q: 'Where do I find all my notes?',
-        a: 'Tap Notes in the sidebar nav (between Bible and You on desktop, or via the menu on mobile). Your notes are grouped by book of the Bible in canonical order — Genesis through Revelation.',
+        a: 'Tap Notes in the sidebar nav (between Bible and You on desktop, or via the menu on mobile). Your notes are grouped by book of the Bible in canonical order, Genesis through Revelation.',
       },
       {
         q: 'Can I edit a note after saving it?',
-        a: 'Yes — tap the note text to edit it inline. Make your changes and tap Save. Clearing the text entirely and saving will delete the note.',
+        a: 'Yes, tap the note text to edit it inline. Make your changes and tap Save. Clearing the text entirely and saving will delete the note.',
       },
       {
         q: 'Can I search my notes?',
-        a: 'Yes — use the search bar at the top of the Notes screen to filter by book name, note text, or the verse text itself.',
+        a: 'Yes. Use the search bar at the top of the Notes screen to filter by book name, note text, or the verse text itself.',
       },
       {
         q: 'What does "Ask about this" do on a note?',
@@ -180,7 +180,7 @@ const SECTIONS = [
       },
       {
         q: 'Can I jump from a note back to the verse in the Bible?',
-        a: 'Yes — tap the gold verse reference at the top of any note card (e.g. GENESIS 1:3 ↗) and you\'ll be taken straight to that passage in the Bible reader.',
+        a: 'Yes, tap the gold verse reference at the top of any note card (e.g. GENESIS 1:3 ↗) and you\'ll be taken straight to that passage in the Bible reader.',
       },
     ],
   },
@@ -195,7 +195,7 @@ const SECTIONS = [
       },
       {
         q: 'What do the ✓ and ⚠ symbols next to a scripture reference mean?',
-        a: '✓ means the reference was looked up against the Bible and confirmed — the book, chapter, and verse all exist. ⚠ means the lookup could not be verified — this might mean the reference is wrong, or it may be a formatting edge case. Either way, treat ⚠ as a prompt to check your Bible before sharing or acting on that reference.',
+        a: '✓ means the reference was looked up against the Bible and confirmed: the book, chapter, and verse all exist. ⚠ means the lookup could not be verified. This might mean the reference is wrong, or it may be a formatting edge case. Either way, treat ⚠ as a prompt to check your Bible before sharing or acting on that reference.',
       },
       {
         q: 'Can I tap on a scripture reference in the AI\'s response?',
@@ -203,19 +203,19 @@ const SECTIONS = [
       },
       {
         q: 'Why does the AI sometimes show a quote in a different style with a line down the side?',
-        a: 'When the AI is paraphrasing rather than quoting directly, it marks it as a paraphrase — and kinwove displays it with a gold left-border and slight italic style so you can see at a glance that it\'s a summary, not the exact words of the text. This helps you know when to go check the original wording yourself.',
+        a: 'When the AI is paraphrasing rather than quoting directly, it marks it as a paraphrase, and kinwove displays it with a gold left-border and slight italic style so you can see at a glance that it\'s a summary, not the exact words of the text. This helps you know when to go check the original wording yourself.',
       },
       {
         q: 'Does the AI know about commonly misquoted "Bible verses"?',
-        a: 'Yes — it is specifically programmed to recognise phrases that people often treat as scripture but that do not appear in the Bible. These include "God helps those who help themselves," "This too shall pass," "Everything happens for a reason," and "Money is the root of all evil" (the actual text is "the love of money is a root of all kinds of evil," 1 Timothy 6:10). The AI will never present these as biblical quotes.',
+        a: 'Yes. It is specifically programmed to recognise phrases that people often treat as scripture but that do not appear in the Bible. These include "God helps those who help themselves," "This too shall pass," "Everything happens for a reason," and "Money is the root of all evil" (the actual text is "the love of money is a root of all kinds of evil," 1 Timothy 6:10). The AI will never present these as biblical quotes.',
       },
       {
         q: 'What if I think the AI got something wrong?',
-        a: 'Tap the flag icon (the small ⚑ button next to Share and Copy on any AI response) and we\'ll be notified. The response is logged for manual review by our team. The AI will not be perfect — no AI is — but flagging helps us find patterns and improve over time.',
+        a: 'Tap the flag icon (the small ⚑ button next to Share and Copy on any AI response) and we\'ll be notified. The response is logged for manual review by our team. The AI will not be perfect, no AI is, but flagging helps us find patterns and improve over time.',
       },
       {
         q: 'Is the AI meant to replace reading the Bible itself?',
-        a: 'No — and that is intentional. The disclaimer at the bottom of every AI response says it directly: "Built to honour scripture, not replace it." The AI is a companion for study, not an authority. It is there to help you engage with the text more deeply, ask better questions, and find your way to the passages themselves.',
+        a: 'No, and that is intentional. The disclaimer at the bottom of every AI response says it directly: "Built to honour scripture, not replace it." The AI is a companion for study, not an authority. It is there to help you engage with the text more deeply, ask better questions, and find your way to the passages themselves.',
       },
     ],
   },
@@ -230,10 +230,10 @@ const SECTIONS = [
       },
       {
         q: 'How do I join a church?',
-        a: 'Open the church page and tap Join. Some churches are open — you\'ll be added immediately. Others require the pastor to approve requests. Either way, once you\'re a member you\'ll see church-only posts in your community feed.',
+        a: 'Open the church page and tap Join. Some churches are open. You\'ll be added immediately. Others require the pastor to approve requests. Either way, once you\'re a member you\'ll see church-only posts in your community feed.',
       },
       {
-        q: 'I\'m a pastor — how do I register my church?',
+        q: 'I\'m a pastor, how do I register my church?',
         a: 'Tap the ⋮ menu (mobile) or open the sidebar (desktop) and tap Apply as a pastor. Fill in your details and church information. You\'ll get access to your pastor dashboard straight away.',
       },
       {
@@ -242,7 +242,7 @@ const SECTIONS = [
       },
       {
         q: 'How does the youth invite work?',
-        a: 'Pastors can generate a separate youth invite code from their church dashboard (People tab). Share it with parents or youth group members. When someone joins with the youth code they\'re added to the church as a youth-sponsored member. Accounts automatically graduate to full access when the member turns 17 — no manual steps needed.',
+        a: 'Pastors can generate a separate youth invite code from their church dashboard (People tab). Share it with parents or youth group members. When someone joins with the youth code they\'re added to the church as a youth-sponsored member. Accounts automatically graduate to full access when the member turns 17. No manual steps needed.',
       },
     ],
   },
@@ -253,23 +253,23 @@ const SECTIONS = [
     items: [
       {
         q: 'What is the Study tab in my church dashboard?',
-        a: 'Study is a research space built for sermon prep — a pastoral AI for theology, exegesis, and pastoral care, with a Scholar\'s Desk beside it holding a Bible and your prep notes. Ask anything, save the answers worth keeping, and name each session so you can pick the thread back up later.',
+        a: 'Study is a research space built for sermon prep: a pastoral AI for theology, exegesis, and pastoral care, with a Scholar\'s Desk beside it holding a Bible and your prep notes. Ask anything, save the answers worth keeping, and name each session so you can pick the thread back up later.',
       },
       {
         q: 'How do prep notes and series work?',
-        a: 'Any response in the Study chat can be saved as a note, and you can write your own from the Desk\'s Notes tab. Give notes a series name — "Romans," or this Sunday\'s title — and they group together under that heading. Drag notes by the ⋮⋮ grip to put them in preaching order, highlight key lines in four colours, and print one note or the whole set for the pulpit.',
+        a: 'Any response in the Study chat can be saved as a note, and you can write your own from the Desk\'s Notes tab. Give notes a series name, "Romans," or this Sunday\'s title, and they group together under that heading. Drag notes by the ⋮⋮ grip to put them in preaching order, highlight key lines in four colours, and print one note or the whole set for the pulpit.',
       },
       {
         q: 'How do I turn my prep notes into a sermon?',
-        a: 'Tap "Use in sermon →" on any series heading in the Desk notes. You\'ll see the series\' notes with everything checked — uncheck anything personal you don\'t want carried over, then tap Continue. A new sermon draft opens with the series name as its title, the scripture reference picked up from your note titles, and your notes stitched into the outline in your drag order. Everything is editable before you generate or publish, and your notes stay in the Desk untouched.',
+        a: 'Tap "Use in sermon →" on any series heading in the Desk notes. You\'ll see the series\' notes with everything checked, uncheck anything personal you don\'t want carried over, then tap Continue. A new sermon draft opens with the series name as its title, the scripture reference picked up from your note titles, and your notes stitched into the outline in your drag order. Everything is editable before you generate or publish, and your notes stay in the Desk untouched.',
       },
       {
         q: 'Do my prep notes show up in my personal notes too?',
-        a: 'Yes — your sermon prep notes also appear in a read-only "Sermon prep" section of your personal Notes page, so everything you\'ve written lives in one place. They stay church-scoped: to edit one, open it in your church Study tab.',
+        a: 'Yes, your sermon prep notes also appear in a read-only "Sermon prep" section of your personal Notes page, so everything you\'ve written lives in one place. They stay church-scoped: to edit one, open it in your church Study tab.',
       },
       {
         q: 'Are scripture references in Study checked like they are in Ask?',
-        a: 'Yes — the same verification runs here. Gold references in Study responses are tappable (read the verse right there) and checked in the background: ✓ means confirmed, ⚠ means check your Bible before you preach it. Commentary and scholar names appear as slate-blue chips, so you can tell source material from scripture at a glance.',
+        a: 'Yes. The same verification runs here. Gold references in Study responses are tappable (read the verse right there) and checked in the background: ✓ means confirmed, ⚠ means check your Bible before you preach it. Commentary and scholar names appear as slate-blue chips, so you can tell source material from scripture at a glance.',
       },
     ],
   },
@@ -280,7 +280,7 @@ const SECTIONS = [
     items: [
       {
         q: 'What\'s the difference between Following and Friends?',
-        a: 'Following is one-way — you see their public posts in your feed. Friends is mutual — you both accepted the connection. Manage incoming requests in your profile under the Friends tab.',
+        a: 'Following is one-way. You see their public posts in your feed. Friends is mutual. You both accepted the connection. Manage incoming requests in your profile under the Friends tab.',
       },
       {
         q: 'How do I send a friend request?',
@@ -307,11 +307,11 @@ const SECTIONS = [
       },
       {
         q: 'Can I turn off friend requests?',
-        a: 'Yes — in Settings → Edit profile, toggle off Allow friend requests. People can still follow you but won\'t be able to send a request.',
+        a: 'Yes, in Settings → Edit profile, toggle off Allow friend requests. People can still follow you but won\'t be able to send a request.',
       },
       {
         q: 'How do I block someone?',
-        a: 'Tap ⋯ on any post by the person you want to block and choose Block user. Their content will no longer appear in your feed and they won\'t be able to interact with yours. Blocking is silent — they are not notified.',
+        a: 'Tap ⋯ on any post by the person you want to block and choose Block user. Their content will no longer appear in your feed and they won\'t be able to interact with yours. Blocking is silent. They are not notified.',
       },
       {
         q: 'Are my conversations with the AI private?',
@@ -319,7 +319,7 @@ const SECTIONS = [
       },
       {
         q: 'How do I delete my account?',
-        a: 'Go to your profile → Settings → Delete account. This permanently removes all your data — posts, prayers, messages, and profile. This action cannot be undone.',
+        a: 'Go to your profile → Settings → Delete account. This permanently removes all your data: posts, prayers, messages, and profile. This action cannot be undone.',
       },
     ],
   },
@@ -482,7 +482,7 @@ export default function HelpPage({ onClose, onOpenTour }) {
       {/* ── Body ──────────────────────────────────────────────────── */}
       {isWide ? (
         /* ── Desktop: two-column ──────────────────────────────────── */
-        <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', minHeight: 'calc(100vh - 56px)' }}>
+        <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', minHeight: 'calc(100vh, 56px)' }}>
 
           {/* Left nav */}
           <nav style={{

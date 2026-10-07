@@ -14,7 +14,7 @@ const MAX_IMAGES_PER_POST = 4;
 export const VISIBILITY_OPTIONS = [
   { id: 'public',  label: 'Public',   Icon: Globe,     desc: 'Anyone on kinwove can see this' },
   { id: 'church',  label: 'Church',   Icon: Building2, desc: 'Only members of your church' },
-  { id: 'private', label: 'Only me',  Icon: Lock,      desc: 'A private note — only you can see it' },
+  { id: 'private', label: 'Only me',  Icon: Lock,      desc: 'A private note. Only you can see it' },
 ];
 
 const inputCss = {
@@ -262,7 +262,7 @@ export default function PostComposer({
   };
 
   const textPlaceholder =
-    postKind === 'milestone'     ? 'A step on your walk — e.g. "Got baptized today"'
+    postKind === 'milestone'     ? 'A step on your walk, e.g. "Got baptized today"'
     : postKind === 'event'       ? 'Describe the event\u2026'
     : postKind === 'poll'        ? 'Ask a question (optional)\u2026'
     : postKind === 'announcement'? 'Write your announcement\u2026'

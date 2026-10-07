@@ -44,13 +44,13 @@ function SafetyBanner({ forRequester = false }) {
       </div>
       <div style={{ fontSize: 13, color: T.inkSoft, lineHeight: 1.6, marginBottom: 10 }}>
         {forRequester
-          ? 'If things feel unsafe or too heavy right now, please reach out — someone is ready to listen any hour. You matter, and help is one call or message away.'
+          ? 'If things feel unsafe or too heavy right now, please reach out. Someone is ready to listen any hour. You matter, and help is one call or message away.'
           : "You don't have to handle this alone. Stay present, listen, and gently share these resources. If there's immediate danger, encourage them to call emergency services."}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {CRISIS_RESOURCES.map((r) => (
           <div key={r.value} style={{ fontSize: 12.5, color: T.inkSoft }}>
-            <strong style={{ color: T.ink }}>{r.value}</strong> — {r.label}
+            <strong style={{ color: T.ink }}>{r.value}</strong>: {r.label}
           </div>
         ))}
       </div>
@@ -292,7 +292,7 @@ export default function CareConversation({ session, profile, conversationId, vie
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
               </svg>
-              Private — only the two of you can see this
+              Private. Only the two of you can see this
             </div>
           </div>
 
@@ -352,7 +352,7 @@ export default function CareConversation({ session, profile, conversationId, vie
 
           {messages.length === 0 && !isUnclaimed && (
             <div style={{ textAlign: 'center', color: T.inkMuted, fontFamily: T.serif, fontStyle: 'italic', padding: 30 }}>
-              Say hello — anything you'd like to share.
+              Say hello, anything you'd like to share.
             </div>
           )}
         </div>

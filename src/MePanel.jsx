@@ -77,7 +77,7 @@ function ProfilePost({ post, session, profile, onReact, churchCtx, onDelete, onV
     setEditBusy(true);
     const { error } = await supabase.from('posts').update({ body: next }).eq('id', post.id);
     setEditBusy(false);
-    if (error) { console.error('edit failed', error.message); setActionError("Couldn't save — try again."); return; }
+    if (error) { console.error('edit failed', error.message); setActionError("Couldn't save. Try again."); return; }
     setActionError(null);
     setLocalBody(next);
     setEditing(false);
@@ -90,7 +90,7 @@ function ProfilePost({ post, session, profile, onReact, churchCtx, onDelete, onV
     setDeleteBusy(false);
     setConfirmingDelete(false);
     setMenuOpen(false);
-    if (error) { console.error('delete failed', error.message); setActionError("Couldn't delete — try again."); return; }
+    if (error) { console.error('delete failed', error.message); setActionError("Couldn't delete. Try again."); return; }
     onDelete?.(post.id);
   }
 
@@ -408,7 +408,7 @@ function ProfilePost({ post, session, profile, onReact, churchCtx, onDelete, onV
                   <div style={{ color: T.inkMuted, fontSize: 14, textAlign: 'center', padding: '20px 0' }}>Loading…</div>
                 ) : (replies ?? []).length === 0 ? (
                   <div style={{ color: T.inkMuted, fontStyle: 'italic', fontSize: 14, textAlign: 'center', padding: '20px 0' }}>
-                    No comments yet — be the first.
+                    No comments yet, be the first.
                   </div>
                 ) : (
                   (replies ?? []).map(reply => (
@@ -678,7 +678,7 @@ function AccountSecurityCard({ session, onViewProfile }) {
     setBusy(null);
     setMsg(error
       ? { kind: 'err', text: error.message }
-      : { kind: 'ok', text: 'Check both inboxes — confirmation links were sent to your old and new address.' });
+      : { kind: 'ok', text: 'Check both inboxes. Confirmation links were sent to your old and new address.' });
   }
 
   async function changePassword() {
@@ -1009,7 +1009,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
     setPrayerSubmitting(false);
     if (error) {
       console.error('[addPrayer] insert failed', error);
-      setPrayerError("Couldn't save prayer — try again.");
+      setPrayerError("Couldn't save prayer. Try again.");
       return;
     }
     setPrayerError(null);
@@ -1175,7 +1175,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
       onProfileUpdate?.({ ...profile, ...updates });
     } catch (err) {
       console.error('saveAvatar failed:', err.message);
-      setBannerError("Couldn't save avatar — try again.");
+      setBannerError("Couldn't save avatar. Try again.");
     }
   }
 
@@ -1605,7 +1605,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
             </div>
             {loading && <div style={{ textAlign: 'center', padding: 40, color: T.inkMuted, fontFamily: T.serif }}>Loading…</div>}
             {!loading && posts.length === 0 && (
-              <EmptyState compact title="Nothing shared yet." body="Thoughts, verses, questions — post anything." />
+              <EmptyState compact title="Nothing shared yet." body="Thoughts, verses, questions, post anything." />
             )}
             {posts.map((p) => (
               <ProfilePost
@@ -1700,7 +1700,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                     />
                     {prayerError && <div style={{ fontSize: 12, color: T.error, marginTop: 6 }}>{prayerError}</div>}
                     <div style={{ marginTop: 10, borderTop: `1px solid rgba(90,128,100,0.2)`, paddingTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                      <span style={{ fontSize: 11, color: '#5a7a5a', fontStyle: 'italic' }}>🔒 Private — only you can see this. Never shared, sold, or used for AI training.</span>
+                      <span style={{ fontSize: 11, color: '#5a7a5a', fontStyle: 'italic' }}>🔒 Private. Only you can see this. Never shared, sold, or used for AI training.</span>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button
                           type="button"
@@ -1728,7 +1728,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
             </div>
 
             {prayers.length === 0 && (
-              <EmptyState compact icon="🕯️" title="Your prayer list is empty." body="Add your first prayer above — just between you and God." />
+              <EmptyState compact icon="🕯️" title="Your prayer list is empty." body="Add your first prayer above, just between you and God." />
             )}
 
             {prayers.map((p) => (
@@ -1838,7 +1838,7 @@ export default function MePanel({ session, profile, onClose, onEditProfile, onSi
                   <div style={{ borderTop: `1px solid ${T.line}`, background: T.parchment, padding: '10px 18px' }}>
                     {(encMap[p.id] ?? []).length === 0 ? (
                       <div style={{ fontSize: 12, color: T.inkMuted, fontStyle: 'italic', textAlign: 'center', padding: '4px 0 8px' }}>
-                        No encouragements yet — be the first.
+                        No encouragements yet, be the first.
                       </div>
                     ) : (
                       (encMap[p.id] ?? []).map(enc => (

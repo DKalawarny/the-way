@@ -114,7 +114,7 @@ function MyPrayers({ session, profile }) {
     setSubmitting(false);
     if (error) {
       console.error('[Prayer.add] insert failed', error);
-      setSubmitError('Couldn\'t save — try again.');
+      setSubmitError('Couldn\'t save. Try again.');
       return;
     }
     setSubmitError(null);
@@ -279,7 +279,7 @@ function MyPrayers({ session, profile }) {
           <EmptyState
             icon={CandleIcon}
             title="Your prayer list is empty."
-            body="Add your first prayer above — just between you and God."
+            body="Add your first prayer above, just between you and God."
           />
         )}
 
@@ -338,7 +338,7 @@ function MyPrayers({ session, profile }) {
 
               {/* Privacy toggle */}
               <button onClick={() => toggleAnonymous(p)}
-                title={(p.is_anonymous || !p.is_public) ? 'Anonymous — tap to show your name' : 'Public — tap to post anonymously'}
+                title={(p.is_anonymous || !p.is_public) ? 'Anonymous, tap to show your name' : 'Public, tap to post anonymously'}
                 style={{
                   background: (p.is_anonymous || !p.is_public) ? 'rgba(44,24,16,0.08)' : 'rgba(184,115,58,0.12)',
                   border: `1px solid ${(p.is_anonymous || !p.is_public) ? 'rgba(44,24,16,0.22)' : 'rgba(184,115,58,0.4)'}`,
@@ -628,7 +628,7 @@ function GroupPrayers({ session, profile, userGroup }) {
           <EmptyState
             icon={FlamesIcon}
             title="No group prayers yet."
-            body="Be the first to share — your group is here with you."
+            body="Be the first to share. Your group is here with you."
           />
         )}
         {prayers.map(p => {

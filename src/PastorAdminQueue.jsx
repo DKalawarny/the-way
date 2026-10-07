@@ -86,7 +86,7 @@ function REJECT_SQL(app, notes) {
   // Single-quote escape for SQL safety in copy/paste.
   const safe = (notes || '').replace(/'/g, "''");
   return `-- Reject pastor_application ${app.id}
--- Church: "${app.church_name}" — Pastor: ${app.full_name}
+-- Church: "${app.church_name}"Pastor: ${app.full_name}
 update public.pastor_applications
    set status = 'rejected',
        reviewed_at = now(),
@@ -163,9 +163,9 @@ export default function PastorAdminQueue({ session, profile, onClose }) {
   async function copy(text, label) {
     try {
       await navigator.clipboard.writeText(text);
-      showToast(`${label} copied — paste into Supabase SQL editor`);
+      showToast(`${label} copied, paste into Supabase SQL editor`);
     } catch {
-      showToast('Copy failed — your browser blocked clipboard access');
+      showToast('Copy failed, your browser blocked clipboard access');
     }
   }
 
@@ -215,7 +215,7 @@ export default function PastorAdminQueue({ session, profile, onClose }) {
           </div>
         </div>
         <p style={{ color: T.inkMuted, fontSize: 13.5, lineHeight: 1.6, marginTop: 0, marginBottom: 24 }}>
-          Investigation links pre-filled. Approve / reject still happens via SQL — click the button to copy
+          Investigation links pre-filled. Approve / reject still happens via SQL, click the button to copy
           the right statement with the application ID baked in, then paste into the Supabase SQL editor.
         </p>
 
@@ -481,7 +481,7 @@ function ApplicationCard({ app, applicantProfile, session, onCopyApprove, onCopy
                 {relativeTime(app.auto_approved_at ?? app.reviewed_at ?? app.created_at)}
                 {app.auto_approved_at && app.verification_method ? ` via ${app.verification_method}` : ''}
               </span>
-              {' — church is live on kinwove'}
+              {'church is live on kinwove'}
             </span>
             <button
               onClick={showEdit ? () => setShowEdit(false) : openEdit}

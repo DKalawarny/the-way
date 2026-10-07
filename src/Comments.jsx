@@ -47,7 +47,7 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
           body: `Comment id: ${c.id}\nAuthor id: ${c.author_id}\nText: ${String(c.body ?? '').slice(0, 500)}`,
         }),
       });
-      if (r.ok) showToast('Reported — our team will review.');
+      if (r.ok) showToast('Reported. Our team will review.');
       else setReportedIds((s) => { const n = new Set(s); n.delete(c.id); return n; });
     } catch {
       setReportedIds((s) => { const n = new Set(s); n.delete(c.id); return n; });
@@ -165,7 +165,7 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
           <div style={{ color: T.inkMuted, fontFamily: T.serif, textAlign: 'center', padding: 16, fontSize: 13 }}>Loading…</div>
         ) : comments.length === 0 ? (
           <div style={{ color: T.inkMuted, fontStyle: 'italic', fontSize: 14, textAlign: 'center', padding: '20px 0' }}>
-            No comments yet — be the first.
+            No comments yet, be the first.
           </div>
         ) : (
           <div style={{ marginBottom: 10 }}>
@@ -206,7 +206,7 @@ export default function Comments({ item, sessionUserId, authorMap, rolesByUser, 
         <div style={{ color: T.inkMuted, fontFamily: T.serif, textAlign: 'center', padding: 16, fontSize: 13 }}>Loading…</div>
       ) : comments.length === 0 ? (
         <div style={{ color: T.inkMuted, fontStyle: 'italic', fontSize: 14, textAlign: 'center', padding: '20px 0' }}>
-          No comments yet — be the first.
+          No comments yet, be the first.
         </div>
       ) : (
         <div style={{ marginBottom: 10 }}>

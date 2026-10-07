@@ -146,7 +146,7 @@ export default function ChurchDirectory({ session, profile, onBack, onOpenChurch
               {query ? 'No churches match.' : 'No churches yet.'}
             </div>
             <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.6, maxWidth: 360, margin: '0 auto' }}>
-              {query ? 'Try a different search.' : 'Be the first — if you\u2019re a pastor, apply to bring your church to kinwove.'}
+              {query ? 'Try a different search.' : 'Be the first, if you\u2019re a pastor, apply to bring your church to kinwove.'}
             </div>
             {!query && onApply && (
               <button onClick={onApply} style={{

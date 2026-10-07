@@ -179,7 +179,7 @@ function DiscoverSection({ session, profile, following, onFollow, onOpenChurch, 
           >
             <span style={{ fontSize: 22, opacity: 0.4 }}>◯</span>
             <span style={{ fontFamily: T.serif, fontSize: 14, color: T.inkSoft, lineHeight: 1.45 }}>
-              A circle is a small private group — for Bible study, prayer, or staying connected. <span style={{ color: T.gold }}>Start or join one →</span>
+              A circle is a small private group: for Bible study, prayer, or staying connected. <span style={{ color: T.gold }}>Start or join one →</span>
             </span>
           </button>
         ) : (
@@ -825,7 +825,7 @@ function PostCard({ post, index = 0, session, currentUserId, userProfile, userGr
               <div style={{ padding: '14px 18px' }}>
                 {localReplies.length === 0 ? (
                   <div style={{ color: T.inkMuted, fontStyle: 'italic', fontSize: 14, textAlign: 'center', padding: '20px 0' }}>
-                    No comments yet — be the first.
+                    No comments yet, be the first.
                   </div>
                 ) : (
                   localReplies.map(r => (
@@ -1330,7 +1330,7 @@ function PrayerCard({ prayer, session, currentUserId, onPray, onViewProfile, tab
                   <div style={{ color: T.inkMuted, fontSize: 14, textAlign: 'center', padding: '20px 0' }}>Loading…</div>
                 ) : (encs ?? []).length === 0 ? (
                   <div style={{ color: T.inkMuted, fontStyle: 'italic', fontSize: 14, textAlign: 'center', padding: '20px 0' }}>
-                    No encouragements yet — be the first.
+                    No encouragements yet, be the first.
                   </div>
                 ) : (
                   (encs ?? []).map(enc => (
@@ -1721,7 +1721,7 @@ useEffect(() => {
       await supabase.from('group_posts').insert({
         group_id: userGroup.group.id,
         author_id: session.user.id,
-        body: `"${post.body}"\n\n— ${authorName}`,
+        body: `"${post.body}"\n\n, ${authorName}`,
       });
     }
   }
@@ -1807,7 +1807,7 @@ useEffect(() => {
   }
 
   // On desktop the global AppHeader takes 56px — subtract from scene height.
-  const sceneH = hideHeader ? 'calc(100dvh - 56px)' : '100dvh';
+  const sceneH = hideHeader ? 'calc(100dvh, 56px)' : '100dvh';
 
   // Pull-to-refresh on the feed scroll area (touch devices only by nature).
   const feedScrollRef = useRef(null);
@@ -1847,7 +1847,7 @@ useEffect(() => {
               return (
                 <button
                   onClick={() => onVerseClick ? onVerseClick() : onOpenBible?.(v.ref)}
-                  title="Today's verse — tap to reflect"
+                  title="Today's verse, tap to reflect"
                   style={{
                     flex: 1, minWidth: 0,
                     display: 'flex', alignItems: 'baseline', gap: 8,
@@ -2113,7 +2113,7 @@ useEffect(() => {
                         It's better with a friend
                       </div>
                       <div style={{ fontFamily: T.display, fontSize: 14, color: T.inkSoft, lineHeight: 1.5 }}>
-                        Invite someone to explore alongside you — the questions are easier when you're not the only one asking.
+                        Invite someone to explore alongside you. The questions are easier when you're not the only one asking.
                       </div>
                     </div>
                     <button onClick={onInviteFriends} style={{
@@ -2360,7 +2360,7 @@ useEffect(() => {
                 )}
                 {loading && <div style={{ textAlign: 'center', color: T.inkMuted, padding: 40, fontFamily: T.serif, fontSize: 16 }}>Loading…</div>}
                 {!loading && milestones.length === 0 && (
-                  <EmptyState icon={<KinwoveStar size={32} />} title="No milestones yet." body="Share a step on your faith journey — big or small." />
+                  <EmptyState icon={<KinwoveStar size={32} />} title="No milestones yet." body="Share a step on your faith journey, big or small." />
                 )}
                 <div className="stagger-in">
                   {milestones.map((p, i) => (

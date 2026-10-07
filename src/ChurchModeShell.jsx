@@ -60,7 +60,7 @@ export default function ChurchModeShell({
   const firstName = (profile?.display_name ?? '').split(' ')[0];
 
   return (
-    <div style={{ height: 'calc(100vh - var(--global-header-h, 0px))', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden', background: T.cream }}>
+    <div style={{ height: 'calc(100vh, var(--global-header-h, 0px))', display: 'grid', gridTemplateRows: 'auto 1fr', overflow: 'hidden', background: T.cream }}>
       <div style={{
         zIndex: 20,
         minWidth: 0,

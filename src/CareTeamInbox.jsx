@@ -30,7 +30,7 @@ function CovenantModal({ onAccept, onDecline }) {
             People will trust you with hard things. A few promises before you begin:
           </p>
           <ul style={{ margin: '0 0 16px', paddingLeft: 20, lineHeight: 1.85 }}>
-            <li><strong>Confidentiality.</strong> What's shared with you stays between you and that person — unless they're in danger.</li>
+            <li><strong>Confidentiality.</strong> What's shared with you stays between you and that person, unless they're in danger.</li>
             <li><strong>Listen first.</strong> Most people don't need answers. They need to feel heard.</li>
             <li><strong>Stay in your lane.</strong> Don't try to handle abuse, suicide ideation, or mental health crises alone. Loop in your pastor and licensed help.</li>
             <li><strong>No proselytizing the pre-believer.</strong> If a seeker shows up, walk with them; don't preach at them.</li>

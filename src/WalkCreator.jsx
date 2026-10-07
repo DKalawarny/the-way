@@ -400,7 +400,7 @@ export default function WalkCreator({ session, churchId, onBack, onSaved }) {
         border: `1px solid rgba(184,115,58,0.22)`, borderRadius: 14, padding: '16px 18px',
       }}>
         <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', color: T.goldDark, marginBottom: 6 }}>
-          📣 Announce to congregation <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: T.inkMuted }}>— optional</span>
+          📣 Announce to congregation <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: T.inkMuted }}>optional</span>
         </div>
         <div style={{ fontSize: 12.5, color: T.inkSoft, marginBottom: 10 }}>
           When you publish, this message posts to your church feed so members know about the new walk.
@@ -408,7 +408,7 @@ export default function WalkCreator({ session, churchId, onBack, onSaved }) {
         <textarea
           value={announceMsg}
           onChange={(e) => setAnnounceMsg(e.target.value)}
-          placeholder={`We've added a new walk — ${form.emoji} ${form.title || 'this journey'} (${form.length} days). Give it a try this week.`}
+          placeholder={`We've added a new walk, ${form.emoji} ${form.title || 'this journey'} (${form.length} days). Give it a try this week.`}
           rows={3}
           style={{
             width: '100%', boxSizing: 'border-box', resize: 'vertical',

@@ -555,7 +555,7 @@ export default function DMConversation({ session, profile, conversationId, other
                               <span style={{ fontSize: 12, fontWeight: 700, color: T.goldDark, letterSpacing: '0.02em', fontFamily: T.display }}>kinwove says</span>
                             </div>
                             <div style={{ padding: '10px 14px', fontFamily: T.serif }}>
-                              <MsgText text={aiBody} />
+                              <MsgText text={aiBody} plain />
                             </div>
                           </>
                         ) : linkedPostId ? (

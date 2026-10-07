@@ -45,7 +45,7 @@ export const PERSON_TYPES = [
     id: 'deeper',
     emoji: '📖',
     label: 'Going Deeper',
-    description: 'Know the stories. Now I want the history, language, and layers — even the books beyond the 66.',
+    description: 'Know the stories. Now I want the history, language, and layers, even the books beyond the 66.',
   },
   {
     id: 'inter-faith',
@@ -63,13 +63,13 @@ export const PERSON_TYPES = [
     id: 'relationships',
     emoji: '💛',
     label: 'Relationships',
-    description: 'Dating, marriage, family, forgiveness — through a faith lens.',
+    description: 'Dating, marriage, family, forgiveness, through a faith lens.',
   },
   {
     id: 'life',
     emoji: '🧭',
     label: 'Life Questions',
-    description: "Real life questions — purpose, anxiety, money, identity, decisions — grounded in scripture.",
+    description: "Real life questions, purpose, anxiety, money, identity, decisions, grounded in scripture.",
   },
 ];
 
@@ -81,7 +81,7 @@ export const INTAKE_QUESTIONS = {
       options: [
         "I don't believe in God",
         "I'm not sure what I believe",
-        'I believe in something — not sure what',
+        'I believe in something. Not sure what',
         'I believe in God but not sure about Christianity',
         'I used to believe and I\'m trying to find my way back',
       ],
@@ -102,7 +102,7 @@ export const INTAKE_QUESTIONS = {
       id: 'brought',
       q: 'What brought you here today?',
       options: [
-        'Curiosity — no specific reason',
+        'Curiosity. No specific reason',
         'Something hard happened in my life',
         'Someone I trust suggested it',
         'I\'ve been thinking about this for a while',
@@ -115,10 +115,10 @@ export const INTAKE_QUESTIONS = {
       id: 'skeptic_type',
       q: 'What kind of skeptic are you?',
       options: [
-        'Intellectual — the evidence just isn\'t there for me',
-        'Moral — I have problems with things the Bible says',
-        'Personal — religion hurt me or people I love',
-        'Scientific — it conflicts with what I know to be true',
+        'Intellectual, the evidence just isn\'t there for me',
+        'Moral. I have problems with things the Bible says',
+        'Personal, religion hurt me or people I love',
+        'Scientific. It conflicts with what I know to be true',
         'All of the above, honestly',
       ],
     },
@@ -126,9 +126,9 @@ export const INTAKE_QUESTIONS = {
       id: 'openness',
       q: 'How open are you to being wrong?',
       options: [
-        'Genuinely open — I want to follow the evidence',
-        'Somewhat open — I have my doubts about my doubts',
-        'Not very — but I\'m willing to engage honestly',
+        'Genuinely open. I want to follow the evidence',
+        'Somewhat open. I have my doubts about my doubts',
+        'Not very, but I\'m willing to engage honestly',
         'I mostly want my questions taken seriously',
       ],
     },
@@ -138,7 +138,7 @@ export const INTAKE_QUESTIONS = {
       id: 'stage',
       q: 'Where are you in the journey?',
       options: [
-        'Just started — days or weeks in',
+        'Just started, days or weeks in',
         'A few months in, still finding my footing',
         'I believe but I don\'t really understand the Bible yet',
         'I grew up in faith, stepped away, and I\'m returning',
@@ -208,18 +208,18 @@ export const STARTERS = {
     "Why do people who have faith seem so certain?",
   ],
   'inter-faith': [
-    'What does Islam teach about Jesus — and where does the Bible respond?',
+    'What does Islam teach about Jesus, and where does the Bible respond?',
     'Why do Jews not accept Jesus as the Messiah, and what does the Old Testament say?',
     'How do I respond when someone says the Bible has been corrupted?',
     'What Old Testament prophecies point directly to Jesus?',
     "What does the Quran say about Jesus that Muslims might not expect?",
   ],
   guided: [
-    'Start me at the very beginning — Genesis 1.',
+    'Start me at the very beginning, Genesis 1.',
     'What is the Bible actually about, big picture?',
     'Walk me through the story of Jesus from start to finish.',
     'Take me through the Easter story in plain English.',
-    'I want to understand the Psalms — where do I start?',
+    'I want to understand the Psalms, where do I start?',
   ],
   kids: [
     'Who made the world?',
@@ -231,7 +231,7 @@ export const STARTERS = {
   relationships: [
     'How do I forgive someone who hasn\'t apologized?',
     'What does the Bible actually say about dating?',
-    'I\'m struggling in my marriage — what does faith say?',
+    'I\'m struggling in my marriage, what does faith say?',
     'How do I honour my parents when they\'ve hurt me?',
     'I\'m lonely. What does faith say about that?',
   ],
@@ -253,7 +253,7 @@ export const DEEPER_STARTERS = {
     'How do Jewish and Christian readings of the same texts differ?',
   ],
   skeptic: [
-    'What did early Christians actually disagree about — before the creeds?',
+    'What did early Christians actually disagree about, before the creeds?',
     'How do scholars date the Gospels and what does the gap mean?',
     'What is textual criticism and what has it found?',
     'How should I handle the genocide passages in Joshua?',
@@ -276,7 +276,7 @@ export const DEEPER_STARTERS = {
   deeper: [
     'How does midrash work and how does it appear in the New Testament?',
     'What is the significance of the temple in biblical theology?',
-    'How does apocalyptic literature function — what is it actually doing?',
+    'How does apocalyptic literature function, what is it actually doing?',
     'What is divine council theology and where does it appear in scripture?',
     'How do the creation accounts in Genesis 1 and 2 relate to each other?',
   ],
@@ -290,23 +290,23 @@ export const DEEPER_STARTERS = {
   seeking: [
     "What does the Bible say about people who struggle to believe?",
     "How do people cross from intellectual interest to actual faith?",
-    "What is prayer — and is it worth trying before you're sure God exists?",
+    "What is prayer, and is it worth trying before you're sure God exists?",
     "What did Jesus say to the person who said 'I believe; help my unbelief'?",
     "What would honest next steps look like for someone where I am right now?",
   ],
   'inter-faith': [
     "How does the Quran's denial of the crucifixion (Surah 4:157) compare with historical and manuscript evidence?",
-    "How does Isaiah 53 read in its original Hebrew — and why do Jewish and Christian interpretations divide?",
+    "How does Isaiah 53 read in its original Hebrew, and why do Jewish and Christian interpretations divide?",
     "What are the strongest Islamic objections to the Trinity, and how does Christian theology respond?",
     "How does the concept of the Word (Logos) in John 1 relate to the Islamic view of the Quran as the uncreated Word of God?",
     "What does the Talmud say about Jesus, and what can a Christian make of it?",
   ],
   guided: [
-    "Walk me through Romans — what is Paul actually arguing, chapter by chapter?",
-    "Take me through the four Gospels — how do they differ and why does it matter?",
+    "Walk me through Romans, what is Paul actually arguing, chapter by chapter?",
+    "Take me through the four Gospels, how do they differ and why does it matter?",
     "Walk me through the Exodus story and what it meant to the people living it.",
-    "Take me through Revelation — what kind of writing is it and how do I actually read it?",
-    "Walk me through the prophets — who were they, when did they live, and what were they doing?",
+    "Take me through Revelation, what kind of writing is it and how do I actually read it?",
+    "Walk me through the prophets, who were they, when did they live, and what were they doing?",
   ],
   kids: [
     'Why did God make so many animals for Noah?',
@@ -316,7 +316,7 @@ export const DEEPER_STARTERS = {
     "Why did the disciples leave everything to follow Jesus?",
   ],
   relationships: [
-    "What does the Bible actually say about divorce — and where does grace fit?",
+    "What does the Bible actually say about divorce, and where does grace fit?",
     "What does Paul mean by 'submit to one another' in Ephesians 5?",
     "What does it look like to honour parents who were harmful?",
     "How do Christian theology and psychology think differently about forgiveness?",
@@ -324,7 +324,7 @@ export const DEEPER_STARTERS = {
   ],
   life: [
     "What does Proverbs actually say about wisdom in decision-making?",
-    "How does scripture frame identity — who am I, biblically speaking?",
+    "How does scripture frame identity, who am I, biblically speaking?",
     "What does the Bible say about ambition and whether it's okay to want more?",
     "How do I hold faith and mental health struggles at the same time?",
     "What does scripture say about contentment when life feels like it's not enough?",
@@ -340,8 +340,8 @@ export const PREMIUM_FEATURES = [
 ];
 
 export const ADS = [
-  { id: 'a1', text: 'Holy Land tours with honest history — not just the highlights.', tag: 'Sponsored' },
-  { id: 'a2', text: 'The ESV Study Bible — now in soft-bound parchment.', tag: 'Sponsored' },
+  { id: 'a1', text: 'Holy Land tours with honest history. Not just the highlights.', tag: 'Sponsored' },
+  { id: 'a2', text: 'The ESV Study Bible, now in soft-bound parchment.', tag: 'Sponsored' },
   { id: 'a3', text: 'Retreats for people who want quiet, not quotas.', tag: 'Sponsored' },
 ];
 

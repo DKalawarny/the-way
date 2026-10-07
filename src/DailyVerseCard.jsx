@@ -62,7 +62,7 @@ export default function DailyVerseCard({ onReflect, onOpenBible, onClose }) {
             letterSpacing: 1.5, textTransform: 'uppercase',
             marginBottom: 16, textAlign: 'center',
           }}>
-            🔥 Day {streak} — keep the streak
+            🔥 Day {streak}, keep the streak
           </div>
         )}
 

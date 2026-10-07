@@ -33,7 +33,7 @@ class ErrorBoundary extends React.Component {
             Something went wrong on our end
           </h2>
           <p style={{ fontSize: 15, color: '#5A4733', maxWidth: 360, lineHeight: 1.6, margin: '0 0 22px' }}>
-            The page hit a snag. Reloading usually sorts it out — your account and data are safe.
+            The page hit a snag. Reloading usually sorts it out. Your account and data are safe.
           </p>
           <button
             onClick={() => window.location.reload()}

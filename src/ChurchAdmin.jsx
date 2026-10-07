@@ -46,7 +46,7 @@ function DividerHandle({ onMouseDown, onSwap, swapTitle = 'Swap sides' }) {
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); onSwap(); }}
           style={{
-            position: 'absolute', top: 'calc(50% - 44px)', left: '50%', transform: 'translateX(-50%)',
+            position: 'absolute', top: 'calc(50%, 44px)', left: '50%', transform: 'translateX(-50%)',
             width: 26, height: 26, borderRadius: '50%',
             background: T.ink, color: T.cream, border: `1px solid rgba(253,248,240,0.3)`,
             fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -84,9 +84,9 @@ export function churchBannerBg(church) {
 function buildAnnouncementText(churchName, link) {
   const name = (churchName ?? '').trim() || 'our church';
   return [
-    `Hey ${name} family — we're trying something new.`,
+    `Hey ${name} family, we're trying something new.`,
     '',
-    'kinwove is a quiet space between Sundays — for questions, prayer, and going deeper with what we hear on Sunday. No noise, no algorithms. Just our church.',
+    'kinwove is a quiet space between Sundays: for questions, prayer, and going deeper with what we hear on Sunday. No noise, no algorithms. Just our church.',
     '',
     `Join here: ${link}`,
   ].join('\n');
@@ -147,7 +147,7 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
       }
       onTransferComplete?.();
     } catch (e) {
-      showToast('Delete failed — try again.', 'error');
+      showToast('Delete failed. Try again.', 'error');
       setDeleteBusy(false);
     }
   }
@@ -227,7 +227,7 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
     if (error) { showToast(`Couldn't save: ${error.message}`, 'error'); return; }
     setOpenJoin(val);
     onChurchUpdate?.({ open_join: val });
-    showToast(val ? 'Open joining on — no approval needed.' : 'Approval required for new members.', 'success');
+    showToast(val ? 'Open joining on. No approval needed.' : 'Approval required for new members.', 'success');
   }
 
   // Welcome-note editor — moved here from ChurchPage so the public page is
@@ -333,7 +333,7 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
       setAnnounceCopied(true);
       setTimeout(() => setAnnounceCopied(false), 2200);
     } catch (_) {
-      showToast("Couldn't copy — long-press to copy manually.", 'error');
+      showToast("Couldn't copy, long-press to copy manually.", 'error');
     }
   }
 
@@ -364,7 +364,7 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
       // synchronously.)
       setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
     } catch (e) {
-      showToast(`Couldn't download — ${e?.message || 'try again'}`, 'error');
+      showToast(`Couldn't download, ${e?.message || 'try again'}`, 'error');
     } finally {
       setDownloadingQr(false);
     }
@@ -467,7 +467,7 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
           <KinwoveStar size={12} style={{ verticalAlign: 'middle', marginRight: 5, flexShrink: 0 }} /> Welcome note
         </div>
         <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.55, marginBottom: 10 }}>
-          A short greeting for visitors and members — appears at the top of your public page. A sentence or two is plenty.
+          A short greeting for visitors and members, appears at the top of your public page. A sentence or two is plenty.
         </div>
         <textarea
           value={pinDraft}
@@ -545,7 +545,7 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
           type="text"
           value={addressDraft}
           onChange={(e) => setAddressDraft(e.target.value.slice(0, 200))}
-          placeholder="Street address — leave blank if you'd rather not list it"
+          placeholder="Street address, leave blank if you'd rather not list it"
           style={{
             width: '100%', boxSizing: 'border-box',
             border: `1px solid ${T.line}`, borderRadius: 10, padding: '10px 12px',
@@ -570,7 +570,7 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
           }}
         />
         <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 6 }}>
-          When set, a 💛 Give button appears on your church page. Payments happen on your provider's site — kinwove never touches the money.
+          When set, a 💛 Give button appears on your church page. Payments happen on your provider's site, kinwove never touches the money.
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', marginTop: 12, gap: 8 }}>
@@ -785,7 +785,7 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
                 <li>The church page and all its settings</li>
                 <li>All sermons and discussion questions</li>
                 <li>All member records and care assignments</li>
-                <li>Your congregation's access — immediately</li>
+                <li>Your congregation's access, immediately</li>
               </ul>
             </div>
 
@@ -922,7 +922,7 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
                       )}
                       {transferSearch.trim().length > 1 && transferResults.length === 0 && (
                         <div style={{ fontSize: 12, color: T.inkMuted, marginTop: 6, fontStyle: 'italic' }}>
-                          No members found — they need to join this church first.
+                          No members found. They need to join this church first.
                         </div>
                       )}
                     </>
@@ -1049,7 +1049,7 @@ function SettingsPanel({ church, churchId, session, onOpenChurchPage, onChurchUp
                   color: T.goldDark, borderRadius: 999,
                   padding: '11px 16px', fontSize: 14, fontWeight: 600, cursor: 'pointer',
                 }}>
-                  {announceCopied ? <><Check size={13} strokeWidth={2.5} /> Copied — paste anywhere</> : <><Copy size={13} strokeWidth={2} /> Copy announcement</>}
+                  {announceCopied ? <><Check size={13} strokeWidth={2.5} /> Copied, paste anywhere</> : <><Copy size={13} strokeWidth={2} /> Copy announcement</>}
                 </button>
                 <button onClick={copyLink} style={{
                   background: 'transparent', border: `1px solid ${T.line}`, borderRadius: 999,
@@ -1122,7 +1122,7 @@ function InviteModal({ member, existingRoles, pendingInvites, onClose, onSubmit 
       <div onClick={(e) => e.stopPropagation()} className="modal-sheet" style={{
         background: T.cream, borderRadius: 16, maxWidth: 480, width: '100%',
         padding: 'clamp(20px, 4vw, 26px)', border: `1px solid ${T.line}`,
-        maxHeight: 'calc(100dvh - 40px)', overflowY: 'auto',
+        maxHeight: 'calc(100dvh, 40px)', overflowY: 'auto',
       }}>
         <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, marginBottom: 6 }}>
           Invite to a role
@@ -1716,7 +1716,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
                           ``,
                           `Hi!`,
                           ``,
-                          `You're invited to join the ${churchName} youth group on kinwove — a place for young people to explore faith, ask questions, and connect with their church community. Youth accounts can only exchange private messages with members of ${churchName}.`,
+                          `You're invited to join the ${churchName} youth group on kinwove: a place for young people to explore faith, ask questions, and connect with their church community. Youth accounts can only exchange private messages with members of ${churchName}.`,
                           ``,
                           `Join here: ${youthJoinUrl}`,
                           ``,
@@ -1740,7 +1740,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
                     >🖨️ Print</button>
                   </div>
                   <p style={{ fontFamily: T.serif, fontSize: 12.5, color: T.inkMuted, lineHeight: 1.5, margin: '10px 0 0' }}>
-                    For members under 17 — private messages restricted to your church, auto-unlocks at 17.
+                    For members under 17, private messages restricted to your church, auto-unlocks at 17.
                   </p>
                 </div>
               </div>
@@ -1810,7 +1810,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
           </div>
           {joinRequests.length === 0 ? (
             <div style={{ color: T.inkMuted, fontStyle: 'italic', padding: 12, lineHeight: 1.6 }}>
-              No pending requests. {!church?.open_join && 'Approval mode is on — new requests will appear here.'}
+              No pending requests. {!church?.open_join && 'Approval mode is on. New requests will appear here.'}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1997,7 +1997,7 @@ function PeoplePanel({ session, church, churchId, churchPlan, onChurchUpdate, on
                         {memberPending.map((inv) => (
                           <span
                             key={inv.id}
-                            title="Pending — waiting for member to accept"
+                            title="Pending, waiting for member to accept"
                             style={{
                               display: 'inline-flex', alignItems: 'center', gap: 4,
                               fontSize: 11, fontWeight: 600, color: T.inkMuted,
@@ -2161,7 +2161,7 @@ const PASTOR_TOUR_STEPS = [
   {
     tourId: 'pastor-ask-tab',
     title:  'Your AI companion',
-    body:   'A private space for theology questions, sermon research, and pastoral guidance — just for you.',
+    body:   'A private space for theology questions, sermon research, and pastoral guidance, just for you.',
     color:  '#2e5970',
   },
 ];

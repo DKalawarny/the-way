@@ -110,7 +110,7 @@ export default function TopRightMenu({
             right: dotsRight,
             background: T.white, borderRadius: 16, border: `1px solid ${T.line}`,
             boxShadow: '0 12px 40px rgba(0,0,0,0.16)', overflow: 'hidden',
-            minWidth: 240, maxWidth: 'calc(100vw - 24px)', zIndex: 300,
+            minWidth: 240, maxWidth: 'calc(100vw, 24px)', zIndex: 300,
           }}>
             {/* Dropdown header */}
             <div style={{

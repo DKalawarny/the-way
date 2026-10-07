@@ -33,7 +33,7 @@ export default function ChurchPage({
     {
       tourId: 'church-feed-tab',
       title:  'Your congregation feed',
-      body:   'Posts from your church community — announcements, reflections, and conversations shared with the congregation.',
+      body:   'Posts from your church community: announcements, reflections, and conversations shared with the congregation.',
       color:  T.gold,
     },
     {
@@ -347,7 +347,7 @@ export default function ChurchPage({
       setJoining(false);
       if (error) { showToast(`Couldn't send request: ${error.message}`, 'error'); return; }
       setJoinRequest('pending');
-      showToast('Request sent — the pastor will review it.', 'success');
+      showToast('Request sent. The pastor will review it.', 'success');
       return;
     }
 
@@ -635,7 +635,7 @@ export default function ChurchPage({
               <span title="Verified church" style={{ marginLeft: 8, color: T.gold, fontSize: 19, verticalAlign: 'middle' }}>✓</span>
             )}
             {church.verified === false && church.verify_method === 'unverified' && (
-              <span title="Self-reported — not yet verified" style={{ marginLeft: 8, fontSize: 12, color: 'rgba(253,248,240,0.5)', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 999, padding: '2px 8px', verticalAlign: 'middle', fontFamily: 'inherit', fontWeight: 400, letterSpacing: 0 }}>
+              <span title="Self-reported. Not yet verified" style={{ marginLeft: 8, fontSize: 12, color: 'rgba(253,248,240,0.5)', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 999, padding: '2px 8px', verticalAlign: 'middle', fontFamily: 'inherit', fontWeight: 400, letterSpacing: 0 }}>
                 Self-reported
               </span>
             )}
@@ -993,7 +993,7 @@ export default function ChurchPage({
                     isPastor={isPastor}
                     emptyMessage={isPastor
                       ? 'Nothing posted yet. Share this Sunday\u2019s sermon or write a note to your congregation.'
-                      : 'Nothing posted yet — start a conversation or wait for your church to share.'}
+                      : 'Nothing posted yet. Start a conversation or wait for your church to share.'}
                   />
                 </Suspense>
               </>
@@ -1139,7 +1139,7 @@ export default function ChurchPage({
                 <div style={{ fontSize: 13.5, color: T.inkSoft, lineHeight: 1.6, marginBottom: isPastor ? 20 : 0 }}>
                   {isPastor
                     ? 'Post your first sermon so your congregation can follow along between Sundays.'
-                    : 'Check back after Sunday — sermons will appear here.'}
+                    : 'Check back after Sunday. Sermons will appear here.'}
                 </div>
                 {isPastor && (
                   <button
@@ -1316,7 +1316,7 @@ export default function ChurchPage({
                         }).select('id, body, is_anonymous').single();
                         setPraySubmitting(false);
                         if (prayErr) {
-                          showToast('Couldn\'t share prayer — please try again.', 'error');
+                          showToast('Couldn\'t share prayer, please try again.', 'error');
                           return;
                         }
                         if (data) {
@@ -1560,7 +1560,7 @@ export default function ChurchPage({
                     }}
                   >
                     {joining ? '…'
-                      : joinRequest === 'pending' ? '✉ Request sent — awaiting approval'
+                      : joinRequest === 'pending' ? '✉ Request sent, awaiting approval'
                       : church?.open_join === false ? 'Request to join'
                       : 'Join this church'}
                   </button>
@@ -1797,7 +1797,7 @@ export default function ChurchPage({
             {reportSent ? (
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
                 <div style={{ fontFamily: T.display, fontSize: 20, color: T.ink, fontWeight: 600, marginBottom: 6 }}>
-                  Thanks — we'll take a look.
+                  Thanks, we'll take a look.
                 </div>
                 <div style={{ fontSize: 13, color: T.inkMuted, lineHeight: 1.55 }}>
                   Your report goes to the kinwove admin team for review.
@@ -1809,7 +1809,7 @@ export default function ChurchPage({
                   Report this listing
                 </div>
                 <div style={{ fontSize: 12.5, color: T.inkMuted, lineHeight: 1.55, marginBottom: 14 }}>
-                  Spotted something wrong with <strong>{church.name}</strong>? Let us know — we re-review reported listings.
+                  Spotted something wrong with <strong>{church.name}</strong>? Let us know. We re-review reported listings.
                 </div>
 
                 <div style={{ fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700, marginBottom: 6 }}>
@@ -1866,7 +1866,7 @@ export default function ChurchPage({
                     type="email"
                     value={reportEmail}
                     onChange={(e) => setReportEmail(e.target.value.slice(0, 200))}
-                    placeholder="Your email (optional — if you'd like a follow-up)"
+                    placeholder="Your email (optional, if you'd like a follow-up)"
                     style={{
                       width: '100%', boxSizing: 'border-box',
                       background: T.parchment, border: `1px solid ${T.line}`,

@@ -33,7 +33,7 @@ export default function GroupSetup({ session, onJoined, onClose, initialCode, in
       .eq('invite_code', code.trim().toUpperCase())
       .single();
     if (gErr || !group) {
-      setError('No group found with that code — check it and try again.');
+      setError('No group found with that code. Check it and try again.');
       setBusy(false);
       return;
     }
@@ -96,7 +96,7 @@ export default function GroupSetup({ session, onJoined, onClose, initialCode, in
             {created.group.name}
           </div>
           <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.65, marginBottom: 36 }}>
-            Share this code with your group — they enter it on the "Join a group" screen.
+            Share this code with your group. They enter it on the "Join a group" screen.
           </div>
           <div style={{ background: 'rgba(184,115,58,0.1)', border: '1px solid rgba(184,115,58,0.35)', borderRadius: 16, padding: '28px 24px', marginBottom: 24 }}>
             <div style={{ fontSize: 11, letterSpacing: 3, color: T.gold, textTransform: 'uppercase', marginBottom: 12, opacity: 0.7 }}>
@@ -239,7 +239,7 @@ export default function GroupSetup({ session, onJoined, onClose, initialCode, in
               Start a group
             </div>
             <div style={{ fontSize: 14, color: T.inkMuted, lineHeight: 1.65, marginBottom: 28 }}>
-              Free for everyone. Create a Bible study, discipleship circle, or prayer group — you'll get an invite code to share with your people.
+              Free for everyone. Create a Bible study, discipleship circle, or prayer group, you'll get an invite code to share with your people.
             </div>
 
             <label style={{ fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: T.inkMuted, marginBottom: 8, display: 'block' }}>

@@ -76,7 +76,7 @@ class RouteErrorBoundary extends Component {
         justifyContent: 'center', gap: 12, padding: 40, textAlign: 'center',
       }}>
         <div style={{ fontFamily: T.serif, fontSize: 18, fontWeight: 600, color: T.ink }}>
-          {isChunkError && !isNativeApp ? 'New version — reload to continue' : 'This screen hit an error'}
+          {isChunkError && !isNativeApp ? 'New version, reload to continue' : 'This screen hit an error'}
         </div>
         <div style={{ fontSize: 13, color: T.inkSoft, maxWidth: 300, lineHeight: 1.6 }}>
           {isChunkError && !isNativeApp ? 'A new build was deployed.' : 'Try going back or reloading.'}
@@ -192,7 +192,7 @@ function InviteDeepLinkModal({ invite, onAccept, onDecline, onDismiss }) {
       if (action === 'accept') await onAccept();
       else await onDecline();
     } catch (e) {
-      setErr(e?.message ?? 'Something went wrong — please try again.');
+      setErr(e?.message ?? 'Something went wrong, please try again.');
     }
     setBusy(null);
   }
@@ -325,13 +325,13 @@ function CommunityPreview({ onBegin }) {
           color: DIM, marginBottom: 0,
         }}>
           <p style={{ margin: '0 0 16px' }}>
-            Yes — and the Bible is unusually honest about this. The Psalms, which were Israel's own prayer book, are full of doubt. "My God, my God, why have you forsaken me?" Jeremiah called God a deceptive brook. John the Baptist, in prison, sent word asking Jesus: "Are you the one, or should we expect someone else?"
+            Yes, and the Bible is unusually honest about this. The Psalms, which were Israel's own prayer book, are full of doubt. "My God, my God, why have you forsaken me?" Jeremiah called God a deceptive brook. John the Baptist, in prison, sent word asking Jesus: "Are you the one, or should we expect someone else?"
           </p>
           <p style={{ margin: '0 0 16px' }}>
-            Doubt shows up at the centre of faith, not at its edges. After the resurrection, all four Gospels record the disciples struggling — Thomas gets singled out, but he wasn't alone. What changed them wasn't the removal of doubt but an encounter that made trust possible.
+            Doubt shows up at the centre of faith, not at its edges. After the resurrection, all four Gospels record the disciples struggling. Thomas gets singled out, but he wasn't alone. What changed them wasn't the removal of doubt but an encounter that made trust possible.
           </p>
           <p style={{ margin: 0, color: DIMLO }}>
-            Faith was never meant to be certainty. It's more like trust in the middle of uncertainty. Which means your doubt isn't a sign something has gone wrong — it might be the most honest…
+            Faith was never meant to be certainty. It's more like trust in the middle of uncertainty. Which means your doubt isn't a sign something has gone wrong. It might be the most honest…
           </p>
         </div>
 
@@ -354,7 +354,7 @@ function CommunityPreview({ onBegin }) {
             onMouseEnter={(e) => (e.currentTarget.style.background = T.goldLight)}
             onMouseLeave={(e) => (e.currentTarget.style.background = T.gold)}
           >
-            Read the full answer — free →
+            Read the full answer, free →
           </button>
         </div>
 
@@ -384,11 +384,11 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
   // commentary grounding, live scripture-reference verification) — keep the
   // copy in step with what the system actually guarantees.
   const trustPoints = [
-    'Never invents quotes, statistics, or scripture — "I don\'t know" is built in',
+    'Never invents quotes, statistics, or scripture. "I don\'t know" is built in',
     'Commentary citations are quoted from real sources, never recalled from memory',
     'Every scripture reference is checked against the actual Bible text',
-    'Honest when faithful Christians genuinely disagree — it tells you that',
-    'No denominational agenda — designed to point to Jesus, never to push',
+    'Honest when faithful Christians genuinely disagree. It tells you that',
+    'No denominational agenda, designed to point to Jesus, never to push',
   ];
 
 
@@ -462,14 +462,14 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
             <div style={{ fontSize: 24, marginBottom: 14 }}>🕊️</div>
             <h3 style={{ fontFamily: T.serif, fontSize: 24, fontWeight: 600, color: T.cream, margin: '0 0 10px', letterSpacing: '-0.018em' }}>For you</h3>
             <p style={{ fontFamily: T.serif, fontSize: 15.5, color: DIM, lineHeight: 1.7, margin: '0 0 18px' }}>
-              Honest answers to the questions you actually have — doubt included. An AI that stays in scripture and says "I don't know" when it doesn't, a Bible you can ask anything, and people at every stage of the same road.
+              Honest answers to the questions you actually have, doubt included. An AI that stays in scripture and says "I don't know" when it doesn't, a Bible you can ask anything, and people at every stage of the same road.
             </p>
             <div style={{ fontFamily: T.serif, fontStyle: 'italic', fontSize: 13.5, color: 'rgba(212,162,74,0.75)', lineHeight: 1.7, margin: '0 0 10px' }}>
               For the curious · the skeptic · the searching · the believer
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, margin: '0 0 22px' }}>
               {[
-                'Ask anything — honest answers with the verses to check',
+                'Ask anything, honest answers with the verses to check',
                 'The full Bible, to read or listen to',
                 'Notes, highlights, and reading plans',
                 'Real people and churches, whenever you\'re ready',
@@ -501,7 +501,7 @@ function Landing({ onBegin, onSignIn, session, profile, onEditProfile, onPastorI
               {[
                 'A research desk that preps your sermon from real sources',
                 'Sunday\'s outline becomes a week of daily questions',
-                'A soft front door — new people can meet your church before they ever walk in',
+                'A soft front door. New people can meet your church before they ever walk in',
                 'Care tools, so you know how your people are really doing',
               ].map((b) => (
                 <div key={b} style={{ display: 'flex', alignItems: 'flex-start', gap: 9, fontSize: 13.5, color: DIM, lineHeight: 1.55, textAlign: 'left' }}>
@@ -631,7 +631,7 @@ function Onboarding({ onPick, onBack }) {
           Where are you, honestly?
         </h2>
         <p style={{ fontFamily: T.serif, fontSize: 17.5, color: 'rgba(253,248,240,0.6)', maxWidth: 480, margin: '0 auto', lineHeight: 1.65 }}>
-          Pick whatever is closest. You can change your mind at any time — this just tunes the tone.
+          Pick whatever is closest. You can change your mind at any time. This just tunes the tone.
         </p>
       </div>
 
@@ -685,7 +685,7 @@ function Onboarding({ onPick, onBack }) {
         }}>
           {[
             { icon: '🔤', label: 'Hebrew & Greek originals', desc: 'Surfaces the original word behind any translation' },
-            { icon: '📷', label: 'Analyze images', desc: 'Attach a photo — manuscripts, pages, art, notes' },
+            { icon: '📷', label: 'Analyze images', desc: 'Attach a photo: manuscripts, pages, art, notes' },
             { icon: '🔊', label: 'Listen aloud', desc: 'Tap any answer to hear it read to you' },
             { icon: '💾', label: 'Save to your board', desc: 'Keep answers that matter with one tap' },
             { icon: '🔗', label: 'Share conversations', desc: 'Send a link to any conversation with anyone' },
@@ -841,13 +841,13 @@ function PastorPrompt({ open, onApply, onClose }) {
           Are you a pastor?
         </div>
         <div style={{ color: T.inkSoft, fontSize: 15, lineHeight: 1.65, marginBottom: 24 }}>
-          If you shepherd a church, you can apply for a verified pastor account — share weekly focus, post sermons, and connect with your congregation here.
+          If you shepherd a church, you can apply for a verified pastor account: share weekly focus, post sermons, and connect with your congregation here.
         </div>
         <button
           onClick={onApply}
           style={{ width: '100%', background: T.gold, color: T.cream, border: 'none', borderRadius: 999, padding: '14px 20px', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}
         >
-          Yes — apply as a pastor
+          Yes, apply as a pastor
         </button>
         <button
           onClick={onClose}
@@ -1196,7 +1196,7 @@ function ConversationHistory({ open, onClose, conversations, onLoad, onDelete, o
                   }} />
                 </div>
                 <span style={{ fontSize: 12, color: T.inkMuted }}>
-                  {syncEnabled ? 'Synced — Ask can look back at these' : 'Sync across devices — lets Ask look back'}
+                  {syncEnabled ? 'Synced. Ask can look back at these' : 'Sync across devices, lets Ask look back'}
                 </span>
               </button>
             )}
@@ -1221,7 +1221,7 @@ function ConversationHistory({ open, onClose, conversations, onLoad, onDelete, o
         {conversations.filter((c) => c.messages.length > 0).length === 0 && (
           <div style={{ padding: '48px 32px', textAlign: 'center', color: T.inkMuted, fontFamily: T.serif, fontSize: 16, lineHeight: 1.6 }}>
             No conversations yet.
-            <br />Start asking — your history will appear here.
+            <br />Start asking. Your history will appear here.
           </div>
         )}
 
@@ -1309,7 +1309,7 @@ function buildExportText(notes) {
     notes
       .map((n) => {
         const when = new Date(n.createdAt).toLocaleString();
-        return `— ${when}\nQuestion: ${n.question}\n\n${n.answer}\n`;
+        return `, ${when}\nQuestion: ${n.question}\n\n${n.answer}\n`;
       })
       .join('\n────────\n\n')
   );
@@ -1569,7 +1569,7 @@ function StreakChip({ streak, onClick, compact = false }) {
   return (
     <button
       onClick={onClick}
-      title={`${streak}-day streak — days in a row you've asked, read, or shared. Tap for today's verse`}
+      title={`${streak}-day streak: days in a row you've asked, read, or shared. Tap for today's verse`}
       style={{
         flexShrink: 0, display: 'flex', alignItems: 'center', gap: 3,
         background: 'rgba(232,181,99,0.14)', border: '1px solid rgba(232,181,99,0.3)',
@@ -1605,7 +1605,7 @@ function AppHeader({ onOpenBible, onVerseClick, streak, rightOffset = 0 }) {
       {/* Verse segment */}
       <button
         onClick={() => onVerseClick ? onVerseClick() : onOpenBible?.(verse.ref)}
-        title="Today's verse — tap to reflect"
+        title="Today's verse, tap to reflect"
         style={{
           flex: 1, minWidth: 0, padding: '0 12px 0 14px',
           display: 'flex', alignItems: 'baseline', gap: 8,
@@ -1678,7 +1678,7 @@ function MobileHeader({ onOpenBible, onVerseClick, streak, rightOffset = 0 }) {
       {showVerse ? (
         <button
           onClick={() => onVerseClick ? onVerseClick() : onOpenBible?.(verse.ref)}
-          title="Today's verse — tap to reflect"
+          title="Today's verse, tap to reflect"
           style={{
             flex: 1, minWidth: 0,
             display: 'flex', alignItems: 'baseline', gap: 7,
@@ -1914,7 +1914,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
             boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
             overflow: 'hidden',
             minWidth: 220,
-            maxWidth: 'calc(100vw - 264px)',
+            maxWidth: 'calc(100vw, 264px)',
             maxHeight: 'min(80vh, 520px)',
             overflowY: 'auto',
             zIndex: 300,
@@ -3280,7 +3280,7 @@ export default function App() {
           onAskVerse={(note) => {
             const conv = createConv(personType);
             setCurrentConvId(conv.id);
-            setPrefilledInput(`Tell me about ${note.book_name} ${note.chapter}:${note.verse} — "${note.verse_text?.replace(/^["""]+|["""]+$/g, '').trim()}"`);
+            setPrefilledInput(`Tell me about ${note.book_name} ${note.chapter}:${note.verse}, "${note.verse_text?.replace(/^["""]+|["""]+$/g, '').trim()}"`);
             setChatPanelOpen(true);
           }}
           onContinueChat={(noteBody) => {
@@ -3579,9 +3579,9 @@ export default function App() {
               : (chatPanelOpen && kbViewport) ? `calc(${kbViewport.offsetTop}px + env(safe-area-inset-top, 0px))`
               : 'env(safe-area-inset-top, 0px)',
             right: 0,
-            height: isDesktop && showNav ? `calc(100vh - ${HEADER_H}px)`
-              : (chatPanelOpen && kbViewport) ? `calc(${kbViewport.height}px - env(safe-area-inset-top, 0px))`
-              : 'calc(100vh - 62px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+            height: isDesktop && showNav ? `calc(100vh, ${HEADER_H}px)`
+              : (chatPanelOpen && kbViewport) ? `calc(${kbViewport.height}px, env(safe-area-inset-top, 0px))`
+              : 'calc(100vh, 62px, env(safe-area-inset-top, 0px), env(safe-area-inset-bottom, 0px))',
             width: Math.min(chatPanelWidth, winW - (isDesktop && showNav ? SIDEBAR_W : 0)),
             zIndex: isDocked ? 101 : 150,
             transform: chatPanelOpen ? 'translateX(0)' : 'translateX(100%)',
@@ -3733,7 +3733,7 @@ export default function App() {
           onClick={() => setJoinResult(null)}
           style={{
             position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)',
-            zIndex: 200, maxWidth: 'calc(100vw - 32px)', cursor: 'pointer',
+            zIndex: 200, maxWidth: 'calc(100vw, 32px)', cursor: 'pointer',
             background: joinResult.ok ? T.ink : T.error,
             color: T.cream, borderRadius: 999, padding: '11px 20px',
             fontSize: 14, fontWeight: 500, fontFamily: T.sans,
@@ -3963,7 +3963,7 @@ export default function App() {
               throw new Error(
                 error.message.includes('not a member')
                   ? 'You need to be a member of this church first.'
-                  : error.message || 'Something went wrong — please try again.'
+                  : error.message || 'Something went wrong, please try again.'
               );
             }
             const roleLabel = pendingInvite.role_label || ROLE_LABELS_CLIENT[pendingInvite.role_key] || pendingInvite.role_key;

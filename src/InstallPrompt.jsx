@@ -158,7 +158,7 @@ export default function InstallPrompt({ triggerNow = false, suppressed = false }
           </div>
           <div style={{ ...stepStyle, marginBottom: 20 }}>
             <div style={numStyle}>3</div>
-            <p style={textStyle}>Tap <strong>Add</strong> — kinwove opens like an app, and you can get notifications.</p>
+            <p style={textStyle}>Tap <strong>Add</strong>, kinwove opens like an app, and you can get notifications.</p>
           </div>
           <button
             onClick={dismiss}

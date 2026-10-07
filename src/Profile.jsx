@@ -132,11 +132,11 @@ const WIZARD_STEPS = [
   // browser so it is a confirm rather than a decision, which keeps the wizard
   // short for the people the fast track exists to protect.
   { key: 'country',           question: 'Where are you from?',                 hint: 'Shows as a flag on your profile.' },
-  { key: 'person_type',       question: 'Where are you at right now?',          hint: 'Be honest — there\'s no wrong answer here.' },
+  { key: 'person_type',       question: 'Where are you at right now?',          hint: 'Be honest. There\'s no wrong answer here.' },
   { key: 'preferred_language',question: 'What language do you prefer?',        hint: 'Your AI companion will respond in your language.' },
   { key: 'tradition',         question: 'Any tradition you identify with?',     hint: null },
   { key: 'exploring_since',   question: 'How long have you been on this path?', hint: null },
-  { key: 'what_brought',      question: 'What brought you here?',               hint: 'One honest line — or skip.', optional: true },
+  { key: 'what_brought',      question: 'What brought you here?',               hint: 'One honest line, or skip.', optional: true },
 ];
 
 // Curious/skeptical signups skip everything after picking their mode — the
@@ -203,7 +203,7 @@ function ProfileWizard({ user, existing, onSave }) {
     setError(null);
     const displayName = [form.first_name.trim(), form.last_name.trim()].filter(Boolean).join(' ');
     if (isReservedName(displayName)) {
-      return setError('That name is reserved — please pick a different one.');
+      return setError('That name is reserved, please pick a different one.');
     }
     if (containsProfanity(displayName)) {
       return setError('Please use a respectful name that\'s appropriate for our community.');
@@ -525,7 +525,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
     const { first_name, last_name, ...formRest } = form;
     const displayName = [first_name.trim(), last_name.trim()].filter(Boolean).join(' ');
     if (!existing?.is_system_account && isReservedName(displayName)) {
-      return setError('That name is reserved — please pick a different one.');
+      return setError('That name is reserved, please pick a different one.');
     }
     if (containsProfanity(displayName)) {
       return setError('Please use a respectful name that\'s appropriate for our community.');
@@ -636,7 +636,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
               </Field>
             </div>
 
-            <Field label="City" hint="City only — never your address">
+            <Field label="City" hint="City only, never your address">
               <input style={iStyle} value={form.city} onChange={(e) => set('city', e.target.value)} placeholder="e.g. Toronto" />
             </Field>
 
@@ -661,7 +661,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
             <Field label="Language">
               <select style={sStyle} value={form.preferred_language} onChange={(e) => set('preferred_language', e.target.value)}>
                 {LANGUAGES.map((lang) => (
-                  <option key={lang.code} value={lang.code}>{lang.native}{lang.native !== lang.label ? ` — ${lang.label}` : ''}</option>
+                  <option key={lang.code} value={lang.code}>{lang.native}{lang.native !== lang.label ? `, ${lang.label}` : ''}</option>
                 ))}
               </select>
             </Field>
@@ -703,7 +703,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
               </select>
             </Field>
 
-            <Field label="Date of birth" hint="Optional — used to verify age for youth church accounts">
+            <Field label="Date of birth" hint="Optional, used to verify age for youth church accounts">
               <input
                 type="date"
                 style={sStyle}
@@ -716,7 +716,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
             {/* ── Optional ── */}
             <Section icon="💬" label="Optional" />
 
-            <Field label="What brought you here?" hint="One honest line — or leave it blank">
+            <Field label="What brought you here?" hint="One honest line, or leave it blank">
               <input style={iStyle} value={form.what_brought} onChange={(e) => set('what_brought', e.target.value)} placeholder="e.g. A conversation that wouldn't leave me alone." />
             </Field>
 
@@ -795,7 +795,7 @@ export default function ProfileSetup({ user, existing, onSave, onCancel }) {
                 {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Save and continue'}
               </button>
               <div style={{ textAlign: 'center', marginTop: 12, fontSize: 12, color: T.inkMuted }}>
-                Nothing here is permanent — you can change this any time.
+                Nothing here is permanent. You can change this any time.
               </div>
             </div>
 

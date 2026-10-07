@@ -152,7 +152,7 @@ function WholeBibleCard({ C, completed, openChapter, session }) {
           </div>
           <div style={{ fontSize: 13, color: C.text, lineHeight: 1.55 }}>
             At {pace} {pace === 1 ? 'chapter' : 'chapters'} a day, you'll have read the whole Bible in{' '}
-            <strong>{humanDuration(days)}</strong> — finishing around <strong>{finishLabel}</strong>.
+            <strong>{humanDuration(days)}</strong>, finishing around <strong>{finishLabel}</strong>.
           </div>
           {recentCount >= 4 && (() => {
             const perWeek = Math.max(1, Math.round(recentCount / 4));
@@ -161,7 +161,7 @@ function WholeBibleCard({ C, completed, openChapter, session }) {
               .toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
             return (
               <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, marginTop: 6 }}>
-                Your pace lately: about {perWeek} {perWeek === 1 ? 'chapter' : 'chapters'} a week — kept up, that finishes around {actualFinish}.
+                Your pace lately: about {perWeek} {perWeek === 1 ? 'chapter' : 'chapters'} a week, kept up, that finishes around {actualFinish}.
               </div>
             );
           })()}
@@ -172,7 +172,7 @@ function WholeBibleCard({ C, completed, openChapter, session }) {
             const away = Math.ceil((next - done) / pace);
             return (
               <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5, marginTop: 4 }}>
-                Next milestone: {next.toLocaleString()} chapters — {humanDuration(away)} away at your pace.
+                Next milestone: {next.toLocaleString()} chapters {humanDuration(away)} away at your pace.
               </div>
             );
           })()}
@@ -223,21 +223,21 @@ function normalizeProgressKeys(keys) {
 }
 
 const BADGES = [
-  { id: 'first_step',    name: 'Let There Be Light',       req: 'Read your first chapter',               desc: '"In the beginning God created the heavens and the earth." — Gen 1:1',          check: (c, id) => countForVersion(c, id) >= 1 },
-  { id: 'well_read',     name: 'Seek and You Will Find',   req: 'Read 10 chapters',                      desc: '"Seek and you will find; knock and the door will be opened to you." — Matt 7:7', check: (c, id) => countForVersion(c, id) >= 10 },
-  { id: 'seeking',       name: 'He Restores My Soul',      req: 'Read 25 chapters',                      desc: '"He restores my soul. He leads me in paths of righteousness." — Ps 23:3',       check: (c, id) => countForVersion(c, id) >= 25 },
-  { id: 'faithful',      name: 'Year of Jubilee',          req: 'Read 50 chapters',                      desc: '"Proclaim liberty throughout the land to all its inhabitants." — Lev 25:10',    check: (c, id) => countForVersion(c, id) >= 50 },
-  { id: 'devoted',       name: 'A Hundredfold',            req: 'Read 100 chapters',                     desc: '"Other seeds fell on good soil and produced grain, a hundredfold." — Matt 13:8', check: (c, id) => countForVersion(c, id) >= 100 },
-  { id: 'scholar',       name: 'Great Is Thy Faithfulness',req: 'Read 250 chapters',                     desc: '"His mercies never come to an end; they are new every morning." — Lam 3:23', check: (c, id) => countForVersion(c, id) >= 250 },
-  { id: 'scribe',        name: 'Lamp to My Feet',          req: 'Read 500 chapters',                     desc: '"Your word is a lamp to my feet and a light to my path." — Ps 119:105',        check: (c, id) => countForVersion(c, id) >= 500 },
-  { id: 'thousand',      name: 'A Thousand Generations',   req: 'Read 1,000 chapters',                   desc: '"He remembers his covenant forever, the word he commanded, for a thousand generations." — Ps 105:8', check: (c, id) => countForVersion(c, id) >= 1000 },
-  { id: 'genesis',       name: 'In the Beginning',         req: 'Complete Genesis',                      desc: '"In the beginning, God…" — Complete Genesis, the foundation of all things',     check: (c, id) => bookGroupComplete(['GEN'], c, id) },
-  { id: 'the_law',       name: 'The Law of Moses',         req: 'Complete the 5 books of Moses',         desc: '"Be careful to obey all the law my servant Moses gave you." — Josh 1:7',        check: (c, id) => bookGroupComplete(['GEN','EXO','LEV','NUM','DEU'], c, id) },
-  { id: 'the_psalms',    name: 'Praise the Lord',          req: 'Complete all 150 Psalms',               desc: '"Let everything that has breath praise the Lord." — Psalm 150:6',               check: (c, id) => bookGroupComplete(['PSA'], c, id) },
-  { id: 'the_gospels',   name: 'The Good News',            req: 'Complete Matthew, Mark, Luke & John',   desc: '"The beginning of the gospel of Jesus Christ, the Son of God." — Mark 1:1',     check: (c, id) => bookGroupComplete(['MAT','MRK','LUK','JHN'], c, id) },
-  { id: 'new_testament', name: 'The New Covenant',         req: 'Complete the entire New Testament',     desc: '"This cup is the new covenant in my blood, poured out for you." — Luke 22:20',  check: (c, id) => bookGroupComplete(NT.map((b) => b.id), c, id) },
-  { id: 'old_testament', name: 'The Ancient Paths',        req: 'Complete the entire Old Testament',     desc: '"Ask for the ancient paths, where the good way is, and walk in it." — Jer 6:16', check: (c, id) => bookGroupComplete(OT.map((b) => b.id), c, id) },
-  { id: 'the_word',      name: 'The Living Word',          req: 'Read all 1,189 chapters of the Bible',  desc: '"The word of God is living and active, sharper than any two-edged sword." — Heb 4:12', check: (c, id) => countForVersion(c, id) >= 1189 },
+  { id: 'first_step',    name: 'Let There Be Light',       req: 'Read your first chapter',               desc: '"In the beginning God created the heavens and the earth.", Gen 1:1',          check: (c, id) => countForVersion(c, id) >= 1 },
+  { id: 'well_read',     name: 'Seek and You Will Find',   req: 'Read 10 chapters',                      desc: '"Seek and you will find; knock and the door will be opened to you.", Matt 7:7', check: (c, id) => countForVersion(c, id) >= 10 },
+  { id: 'seeking',       name: 'He Restores My Soul',      req: 'Read 25 chapters',                      desc: '"He restores my soul. He leads me in paths of righteousness.", Ps 23:3',       check: (c, id) => countForVersion(c, id) >= 25 },
+  { id: 'faithful',      name: 'Year of Jubilee',          req: 'Read 50 chapters',                      desc: '"Proclaim liberty throughout the land to all its inhabitants.", Lev 25:10',    check: (c, id) => countForVersion(c, id) >= 50 },
+  { id: 'devoted',       name: 'A Hundredfold',            req: 'Read 100 chapters',                     desc: '"Other seeds fell on good soil and produced grain, a hundredfold.", Matt 13:8', check: (c, id) => countForVersion(c, id) >= 100 },
+  { id: 'scholar',       name: 'Great Is Thy Faithfulness',req: 'Read 250 chapters',                     desc: '"His mercies never come to an end; they are new every morning.", Lam 3:23', check: (c, id) => countForVersion(c, id) >= 250 },
+  { id: 'scribe',        name: 'Lamp to My Feet',          req: 'Read 500 chapters',                     desc: '"Your word is a lamp to my feet and a light to my path.", Ps 119:105',        check: (c, id) => countForVersion(c, id) >= 500 },
+  { id: 'thousand',      name: 'A Thousand Generations',   req: 'Read 1,000 chapters',                   desc: '"He remembers his covenant forever, the word he commanded, for a thousand generations.", Ps 105:8', check: (c, id) => countForVersion(c, id) >= 1000 },
+  { id: 'genesis',       name: 'In the Beginning',         req: 'Complete Genesis',                      desc: '"In the beginning, God…", Complete Genesis, the foundation of all things',     check: (c, id) => bookGroupComplete(['GEN'], c, id) },
+  { id: 'the_law',       name: 'The Law of Moses',         req: 'Complete the 5 books of Moses',         desc: '"Be careful to obey all the law my servant Moses gave you.", Josh 1:7',        check: (c, id) => bookGroupComplete(['GEN','EXO','LEV','NUM','DEU'], c, id) },
+  { id: 'the_psalms',    name: 'Praise the Lord',          req: 'Complete all 150 Psalms',               desc: '"Let everything that has breath praise the Lord.", Psalm 150:6',               check: (c, id) => bookGroupComplete(['PSA'], c, id) },
+  { id: 'the_gospels',   name: 'The Good News',            req: 'Complete Matthew, Mark, Luke & John',   desc: '"The beginning of the gospel of Jesus Christ, the Son of God.", Mark 1:1',     check: (c, id) => bookGroupComplete(['MAT','MRK','LUK','JHN'], c, id) },
+  { id: 'new_testament', name: 'The New Covenant',         req: 'Complete the entire New Testament',     desc: '"This cup is the new covenant in my blood, poured out for you.", Luke 22:20',  check: (c, id) => bookGroupComplete(NT.map((b) => b.id), c, id) },
+  { id: 'old_testament', name: 'The Ancient Paths',        req: 'Complete the entire Old Testament',     desc: '"Ask for the ancient paths, where the good way is, and walk in it.", Jer 6:16', check: (c, id) => bookGroupComplete(OT.map((b) => b.id), c, id) },
+  { id: 'the_word',      name: 'The Living Word',          req: 'Read all 1,189 chapters of the Bible',  desc: '"The word of God is living and active, sharper than any two-edged sword.", Heb 4:12', check: (c, id) => countForVersion(c, id) >= 1189 },
 ];
 
 // Books to clear when resetting a book-group achievement badge
@@ -313,7 +313,7 @@ const BIBLE_SECTIONS = [
     key: 'law',
     label: 'The Law',
     subtitle: 'Genesis · Exodus · Leviticus · Numbers · Deuteronomy',
-    desc: 'The foundations — creation, covenant, commandments',
+    desc: 'The foundations: creation, covenant, commandments',
     bookIds: ['GEN','EXO','LEV','NUM','DEU'],
   },
   {
@@ -355,14 +355,14 @@ const BIBLE_SECTIONS = [
     key: 'acts',
     label: 'Acts',
     subtitle: 'The Acts of the Apostles',
-    desc: 'The Spirit poured out — the church is born and spreads to the world',
+    desc: 'The Spirit poured out. The church is born and spreads to the world',
     bookIds: ['ACT'],
   },
   {
     key: 'pauline',
     label: 'Letters of Paul',
     subtitle: 'Romans through Philemon',
-    desc: 'Grace, faith, and life in Christ — written to early churches',
+    desc: 'Grace, faith, and life in Christ, written to early churches',
     bookIds: ['ROM','1CO','2CO','GAL','EPH','PHP','COL','1TH','2TH','1TI','2TI','TIT','PHM'],
   },
   {
@@ -376,7 +376,7 @@ const BIBLE_SECTIONS = [
     key: 'revelation',
     label: 'Revelation',
     subtitle: 'The Revelation to John',
-    desc: 'The final vision — the Lamb victorious, all things made new',
+    desc: 'The final vision, the Lamb victorious, all things made new',
     bookIds: ['REV'],
   },
 ];
@@ -808,7 +808,7 @@ function parseVerses(html) {
       if (cls.some((c) => SKIP_CLASS_RE.test(c))) return;
       if (cls.some((c) => HEADING_CLASS_RE.test(c))) {
         const t = node.textContent.trim();
-        if (t) pendingHeading = pendingHeading ? `${pendingHeading} — ${t}` : t;
+        if (t) pendingHeading = pendingHeading ? `${pendingHeading}, ${t}` : t;
         return;
       }
       const num = node.getAttribute?.('data-number');
@@ -1995,7 +1995,7 @@ Return up to 5 matches, best first. If nothing matches, return []. No explanatio
     const verseRef = `${book?.name ?? bookId} ${chNum}:${noteVerse.number}`;
     if (churchNoteContext) {
       const verseText = noteVerse.text?.replace(/^["\u201c\u201d]+|["\u201c\u201d]+$/g, '').trim() ?? '';
-      const body = [verseText ? `"${verseText}" — ${verseRef}` : verseRef, noteText.trim()].filter(Boolean).join('\n\n');
+      const body = [verseText ? `"${verseText}", ${verseRef}` : verseRef, noteText.trim()].filter(Boolean).join('\n\n');
       await supabase.from('church_notes').insert({
         church_id: churchNoteContext, author_id: session.user.id,
         title: verseRef, body, series: noteSeries.trim() || null, source: 'bible',
@@ -2153,7 +2153,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
         {VERSIONS.find((v) => v.id === bibleId)?.abbr} ▾
       </button>
       {showVersions && (
-        <div style={{ position: 'absolute', top: '110%', right: 0, left: 'auto', background: dark ? '#1A0E07' : T.white, border: `1px solid ${C.border}`, borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', overflow: 'hidden', zIndex: 50, minWidth: 210, maxWidth: 'calc(100vw - 24px)' }}>
+        <div style={{ position: 'absolute', top: '110%', right: 0, left: 'auto', background: dark ? '#1A0E07' : T.white, border: `1px solid ${C.border}`, borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', overflow: 'hidden', zIndex: 50, minWidth: 210, maxWidth: 'calc(100vw, 24px)' }}>
           {VERSIONS.map((v) => (
             <button key={v.id} onClick={() => { setBibleId(v.id); setShowVersions(false); }} style={{
               width: '100%', textAlign: 'left', background: bibleId === v.id ? 'rgba(184,115,58,0.1)' : 'transparent',
@@ -2313,7 +2313,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
           value={searchVal}
           onChange={(e) => { setSearchVal(e.target.value); setSearchResults(null); }}
           onKeyDown={(e) => { if (e.key === 'Enter') submitSearch(); if (e.key === 'Escape') { setSearchOpen(false); setSearchVal(''); setSearchResults(null); } }}
-          placeholder="Search — describe a verse or type a reference like John 3:16"
+          placeholder="Search, describe a verse or type a reference like John 3:16"
           style={{ flex: 1, background: C.inputBg, border: `1.5px solid ${C.border}`, borderRadius: 10, padding: '9px 14px', fontSize: 14, fontFamily: T.sans, color: C.text, outline: 'none', transition: 'border-color 0.15s' }}
           onFocus={(e) => (e.currentTarget.style.borderColor = C.verse)}
           onBlur={(e) => (e.currentTarget.style.borderColor = C.border)}
@@ -2327,7 +2327,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
             <div style={{ padding: '16px 20px', fontSize: 13, color: C.muted }}>Finding verses…</div>
           ) : searchResults.length === 0 ? (
             <div style={{ padding: '16px 20px', fontSize: 13, color: C.muted, lineHeight: 1.6 }}>
-              {searchNote || 'No verses found — try different words.'}
+              {searchNote || 'No verses found. Try different words.'}
             </div>
           ) : searchResults.map((v) => {
             const ref = v.ref ?? v.reference ?? '';
@@ -2516,7 +2516,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                   )}
                 </div>
                 <div style={{ fontSize: 12, color: C.muted, marginBottom: 14, lineHeight: 1.4 }}>
-                  Special badges for reading milestones — like finishing 100 chapters or completing the Gospels.
+                  Special badges for reading milestones, like finishing 100 chapters or completing the Gospels.
                 </div>
 
                 {earnedMilestones.length === 0 ? (
@@ -2579,7 +2579,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                   </button>
                 </div>
                 <div style={{ fontSize: 12, color: C.muted, marginBottom: 14, lineHeight: 1.4 }}>
-                  One seal per book of the Bible — earned by reading every chapter. {earnedBooks.length}/{ALL_BOOKS.length} collected.
+                  One seal per book of the Bible, earned by reading every chapter. {earnedBooks.length}/{ALL_BOOKS.length} collected.
                 </div>
 
                 {earnedBooks.length === 0 && !booksOpen ? (
@@ -2596,7 +2596,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                       const bEarned = bookDone(b) === b.ch;
                       return (
                         <div key={b.id}
-                          title={bEarned ? `${b.name} — complete · tap to reset` : `${b.name} — ${bookDone(b)}/${b.ch} chapters`}
+                          title={bEarned ? `${b.name}, complete · tap to reset` : `${b.name}, ${bookDone(b)}/${b.ch} chapters`}
                           style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
                             width: 62, textAlign: 'center', flex: '0 0 auto',
                             animation: bEarned ? 'badgePop 0.55s cubic-bezier(0.34,1.56,0.64,1) both' : 'none' }}>
@@ -2828,7 +2828,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                     {isRead ? `✓ ${n}` : n}
                   </span>
                   <span style={{ fontSize: 10, color: C.muted, fontWeight: 500, lineHeight: 1, whiteSpace: 'nowrap' }}>
-                    {vc ? `${n}:1–${n}:${vc}` : ''}
+                    {vc ? `${n}:1, ${n}:${vc}` : ''}
                   </span>
                   {/* Verse picker — small explicit button in top-right corner, well away from the main tap area */}
                   {vc && (
@@ -2968,7 +2968,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
               </>
             ) : (
               <div style={{ fontFamily: T.serif, fontSize: 15, lineHeight: 1.6, color: CC.muted }}>
-                Ask anything about {book.name} {chNum} — or tap a verse in the chapter to ask about it directly.
+                Ask anything about {book.name} {chNum}, or tap a verse in the chapter to ask about it directly.
               </div>
             )}
           </div>
@@ -3138,7 +3138,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
           {/* Chapter-context starter chips — one tap of orientation for readers new to the passage */}
           <div style={{ display: 'flex', gap: 6, overflowX: 'auto', WebkitOverflowScrolling: 'touch', padding: '8px 12px 8px', borderTop: `1px solid ${chatDark ? CC.border : 'rgba(184,115,58,0.2)'}`, background: chatDark ? 'transparent' : '#FAF3E4' }}>
             {[
-              { label: "What's happening here?", prompt: `What's happening in ${book.name} ${chNum}? Set the scene simply — who wrote this, who it's for, and what's going on.` },
+              { label: "What's happening here?", prompt: `What's happening in ${book.name} ${chNum}? Set the scene simply, who wrote this, who it's for, and what's going on.` },
               { label: 'Explain it simply', prompt: `Explain ${book.name} ${chNum} simply, like I'm brand new to the Bible.` },
             ].map((c) => (
               <button
@@ -3205,7 +3205,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
   );
 
   return (
-    <div ref={paneRef} style={{ position: 'relative', ...(fillParent ? { flex: 1, minHeight: 0 } : { height: `calc(100vh - ${62 + topOffset}px)` }), background: C.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div ref={paneRef} style={{ position: 'relative', ...(fillParent ? { flex: 1, minHeight: 0 } : { height: `calc(100vh, ${62 + topOffset}px)` }), background: C.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Bible sub-header — sits directly below the global app header */}
       <div style={{
         background: C.bg, borderBottom: `1px solid ${C.border}`,
@@ -3250,7 +3250,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
           ><Search size={15} strokeWidth={2} /></button>
           <button
             onClick={cycleFontScale}
-            title={`Text size (${Math.round(fontScale * 100)}%) — tap to change`}
+            title={`Text size (${Math.round(fontScale * 100)}%), tap to change`}
             aria-label="Change text size"
             style={{ width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', background: fontScale !== 1 ? C.inputBg : 'none', border: `1px solid ${fontScale !== 1 ? C.border : 'transparent'}`, display: 'flex', alignItems: 'baseline', justifyContent: 'center', color: C.muted, paddingTop: 7, WebkitTapHighlightColor: 'transparent' }}
           >
@@ -3284,7 +3284,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
           <span aria-hidden="true">{activePlan.emoji}</span>
           <span style={{ fontWeight: 700, color: C.text, fontFamily: T.serif }}>{activePlan.title}</span>
           <span style={{ color: C.muted, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            · Day {planDayIdx + 1} of {activePlan.days.length}{activePlan.days[planDayIdx].t ? ` — ${activePlan.days[planDayIdx].t}` : ''}
+            · Day {planDayIdx + 1} of {activePlan.days.length}{activePlan.days[planDayIdx].t ? `, ${activePlan.days[planDayIdx].t}` : ''}
           </span>
           <span style={{ flex: 1 }} />
           <button onClick={() => setActivePlanId(null)} title="Leave the plan (keep reading freely)" style={{ background: 'none', border: 'none', color: C.muted, fontSize: 14, cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}>✕</button>
@@ -3532,7 +3532,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
                             <button
                               onClick={() => {
                                 const abbr = VERSIONS.find((x) => x.id === bibleId)?.abbr ?? 'KJV';
-                                const text = `"${selText}" — ${selRefLabel} (${abbr})\nhttps://www.kinwove.com`;
+                                const text = `"${selText}", ${selRefLabel} (${abbr})\nhttps://www.kinwove.com`;
                                 track('verse_share', { ref: selRefLabel, verses: selVerses.length });
                                 if (navigator.share) { navigator.share({ text }).catch(() => {}); }
                                 else { navigator.clipboard?.writeText(text).then(() => { setCopiedVerse(v.number); setTimeout(() => setCopiedVerse(null), 1500); }, () => {}); }
@@ -3608,7 +3608,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
               <div style={{ marginTop: 48, paddingTop: 32, borderTop: `1px solid ${C.border}`, textAlign: 'center' }}>
                 {isDone ? (
                   <>
-                    <div style={{ color: C.verse, fontFamily: T.serif, fontSize: 16, marginBottom: 14 }}>✓ Chapter read — well done</div>
+                    <div style={{ color: C.verse, fontFamily: T.serif, fontSize: 16, marginBottom: 14 }}>✓ Chapter read, well done</div>
                     <button onClick={() => goChapter(chNum + 1)} style={{ background: `linear-gradient(135deg, ${T.gold} 0%, #c47020 100%)`, color: T.cream, border: 'none', borderRadius: 999, padding: '14px 36px', fontSize: 15, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 20px rgba(184,115,58,0.35)' }}>
                       Next chapter →
                     </button>

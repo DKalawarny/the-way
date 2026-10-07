@@ -13,7 +13,7 @@ export const BOOK_AUTHORS = {
   JOS: 'Traditionally attributed to Joshua',
   EZR: 'Traditionally attributed to Ezra',
   NEH: 'The memoirs of Nehemiah',
-  PSA: 'Many authors — about half attributed to David',
+  PSA: 'Many authors, about half attributed to David',
   PRO: 'Mainly Solomon, with sayings of Agur and Lemuel',
   ECC: 'Traditionally attributed to Solomon, "the Teacher"',
   SNG: 'Traditionally attributed to Solomon',
@@ -57,5 +57,5 @@ export const BOOK_AUTHORS = {
   '2JN': 'Traditionally attributed to John the apostle',
   '3JN': 'Traditionally attributed to John the apostle',
   JUD: 'Jude, brother of James',
-  REV: 'John, writing from Patmos — traditionally the apostle',
+  REV: 'John, writing from Patmos, traditionally the apostle',
 };

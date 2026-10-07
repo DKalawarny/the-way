@@ -248,7 +248,7 @@ export default function Auth({ onAuth, onBack, initialMode = 'signin' }) {
           <h2 style={title}>Check your email</h2>
           <p style={{ color: T.inkSoft, fontSize: 15, lineHeight: 1.6 }}>
             We sent a confirmation link to <strong>{email}</strong>. Click it and
-            you're in — no need to come back here.
+            you're in. No need to come back here.
           </p>
           <p style={{ color: T.inkMuted, fontSize: 13, lineHeight: 1.6, marginTop: 0 }}>
             No email? Check spam, or tap below to send another.

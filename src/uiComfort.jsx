@@ -72,7 +72,7 @@ export function OfflineBanner() {
       textAlign: 'center', paddingTop: 'calc(7px + env(safe-area-inset-top, 0px))',
       ...(online ? backStyle : offlineStyle),
     }}>
-      {online ? 'Back online' : "You're offline — some things may not load or save until you reconnect."}
+      {online ? 'Back online' : "You're offline. Some things may not load or save until you reconnect."}
     </div>,
     document.body,
   );

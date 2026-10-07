@@ -8,8 +8,8 @@ export const JOURNEYS = [
     steps: [
       {
         title: 'Who is Jesus, really?',
-        subtitle: 'Not the stained-glass version — the actual person.',
-        prompt: "Who is Jesus — historically, actually? I want to understand who he was before I decide what I think about him.",
+        subtitle: 'Not the stained-glass version, the actual person.',
+        prompt: "Who is Jesus, historically, actually? I want to understand who he was before I decide what I think about him.",
       },
       {
         title: 'If God is good, why is there so much suffering?',
@@ -28,7 +28,7 @@ export const JOURNEYS = [
       },
       {
         title: 'What would a next step look like?',
-        subtitle: 'Not a commitment — just a direction.',
+        subtitle: 'Not a commitment, just a direction.',
         prompt: "I've been thinking about all of this seriously. What would an honest next step look like for someone where I am?",
       },
     ],
@@ -43,7 +43,7 @@ export const JOURNEYS = [
       {
         title: 'What is the Bible, actually?',
         subtitle: 'How it came together and what it claims to be.',
-        prompt: "What is the Bible — how did it come together, who wrote it, and what does it actually claim to be?",
+        prompt: "What is the Bible: how did it come together, who wrote it, and what does it actually claim to be?",
       },
       {
         title: 'The story arc',
@@ -52,13 +52,13 @@ export const JOURNEYS = [
       },
       {
         title: 'The figures everyone references',
-        subtitle: 'Abraham, Moses, David, Paul — who were they?',
+        subtitle: 'Abraham, Moses, David, Paul, who were they?',
         prompt: "Who are the key figures in the Bible and why do they matter? Give me the real picture, not the Sunday school version.",
       },
       {
         title: 'The passages people argue about',
         subtitle: 'What the hard texts actually say in context.',
-        prompt: "What are the passages people most argue about — the ones used to justify things that seem wrong today? What do they actually say in context?",
+        prompt: "What are the passages people most argue about, the ones used to justify things that seem wrong today? What do they actually say in context?",
       },
       {
         title: 'Why does this still matter?',
@@ -77,7 +77,7 @@ export const JOURNEYS = [
       {
         title: 'What historians actually say',
         subtitle: 'Separating faith claims from historical evidence.',
-        prompt: "What do secular historians — not believers — actually say about the historical reliability of the Bible and the existence of Jesus?",
+        prompt: "What do secular historians, not believers, actually say about the historical reliability of the Bible and the existence of Jesus?",
       },
       {
         title: 'The manuscript question',
@@ -86,13 +86,13 @@ export const JOURNEYS = [
       },
       {
         title: 'The moral objections',
-        subtitle: 'Genocide, slavery, women — the real problems.',
-        prompt: "How do I deal with the parts of the Bible that seem morally wrong — the genocide passages, slavery, the treatment of women? I can't just ignore them.",
+        subtitle: 'Genocide, slavery, women, the real problems.',
+        prompt: "How do I deal with the parts of the Bible that seem morally wrong: the genocide passages, slavery, the treatment of women? I can't just ignore them.",
       },
       {
         title: 'The strongest case for',
         subtitle: "Steelmanning what you're skeptical of.",
-        prompt: "I want to steelman the case for Christianity. What is the strongest intellectual argument for it — not the emotional one, the actual argument?",
+        prompt: "I want to steelman the case for Christianity. What is the strongest intellectual argument for it. Not the emotional one, the actual argument?",
       },
       {
         title: 'What to do with uncertainty',
@@ -111,7 +111,7 @@ export const JOURNEYS = [
       {
         title: 'What is the gospel, really?',
         subtitle: 'In plain language, without the jargon.',
-        prompt: "What is the gospel — not the Sunday school version, but what it actually means and why it matters?",
+        prompt: "What is the gospel. Not the Sunday school version, but what it actually means and why it matters?",
       },
       {
         title: 'How to read the Bible',
@@ -121,7 +121,7 @@ export const JOURNEYS = [
       {
         title: 'What prayer actually is',
         subtitle: 'And what to do when it feels like nothing.',
-        prompt: "What is prayer — actually? And what do you do when you pray and feel nothing? Is that normal?",
+        prompt: "What is prayer, actually? And what do you do when you pray and feel nothing? Is that normal?",
       },
       {
         title: 'The hard parts of following Jesus',

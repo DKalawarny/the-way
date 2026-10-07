@@ -139,7 +139,7 @@ export default function AnonymousWelcome({ churchId, churchName, onSignUp, onTal
                   No sign-up. No name. Nobody sees this.
                 </div>
                 <div style={{ fontSize: 14, color: T.inkSoft, lineHeight: 1.65 }}>
-                  Whatever's on your mind — life, meaning, faith, doubt — ask it here.
+                  Whatever's on your mind, life, meaning, faith, doubt, ask it here.
                 </div>
               </div>
 
@@ -160,7 +160,7 @@ export default function AnonymousWelcome({ churchId, churchName, onSignUp, onTal
               </div>
 
               <div style={{ '--i': 4, marginTop: 18, fontSize: 12, color: T.inkMuted, fontStyle: 'italic', lineHeight: 1.55, textAlign: 'center' }}>
-                You're chatting with an AI — not a person. Want a real human? "Reach out" appears once you've started.
+                You're chatting with an AI. Not a person. Want a real human? "Reach out" appears once you've started.
               </div>
             </div>
           )}
@@ -205,7 +205,7 @@ export default function AnonymousWelcome({ churchId, churchName, onSignUp, onTal
               <div style={{ fontWeight: 600, color: T.ink, marginBottom: 6, fontFamily: T.serif, fontSize: 15 }}>
                 Want to talk to a real person?
               </div>
-              You can reach out to someone at {churchName ?? 'this church'} — anonymously, by topic, or by name. Pastor never sees the conversation; only the person you pick.
+              You can reach out to someone at {churchName ?? 'this church'}, anonymously, by topic, or by name. Pastor never sees the conversation; only the person you pick.
               <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                 {onTalkToSomeone && (
                   <button onClick={onTalkToSomeone} style={{
