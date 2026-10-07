@@ -2153,7 +2153,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
         {VERSIONS.find((v) => v.id === bibleId)?.abbr} ▾
       </button>
       {showVersions && (
-        <div style={{ position: 'absolute', top: '110%', right: 0, left: 'auto', background: dark ? '#1A0E07' : T.white, border: `1px solid ${C.border}`, borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', overflow: 'hidden', zIndex: 50, minWidth: 210, maxWidth: 'calc(100vw, 24px)' }}>
+        <div style={{ position: 'absolute', top: '110%', right: 0, left: 'auto', background: dark ? '#1A0E07' : T.white, border: `1px solid ${C.border}`, borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', overflow: 'hidden', zIndex: 50, minWidth: 210, maxWidth: 'calc(100vw - 24px)' }}>
           {VERSIONS.map((v) => (
             <button key={v.id} onClick={() => { setBibleId(v.id); setShowVersions(false); }} style={{
               width: '100%', textAlign: 'left', background: bibleId === v.id ? 'rgba(184,115,58,0.1)' : 'transparent',
@@ -3205,7 +3205,7 @@ Answer questions about this passage clearly and honestly. Offer plain-language e
   );
 
   return (
-    <div ref={paneRef} style={{ position: 'relative', ...(fillParent ? { flex: 1, minHeight: 0 } : { height: `calc(100vh, ${62 + topOffset}px)` }), background: C.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div ref={paneRef} style={{ position: 'relative', ...(fillParent ? { flex: 1, minHeight: 0 } : { height: `calc(100vh - ${62 + topOffset}px)` }), background: C.bg, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Bible sub-header — sits directly below the global app header */}
       <div style={{
         background: C.bg, borderBottom: `1px solid ${C.border}`,

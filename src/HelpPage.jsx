@@ -482,7 +482,7 @@ export default function HelpPage({ onClose, onOpenTour }) {
       {/* ── Body ──────────────────────────────────────────────────── */}
       {isWide ? (
         /* ── Desktop: two-column ──────────────────────────────────── */
-        <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', minHeight: 'calc(100vh, 56px)' }}>
+        <div style={{ maxWidth: 960, margin: '0 auto', display: 'flex', minHeight: 'calc(100vh - 56px)' }}>
 
           {/* Left nav */}
           <nav style={{

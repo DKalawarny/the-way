@@ -46,7 +46,7 @@ function DividerHandle({ onMouseDown, onSwap, swapTitle = 'Swap sides' }) {
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); onSwap(); }}
           style={{
-            position: 'absolute', top: 'calc(50%, 44px)', left: '50%', transform: 'translateX(-50%)',
+            position: 'absolute', top: 'calc(50% - 44px)', left: '50%', transform: 'translateX(-50%)',
             width: 26, height: 26, borderRadius: '50%',
             background: T.ink, color: T.cream, border: `1px solid rgba(253,248,240,0.3)`,
             fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1122,7 +1122,7 @@ function InviteModal({ member, existingRoles, pendingInvites, onClose, onSubmit 
       <div onClick={(e) => e.stopPropagation()} className="modal-sheet" style={{
         background: T.cream, borderRadius: 16, maxWidth: 480, width: '100%',
         padding: 'clamp(20px, 4vw, 26px)', border: `1px solid ${T.line}`,
-        maxHeight: 'calc(100dvh, 40px)', overflowY: 'auto',
+        maxHeight: 'calc(100dvh - 40px)', overflowY: 'auto',
       }}>
         <div style={{ fontFamily: T.serif, fontSize: 22, fontWeight: 600, color: T.ink, marginBottom: 6 }}>
           Invite to a role

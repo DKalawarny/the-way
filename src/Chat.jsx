@@ -1487,7 +1487,7 @@ export default function Chat({
                 background: T.white, border: `1px solid ${T.line}`,
                 borderRadius: 16, boxShadow: '0 12px 48px rgba(44,24,16,0.18)',
                 padding: 10, zIndex: 200,
-                width: 'min(calc(100vw, 32px), 420px)',
+                width: 'min(calc(100vw - 32px), 420px)',
                 maxHeight: '85vh', overflowY: 'auto',
               }}>
                 <div style={{ padding: '2px 4px 8px', fontSize: 10, letterSpacing: '0.07em', textTransform: 'uppercase', color: T.inkMuted, fontWeight: 700 }}>

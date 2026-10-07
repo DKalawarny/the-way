@@ -1807,7 +1807,7 @@ useEffect(() => {
   }
 
   // On desktop the global AppHeader takes 56px — subtract from scene height.
-  const sceneH = hideHeader ? 'calc(100dvh, 56px)' : '100dvh';
+  const sceneH = hideHeader ? 'calc(100dvh - 56px)' : '100dvh';
 
   // Pull-to-refresh on the feed scroll area (touch devices only by nature).
   const feedScrollRef = useRef(null);

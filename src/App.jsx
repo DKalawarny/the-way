@@ -1914,7 +1914,7 @@ function SidebarNav({ stage, session, profile, chatOpen,
             boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
             overflow: 'hidden',
             minWidth: 220,
-            maxWidth: 'calc(100vw, 264px)',
+            maxWidth: 'calc(100vw - 264px)',
             maxHeight: 'min(80vh, 520px)',
             overflowY: 'auto',
             zIndex: 300,
@@ -3579,9 +3579,9 @@ export default function App() {
               : (chatPanelOpen && kbViewport) ? `calc(${kbViewport.offsetTop}px + env(safe-area-inset-top, 0px))`
               : 'env(safe-area-inset-top, 0px)',
             right: 0,
-            height: isDesktop && showNav ? `calc(100vh, ${HEADER_H}px)`
-              : (chatPanelOpen && kbViewport) ? `calc(${kbViewport.height}px, env(safe-area-inset-top, 0px))`
-              : 'calc(100vh, 62px, env(safe-area-inset-top, 0px), env(safe-area-inset-bottom, 0px))',
+            height: isDesktop && showNav ? `calc(100vh - ${HEADER_H}px)`
+              : (chatPanelOpen && kbViewport) ? `calc(${kbViewport.height}px - env(safe-area-inset-top, 0px))`
+              : 'calc(100vh - 62px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
             width: Math.min(chatPanelWidth, winW - (isDesktop && showNav ? SIDEBAR_W : 0)),
             zIndex: isDocked ? 101 : 150,
             transform: chatPanelOpen ? 'translateX(0)' : 'translateX(100%)',
@@ -3733,7 +3733,7 @@ export default function App() {
           onClick={() => setJoinResult(null)}
           style={{
             position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)',
-            zIndex: 200, maxWidth: 'calc(100vw, 32px)', cursor: 'pointer',
+            zIndex: 200, maxWidth: 'calc(100vw - 32px)', cursor: 'pointer',
             background: joinResult.ok ? T.ink : T.error,
             color: T.cream, borderRadius: 999, padding: '11px 20px',
             fontSize: 14, fontWeight: 500, fontFamily: T.sans,

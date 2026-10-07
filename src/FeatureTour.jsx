@@ -298,7 +298,7 @@ export default function FeatureTour({ onClose }) {
         <div
           key={step}
           style={{
-            width: 'min(420px, calc(100vw, 32px))',
+            width: 'min(420px, calc(100vw - 32px))',
             background: T.cream,
             borderRadius: 24, overflow: 'hidden',
             boxShadow: '0 32px 80px rgba(0,0,0,0.45)',
