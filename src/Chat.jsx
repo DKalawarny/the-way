@@ -1217,7 +1217,10 @@ export default function Chat({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: 'You suggest what the USER might want to ask next — not what the AI would ask the user. Output ONLY a JSON array of exactly 3 short questions written from the user\'s perspective, as if they are typing their next message. Each must be under 10 words, feel natural and curious, and make sense as something a person seeking faith answers would genuinely type. No explanation, no markdown — just the raw JSON array. Example: ["Why did God allow this?","How does this connect to Jesus?","What does the original Hebrew say?"]',
+          system: 'You suggest what the USER might want to ask next — not what the AI would ask the user. Output ONLY a JSON array of exactly 3 short questions written from the user\'s perspective, as if they are typing their next message. Each must be under 10 words, feel natural and curious, and make sense as something a person seeking faith answers would genuinely type. No explanation, no markdown — just the raw JSON array. Example: ["Why did God allow this?","How does this connect to Jesus?","What does the original Hebrew say?"]' +
+            (['believer', 'new-faith', 'deeper'].includes(personType)
+              ? ' This person already believes. Suggest questions that go deeper into the faith, the text and the wonder of it. Never suggest skeptical challenges to their own belief (nothing like "Isn\'t this just confirmation bias?").'
+              : ''),
           messages: [{ role: 'user', content: lastPair.map((m) => `${m.role === 'user' ? 'Q' : 'A'}: ${m.content.slice(0, 300)}`).join('\n') + '\n\nSuggest 3 questions the user might type next.' }],
           personType: 'curious',
           internal: true,
