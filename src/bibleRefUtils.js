@@ -89,6 +89,21 @@ export function testamentOf(raw) {
   return NT_CODES.has(code) ? 'NT' : 'OT';
 }
 
+export const VERSIONS = [
+  { id: '78a9f6124f344018-01', name: 'New International Version', abbr: 'NIV' },
+  { id: 'de4e12af7f28f599-02', name: 'King James Version',        abbr: 'KJV' },
+  { id: '63097d2a0a2f7db3-01', name: 'New King James Version',    abbr: 'NKJV' },
+  { id: '06125adad2d5898a-01', name: 'American Standard Version', abbr: 'ASV' },
+];
+export const DEFAULT_BIBLE_ID = VERSIONS[0].id;
+
+/** The version the person picked in the Bible reader, so a tapped reference reads the same. */
+export function readingVersion() {
+  let id = null;
+  try { id = localStorage.getItem('rdr_bible'); } catch { /* storage blocked */ }
+  return VERSIONS.find((v) => v.id === id) ?? VERSIONS[0];
+}
+
 // KJV — always available via api.bible, used as the validation target
 export const VALIDATION_BIBLE_ID = 'de4e12af7f28f599-02';
 
@@ -99,7 +114,7 @@ export const VALIDATION_BIBLE_ID = 'de4e12af7f28f599-02';
 export function parseRef(raw) {
   const cleaned = raw.replace(/^[\[(]|[\])]$/g, '').trim();
   const m = cleaned.match(
-    /^([1-3]?\s?[A-Za-z][A-Za-z ]+?)\s+(\d{1,3}):(\d{1,3})(?:[–\-]\d+)?/
+    /^([1-3]?\s?[A-Za-z][A-Za-z ]+?)\s+(\d{1,3}):(\d{1,3})(?:[–\-](\d+))?/
   );
   if (!m) return null;
   const bookRaw = m[1].trim().toLowerCase().replace(/\s+/g, ' ');
@@ -107,12 +122,18 @@ export function parseRef(raw) {
   const v  = parseInt(m[3], 10);
   const code = BOOK_CODES[bookRaw];
   if (!code || !ch || !v) return null;
-  return { code, ch, v, raw };
+  const end = m[4] ? parseInt(m[4], 10) : null;
+  return { code, ch, v, end: end && end > v ? end : null, raw };
 }
 
 /** Convert parsed ref to api.bible verse ID format e.g. "JHN.3.16" */
 export function toApiVerseId({ code, ch, v }) {
   return `${code}.${ch}.${v}`;
+}
+
+/** Whole reference including a range, e.g. "LUK.24.36-LUK.24.49" */
+export function toApiPassageId({ code, ch, v, end }) {
+  return end ? `${code}.${ch}.${v}-${code}.${ch}.${end}` : `${code}.${ch}.${v}`;
 }
 
 /** Parse all recognisable refs from an arbitrary text string */

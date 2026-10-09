@@ -18,7 +18,7 @@ import { useAiUsage } from './useAiUsage.js';
 import AiLimitWall, { AiUsageWarning } from './AiLimitWall.jsx';
 import { track } from './analytics.js';
 import Tip from './Tip.jsx';
-import { extractRefs, parseRef, toApiVerseId, VALIDATION_BIBLE_ID } from './bibleRefUtils.js';
+import { extractRefs, parseRef, toApiPassageId, readingVersion, VALIDATION_BIBLE_ID } from './bibleRefUtils.js';
 import { cleanText } from './moderation.js';
 import { isWiderCanonText, WiderCanonTag } from './widerCanon.jsx';
 import { syncUiFlag, useUiFlagState } from './uiFlags.js';
@@ -1192,14 +1192,15 @@ export default function Chat({
   async function handleRefClick(refRaw) {
     const parsed = parseRef(refRaw);
     if (!parsed) return;
-    const verseId = toApiVerseId(parsed);
-    setVersePopover({ refRaw, verseId, text: null });
+    const verseId = toApiPassageId(parsed);
+    const version = readingVersion();
+    setVersePopover({ refRaw, verseId, text: null, versionName: version.name });
     try {
-      const res = await fetch(`/api/bible/${VALIDATION_BIBLE_ID}/verses/${verseId}`);
+      const res = await fetch(`/api/bible/${version.id}/verses/${verseId}`);
       if (res.ok) {
         const json = await res.json();
         const verseText = json?.data?.content ?? null;
-        setVersePopover({ refRaw, verseId, text: verseText });
+        setVersePopover({ refRaw, verseId, text: verseText, versionName: version.name });
       } else {
         setVersePopover(null);
       }
@@ -2365,11 +2366,11 @@ export default function Chat({
             {versePopover.text === null ? (
               <div style={{ fontSize: 15, color: '#9C7B5E', fontStyle: 'italic' }}>Loading…</div>
             ) : (
-              <p style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 17, lineHeight: 1.75, color: '#2C1810', margin: '0 0 16px' }}>
+              <p style={{ fontFamily: "'Fraunces', Georgia, serif", fontSize: 17, lineHeight: 1.75, color: '#2C1810', margin: '0 0 16px', maxHeight: '55vh', overflowY: 'auto' }}>
                 {versePopover.text}
               </p>
             )}
-            <div style={{ fontSize: 11, color: '#9C7B5E', marginBottom: 12 }}>King James Version · api.bible</div>
+            <div style={{ fontSize: 11, color: '#9C7B5E', marginBottom: 12 }}>{versePopover.versionName} · api.bible</div>
           </div>
         </div>
       )}

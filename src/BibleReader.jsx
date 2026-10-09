@@ -19,15 +19,10 @@ import { READING_PLANS, planProgress, planNextDay } from './readingPlans.js';
 import { BOOK_AUTHORS } from './bookAuthors.js';
 import { isWiderCanonText, WiderCanonTag } from './widerCanon.jsx';
 import Tip from './Tip.jsx';
+import { VERSIONS, DEFAULT_BIBLE_ID } from './bibleRefUtils.js';
 
 // Bible API is proxied through /api/bible to keep the key server-side
 
-const VERSIONS = [
-  { id: '78a9f6124f344018-01', name: 'New International Version', abbr: 'NIV' },
-  { id: 'de4e12af7f28f599-02', name: 'King James Version',        abbr: 'KJV' },
-  { id: '63097d2a0a2f7db3-01', name: 'New King James Version',    abbr: 'NKJV' },
-  { id: '06125adad2d5898a-01', name: 'American Standard Version', abbr: 'ASV' },
-];
 
 const OT = [
   { id:'GEN',name:'Genesis',ch:50 },{ id:'EXO',name:'Exodus',ch:40 },{ id:'LEV',name:'Leviticus',ch:27 },
@@ -1156,7 +1151,7 @@ export default function BibleReader({ session, profile, homeKey = 0, onClose, on
   const [chapBook, setChapBook] = useState(ALL_BOOKS[0]); // book shown in chapters view
 
   // ── Reading state ───────────────────────────────────────────────────────────
-  const [bibleId, setBibleId] = useState(() => localStorage.getItem('rdr_bible') ?? '78a9f6124f344018-01');
+  const [bibleId, setBibleId] = useState(() => localStorage.getItem('rdr_bible') ?? DEFAULT_BIBLE_ID);
   const [bookId,  setBookId]  = useState(() => localStorage.getItem('rdr_book')  ?? 'GEN');
   const [chNum,   setChNum]   = useState(() => parseInt(localStorage.getItem('rdr_ch') ?? '1'));
   const [verses,  setVerses]  = useState([]);

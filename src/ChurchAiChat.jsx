@@ -8,7 +8,7 @@ import MsgText from './MsgText.jsx';
 import { KinwoveStar } from './components/brand/KinwoveStar.jsx';
 import { PERSON_TYPES } from './constants.js';
 import { PER_TYPE } from './prompts.js';
-import { extractRefs, parseRef, toApiVerseId, VALIDATION_BIBLE_ID } from './bibleRefUtils.js';
+import { extractRefs, parseRef, toApiPassageId, readingVersion, VALIDATION_BIBLE_ID } from './bibleRefUtils.js';
 import { readConvs, writeConvs } from './studySessions.js';
 
 const PASTORAL_SYSTEM = `You are a theological assistant for Christian church leaders and pastors. You speak from within the historic Christian faith — you hold that Jesus is Lord, that the Bible is the authoritative Word of God, and that the gospel is true. You are not a neutral academic observer. You are a well-read, pastorally grounded colleague helping a minister do their work better.
@@ -522,13 +522,14 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
   async function handleRefClick(refRaw) {
     const parsed = parseRef(refRaw);
     if (!parsed) return;
-    const verseId = toApiVerseId(parsed);
-    setVersePopover({ refRaw, text: null });
+    const verseId = toApiPassageId(parsed);
+    const version = readingVersion();
+    setVersePopover({ refRaw, text: null, versionName: version.name });
     try {
-      const res = await fetch(`/api/bible/${VALIDATION_BIBLE_ID}/verses/${verseId}`);
+      const res = await fetch(`/api/bible/${version.id}/verses/${verseId}`);
       if (!res.ok) { setVersePopover(null); return; }
       const json = await res.json();
-      setVersePopover({ refRaw, text: json?.data?.content ?? null });
+      setVersePopover({ refRaw, text: json?.data?.content ?? null, versionName: version.name });
     } catch { setVersePopover(null); }
   }
 
@@ -1044,8 +1045,8 @@ export default function ChurchAiChat({ session, profile, churchId, churchPlan, o
             </div>
             {versePopover.text === null
               ? <div style={{ fontSize: 15, color: '#9C7B5E', fontStyle: 'italic' }}>Loading…</div>
-              : <p style={{ fontFamily: T.serif, fontSize: 17, lineHeight: 1.75, color: '#2C1810', margin: '0 0 10px' }}>{versePopover.text}</p>}
-            <div style={{ fontSize: 11, color: '#9C7B5E' }}>King James Version · api.bible</div>
+              : <p style={{ fontFamily: T.serif, fontSize: 17, lineHeight: 1.75, color: '#2C1810', margin: '0 0 10px', maxHeight: '55vh', overflowY: 'auto' }}>{versePopover.text}</p>}
+            <div style={{ fontSize: 11, color: '#9C7B5E' }}>{versePopover.versionName} · api.bible</div>
           </div>
         </div>
       )}

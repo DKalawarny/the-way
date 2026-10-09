@@ -1026,6 +1026,14 @@ app.get('/api/bible/:bibleId/verses/:verseId', optionalAuth, limitEither({ capac
   const { bibleId, verseId } = req.params;
   const BIBLE_API_KEY = process.env.VITE_BIBLE_API_KEY;
   if (!BIBLE_API_KEY) return res.status(500).json({ error: 'Missing VITE_BIBLE_API_KEY on server' });
+  // A single verse ("LUK.24.36") or a range in one chapter ("LUK.24.36-LUK.24.49").
+  // api.bible serves ranges from /passages, not /verses.
+  const VERSE_RE = /^[1-4A-Z]{3}\.\d{1,3}\.\d{1,3}$/;
+  const [first, last] = verseId.split('-');
+  if (!VERSE_RE.test(first) || (last !== undefined && !VERSE_RE.test(last))) {
+    return res.status(400).json({ error: 'bad verse id' });
+  }
+  const kind = last ? 'passages' : 'verses';
 
   const params = new URLSearchParams({
     'content-type':            'html',
@@ -1038,7 +1046,7 @@ app.get('/api/bible/:bibleId/verses/:verseId', optionalAuth, limitEither({ capac
 
   try {
     const upstream = await fetch(
-      `https://rest.api.bible/v1/bibles/${bibleId}/verses/${verseId}?${params}`,
+      `https://rest.api.bible/v1/bibles/${bibleId}/${kind}/${verseId}?${params}`,
       { headers: { 'api-key': BIBLE_API_KEY } }
     );
     if (!upstream.ok) {
@@ -1050,6 +1058,7 @@ app.get('/api/bible/:bibleId/verses/:verseId', optionalAuth, limitEither({ capac
     if (json.data?.content) {
       json.data.content = json.data.content
         .replace(/<[^>]+>/g, ' ')
+        .replace(/¶\s*/g, '')
         .replace(/\s+/g, ' ')
         .trim();
     }

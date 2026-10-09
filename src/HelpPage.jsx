@@ -199,7 +199,7 @@ const SECTIONS = [
       },
       {
         q: 'Can I tap on a scripture reference in the AI\'s response?',
-        a: 'Yes. Any scripture reference shown in gold text is tappable. Tap it to see the actual verse text from the King James Version, pulled directly from the Bible. You can then dismiss the card and continue your conversation.',
+        a: 'Yes. Any scripture reference shown in gold text is tappable. Tap it to see the actual verse text in the version you read in the Bible tab (NIV unless you pick another), pulled directly from the Bible. You can then dismiss the card and continue your conversation.',
       },
       {
         q: 'Why does the AI sometimes show a quote in a different style with a line down the side?',
