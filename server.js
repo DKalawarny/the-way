@@ -11,6 +11,7 @@ import http2 from 'node:http2';
 import Anthropic from '@anthropic-ai/sdk';
 import webpush from 'web-push';
 import { getDailyVerse } from './src/dailyVerse.js';
+import { dailyPostProblem, DAILY_POST_PROMPT, DAILY_ANGLES } from './src/dailyPostRules.js';
 import { ANSWERS_FA_BY_SLUG } from './content/answers-fa.js';
 // Same table the /:lang/answers route serves. Declared here because the route
 // lives in the static-serving block and the sitemap builder does not.
@@ -2196,68 +2197,15 @@ function emailToken(userId) {
 // not to a quotation. The scripture still travels, just underneath rather than
 // as the headline. Falls back to the old verse-first layout when no reflection
 // is available, so the email never breaks.
-function dailyVerseEmailHtml(firstName, verse, unsubUrl, reflectUrl, reflection) {
-  const verseBlock = `
-    <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#B8733A;font-weight:700;margin:0 0 14px">Today's verse</div>
-    <div style="font-family:Georgia,serif;font-size:${reflection ? 19 : 23}px;font-style:italic;line-height:1.5;color:#2C1810;margin:0 0 12px">&ldquo;${verse.text}&rdquo;</div>
-    <div style="font-size:14px;color:#B8733A;font-weight:600;margin:0 0 ${reflection ? 8 : 28}px">— ${verse.ref}</div>`;
-
-  if (!reflection) {
-    return emailWrap(`
-      ${verseBlock}
-      <p style="font-size:15.5px;color:#6B5344;line-height:1.75;margin:0 0 2px">Sit with it for a moment, ${firstName}. What is it stirring in you today?</p>
-      ${btnHtml('Reflect with others', reflectUrl || 'https://www.kinwove.com')}
-      <p style="font-size:13px;color:#9C7B5E;margin:0">See what others are sharing, and add your own.</p>
-    `, unsubUrl);
-  }
-
+function dailyVerseEmailHtml(firstName, verse, unsubUrl, reflectUrl, words) {
   return emailWrap(`
-    <div style="font-family:Georgia,serif;font-size:22px;line-height:1.6;color:#2C1810;margin:0 0 26px">${escapeHtml(reflection).replace(/\n+/g, '<br><br>')}</div>
-    <div style="border-top:1px solid #E8D5BB;padding-top:22px;margin-bottom:24px">
-      ${verseBlock}
-    </div>
+    <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#B8733A;font-weight:700;margin:0 0 14px">Today's verse</div>
+    <div style="font-family:Georgia,serif;font-size:21px;font-style:italic;line-height:1.5;color:#2C1810;margin:0 0 12px">&ldquo;${escapeHtml(verse.text)}&rdquo;</div>
+    <div style="font-size:14px;color:#B8733A;font-weight:600;margin:0 0 26px">${escapeHtml(verse.ref)}</div>
+    ${words ? `<div style="border-top:1px solid #E8D5BB;padding-top:22px;font-family:Georgia,serif;font-size:18px;line-height:1.65;color:#2C1810;margin:0 0 6px">${escapeHtml(words).replace(/\n+/g, '<br><br>')}</div>` : ''}
     ${btnHtml('Add your thoughts', reflectUrl || 'https://www.kinwove.com')}
-    <p style="font-size:13px;color:#9C7B5E;margin:0">See what others are saying, ${firstName} — and say your own.</p>
+    <p style="font-size:13px;color:#9C7B5E;margin:0">See what others are saying, ${escapeHtml(firstName)}, and say your own.</p>
   `, unsubUrl);
-}
-
-// Newest kinwove post that ISN'T the daily verse card. The verse post is written
-// by ensureVersePost and always ends with that same question, which is what
-// separates the two — both are authored by the system account with kind 'text'.
-// The verse post's closing line. It was a single hardcoded string, so all 67
-// verse posts ever written ended with the identical sentence — which is most of
-// why the feed read as one message reworded. Rotated by date instead, and kept
-// in one place so the "is this a verse post?" filters below stay honest.
-const VERSE_CLOSERS = [
-  'What is this stirring in you today?',
-  'What do you make of that?',
-  'Where does this land for you?',
-  'What does this bring up?',
-  'Sit with that one for a minute.',
-  'What would it change if this were true?',
-  'Anything in that worth holding onto today?',
-];
-const verseCloser = () => VERSE_CLOSERS[Math.floor(Date.now() / 86400000) % VERSE_CLOSERS.length];
-
-async function latestReflection() {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null;
-  try {
-    const systemId = await getOrCreateSystemAccount();
-    if (!systemId) return null;
-    const rows = await fetch(
-      `${SUPABASE_URL}/rest/v1/posts?author_id=eq.${systemId}&select=id,body&order=created_at.desc&limit=8`,
-      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
-    ).then((x) => x.json());
-    if (!Array.isArray(rows)) return null;
-    const hit = rows.find((p) => {
-      const b = (p.body || '').trim();
-      return b && !VERSE_CLOSERS.some((c) => b.includes(c));
-    });
-    return hit ? { id: hit.id, body: hit.body.trim() } : null;
-  } catch (e) {
-    console.error('[daily-verse-email] latestReflection:', e?.message);
-    return null;
-  }
 }
 
 function btnHtml(label, url) {
@@ -2912,9 +2860,13 @@ app.post('/api/cron/welcome-backfill', async (req, res) => {
 
 // ── Unsubscribe from the daily verse (one-click, no login) ────────────────────
 app.get('/api/email/unsubscribe', async (req, res) => {
-  const { u, t, resub } = req.query;
+  const { u, t, resub, list } = req.query;
   const ok = u && t && t === emailToken(u);
   const optOut = resub !== '1'; // ?resub=1 turns email back on
+  // ?list=daily comes from the daily email: it stops that email only, so
+  // someone tired of a daily email still hears when something new happens.
+  // Stopping everything is one more click on the page below.
+  const dailyOnly = list === 'daily';
   // One click stops ALL non-transactional email, and the page below says so.
   // It used to set daily_verse_opt_out and tell the person "you won't get the
   // daily verse email anymore" — while in fact silencing the welcome sequence,
@@ -2925,13 +2877,21 @@ app.get('/api/email/unsubscribe', async (req, res) => {
     await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${u}`, {
       method: 'PATCH',
       headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email_opt_out: optOut, daily_verse_opt_out: optOut }),
+      body: JSON.stringify(dailyOnly ? { daily_verse_opt_out: optOut } : { email_opt_out: optOut, daily_verse_opt_out: optOut }),
     }).catch((e) => console.error('[unsubscribe]', e.message));
   }
   let title, body, action = '';
   if (!ok) {
     title = 'Link expired';
     body  = 'Please use the unsubscribe link from a recent email.';
+  } else if (dailyOnly && optOut) {
+    title  = 'No more daily emails';
+    body   = 'You won’t get the daily verse email anymore. You’ll still hear from us now and then when something new happens.';
+    action = `<a href="https://www.kinwove.com/api/email/unsubscribe?u=${u}&t=${t}" style="color:#A85530;text-decoration:none">Stop all emails from kinwove</a>` +
+      `<br><br><a href="https://www.kinwove.com/api/email/unsubscribe?u=${u}&t=${t}&list=daily&resub=1" style="color:#9C7B5E;text-decoration:none">Changed your mind? Keep the daily email</a>`;
+  } else if (dailyOnly) {
+    title = 'The daily email is back on';
+    body  = 'You’ll get the daily verse again. You can stop it from the link at the bottom of any of them.';
   } else if (optOut) {
     title  = 'You’re unsubscribed';
     body   = 'You won’t get any more emails from kinwove — no verse, no invitations, nothing. Account emails like a password reset still work, because you have to be able to get back in.';
@@ -2951,48 +2911,104 @@ app.get('/api/email/unsubscribe', async (req, res) => {
   );
 });
 
-// Ensure today's verse is posted as a shared, commentable community post by the
-// kinwove account, and return its id. Idempotent — reuses today's post if it
-// already exists. Used by both the daily email and the in-app verse card so
-// they land people in the same place.
-async function ensureVersePost(verse) {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return null;
-  const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
-  const systemId = await getOrCreateSystemAccount();
-  if (!systemId) return null;
-  const since = new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString();
-  const existing = await fetch(
-    `${SUPABASE_URL}/rest/v1/posts?author_id=eq.${systemId}&created_at=gte.${since}&select=id,body&order=created_at.desc&limit=25`,
-    { headers: h }
-  ).then((x) => x.json()).catch(() => []);
-  const snippet = verse.text.slice(0, 40);
-  let postId = Array.isArray(existing) ? existing.find((p) => (p.body || '').includes(snippet))?.id : null;
-  if (!postId) {
-    const verseBody = `“${verse.text}”\n\n— ${verse.ref}\n\n${verseCloser()}`;
+// ── The daily post ───────────────────────────────────────────────────────────
+// ONE post a day: today's verse, a few sentences about what that verse actually
+// says, and a question for the comments. It replaced a pair of posts (a verse
+// card at 07:00 and a free-floating "reflection" at 06:50) that read as the
+// same message twice. Daniel, 9 Oct: "the daily messages and verses are too
+// similar". The reflections had also collapsed onto one ending ("good is still
+// on the move", "what is meant for you is finding its way"), a vague force on
+// your side rather than God, because the prompt was written to avoid assuming
+// faith. Tying the words to a real verse is what keeps them specific.
+async function generateDailyWords(verse) {
+  const angle = DAILY_ANGLES[new Date().getUTCDay()];
+  const prompt = `${DAILY_POST_PROMPT}\n\nTODAY'S VERSE: "${verse.text}" (${verse.ref})\nTODAY'S WAY IN: ${angle}`;
+  const ask = async (extra = '') => {
+    const msg = await client.messages.create({
+      model: 'claude-opus-4-8',
+      max_tokens: 400,
+      messages: [{ role: 'user', content: prompt + extra }],
+    });
+    const raw = msg.content?.[0]?.text?.trim() ?? '';
+    try {
+      const j = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
+      const reflection = String(j.reflection ?? '').trim();
+      const question = String(j.question ?? '').trim();
+      return reflection && question ? { reflection, question } : null;
+    } catch {
+      console.error('[daily-post] unparseable:', raw.slice(0, 200));
+      return null;
+    }
+  };
+  let words = await ask();
+  const problem = words && dailyPostProblem(`${words.reflection} ${words.question}`);
+  if (!words || problem) {
+    console.warn(`[daily-post] regenerating: ${problem ?? 'no usable output'}`);
+    const retry = await ask(problem ? `\n\nYour previous attempt used ${problem}. Write it again without that.` : '').catch(() => null);
+    if (retry && !dailyPostProblem(`${retry.reflection} ${retry.question}`)) words = retry;
+    else if (!words) words = retry;
+  }
+  return words;
+}
+
+// Today's post, found or written. Idempotent: the in-app verse card, the email
+// cron and the post cron all call this, and whichever comes first writes it.
+// One in-flight promise so two callers in the same second do not write twice.
+let dailyPostInFlight = null;
+async function ensureDailyPost(verse) {
+  if (dailyPostInFlight) return dailyPostInFlight;
+  dailyPostInFlight = (async () => {
+    const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+    const systemId = await getOrCreateSystemAccount();
+    if (!systemId) return null;
+    const since = new Date(Date.now() - 22 * 60 * 60 * 1000).toISOString();
+    const existing = await fetch(
+      `${SUPABASE_URL}/rest/v1/posts?author_id=eq.${systemId}&created_at=gte.${since}&select=id,body&order=created_at.desc&limit=25`,
+      { headers: h }
+    ).then((x) => x.json()).catch(() => []);
+    const snippet = verse.text.slice(0, 40);
+    const found = Array.isArray(existing) ? existing.find((p) => (p.body || '').includes(snippet)) : null;
+    if (found) return { id: found.id, body: found.body, created: false };
+
+    const words = await generateDailyWords(verse).catch((e) => { console.error('[daily-post] generate:', e?.message); return null; });
+    const after = words ? `${words.reflection}\n\n${words.question}` : 'What stands out to you in this one?';
+    const body = `“${verse.text}”\n\n— ${verse.ref}\n\n${after}`;
     const created = await fetch(`${SUPABASE_URL}/rest/v1/posts`, {
       method: 'POST',
       headers: { ...h, 'Content-Type': 'application/json', Prefer: 'return=representation' },
-      body: JSON.stringify({ author_id: systemId, scope: 'me', visibility: 'public', kind: 'text', body: verseBody }),
+      body: JSON.stringify({ author_id: systemId, scope: 'me', visibility: 'public', kind: 'text', body }),
     }).then((x) => x.json()).catch(() => null);
-    postId = Array.isArray(created) ? created[0]?.id : created?.id;
-  }
-  return postId ?? null;
+    const id = Array.isArray(created) ? created[0]?.id : created?.id;
+    return id ? { id, body, created: true } : null;
+  })();
+  try { return await dailyPostInFlight; } finally { dailyPostInFlight = null; }
 }
 
-// Today's shared verse post — the in-app daily verse card hits this so
-// "Reflect with others" opens the same thread the email links to.
+// The words under the verse, for the email.
+function dailyWordsFrom(post, verse) {
+  const marker = `— ${verse.ref}`;
+  const i = post?.body?.indexOf(marker) ?? -1;
+  return i >= 0 ? post.body.slice(i + marker.length).trim() : '';
+}
+
+// Today's post — the in-app daily verse card hits this so "Reflect with others"
+// opens the same thread the email links to.
 app.get('/api/verse/today', requireAuth, async (_req, res) => {
   try {
-    const postId = await ensureVersePost(getDailyVerse());
-    res.json({ postId });
+    const post = await ensureDailyPost(getDailyVerse());
+    res.json({ postId: post?.id ?? null });
   } catch (e) {
     res.status(500).json({ error: e?.message ?? 'error' });
   }
 });
 
-// ── Daily verse email (cron) ──────────────────────────────────────────────────
-// One calm morning email with today's verse. Sent to every onboarded, opted-in
-// member. Schedule via pg_cron (see scripts/2026-07-06-daily-verse-email-cron.sql).
+// ── Daily email (cron) ────────────────────────────────────────────────────────
+// The day's post as one email: verse first, then the words under it. Back on
+// 9 Oct 2026 (Daniel: on for everyone, people opt out themselves). It had been
+// off since 11 Sep, when "drop the verse email, keep the message" turned off
+// the only daily email there was, since both were one email.
+// Its unsubscribe link stops THIS email only (daily_verse_opt_out); the page
+// offers stopping everything as a second step. email_opt_out stops all.
 app.post('/api/cron/daily-verse-email', async (req, res) => {
   const secret = process.env.CRON_SECRET;
   if (!secret || req.headers['x-cron-secret'] !== secret) return res.status(401).json({ error: 'unauthorized' });
@@ -3000,121 +3016,46 @@ app.post('/api/cron/daily-verse-email', async (req, res) => {
 
   const verse = getDailyVerse();
   const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` };
+  const post = await ensureDailyPost(verse).catch((e) => { console.error('[daily-email] post:', e?.message); return null; });
+  if (!post) return res.status(500).json({ error: 'no daily post' });
+  const words = dailyWordsFrom(post, verse);
+  const reflectUrl = `https://www.kinwove.com/?post=${post.id}`;
 
-  // Post (or reuse) today's shared verse post; link the email to it.
-  let reflectUrl = 'https://www.kinwove.com';
-  try {
-    const postId = await ensureVersePost(verse);
-    if (postId) reflectUrl = `https://www.kinwove.com/?post=${postId}`;
-  } catch (e) {
-    console.error('[daily-verse-email] verse post:', e.message);
-  }
-
-  // The reflection now leads the email, so the link should land on ITS thread —
-  // that's the post being quoted and the one worth replying to. Note this job
-  // runs an hour BEFORE the reflection is written, so what goes out is the most
-  // recent one, i.e. yesterday's. That's deliberate rather than a bug: it's
-  // still unseen by anyone who didn't open the app, and pairing it with today's
-  // verse costs nothing. Move the cron later than 14:00 UTC if same-day matters.
-  const reflection = await latestReflection();
-  if (reflection?.id) reflectUrl = `https://www.kinwove.com/?post=${reflection.id}`;
-
-  // Daily verse EMAIL is off. Daniel, 11 Sep: "lets keep the message email, drop
-  // the verse emailed... i think daily message is enough."
-  //
-  // The users had already said the same thing: 10 of 23 accounts had opted out,
-  // and the newest real signup opted out the day they joined. That left ~11 real
-  // recipients, most of them family, receiving a daily email nobody asked for.
-  //
-  // Deliberately placed AFTER ensureVersePost above: this same cron creates the
-  // in-app verse post, which stays. Only the sending stops. Flip the constant to
-  // resume, or better, make it opt-IN before ever turning it back on.
-  const DAILY_VERSE_EMAIL_ENABLED = false;
-  if (!DAILY_VERSE_EMAIL_ENABLED) {
-    console.log('[daily-verse-email] sending disabled — verse post created, no email sent');
-    return res.json({ sent: 0, disabled: true });
-  }
-
-  // Onboarded members who haven't opted out. (Requires the daily_verse_opt_out
-  // column — see the migration script; until it's added this returns an error
-  // object and we safely send 0.)
   const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?email_opt_out=eq.false&display_name=not.is.null&select=id,display_name&limit=5000`,
+    `${SUPABASE_URL}/rest/v1/profiles?email_opt_out=eq.false&daily_verse_opt_out=not.is.true&is_system_account=not.is.true&display_name=not.is.null&select=id,display_name&limit=5000`,
     { headers: h }
   );
   const users = await r.json().catch(() => []);
   if (!Array.isArray(users) || !users.length) return res.json({ sent: 0 });
 
+  // Subject: the opening words of the reflection, cut at a word boundary.
+  // An inbox of "Today's verse: Psalm 33:20" gives nobody a reason to open it.
+  const first = words.split(/\n/)[0].replace(/\s+/g, ' ').trim();
+  const subject = first.length <= 68 ? first : `${first.slice(0, 68).replace(/\s+\S*$/, '')}…`;
+
   let sent = 0;
   for (const usr of users) {
     try {
-      if ((usr.display_name || '').toLowerCase() === 'kinwove') continue; // skip system account
       const email = await getUserEmail(usr.id);
-      if (!email) continue;
+      if (!email || isInternalEmail(email)) continue;
       const firstName = (usr.display_name || '').split(' ')[0] || 'friend';
-      const unsubUrl = `https://www.kinwove.com/api/email/unsubscribe?u=${usr.id}&t=${emailToken(usr.id)}`;
-      // Subject leads with the reflection's own opening words rather than a
-      // chapter-and-verse reference — an inbox full of "Today's verse — Psalm
-      // 33:20" gives nobody a reason to open this one over any other.
-      const subject = reflection
-        ? reflection.body.split('\n')[0].trim().replace(/\s+/g, ' ').slice(0, 68)
-        : `Today’s verse — ${verse.ref}`;
-      await sendEmail(email, subject, dailyVerseEmailHtml(firstName, verse, unsubUrl, reflectUrl, reflection?.body), {
+      const unsubUrl = `https://www.kinwove.com/api/email/unsubscribe?u=${usr.id}&t=${emailToken(usr.id)}&list=daily`;
+      await sendEmail(email, subject || verse.ref, dailyVerseEmailHtml(firstName, verse, unsubUrl, reflectUrl, words), {
         'List-Unsubscribe': `<${unsubUrl}>`,
       });
       sent++;
       await new Promise((rr) => setTimeout(rr, 150)); // gentle pacing between sends
     } catch (e) {
-      console.error('[daily-verse-email]', e.message);
+      console.error('[daily-email]', e.message);
     }
   }
-  console.log(`[daily-verse-email] sent ${sent} of ${users.length} — ${verse.ref}`);
+  console.log(`[daily-email] sent ${sent} of ${users.length}, ${verse.ref}`);
   res.json({ sent, total: users.length });
 });
 
-// ── kinwove persona — daily auto-post (cron) ────────────────────────────────
-const PERSONA_PROMPT = `You are the kinwove voice. You post once a day to a community feed.
-
-Your job: write something warm, positive, and uplifting that makes people feel held and not alone. The feeling you are going for is: a good friend texting you something that made them feel better on a hard day. Short. Real. Leaves you lighter, not heavier.
-
-The tone is quietly faith-adjacent — God has your back, without assuming the reader already believes that. Sensitive to people who are searching or skeptical. Never pushy. Never preachy. Just light and warmth and the quiet sense that things are going to be okay.
-
-Posts do not need to reference Scripture. But when they do, it should feel like a lyric that landed — not a lesson. A one-line nod, not a sermon.
-
-Examples of exactly the right feel (vary the structure — do not copy these, use them as tone reference only):
-- "Whatever you are walking through right now, you are not walking it alone. That is not wishful thinking. That is the whole point."
-- "Nobody is keeping a tally of the days you got through badly. Some things are just given, and this is one of them."
-- "There is something quietly powerful about deciding today is not over yet."
-- "Peter was a fisherman who denied Jesus three times and still built the church. Whatever you think you have done wrong, you are not too far gone."
-- "The most repeated line in the Bible is do not be afraid. Not because life is not hard. Because you are not in it alone."
-- "What if the hardest season you have ever been in is also the one that changes everything for you?"
-- "Some days you just need someone to remind you that you are further along than you feel."
-- "Thomas doubted out loud in a room full of believers and was still invited to reach out and touch the truth. There is room for your honest questions here."
-- "What is one thing you are still hoping for, even if you have stopped saying it out loud?"
-
-Every post must feel different in structure and opening from the one before. Rotate between: direct encouragement, a question, a faith reference told in one line, a reframe of something hard, a simple truth about being loved.
-
-You will be told below which ONE type to write today. Write only that type.
-
-UPLIFT (4x/week): Warm, positive, hopeful. Speaks to a real human feeling. Leaves the reader feeling like something good is possible and they are not carrying it by themselves. Faith is the undercurrent, not the headline. May or may not reference Scripture — only if it lands like a lyric.
-
-QUESTION (2x/week): One short, open question anyone could answer — about hope, belonging, what they are carrying, what changed them, what they are still looking for. Welcoming. No preamble.
-
-WARMTH (1x/week): Pure light. 2–3 sentences for someone who needs to hear that they are enough, that today can still turn around, that they are not forgotten. No question. Just warmth.
-
-Hard rules:
-- 2–4 sentences max. Shorter wins.
-- No hashtags. No em-dashes. Plain punctuation only.
-- Always positive and uplifting. Never dark, heavy, or guilt-based.
-- Never preachy. Never "God is telling you" or "you need to believe."
-- Never "as Christians." Never assumes the reader believes.
-- Never starts with "I."
-- BANNED PHRASES, never use any of these. They are banned because the feed measurably collapsed onto them: "something bigger", "someone bigger", "You do not have to", "You are allowed to", "That is not nothing", "What is this stirring in you". Say the thing a different way.
-- Never open two posts the same way. If the recent posts below start with "You", do not start with "You".
-- Never mention the day of the week, the date, the weekend, or the season. The post should read the same whether someone opens it Monday morning or Saturday night — timeless encouragement, not a calendar caption.
-
-Respond ONLY with valid JSON on a single line: {"body":"post text here"}`;
-
+// ── Daily post (cron, 12:50 UTC) ─────────────────────────────────────────────
+// Writes the day's post ten minutes before the email goes, so the email always
+// carries the same day's words.
 app.post('/api/cron/daily-post', async (req, res) => {
   // Header-only cron secret (never accept it via query string — leaks into logs).
   // If CRON_SECRET is unset, the secret path is closed and only an admin bearer
@@ -3122,7 +3063,6 @@ app.post('/api/cron/daily-post', async (req, res) => {
   const secret = process.env.CRON_SECRET;
   const cronOk = !!secret && req.headers['x-cron-secret'] === secret;
   if (!cronOk) {
-    // Also allow admin users to trigger via bearer token
     const userId = await attachUser(req);
     if (userId && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
       const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=is_admin&limit=1`, { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } });
@@ -3135,118 +3075,16 @@ app.post('/api/cron/daily-post', async (req, res) => {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return res.status(503).json({ error: 'not configured' });
 
   try {
-    const systemId = await getOrCreateSystemAccount();
-    if (!systemId) return res.status(503).json({ error: 'system account unavailable' });
-
-
-    // Recent posts, so Claude can avoid repeating a theme or an opening.
-    // Deliberately 12, not 60: half of what this account posts is the fixed
-    // verse template, so a 60-post window was ~30 copies of the same string,
-    // and handing a model thirty examples of a phrase under the banner "do not
-    // repeat this" primes the phrase rather than preventing it. The feed proved
-    // it — "something bigger" ran at 5% early on and 80% across the last ten.
-    const recentRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/posts?author_id=eq.${systemId}&order=created_at.desc&limit=30&select=body`,
-      { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } }
-    );
-    const recentAll = await recentRes.json();
-    const recentPosts = (Array.isArray(recentAll) ? recentAll : [])
-      .filter((p) => !VERSE_CLOSERS.some((c) => (p.body || '').includes(c)))
-      .slice(0, 12);
-    const recentBlock = recentPosts.length
-      ? `\n\nDo NOT repeat the theme, opening line, or structure of any of these recent posts:\n${recentPosts.map((p, i) => `${i + 1}. "${p.body}"`).join('\n')}`
-      : '';
-
-    // The type is chosen HERE, not by the model. Asked to pick its own from a
-    // ratio, it picked UPLIFT essentially every day, which is the deeper reason
-    // every post read the same. 4 uplift / 2 question / 1 warmth, by weekday.
-    const TYPE_BY_DAY = ['WARMTH', 'UPLIFT', 'QUESTION', 'UPLIFT', 'UPLIFT', 'QUESTION', 'UPLIFT'];
-    const todayType = TYPE_BY_DAY[new Date().getUTCDay()];
-    // Ban the actual opening words of recent posts. The prompt asking for variety
-    // is not enough: strip one collapsed phrase and the model simply finds
-    // another (banning "something bigger" produced five posts in a row opening
-    // with "Rest"). Naming the words it just used is what actually moves it.
-    const recentOpeners = [...new Set(recentPosts
-      .map((p) => String(p.body || '').trim().split(/\s+/)[0].replace(/[^A-Za-z']/g, ''))
-      .filter(Boolean))].slice(0, 10);
-    const openerBlock = recentOpeners.length
-      ? `\n\nDo not begin the post with any of these words, all used recently: ${recentOpeners.join(', ')}.`
-      : '';
-    const typeBlock = `\n\nTODAY'S TYPE: ${todayType}. Write a ${todayType} post and nothing else.`;
-
-    const prompt = PERSONA_PROMPT + typeBlock + recentBlock + openerBlock;
-
-    const msg = await client.messages.create({
-      model: 'claude-opus-4-8',
-      max_tokens: 256,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const raw = msg.content?.[0]?.text?.trim() ?? '';
-    let body = '';
-    try {
-      const parsed = JSON.parse(raw);
-      body = (parsed.body ?? '').trim();
-    } catch {
-      const m = raw.match(/\{[^}]*"body"\s*:\s*"((?:[^"\\]|\\.)*)"/s);
-      body = m ? m[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : '';
-    }
-
-    if (!body) {
-      console.error('[daily-post] could not extract body from:', raw);
-      return res.status(500).json({ error: 'generation failed' });
-    }
-
-    // Belt and braces. A banned phrase in the prompt is a request; this is the
-    // guarantee. One retry, naming the offending phrase — cheap on a once-a-day
-    // cron, and the reason "something bigger" reached 8 of the last 10 posts is
-    // that nothing ever checked the output.
-    const BANNED = ['something bigger', 'someone bigger', 'you do not have to', 'you are allowed to', 'that is not nothing'];
-    const offending = (t) => BANNED.find((b) => t.toLowerCase().includes(b));
-    let bad = offending(body);
-    if (bad) {
-      console.warn(`[daily-post] regenerating — banned phrase "${bad}" in: "${body.slice(0, 60)}…"`);
-      try {
-        const retry = await client.messages.create({
-          model: 'claude-opus-4-8',
-          max_tokens: 256,
-          messages: [{ role: 'user', content: `${prompt}\n\nYour previous attempt used the banned phrase "${bad}". That phrase is worn out in this feed. Write a different post that does not contain it or any other banned phrase.` }],
-        });
-        const rraw = retry.content?.[0]?.text?.trim() ?? '';
-        let rbody = '';
-        try { rbody = (JSON.parse(rraw).body ?? '').trim(); }
-        catch {
-          const m = rraw.match(/\{[^}]*"body"\s*:\s*"((?:[^"\\]|\\.)*)"/s);
-          rbody = m ? m[1].replace(/\\n/g, '\n').replace(/\\"/g, '"') : '';
-        }
-        if (rbody && !offending(rbody)) body = rbody;
-        else console.warn('[daily-post] retry still unusable — posting the original');
-      } catch (e) {
-        console.error('[daily-post] retry failed:', e?.message);
-      }
-    }
-
-    const h = { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
-    const postRes = await fetch(`${SUPABASE_URL}/rest/v1/posts`, {
-      method: 'POST',
-      headers: h,
-      body: JSON.stringify({ author_id: systemId, scope: 'me', visibility: 'public', kind: 'text', body }),
-    });
-
-    if (!postRes.ok) {
-      const err = await postRes.text();
-      console.error('[daily-post] insert failed:', err);
-      return res.status(500).json({ error: 'insert failed' });
-    }
-
-    console.log(`[daily-post] posted: "${body.slice(0, 60)}…"`);
+    const post = await ensureDailyPost(getDailyVerse());
+    if (!post) return res.status(500).json({ error: 'insert failed' });
+    console.log(`[daily-post] ${post.created ? 'posted' : 'already there'}: "${post.body.slice(0, 80)}…"`);
     // Dead-man's switch ping: if HEALTHCHECK_DAILYPOST_URL is set (e.g. a free
     // healthchecks.io check), a successful post pings it. If pings stop, that
     // service emails you — catching a silently-dead cron.
     if (process.env.HEALTHCHECK_DAILYPOST_URL) {
       fetch(process.env.HEALTHCHECK_DAILYPOST_URL, { method: 'POST' }).catch(() => {});
     }
-    res.json({ ok: true, body });
+    res.json({ ok: true, body: post.body });
   } catch (e) {
     console.error('[daily-post] error:', e?.message);
     res.status(500).json({ error: e?.message ?? 'unknown' });
@@ -3374,9 +3212,9 @@ app.post('/api/cron/pastor-rhythm', async (req, res) => {
     let sent = 0;
     for (const church of churches) {
       // Global email suppression applies to pastors too.
-      const pRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${church.pastor_id}&select=display_name,daily_verse_opt_out&limit=1`, { headers: h });
+      const pRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${church.pastor_id}&select=display_name,email_opt_out&limit=1`, { headers: h });
       const [pastor] = await pRes.json();
-      if (!pastor || pastor.daily_verse_opt_out) continue;
+      if (!pastor || pastor.email_opt_out) continue;
       const email = await getUserEmail(church.pastor_id);
       if (!email || isInternalEmail(email)) continue;
 
@@ -5678,11 +5516,11 @@ async function dmEmailSweep() {
   // Respect the account-email opt-out, same flag the other nudges use.
   const recipientIds = [...new Set(fromAdmin.map((r) => r.recipient_id))];
   const optRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/profiles?id=in.(${recipientIds.join(',')})&select=id,daily_verse_opt_out`,
+    `${SUPABASE_URL}/rest/v1/profiles?id=in.(${recipientIds.join(',')})&select=id,email_opt_out`,
     { headers: pushSvcHeaders() }
   );
   const optRows = await optRes.json();
-  const optedOut = new Set((Array.isArray(optRows) ? optRows : []).filter((p) => p.daily_verse_opt_out).map((p) => p.id));
+  const optedOut = new Set((Array.isArray(optRows) ? optRows : []).filter((p) => p.email_opt_out).map((p) => p.id));
 
   // One email per recipient+conversation; latest message wins the snippet.
   const groups = new Map();
